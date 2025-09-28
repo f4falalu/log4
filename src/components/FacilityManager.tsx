@@ -36,19 +36,54 @@ const FacilityManager = ({ facilities, onFacilitiesUpdate }: FacilityManagerProp
   const [uploadResults, setUploadResults] = useState<{
     success: number;
     errors: string[];
+    columnInfo?: string;
   } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   // Remove the useToast hook declaration
 
-  const validateCSVData = (data: CSVFacility[]): { valid: Facility[]; errors: string[] } => {
+  // Flexible column mapping to handle different CSV formats
+  const mapColumns = (row: any): CSVFacility => {
+    const mapped: any = {};
+    
+    // Map name variations
+    mapped.name = row.name || row['Facility Name'] || row['facility_name'] || row['Name'];
+    
+    // Map address variations
+    mapped.address = row.address || row['Full Address'] || row['full_address'] || row['Address'];
+    
+    // Map latitude variations
+    mapped.latitude = row.latitude || row['Latitude'] || row['lat'] || row['Lat'];
+    
+    // Map longitude variations
+    mapped.longitude = row.longitude || row['Longitude'] || row['lng'] || row['Lng'] || row['lon'] || row['Lon'];
+    
+    // Map type variations (with fallback to "Healthcare Facility")
+    mapped.type = row.type || row['Type'] || row['Facility Type'] || row['facility_type'] || 'Healthcare Facility';
+    
+    // Optional fields
+    mapped.phone = row.phone || row['Phone'] || row['Phone Number'] || row['phone_number'];
+    mapped.contactPerson = row.contactPerson || row['Contact Person'] || row['contact_person'] || row['Contact'];
+    mapped.capacity = row.capacity || row['Capacity'];
+    mapped.operatingHours = row.operatingHours || row['Operating Hours'] || row['operating_hours'] || row['Hours'];
+    
+    return mapped as CSVFacility;
+  };
+
+  const validateCSVData = (data: any[]): { valid: Facility[]; errors: string[]; columnInfo: string } => {
     const valid: Facility[] = [];
     const errors: string[] = [];
+    
+    // Detect columns for user feedback
+    const sampleRow = data[0] || {};
+    const detectedColumns = Object.keys(sampleRow);
+    const columnInfo = `Detected columns: ${detectedColumns.join(', ')}`;
 
-    data.forEach((row, index) => {
+    data.forEach((rawRow, index) => {
       const rowNum = index + 2; // Account for header row
+      const row = mapColumns(rawRow);
       
       if (!row.name?.trim()) {
-        errors.push(`Row ${rowNum}: Name is required`);
+        errors.push(`Row ${rowNum}: Name is required (found columns: ${Object.keys(rawRow).join(', ')})`);
         return;
       }
       
@@ -69,11 +104,6 @@ const FacilityManager = ({ facilities, onFacilitiesUpdate }: FacilityManagerProp
         errors.push(`Row ${rowNum}: Invalid longitude (${row.longitude})`);
         return;
       }
-      
-      if (!row.type?.trim()) {
-        errors.push(`Row ${rowNum}: Type is required`);
-        return;
-      }
 
       const facility: Facility = {
         id: `facility-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -81,7 +111,7 @@ const FacilityManager = ({ facilities, onFacilitiesUpdate }: FacilityManagerProp
         address: row.address.trim(),
         lat,
         lng,
-        type: row.type.trim(),
+        type: row.type?.trim() || 'Healthcare Facility',
         phone: row.phone?.trim() || undefined,
         contactPerson: row.contactPerson?.trim() || undefined,
         capacity: row.capacity ? parseInt(row.capacity) : undefined,
@@ -91,7 +121,7 @@ const FacilityManager = ({ facilities, onFacilitiesUpdate }: FacilityManagerProp
       valid.push(facility);
     });
 
-    return { valid, errors };
+    return { valid, errors, columnInfo };
   };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -111,7 +141,7 @@ const FacilityManager = ({ facilities, onFacilitiesUpdate }: FacilityManagerProp
       skipEmptyLines: true,
       complete: (results) => {
         try {
-          const { valid, errors } = validateCSVData(results.data as CSVFacility[]);
+          const { valid, errors, columnInfo } = validateCSVData(results.data);
           
           if (valid.length > 0) {
             const updatedFacilities = [...facilities, ...valid];
@@ -123,6 +153,7 @@ const FacilityManager = ({ facilities, onFacilitiesUpdate }: FacilityManagerProp
           setUploadResults({
             success: valid.length,
             errors: errors.slice(0, 10), // Limit errors shown
+            columnInfo,
           });
         } catch (error) {
           console.error('CSV processing error:', error);
@@ -143,9 +174,10 @@ const FacilityManager = ({ facilities, onFacilitiesUpdate }: FacilityManagerProp
   };
 
   const downloadTemplate = () => {
-    const template = `name,address,latitude,longitude,type,phone,contactPerson,capacity,operatingHours
+    const template = `Facility Name,Full Address,Latitude,Longitude,Type,Phone,Contact Person,Capacity,Operating Hours
 "Central Hospital","123 Main St, Anytown, ST 12345",40.7128,-74.0060,"Hospital","(555) 123-4567","John Doe",500,"24/7"
-"Pharmacy Plus","456 Oak Ave, Somewhere, ST 67890",41.8781,-87.6298,"Pharmacy","(555) 987-6543","Jane Smith",100,"8AM-10PM"`;
+"Pharmacy Plus","456 Oak Ave, Somewhere, ST 67890",41.8781,-87.6298,"Pharmacy","(555) 987-6543","Jane Smith",100,"8AM-10PM"
+"Community Clinic","789 Pine Rd, Elsewhere, ST 54321",42.3601,-71.0589,"Clinic","(555) 456-7890","Bob Johnson",50,"9AM-5PM"`;
     
     const blob = new Blob([template], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
@@ -194,7 +226,13 @@ const FacilityManager = ({ facilities, onFacilitiesUpdate }: FacilityManagerProp
           </div>
 
           {uploadResults && (
-            <div className="space-y-2">
+            <div className="space-y-3">
+              {uploadResults.columnInfo && (
+                <div className="p-3 bg-muted rounded-md">
+                  <p className="text-sm text-muted-foreground">{uploadResults.columnInfo}</p>
+                </div>
+              )}
+              
               {uploadResults.success > 0 && (
                 <div className="flex items-center space-x-2 text-success">
                   <CheckCircle className="w-4 h-4" />
