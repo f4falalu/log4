@@ -1,5 +1,4 @@
-import { useEffect, useMemo } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { useEffect, useMemo, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Facility } from '@/types';
@@ -34,6 +33,10 @@ interface MapViewProps {
 }
 
 const MapView = ({ facilities, center = [39.8283, -98.5795], zoom = 4 }: MapViewProps) => {
+  const mapRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<L.Map | null>(null);
+  const markersRef = useRef<L.Marker[]>([]);
+
   // Filter valid facilities
   const validFacilities = useMemo(() => {
     return facilities.filter(facility => {
@@ -49,72 +52,87 @@ const MapView = ({ facilities, center = [39.8283, -98.5795], zoom = 4 }: MapView
     });
   }, [facilities]);
 
+  // Initialize map
+  useEffect(() => {
+    if (!mapRef.current || mapInstanceRef.current) return;
+
+    console.log('Initializing Leaflet map');
+    
+    try {
+      const map = L.map(mapRef.current).setView(center, zoom);
+      
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      }).addTo(map);
+
+      mapInstanceRef.current = map;
+      console.log('Map initialized successfully');
+    } catch (error) {
+      console.error('Error initializing map:', error);
+    }
+
+    return () => {
+      if (mapInstanceRef.current) {
+        console.log('Cleaning up map');
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null;
+      }
+    };
+  }, [center, zoom]);
+
+  // Update markers when facilities change
+  useEffect(() => {
+    if (!mapInstanceRef.current) return;
+
+    // Clear existing markers
+    markersRef.current.forEach(marker => {
+      mapInstanceRef.current?.removeLayer(marker);
+    });
+    markersRef.current = [];
+
+    // Add new markers
+    validFacilities.forEach(facility => {
+      if (!mapInstanceRef.current) return;
+
+      const marker = L.marker([facility.lat, facility.lng], { icon: facilityIcon });
+      
+      // Create popup content
+      const popupContent = `
+        <div style="padding: 8px;">
+          <div style="margin-bottom: 8px;">
+            <div style="font-weight: 600; margin-bottom: 4px;">${facility.name}</div>
+            <span style="display: inline-block; padding: 2px 8px; background-color: #f1f5f9; color: #475569; border-radius: 4px; font-size: 12px;">
+              ${facility.type}
+            </span>
+          </div>
+          
+          <div style="font-size: 14px; color: #64748b;">
+            <div style="margin-bottom: 4px;">📍 ${facility.address}</div>
+            ${facility.phone ? `<div style="margin-bottom: 4px;">📞 ${facility.phone}</div>` : ''}
+            ${facility.contactPerson ? `<div style="margin-bottom: 4px;">👤 ${facility.contactPerson}</div>` : ''}
+            ${facility.operatingHours ? `<div style="margin-bottom: 4px;">🕒 ${facility.operatingHours}</div>` : ''}
+            ${facility.capacity ? `<div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #e2e8f0; font-weight: 500;">Capacity: ${facility.capacity}</div>` : ''}
+          </div>
+        </div>
+      `;
+
+      marker.bindPopup(popupContent, { maxWidth: 300 });
+      marker.addTo(mapInstanceRef.current);
+      markersRef.current.push(marker);
+    });
+
+    // Fit bounds if there are facilities
+    if (validFacilities.length > 0) {
+      const group = new L.FeatureGroup(markersRef.current);
+      mapInstanceRef.current.fitBounds(group.getBounds().pad(0.1));
+    }
+
+    console.log(`Added ${validFacilities.length} markers to map`);
+  }, [validFacilities]);
+
   return (
     <div className="h-[600px] w-full rounded-lg overflow-hidden shadow-card border">
-      <MapContainer
-        center={center}
-        zoom={zoom}
-        className="h-full w-full"
-        scrollWheelZoom={true}
-      >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-        
-        {validFacilities.map((facility) => (
-          <Marker
-            key={facility.id}
-            position={[facility.lat, facility.lng]}
-            icon={facilityIcon}
-          >
-            <Popup closeButton={true} maxWidth={300}>
-              <div style={{ padding: '8px' }}>
-                <div style={{ marginBottom: '8px' }}>
-                  <div style={{ fontWeight: '600', marginBottom: '4px' }}>{facility.name}</div>
-                  <span style={{ 
-                    display: 'inline-block', 
-                    padding: '2px 8px', 
-                    backgroundColor: '#f1f5f9', 
-                    color: '#475569',
-                    borderRadius: '4px', 
-                    fontSize: '12px' 
-                  }}>
-                    {facility.type}
-                  </span>
-                </div>
-                
-                <div style={{ fontSize: '14px', color: '#64748b' }}>
-                  <div style={{ marginBottom: '4px' }}>📍 {facility.address}</div>
-                  
-                  {facility.phone && (
-                    <div style={{ marginBottom: '4px' }}>📞 {facility.phone}</div>
-                  )}
-                  
-                  {facility.contactPerson && (
-                    <div style={{ marginBottom: '4px' }}>👤 {facility.contactPerson}</div>
-                  )}
-                  
-                  {facility.operatingHours && (
-                    <div style={{ marginBottom: '4px' }}>🕒 {facility.operatingHours}</div>
-                  )}
-                  
-                  {facility.capacity && (
-                    <div style={{ 
-                      marginTop: '8px', 
-                      paddingTop: '8px', 
-                      borderTop: '1px solid #e2e8f0', 
-                      fontWeight: '500' 
-                    }}>
-                      Capacity: {facility.capacity}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </Popup>
-          </Marker>
-        ))}
-      </MapContainer>
+      <div ref={mapRef} className="h-full w-full" />
     </div>
   );
 };
