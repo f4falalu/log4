@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/components/ui/sonner';
 import { 
   Truck, 
   Calendar, 
@@ -35,7 +35,7 @@ interface DeliveryListProps {
 const DeliveryList = ({ deliveries, onDeliveryUpdate }: DeliveryListProps) => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
-  const { toast } = useToast();
+  // Remove the useToast hook declaration
 
   const filteredDeliveries = deliveries.filter(delivery => {
     const statusMatch = statusFilter === 'all' || delivery.status === statusFilter;
@@ -76,10 +76,7 @@ const DeliveryList = ({ deliveries, onDeliveryUpdate }: DeliveryListProps) => {
     
     const delivery = deliveries.find(d => d.id === deliveryId);
     if (delivery) {
-      toast({
-        title: "Status updated",
-        description: `Delivery to ${delivery.facilityName} marked as ${newStatus}`,
-      });
+      toast.success(`Delivery to ${delivery.facilityName} marked as ${newStatus}`);
     }
   };
 

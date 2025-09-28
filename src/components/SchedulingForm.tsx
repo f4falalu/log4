@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/components/ui/sonner';
 import { Calendar, Clock, MapPin, Package, AlertTriangle } from 'lucide-react';
 
 interface SchedulingFormProps {
@@ -29,7 +29,7 @@ const SchedulingForm = ({ facilities, deliveries, onDeliveryCreate }: Scheduling
     notes: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { toast } = useToast();
+  // Remove the useToast hook declaration
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,11 +38,7 @@ const SchedulingForm = ({ facilities, deliveries, onDeliveryCreate }: Scheduling
     try {
       const facility = facilities.find(f => f.id === formData.facilityId);
       if (!facility) {
-        toast({
-          title: "Error",
-          description: "Please select a valid facility",
-          variant: "destructive",
-        });
+        toast.error("Please select a valid facility");
         return;
       }
 
@@ -64,10 +60,7 @@ const SchedulingForm = ({ facilities, deliveries, onDeliveryCreate }: Scheduling
 
       onDeliveryCreate(delivery);
 
-      toast({
-        title: "Delivery scheduled",
-        description: `Delivery to ${facility.name} scheduled for ${format(new Date(formData.scheduledDate), 'MMM d, yyyy')} at ${formData.scheduledTime}`,
-      });
+      toast.success(`Delivery to ${facility.name} scheduled for ${format(new Date(formData.scheduledDate), 'MMM d, yyyy')} at ${formData.scheduledTime}`);
 
       // Reset form
       setFormData({
@@ -82,11 +75,8 @@ const SchedulingForm = ({ facilities, deliveries, onDeliveryCreate }: Scheduling
         notes: '',
       });
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to schedule delivery",
-        variant: "destructive",
-      });
+      console.error('Delivery scheduling error:', error);
+      toast.error("Failed to schedule delivery");
     } finally {
       setIsSubmitting(false);
     }

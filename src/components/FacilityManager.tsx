@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/components/ui/sonner';
 import { 
   Upload, 
   Building, 
@@ -38,7 +38,7 @@ const FacilityManager = ({ facilities, onFacilitiesUpdate }: FacilityManagerProp
     errors: string[];
   } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { toast } = useToast();
+  // Remove the useToast hook declaration
 
   const validateCSVData = (data: CSVFacility[]): { valid: Facility[]; errors: string[] } => {
     const valid: Facility[] = [];
@@ -99,11 +99,7 @@ const FacilityManager = ({ facilities, onFacilitiesUpdate }: FacilityManagerProp
     if (!file) return;
 
     if (file.type !== 'text/csv' && !file.name.endsWith('.csv')) {
-      toast({
-        title: "Invalid file type",
-        description: "Please upload a CSV file",
-        variant: "destructive",
-      });
+      toast.error("Invalid file type. Please upload a CSV file");
       return;
     }
 
@@ -121,10 +117,7 @@ const FacilityManager = ({ facilities, onFacilitiesUpdate }: FacilityManagerProp
             const updatedFacilities = [...facilities, ...valid];
             onFacilitiesUpdate(updatedFacilities);
             
-            toast({
-              title: "Facilities uploaded successfully",
-              description: `${valid.length} facilities added to the system`,
-            });
+            toast.success(`Successfully uploaded ${valid.length} facilities`);
           }
           
           setUploadResults({
@@ -132,11 +125,8 @@ const FacilityManager = ({ facilities, onFacilitiesUpdate }: FacilityManagerProp
             errors: errors.slice(0, 10), // Limit errors shown
           });
         } catch (error) {
-          toast({
-            title: "Upload failed",
-            description: "Error processing CSV file",
-            variant: "destructive",
-          });
+          console.error('CSV processing error:', error);
+          toast.error("Failed to process CSV file");
         }
         
         setIsUploading(false);
@@ -145,11 +135,8 @@ const FacilityManager = ({ facilities, onFacilitiesUpdate }: FacilityManagerProp
         }
       },
       error: (error) => {
-        toast({
-          title: "Upload failed",
-          description: error.message,
-          variant: "destructive",
-        });
+        console.error('CSV parsing error:', error);
+        toast.error(`Upload failed: ${error.message}`);
         setIsUploading(false);
       }
     });

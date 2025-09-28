@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -18,16 +18,26 @@ interface MapViewProps {
 const MapView = ({ facilities, center = [39.8283, -98.5795], zoom = 4 }: MapViewProps) => {
   // Fix for default marker icons - do this inside component
   useEffect(() => {
-    delete (L.Icon.Default.prototype as any)._getIconUrl;
-    L.Icon.Default.mergeOptions({
-      iconUrl: markerIcon,
-      iconRetinaUrl: markerIcon2x,
-      shadowUrl: markerShadow,
-    });
+    let isComponentMounted = true;
+    
+    try {
+      delete (L.Icon.Default.prototype as any)._getIconUrl;
+      L.Icon.Default.mergeOptions({
+        iconUrl: markerIcon,
+        iconRetinaUrl: markerIcon2x,
+        shadowUrl: markerShadow,
+      });
+    } catch (error) {
+      console.warn('Error setting up Leaflet icons:', error);
+    }
+
+    return () => {
+      isComponentMounted = false;
+    };
   }, []);
 
-  // Custom icon for facilities
-  const facilityIcon = L.icon({
+  // Memoize custom icon for facilities
+  const facilityIcon = useMemo(() => L.icon({
     iconUrl: markerIcon,
     iconRetinaUrl: markerIcon2x,
     shadowUrl: markerShadow,
@@ -35,7 +45,7 @@ const MapView = ({ facilities, center = [39.8283, -98.5795], zoom = 4 }: MapView
     iconAnchor: [12, 41],
     popupAnchor: [1, -34],
     shadowSize: [41, 41]
-  });
+  }), []);
 
   return (
     <div className="h-[600px] w-full rounded-lg overflow-hidden shadow-card border">
@@ -50,65 +60,57 @@ const MapView = ({ facilities, center = [39.8283, -98.5795], zoom = 4 }: MapView
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         
-        {facilities.map((facility) => (
-          <Marker
-            key={facility.id}
-            position={[facility.lat, facility.lng]}
-            icon={facilityIcon}
-          >
-            <Popup>
-              <div>
-                <div style={{ marginBottom: '8px' }}>
-                  <strong>{facility.name}</strong>
-                  <span style={{ 
-                    backgroundColor: '#e5e7eb', 
-                    padding: '2px 6px', 
-                    borderRadius: '4px', 
-                    fontSize: '12px', 
-                    marginLeft: '8px' 
-                  }}>
-                    {facility.type}
-                  </span>
-                </div>
-                
-                <div style={{ fontSize: '14px', color: '#6b7280' }}>
-                  <div style={{ marginBottom: '4px' }}>
-                    📍 {facility.address}
+        {facilities.map((facility) => {
+          // Validate coordinates before rendering
+          if (!facility.lat || !facility.lng || 
+              isNaN(facility.lat) || isNaN(facility.lng) ||
+              facility.lat < -90 || facility.lat > 90 ||
+              facility.lng < -180 || facility.lng > 180) {
+            console.warn(`Invalid coordinates for facility ${facility.id}:`, facility.lat, facility.lng);
+            return null;
+          }
+
+          return (
+            <Marker
+              key={facility.id}
+              position={[facility.lat, facility.lng]}
+              icon={facilityIcon}
+            >
+              <Popup closeButton={true} maxWidth={300}>
+                <div className="p-2">
+                  <div className="mb-2">
+                    <div className="font-semibold text-foreground">{facility.name}</div>
+                    <div className="inline-block px-2 py-1 bg-secondary text-secondary-foreground rounded text-xs mt-1">
+                      {facility.type}
+                    </div>
                   </div>
                   
-                  {facility.phone && (
-                    <div style={{ marginBottom: '4px' }}>
-                      📞 {facility.phone}
-                    </div>
-                  )}
-                  
-                  {facility.contactPerson && (
-                    <div style={{ marginBottom: '4px' }}>
-                      👤 {facility.contactPerson}
-                    </div>
-                  )}
-                  
-                  {facility.operatingHours && (
-                    <div style={{ marginBottom: '4px' }}>
-                      🕒 {facility.operatingHours}
-                    </div>
-                  )}
-                  
-                  {facility.capacity && (
-                    <div style={{ 
-                      marginTop: '8px', 
-                      paddingTop: '8px', 
-                      borderTop: '1px solid #e5e7eb',
-                      fontWeight: '500'
-                    }}>
-                      Capacity: {facility.capacity}
-                    </div>
-                  )}
+                  <div className="text-sm text-muted-foreground space-y-1">
+                    <div>📍 {facility.address}</div>
+                    
+                    {facility.phone && (
+                      <div>📞 {facility.phone}</div>
+                    )}
+                    
+                    {facility.contactPerson && (
+                      <div>👤 {facility.contactPerson}</div>
+                    )}
+                    
+                    {facility.operatingHours && (
+                      <div>🕒 {facility.operatingHours}</div>
+                    )}
+                    
+                    {facility.capacity && (
+                      <div className="mt-2 pt-2 border-t border-border font-medium">
+                        Capacity: {facility.capacity}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </Popup>
-          </Marker>
-        ))}
+              </Popup>
+            </Marker>
+          );
+        }).filter(Boolean)}
       </MapContainer>
     </div>
   );
