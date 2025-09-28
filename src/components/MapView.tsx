@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Facility } from '@/types';
+import { Facility, Warehouse, RouteOptimization } from '@/types';
 
 // Fix for default marker icons in Leaflet
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
@@ -26,16 +26,47 @@ const facilityIcon = L.icon({
   shadowSize: [41, 41]
 });
 
+// Create a custom warehouse icon (larger, different color)
+const warehouseIcon = L.divIcon({
+  html: `
+    <div style="
+      background-color: hsl(195 100% 28%);
+      border: 3px solid hsl(0 0% 100%);
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 10px -2px hsl(195 100% 28% / 0.3);
+    ">
+      <div style="
+        background-color: hsl(0 0% 100%);
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+      "></div>
+    </div>
+  `,
+  className: 'warehouse-marker',
+  iconSize: [20, 20],
+  iconAnchor: [10, 10],
+  popupAnchor: [0, -10]
+});
+
 interface MapViewProps {
   facilities: Facility[];
+  warehouses?: Warehouse[];
+  routes?: RouteOptimization[];
   center?: [number, number];
   zoom?: number;
 }
 
-const MapView = ({ facilities, center = [39.8283, -98.5795], zoom = 4 }: MapViewProps) => {
+const MapView = ({ facilities, warehouses = [], routes = [], center = [12.0, 8.5], zoom = 6 }: MapViewProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersRef = useRef<L.Marker[]>([]);
+  const routeLinesRef = useRef<L.Polyline[]>([]);
 
   // Filter valid facilities
   const validFacilities = useMemo(() => {
@@ -80,23 +111,54 @@ const MapView = ({ facilities, center = [39.8283, -98.5795], zoom = 4 }: MapView
     };
   }, [center, zoom]);
 
-  // Update markers when facilities change
+  // Update markers and routes when data changes
   useEffect(() => {
     if (!mapInstanceRef.current) return;
 
-    // Clear existing markers
+    // Clear existing markers and routes
     markersRef.current.forEach(marker => {
       mapInstanceRef.current?.removeLayer(marker);
     });
+    routeLinesRef.current.forEach(line => {
+      mapInstanceRef.current?.removeLayer(line);
+    });
     markersRef.current = [];
+    routeLinesRef.current = [];
 
-    // Add new markers
+    // Add warehouse markers
+    warehouses.forEach(warehouse => {
+      if (!mapInstanceRef.current) return;
+
+      const marker = L.marker([warehouse.lat, warehouse.lng], { icon: warehouseIcon });
+      
+      const popupContent = `
+        <div style="padding: 8px;">
+          <div style="margin-bottom: 8px;">
+            <div style="font-weight: 600; margin-bottom: 4px;">🏭 ${warehouse.name}</div>
+            <span style="display: inline-block; padding: 2px 8px; background-color: hsl(195 100% 28%); color: white; border-radius: 4px; font-size: 12px;">
+              ${warehouse.type.toUpperCase()} WAREHOUSE
+            </span>
+          </div>
+          
+          <div style="font-size: 14px; color: #64748b;">
+            <div style="margin-bottom: 4px;">📍 ${warehouse.address}</div>
+            <div style="margin-bottom: 4px;">📦 Capacity: ${warehouse.capacity.toLocaleString()}</div>
+            <div style="margin-bottom: 4px;">🕒 ${warehouse.operatingHours}</div>
+          </div>
+        </div>
+      `;
+
+      marker.bindPopup(popupContent, { maxWidth: 300 });
+      marker.addTo(mapInstanceRef.current);
+      markersRef.current.push(marker);
+    });
+
+    // Add facility markers
     validFacilities.forEach(facility => {
       if (!mapInstanceRef.current) return;
 
       const marker = L.marker([facility.lat, facility.lng], { icon: facilityIcon });
       
-      // Create popup content
       const popupContent = `
         <div style="padding: 8px;">
           <div style="margin-bottom: 8px;">
@@ -121,14 +183,43 @@ const MapView = ({ facilities, center = [39.8283, -98.5795], zoom = 4 }: MapView
       markersRef.current.push(marker);
     });
 
-    // Fit bounds if there are facilities
-    if (validFacilities.length > 0) {
-      const group = new L.FeatureGroup(markersRef.current);
+    // Add route lines
+    routes.forEach((route, index) => {
+      if (!mapInstanceRef.current || route.facilities.length === 0) return;
+
+      const warehouse = warehouses.find(w => w.id === route.warehouseId);
+      if (!warehouse) return;
+
+      // Create route path: warehouse -> facilities
+      const routeCoords: [number, number][] = [[warehouse.lat, warehouse.lng]];
+      route.facilities.forEach(facility => {
+        routeCoords.push([facility.lat, facility.lng]);
+      });
+
+      // Different colors for different routes
+      const colors = ['hsl(195 100% 28%)', 'hsl(180 100% 25%)', 'hsl(140 60% 40%)'];
+      const color = colors[index % colors.length];
+
+      const polyline = L.polyline(routeCoords, {
+        color: color,
+        weight: 3,
+        opacity: 0.8,
+        dashArray: '10, 10'
+      });
+
+      polyline.addTo(mapInstanceRef.current);
+      routeLinesRef.current.push(polyline);
+    });
+
+    // Fit bounds to include all markers
+    const allMarkers = [...markersRef.current];
+    if (allMarkers.length > 0) {
+      const group = new L.FeatureGroup(allMarkers);
       mapInstanceRef.current.fitBounds(group.getBounds().pad(0.1));
     }
 
-    console.log(`Added ${validFacilities.length} markers to map`);
-  }, [validFacilities]);
+    console.log(`Added ${validFacilities.length} facility markers, ${warehouses.length} warehouse markers, and ${routes.length} routes`);
+  }, [validFacilities, warehouses, routes]);
 
   return (
     <div className="h-[600px] w-full rounded-lg overflow-hidden shadow-card border">
