@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import React from 'react';
+const { useState, useMemo } = React;
 import { Facility, Delivery } from '@/types';
 import Layout from '@/components/Layout';
 import Dashboard from '@/components/Dashboard';
