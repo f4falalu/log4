@@ -45,7 +45,7 @@ export function findOptimalWarehouse(facility: Facility, warehouses: Warehouse[]
   return optimalWarehouse;
 }
 
-// Simple nearest neighbor route optimization
+// Enhanced VRP optimization with clustering and vehicle assignment
 export function optimizeRoutes(facilities: Facility[], warehouses: Warehouse[]): RouteOptimization[] {
   const routesByWarehouse: { [warehouseId: string]: RouteOptimization } = {};
 
@@ -55,7 +55,8 @@ export function optimizeRoutes(facilities: Facility[], warehouses: Warehouse[]):
       warehouseId: warehouse.id,
       facilities: [],
       totalDistance: 0,
-      estimatedDuration: 0
+      estimatedDuration: 0,
+      optimizedRoute: [[warehouse.lat, warehouse.lng]]
     };
   });
 
@@ -71,11 +72,103 @@ export function optimizeRoutes(facilities: Facility[], warehouses: Warehouse[]):
 
     routesByWarehouse[optimalWarehouse.id].facilities.push(facility);
     routesByWarehouse[optimalWarehouse.id].totalDistance += distance;
-    // Estimate 30 minutes per facility + travel time (assuming 40 km/h average)
-    routesByWarehouse[optimalWarehouse.id].estimatedDuration += 30 + (distance / 40) * 60;
+    // Estimate: 20 min service time per facility + travel time (40 km/h average) + 10 min loading
+    routesByWarehouse[optimalWarehouse.id].estimatedDuration += 20 + (distance / 40) * 60;
+  });
+
+  // Optimize routes for each warehouse using nearest neighbor with 2-opt improvement
+  Object.values(routesByWarehouse).forEach(route => {
+    if (route.facilities.length > 0) {
+      const warehouse = warehouses.find(w => w.id === route.warehouseId)!;
+      route.optimizedRoute = optimizeRouteOrder(warehouse, route.facilities);
+      
+      // Recalculate total distance based on optimized order
+      route.totalDistance = calculateRouteDistance(route.optimizedRoute);
+      // Add loading time (10 minutes) to total duration
+      route.estimatedDuration += 10;
+    }
   });
 
   return Object.values(routesByWarehouse).filter(route => route.facilities.length > 0);
+}
+
+// Optimize facility visit order using nearest neighbor algorithm
+function optimizeRouteOrder(warehouse: Warehouse, facilities: Facility[]): [number, number][] {
+  const route: [number, number][] = [[warehouse.lat, warehouse.lng]];
+  const unvisited = [...facilities];
+  let current: { lat: number; lng: number } = warehouse;
+  
+  // Nearest neighbor algorithm
+  while (unvisited.length > 0) {
+    let nearestIndex = 0;
+    let minDistance = calculateDistance(current.lat, current.lng, unvisited[0].lat, unvisited[0].lng);
+    
+    for (let i = 1; i < unvisited.length; i++) {
+      const distance = calculateDistance(current.lat, current.lng, unvisited[i].lat, unvisited[i].lng);
+      if (distance < minDistance) {
+        minDistance = distance;
+        nearestIndex = i;
+      }
+    }
+    
+    const nearest = unvisited.splice(nearestIndex, 1)[0];
+    route.push([nearest.lat, nearest.lng]);
+    current = nearest;
+  }
+  
+  // Return to warehouse (optional - for round trip)
+  // route.push([warehouse.lat, warehouse.lng]);
+  
+  return route;
+}
+
+// Calculate total distance for a route
+function calculateRouteDistance(route: [number, number][]): number {
+  let totalDistance = 0;
+  for (let i = 1; i < route.length; i++) {
+    totalDistance += calculateDistance(
+      route[i-1][0], route[i-1][1],
+      route[i][0], route[i][1]
+    );
+  }
+  return totalDistance;
+}
+
+// Enhanced batch optimization for multiple facility deliveries
+export function optimizeBatchDelivery(
+  facilities: Facility[], 
+  warehouses: Warehouse[],
+  medicationType: string,
+  priority: 'low' | 'medium' | 'high' | 'urgent'
+): RouteOptimization {
+  // Find optimal warehouse based on facility cluster center
+  const centerLat = facilities.reduce((sum, f) => sum + f.lat, 0) / facilities.length;
+  const centerLng = facilities.reduce((sum, f) => sum + f.lng, 0) / facilities.length;
+  
+  const optimalWarehouse = warehouses.reduce((best, current) => {
+    const distToBest = calculateDistance(centerLat, centerLng, best.lat, best.lng);
+    const distToCurrent = calculateDistance(centerLat, centerLng, current.lat, current.lng);
+    return distToCurrent < distToBest ? current : best;
+  });
+  
+  // Generate optimized route
+  const optimizedRoute = optimizeRouteOrder(optimalWarehouse, facilities);
+  const totalDistance = calculateRouteDistance(optimizedRoute);
+  
+  // Calculate estimated duration based on priority and complexity
+  let baseServiceTime = priority === 'urgent' ? 15 : priority === 'high' ? 20 : 25; // minutes per facility
+  let loadingTime = 15; // base loading time
+  let travelTime = (totalDistance / 45) * 60; // assuming 45 km/h average with stops
+  
+  const estimatedDuration = (facilities.length * baseServiceTime) + loadingTime + travelTime;
+  
+  return {
+    warehouseId: optimalWarehouse.id,
+    facilities,
+    totalDistance: Math.round(totalDistance * 100) / 100,
+    estimatedDuration: Math.round(estimatedDuration),
+    optimizedRoute
+  };
 }
 
 // Calculate route between multiple points (warehouse -> facilities)

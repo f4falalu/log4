@@ -41,11 +41,67 @@ export interface Delivery {
   createdAt: string;
 }
 
+export interface Driver {
+  id: string;
+  name: string;
+  phone: string;
+  licenseType: 'standard' | 'commercial';
+  status: 'available' | 'busy' | 'offline';
+  currentLocation?: {
+    lat: number;
+    lng: number;
+  };
+  shiftStart: string;
+  shiftEnd: string;
+  maxHours: number; // maximum working hours per day
+}
+
+export interface Vehicle {
+  id: string;
+  type: 'truck' | 'van' | 'pickup' | 'car';
+  model: string;
+  plateNumber: string;
+  capacity: number; // in cubic meters
+  maxWeight: number; // in kg
+  fuelType: 'diesel' | 'petrol' | 'electric';
+  avgSpeed: number; // km/h average speed
+  status: 'available' | 'in-use' | 'maintenance';
+  currentDriverId?: string;
+  fuelEfficiency: number; // km per liter
+}
+
+export interface DeliveryBatch {
+  id: string;
+  name: string;
+  facilities: Facility[];
+  warehouseId: string;
+  warehouseName: string;
+  driverId?: string;
+  vehicleId?: string;
+  scheduledDate: string;
+  scheduledTime: string;
+  status: 'planned' | 'assigned' | 'in-progress' | 'completed' | 'cancelled';
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  totalDistance: number;
+  estimatedDuration: number; // in minutes
+  actualStartTime?: string;
+  actualEndTime?: string;
+  medicationType: string;
+  totalQuantity: number;
+  optimizedRoute: [number, number][]; // lat, lng coordinates
+  notes?: string;
+  createdAt: string;
+}
+
 export interface RouteOptimization {
   warehouseId: string;
   facilities: Facility[];
   totalDistance: number;
   estimatedDuration: number;
+  optimizedRoute: [number, number][];
+  vehicleType?: 'truck' | 'van' | 'pickup' | 'car';
+  driverId?: string;
+  vehicleId?: string;
 }
 
 export interface CSVFacility {

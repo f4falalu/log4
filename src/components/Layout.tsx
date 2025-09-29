@@ -5,7 +5,9 @@ import {
   Calendar, 
   Building, 
   BarChart3,
-  Truck
+  Truck,
+  Route,
+  Package
 } from 'lucide-react';
 
 interface LayoutProps {
@@ -19,8 +21,9 @@ const Layout = ({ children, activeTab, onTabChange }: LayoutProps) => {
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
     { id: 'map', label: 'Map View', icon: MapPin },
     { id: 'facilities', label: 'Facilities', icon: Building },
-    { id: 'schedule', label: 'Scheduling', icon: Calendar },
-    { id: 'deliveries', label: 'Deliveries', icon: Truck },
+    { id: 'schedule', label: 'VRP Scheduler', icon: Route },
+    { id: 'batches', label: 'Delivery Batches', icon: Package },
+    { id: 'deliveries', label: 'Legacy Deliveries', icon: Truck },
   ];
 
   return (

@@ -1,12 +1,14 @@
 import React from 'react';
 const { useState, useMemo } = React;
-import { Facility, Delivery } from '@/types';
+import { Facility, Delivery, DeliveryBatch } from '@/types';
 import Layout from '@/components/Layout';
 import Dashboard from '@/components/Dashboard';
 import MapView from '@/components/MapView';
 import FacilityManager from '@/components/FacilityManager';
 import SchedulingForm from '@/components/SchedulingForm';
+import DispatchScheduler from '@/components/DispatchScheduler';
 import DeliveryList from '@/components/DeliveryList';
+import BatchList from '@/components/BatchList';
 import { WAREHOUSES } from '@/data/warehouses';
 import { optimizeRoutes } from '@/lib/routeOptimization';
 
@@ -14,6 +16,7 @@ const Index = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [facilities, setFacilities] = useState<Facility[]>([]);
   const [deliveries, setDeliveries] = useState<Delivery[]>([]);
+  const [deliveryBatches, setDeliveryBatches] = useState<DeliveryBatch[]>([]);
 
   // Calculate optimized routes
   const optimizedRoutes = useMemo(() => {
@@ -39,6 +42,20 @@ const Index = () => {
     );
   };
 
+  const handleBatchCreate = (batch: DeliveryBatch) => {
+    setDeliveryBatches(prev => [...prev, batch]);
+  };
+
+  const handleBatchUpdate = (batchId: string, updates: Partial<DeliveryBatch>) => {
+    setDeliveryBatches(prev => 
+      prev.map(batch => 
+        batch.id === batchId 
+          ? { ...batch, ...updates }
+          : batch
+      )
+    );
+  };
+
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
@@ -54,6 +71,7 @@ const Index = () => {
               facilities={facilities}
               warehouses={WAREHOUSES}
               routes={optimizedRoutes}
+              batches={deliveryBatches}
               center={facilities.length > 0 ? [facilities[0].lat, facilities[0].lng] : [12.0, 8.5]}
               zoom={facilities.length > 1 ? 6 : 6}
             />
@@ -62,9 +80,13 @@ const Index = () => {
       case 'facilities':
         return <FacilityManager facilities={facilities} onFacilitiesUpdate={handleFacilitiesUpdate} />;
       case 'schedule':
+        return <DispatchScheduler facilities={facilities} onBatchCreate={handleBatchCreate} />;
+      case 'legacy-schedule':
         return <SchedulingForm facilities={facilities} deliveries={deliveries} onDeliveryCreate={handleDeliveryCreate} />;
       case 'deliveries':
         return <DeliveryList deliveries={deliveries} onDeliveryUpdate={handleDeliveryUpdate} />;
+      case 'batches':
+        return <BatchList batches={deliveryBatches} onBatchUpdate={handleBatchUpdate} />;
       default:
         return <Dashboard facilities={facilities} deliveries={deliveries} />;
     }

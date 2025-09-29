@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Facility, Warehouse, RouteOptimization } from '@/types';
+import { Facility, Warehouse, RouteOptimization, DeliveryBatch } from '@/types';
 
 // Fix for default marker icons in Leaflet
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
@@ -58,11 +58,12 @@ interface MapViewProps {
   facilities: Facility[];
   warehouses?: Warehouse[];
   routes?: RouteOptimization[];
+  batches?: DeliveryBatch[];
   center?: [number, number];
   zoom?: number;
 }
 
-const MapView = ({ facilities, warehouses = [], routes = [], center = [12.0, 8.5], zoom = 6 }: MapViewProps) => {
+const MapView = ({ facilities, warehouses = [], routes = [], batches = [], center = [12.0, 8.5], zoom = 6 }: MapViewProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersRef = useRef<L.Marker[]>([]);
@@ -218,8 +219,85 @@ const MapView = ({ facilities, warehouses = [], routes = [], center = [12.0, 8.5
       mapInstanceRef.current.fitBounds(group.getBounds().pad(0.1));
     }
 
-    console.log(`Added ${validFacilities.length} facility markers, ${warehouses.length} warehouse markers, and ${routes.length} routes`);
-  }, [validFacilities, warehouses, routes]);
+    // Add batch route lines (with different styling)
+    batches.forEach((batch, index) => {
+      if (!mapInstanceRef.current || batch.facilities.length === 0 || batch.status === 'cancelled') return;
+
+      const warehouse = warehouses.find(w => w.id === batch.warehouseId);
+      if (!warehouse) return;
+
+      // Use optimized route if available, otherwise create simple route
+      let routeCoords: [number, number][];
+      if (batch.optimizedRoute && batch.optimizedRoute.length > 0) {
+        routeCoords = batch.optimizedRoute;
+      } else {
+        routeCoords = [[warehouse.lat, warehouse.lng]];
+        batch.facilities.forEach(facility => {
+          routeCoords.push([facility.lat, facility.lng]);
+        });
+      }
+
+      // Different styling based on batch status
+      let color = '#8b5cf6'; // default purple
+      let weight = 4;
+      let dashArray = undefined;
+
+      switch (batch.status) {
+        case 'planned':
+          color = '#6b7280'; // gray
+          dashArray = '15, 15';
+          break;
+        case 'assigned':
+          color = '#f59e0b'; // amber
+          dashArray = '10, 5';
+          break;
+        case 'in-progress':
+          color = '#10b981'; // emerald
+          weight = 5;
+          break;
+        case 'completed':
+          color = '#059669'; // green
+          weight = 3;
+          dashArray = '5, 5';
+          break;
+      }
+
+      const batchPolyline = L.polyline(routeCoords, {
+        color: color,
+        weight: weight,
+        opacity: 0.9,
+        dashArray: dashArray
+      });
+
+      // Add popup with batch info
+      const popupContent = `
+        <div style="padding: 8px;">
+          <div style="font-weight: 600; margin-bottom: 4px;">📦 ${batch.name}</div>
+          <div style="font-size: 12px; margin-bottom: 8px;">
+            <span style="padding: 2px 6px; background-color: ${color}; color: white; border-radius: 3px;">
+              ${batch.status.toUpperCase()}
+            </span>
+            <span style="padding: 2px 6px; background-color: #f1f5f9; color: #475569; border-radius: 3px; margin-left: 4px;">
+              ${batch.priority.toUpperCase()}
+            </span>
+          </div>
+          <div style="font-size: 13px; color: #64748b;">
+            <div>📍 ${batch.facilities.length} facilities</div>
+            <div>🛣️ ${batch.totalDistance}km</div>
+            <div>⏱️ ${Math.round(batch.estimatedDuration)}min</div>
+            <div>💊 ${batch.medicationType}</div>
+            ${batch.driverId ? `<div>👤 Assigned driver</div>` : ''}
+          </div>
+        </div>
+      `;
+
+      batchPolyline.bindPopup(popupContent, { maxWidth: 250 });
+      batchPolyline.addTo(mapInstanceRef.current);
+      routeLinesRef.current.push(batchPolyline);
+    });
+
+    console.log(`Added ${validFacilities.length} facility markers, ${warehouses.length} warehouse markers, ${routes.length} routes, and ${batches.length} batch routes`);
+  }, [validFacilities, warehouses, routes, batches]);
 
   return (
     <div className="h-[600px] w-full rounded-lg overflow-hidden shadow-card border">
