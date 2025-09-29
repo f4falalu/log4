@@ -79,7 +79,7 @@ const Index = () => {
         );
       case 'facilities':
         return <FacilityManager facilities={facilities} onFacilitiesUpdate={handleFacilitiesUpdate} />;
-        case 'vrp-scheduler':
+        case 'schedule':
           return (
             <TacticalDispatchScheduler
               facilities={facilities}
