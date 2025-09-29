@@ -6,7 +6,7 @@ import Dashboard from '@/components/Dashboard';
 import MapView from '@/components/MapView';
 import FacilityManager from '@/components/FacilityManager';
 import SchedulingForm from '@/components/SchedulingForm';
-import DispatchScheduler from '@/components/DispatchScheduler';
+import TacticalDispatchScheduler from '@/components/TacticalDispatchScheduler';
 import DeliveryList from '@/components/DeliveryList';
 import BatchList from '@/components/BatchList';
 import { WAREHOUSES } from '@/data/warehouses';
@@ -79,8 +79,14 @@ const Index = () => {
         );
       case 'facilities':
         return <FacilityManager facilities={facilities} onFacilitiesUpdate={handleFacilitiesUpdate} />;
-      case 'schedule':
-        return <DispatchScheduler facilities={facilities} onBatchCreate={handleBatchCreate} />;
+        case 'vrp-scheduler':
+          return (
+            <TacticalDispatchScheduler
+              facilities={facilities}
+              batches={deliveryBatches}
+              onBatchCreate={handleBatchCreate}
+            />
+          );
       case 'legacy-schedule':
         return <SchedulingForm facilities={facilities} deliveries={deliveries} onDeliveryCreate={handleDeliveryCreate} />;
       case 'deliveries':
