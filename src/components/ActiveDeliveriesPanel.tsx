@@ -8,13 +8,35 @@ import { DRIVERS, VEHICLES } from '@/data/fleet';
 
 interface ActiveDeliveriesPanelProps {
   batches: DeliveryBatch[];
+  selectedBatchId: string | null;
+  statusFilter: 'all' | 'assigned' | 'in-progress' | 'completed' | 'delayed';
   onBatchClick?: (batchId: string) => void;
+  onFilterChange?: (filter: 'all' | 'assigned' | 'in-progress' | 'completed' | 'delayed') => void;
 }
 
-const ActiveDeliveriesPanel = ({ batches, onBatchClick }: ActiveDeliveriesPanelProps) => {
-  const activeBatches = batches.filter(
-    b => b.status === 'in-progress' || b.status === 'assigned'
-  );
+const ActiveDeliveriesPanel = ({ 
+  batches, 
+  selectedBatchId,
+  statusFilter,
+  onBatchClick,
+  onFilterChange 
+}: ActiveDeliveriesPanelProps) => {
+  // Filter batches based on status filter
+  const filteredBatches = batches.filter(batch => {
+    if (statusFilter === 'all') {
+      return batch.status === 'in-progress' || batch.status === 'assigned' || batch.status === 'completed';
+    }
+    return batch.status === statusFilter;
+  });
+
+  // Count batches by status for tabs
+  const statusCounts = {
+    all: batches.filter(b => b.status === 'in-progress' || b.status === 'assigned' || b.status === 'completed').length,
+    assigned: batches.filter(b => b.status === 'assigned').length,
+    'in-progress': batches.filter(b => b.status === 'in-progress').length,
+    completed: batches.filter(b => b.status === 'completed').length,
+    delayed: 0, // Would need actual delay logic
+  };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -54,29 +76,54 @@ const ActiveDeliveriesPanel = ({ batches, onBatchClick }: ActiveDeliveriesPanelP
 
   return (
     <Card className="h-full">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 mb-4">
           <Truck className="h-5 w-5" />
-          Active Deliveries ({activeBatches.length})
+          Active Deliveries
         </CardTitle>
+        
+        {/* Status Filter Tabs */}
+        <div className="flex gap-1 flex-wrap">
+          {(['all', 'assigned', 'in-progress', 'completed', 'delayed'] as const).map((status) => (
+            <button
+              key={status}
+              onClick={() => onFilterChange?.(status)}
+              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                statusFilter === status
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
+              }`}
+            >
+              {status === 'all' ? 'All' : 
+               status === 'in-progress' ? 'In Progress' :
+               status.charAt(0).toUpperCase() + status.slice(1)} 
+              <span className="ml-1.5 opacity-70">({statusCounts[status]})</span>
+            </button>
+          ))}
+        </div>
       </CardHeader>
       <CardContent className="p-0">
-        <ScrollArea className="h-[400px]">
+        <ScrollArea className="h-[500px]">
           <div className="space-y-3 p-6 pt-0">
-            {activeBatches.length === 0 ? (
+            {filteredBatches.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
                 <Package className="h-12 w-12 mb-3 opacity-50" />
                 <p className="text-sm">No active deliveries</p>
               </div>
             ) : (
-              activeBatches.map((batch) => {
+              filteredBatches.map((batch) => {
                 const progress = getProgress(batch);
                 const completedStops = Math.floor((progress / 100) * batch.facilities.length);
+                const isSelected = selectedBatchId === batch.id;
                 
                 return (
                   <Card 
                     key={batch.id}
-                    className="cursor-pointer hover:shadow-md transition-shadow"
+                    className={`cursor-pointer transition-all duration-200 ${
+                      isSelected 
+                        ? 'border-2 border-primary shadow-lg scale-[1.02]' 
+                        : 'border hover:border-muted-foreground/50 hover:shadow-md'
+                    }`}
                     onClick={() => onBatchClick?.(batch.id)}
                   >
                     <CardContent className="p-4">

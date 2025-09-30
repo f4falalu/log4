@@ -59,11 +59,20 @@ interface MapViewProps {
   warehouses?: Warehouse[];
   routes?: RouteOptimization[];
   batches?: DeliveryBatch[];
+  selectedBatchId?: string | null;
   center?: [number, number];
   zoom?: number;
 }
 
-const MapView = ({ facilities, warehouses = [], routes = [], batches = [], center = [12.0, 8.5], zoom = 6 }: MapViewProps) => {
+const MapView = ({ 
+  facilities, 
+  warehouses = [], 
+  routes = [], 
+  batches = [], 
+  selectedBatchId = null,
+  center = [12.0, 8.5], 
+  zoom = 6 
+}: MapViewProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersRef = useRef<L.Marker[]>([]);
@@ -219,12 +228,15 @@ const MapView = ({ facilities, warehouses = [], routes = [], batches = [], cente
       mapInstanceRef.current.fitBounds(group.getBounds().pad(0.1));
     }
 
-    // Add batch route lines (with different styling)
+    // Add batch route lines (with focus mode styling)
     batches.forEach((batch, index) => {
       if (!mapInstanceRef.current || batch.facilities.length === 0 || batch.status === 'cancelled') return;
 
       const warehouse = warehouses.find(w => w.id === batch.warehouseId);
       if (!warehouse) return;
+
+      const isSelected = selectedBatchId === batch.id;
+      const hasSelection = selectedBatchId !== null;
 
       // Use optimized route if available, otherwise create simple route
       let routeCoords: [number, number][];
@@ -237,10 +249,11 @@ const MapView = ({ facilities, warehouses = [], routes = [], batches = [], cente
         });
       }
 
-      // Different styling based on batch status
+      // Different styling based on batch status and selection state
       let color = '#8b5cf6'; // default purple
       let weight = 4;
       let dashArray = undefined;
+      let opacity = 0.9;
 
       switch (batch.status) {
         case 'planned':
@@ -262,10 +275,21 @@ const MapView = ({ facilities, warehouses = [], routes = [], batches = [], cente
           break;
       }
 
+      // Apply selection styling
+      if (hasSelection) {
+        if (isSelected) {
+          weight = weight + 2;
+          opacity = 1.0;
+        } else {
+          opacity = 0.3;
+          weight = weight - 1;
+        }
+      }
+
       const batchPolyline = L.polyline(routeCoords, {
         color: color,
         weight: weight,
-        opacity: 0.9,
+        opacity: opacity,
         dashArray: dashArray
       });
 
@@ -296,8 +320,23 @@ const MapView = ({ facilities, warehouses = [], routes = [], batches = [], cente
       routeLinesRef.current.push(batchPolyline);
     });
 
+    // Auto-zoom to selected batch if exists
+    if (selectedBatchId && mapInstanceRef.current) {
+      const selectedBatch = batches.find(b => b.id === selectedBatchId);
+      if (selectedBatch && selectedBatch.facilities.length > 0) {
+        const warehouse = warehouses.find(w => w.id === selectedBatch.warehouseId);
+        if (warehouse) {
+          const bounds = L.latLngBounds([
+            [warehouse.lat, warehouse.lng],
+            ...selectedBatch.facilities.map(f => [f.lat, f.lng] as [number, number])
+          ]);
+          mapInstanceRef.current.fitBounds(bounds.pad(0.2));
+        }
+      }
+    }
+
     console.log(`Added ${validFacilities.length} facility markers, ${warehouses.length} warehouse markers, ${routes.length} routes, and ${batches.length} batch routes`);
-  }, [validFacilities, warehouses, routes, batches]);
+  }, [validFacilities, warehouses, routes, batches, selectedBatchId]);
 
   return (
     <div className="h-[600px] w-full rounded-lg overflow-hidden shadow-card border">

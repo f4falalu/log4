@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Facility, Warehouse, DeliveryBatch } from '@/types';
 import KPIMetrics from './KPIMetrics';
 import FleetStatus from './FleetStatus';
 import MapView from './MapView';
 import ActiveDeliveriesPanel from './ActiveDeliveriesPanel';
 import AlertsPanel from './AlertsPanel';
+import BatchDetailsPanel from './BatchDetailsPanel';
 import { RefreshCw } from 'lucide-react';
 import { Button } from './ui/button';
 import { toast } from 'sonner';
@@ -17,6 +18,13 @@ interface CommandCenterProps {
 
 const CommandCenter = ({ facilities, warehouses, batches }: CommandCenterProps) => {
   const [lastRefresh, setLastRefresh] = useState(new Date());
+  const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'assigned' | 'in-progress' | 'completed' | 'delayed'>('all');
+
+  const selectedBatch = useMemo(() => 
+    batches.find(b => b.id === selectedBatchId),
+    [batches, selectedBatchId]
+  );
 
   const handleRefresh = () => {
     setLastRefresh(new Date());
@@ -26,11 +34,16 @@ const CommandCenter = ({ facilities, warehouses, batches }: CommandCenterProps) 
   };
 
   const handleBatchClick = (batchId: string) => {
-    const batch = batches.find(b => b.id === batchId);
-    if (batch) {
-      toast.info(`Viewing ${batch.name}`, {
-        description: `${batch.facilities.length} stops • ${batch.totalDistance}km`
-      });
+    if (selectedBatchId === batchId) {
+      setSelectedBatchId(null);
+    } else {
+      setSelectedBatchId(batchId);
+      const batch = batches.find(b => b.id === batchId);
+      if (batch) {
+        toast.info(`Viewing ${batch.name}`, {
+          description: `${batch.facilities.length} stops • ${batch.totalDistance}km`
+        });
+      }
     }
   };
 
@@ -56,22 +69,48 @@ const CommandCenter = ({ facilities, warehouses, batches }: CommandCenterProps) 
         <FleetStatus batches={batches} />
       </div>
 
-      {/* Map View */}
-      <div className="w-full">
-        <MapView
-          facilities={facilities}
-          warehouses={warehouses}
-          batches={batches}
-          center={[12.0, 8.5]}
-          zoom={7}
-        />
+      {/* Main Content: 2-Column Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* LEFT: Active Deliveries List */}
+        <div className="lg:col-span-1">
+          <ActiveDeliveriesPanel 
+            batches={batches}
+            selectedBatchId={selectedBatchId}
+            statusFilter={statusFilter}
+            onBatchClick={handleBatchClick}
+            onFilterChange={setStatusFilter}
+          />
+        </div>
+
+        {/* RIGHT: Map + Details */}
+        <div className="lg:col-span-2 space-y-4">
+          <MapView
+            facilities={facilities}
+            warehouses={warehouses}
+            batches={batches}
+            selectedBatchId={selectedBatchId}
+            center={[12.0, 8.5]}
+            zoom={7}
+          />
+
+          {/* Batch Details Panel */}
+          {selectedBatch && (
+            <BatchDetailsPanel 
+              batch={selectedBatch}
+              onClose={() => setSelectedBatchId(null)}
+            />
+          )}
+
+          {!selectedBatch && (
+            <div className="text-center py-8 text-muted-foreground bg-muted/30 rounded-lg border-2 border-dashed">
+              <p className="text-sm">👈 Select a delivery from the list to view details</p>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Bottom Panels - Active Deliveries & Alerts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ActiveDeliveriesPanel batches={batches} onBatchClick={handleBatchClick} />
-        <AlertsPanel batches={batches} />
-      </div>
+      {/* Bottom: Alerts Panel */}
+      <AlertsPanel batches={batches} />
     </div>
   );
 };
