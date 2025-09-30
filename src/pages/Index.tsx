@@ -3,7 +3,7 @@ const { useState, useMemo } = React;
 import { Facility, Delivery, DeliveryBatch } from '@/types';
 import Layout from '@/components/Layout';
 import Dashboard from '@/components/Dashboard';
-import MapView from '@/components/MapView';
+import CommandCenter from '@/components/CommandCenter';
 import FacilityManager from '@/components/FacilityManager';
 import SchedulingForm from '@/components/SchedulingForm';
 import TacticalDispatchScheduler from '@/components/TacticalDispatchScheduler';
@@ -62,20 +62,11 @@ const Index = () => {
         return <Dashboard facilities={facilities} deliveries={deliveries} />;
       case 'map':
         return (
-          <div className="space-y-6">
-            <div className="text-center">
-              <h2 className="text-2xl font-bold text-foreground mb-2">Facility & Route Map</h2>
-              <p className="text-muted-foreground">Interactive map showing facilities, warehouses, and optimized delivery routes</p>
-            </div>
-            <MapView 
-              facilities={facilities}
-              warehouses={WAREHOUSES}
-              routes={optimizedRoutes}
-              batches={deliveryBatches}
-              center={facilities.length > 0 ? [facilities[0].lat, facilities[0].lng] : [12.0, 8.5]}
-              zoom={facilities.length > 1 ? 6 : 6}
-            />
-          </div>
+          <CommandCenter
+            facilities={facilities}
+            warehouses={WAREHOUSES}
+            batches={deliveryBatches}
+          />
         );
       case 'facilities':
         return <FacilityManager facilities={facilities} onFacilitiesUpdate={handleFacilitiesUpdate} />;
