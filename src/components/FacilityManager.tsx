@@ -59,8 +59,23 @@ const FacilityManager = ({ facilities, onFacilitiesUpdate }: FacilityManagerProp
     // Map longitude variations
     mapped.longitude = row.longitude || row['Longitude'] || row['lng'] || row['Lng'] || row['lon'] || row['Lon'];
     
-    // Map type variations (with fallback to "Healthcare Facility")
-    mapped.type = row.type || row['Type'] || row['Facility Type'] || row['facility_type'] || 'Healthcare Facility';
+    // Map type variations to valid enum values
+    const typeMapping: Record<string, string> = {
+      'Healthcare Facility': 'clinic',
+      'Health Post': 'health_center',
+      'Health Clinic': 'clinic',
+      'Medical Center': 'health_center',
+      'Primary Health Centre': 'health_center',
+      'Hospital': 'hospital',
+      'Clinic': 'clinic',
+      'Pharmacy': 'pharmacy',
+      'Lab': 'lab',
+      'Laboratory': 'lab',
+      'Other': 'other',
+    };
+    
+    const rawType = row.type || row['Type'] || row['Facility Type'] || row['facility_type'];
+    mapped.type = typeMapping[rawType] || rawType?.toLowerCase() || 'clinic';
     
     // Optional fields
     mapped.phone = row.phone || row['Phone'] || row['Phone Number'] || row['phone_number'];
@@ -74,6 +89,7 @@ const FacilityManager = ({ facilities, onFacilitiesUpdate }: FacilityManagerProp
   const validateCSVData = (data: any[]): { valid: Facility[]; errors: string[]; columnInfo: string } => {
     const valid: Facility[] = [];
     const errors: string[] = [];
+    const validTypes = ['hospital', 'clinic', 'health_center', 'pharmacy', 'lab', 'other'];
     
     // Detect columns for user feedback
     const sampleRow = data[0] || {};
@@ -107,13 +123,20 @@ const FacilityManager = ({ facilities, onFacilitiesUpdate }: FacilityManagerProp
         return;
       }
 
+      // Validate facility type
+      const facilityType = row.type?.trim().toLowerCase() || 'clinic';
+      if (!validTypes.includes(facilityType)) {
+        errors.push(`Row ${rowNum}: Invalid facility type "${row.type}". Must be one of: ${validTypes.join(', ')}`);
+        return;
+      }
+
       const facility: Facility = {
         id: `facility-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         name: row.name.trim(),
         address: row.address.trim(),
         lat,
         lng,
-        type: row.type?.trim() || 'Healthcare Facility',
+        type: facilityType,
         phone: row.phone?.trim() || undefined,
         contactPerson: row.contactPerson?.trim() || undefined,
         capacity: row.capacity ? parseInt(row.capacity) : undefined,
@@ -199,9 +222,10 @@ const FacilityManager = ({ facilities, onFacilitiesUpdate }: FacilityManagerProp
 
   const downloadTemplate = () => {
     const template = `Facility Name,Full Address,Latitude,Longitude,Type,Phone,Contact Person,Capacity,Operating Hours
-"Central Hospital","123 Main St, Anytown, ST 12345",40.7128,-74.0060,"Hospital","(555) 123-4567","John Doe",500,"24/7"
-"Pharmacy Plus","456 Oak Ave, Somewhere, ST 67890",41.8781,-87.6298,"Pharmacy","(555) 987-6543","Jane Smith",100,"8AM-10PM"
-"Community Clinic","789 Pine Rd, Elsewhere, ST 54321",42.3601,-71.0589,"Clinic","(555) 456-7890","Bob Johnson",50,"9AM-5PM"`;
+"Central Hospital","123 Main St, Anytown, ST 12345",40.7128,-74.0060,"hospital","(555) 123-4567","John Doe",500,"24/7"
+"Pharmacy Plus","456 Oak Ave, Somewhere, ST 67890",41.8781,-87.6298,"pharmacy","(555) 987-6543","Jane Smith",100,"8AM-10PM"
+"Community Clinic","789 Pine Rd, Elsewhere, ST 54321",42.3601,-71.0589,"clinic","(555) 456-7890","Bob Johnson",50,"9AM-5PM"
+"Health Center","321 Elm St, Anyplace, ST 11111",43.6532,-79.3832,"health_center","(555) 111-2222","Sarah Lee",75,"8AM-6PM"`;
     
     const blob = new Blob([template], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
@@ -223,6 +247,8 @@ const FacilityManager = ({ facilities, onFacilitiesUpdate }: FacilityManagerProp
           </CardTitle>
           <CardDescription>
             Upload facility data via CSV file. Download the template below to see the required format.
+            <br />
+            <span className="text-xs text-muted-foreground">Valid facility types: hospital, clinic, health_center, pharmacy, lab, other</span>
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
