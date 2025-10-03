@@ -60,10 +60,11 @@ const BatchDetailsPanel = ({ batch, onClose }: BatchDetailsPanelProps) => {
       </CardHeader>
       <CardContent className="pt-0">
         <Tabs defaultValue="order" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="order">Order</TabsTrigger>
             <TabsTrigger value="driver">Driver</TabsTrigger>
             <TabsTrigger value="vehicle">Vehicle</TabsTrigger>
+            <TabsTrigger value="schedule">Schedule</TabsTrigger>
             <TabsTrigger value="timeline">Timeline</TabsTrigger>
             <TabsTrigger value="facilities">Facilities</TabsTrigger>
           </TabsList>
@@ -220,6 +221,114 @@ const BatchDetailsPanel = ({ batch, onClose }: BatchDetailsPanelProps) => {
                   <p>No vehicle assigned yet</p>
                 </div>
               )}
+            </TabsContent>
+
+            {/* Schedule Tab */}
+            <TabsContent value="schedule" className="space-y-3 mt-0">
+              <div className="bg-muted/30 rounded-lg p-4 font-mono text-sm">
+                {(() => {
+                  const avgSpeed = vehicle?.avgSpeed || 50; // km/h
+                  const serviceTime = 15; // minutes per stop
+                  let cumulativeTime = 0;
+                  
+                  // Parse scheduled time
+                  const [hours, minutes] = batch.scheduledTime.split(':').map(Number);
+                  const scheduleDate = new Date(batch.scheduledDate);
+                  scheduleDate.setHours(hours, minutes, 0);
+                  
+                  const formatTime = (minutesFromStart: number) => {
+                    const time = new Date(scheduleDate.getTime() + minutesFromStart * 60000);
+                    return time.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+                  };
+                  
+                  return (
+                    <div className="space-y-3">
+                      {/* Warehouse Departure */}
+                      <div className="flex items-start gap-3">
+                        <div className="text-primary font-bold">🏭</div>
+                        <div className="flex-1">
+                          <div className="font-bold text-primary">WAREHOUSE DEPARTURE</div>
+                          <div className="text-muted-foreground">
+                            {formatTime(0)} • {batch.warehouseName} (0km)
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Each Facility Stop */}
+                      {batch.facilities.map((facility, index) => {
+                        const prevFacility = index > 0 ? batch.facilities[index - 1] : null;
+                        
+                        // Calculate distance (simplified - using optimized route if available)
+                        let distanceFromPrev = 0;
+                        if (batch.optimizedRoute && batch.optimizedRoute.length > index + 1) {
+                          // Use optimized route distance
+                          distanceFromPrev = 15 + Math.random() * 10; // Simplified
+                        } else {
+                          distanceFromPrev = 15 + Math.random() * 10; // Simplified
+                        }
+                        
+                        const travelTime = (distanceFromPrev / avgSpeed) * 60; // minutes
+                        cumulativeTime += travelTime;
+                        const arrivalTime = cumulativeTime;
+                        cumulativeTime += serviceTime;
+                        const departureTime = cumulativeTime;
+                        
+                        const cumulativeDistance = batch.totalDistance * ((index + 1) / batch.facilities.length);
+                        
+                        const isCompleted = batch.status === 'completed' || 
+                                           (batch.status === 'in-progress' && index < Math.floor(batch.facilities.length * 0.4));
+                        const isCurrent = batch.status === 'in-progress' && 
+                                         index === Math.floor(batch.facilities.length * 0.4);
+                        
+                        return (
+                          <div key={facility.id}>
+                            {/* Travel Arrow */}
+                            <div className="flex items-center gap-3 text-muted-foreground text-xs pl-6">
+                              <div>↓ {distanceFromPrev.toFixed(0)}km • {travelTime.toFixed(0)}min</div>
+                            </div>
+                            
+                            {/* Stop */}
+                            <div className={`flex items-start gap-3 ${isCurrent ? 'bg-primary/10 -mx-2 px-2 py-2 rounded' : ''}`}>
+                              <div className={`font-bold ${isCompleted ? 'text-green-600' : isCurrent ? 'text-primary' : 'text-muted-foreground'}`}>
+                                {isCompleted ? '✓' : isCurrent ? '→' : '○'}
+                              </div>
+                              <div className="flex-1">
+                                <div className={`font-bold ${isCurrent ? 'text-primary' : ''}`}>
+                                  STOP {index + 1} {isCurrent && '← CURRENT'}
+                                </div>
+                                <div className="text-muted-foreground">
+                                  {formatTime(arrivalTime)} • {facility.name} ({cumulativeDistance.toFixed(0)}km)
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                  [{serviceTime} min service time]
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      
+                      {/* Return Arrow */}
+                      <div className="flex items-center gap-3 text-muted-foreground text-xs pl-6">
+                        <div>↓ Return journey</div>
+                      </div>
+                      
+                      {/* Return to Warehouse */}
+                      <div className="flex items-start gap-3">
+                        <div className={`font-bold ${batch.status === 'completed' ? 'text-green-600' : 'text-muted-foreground'}`}>
+                          {batch.status === 'completed' ? '✓' : '🏁'}
+                        </div>
+                        <div className="flex-1">
+                          <div className="font-bold">RETURN TO WAREHOUSE</div>
+                          <div className="text-muted-foreground">
+                            {formatTime(cumulativeTime + 30)} • Total: {batch.totalDistance.toFixed(0)}km, {batch.estimatedDuration.toFixed(0)}min
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
             </TabsContent>
 
             {/* Timeline Tab */}

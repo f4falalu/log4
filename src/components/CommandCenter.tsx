@@ -4,7 +4,7 @@ import KPIMetrics from './KPIMetrics';
 import FleetStatus from './FleetStatus';
 import MapView from './MapView';
 import ActiveDeliveriesPanel from './ActiveDeliveriesPanel';
-import AlertsPanel from './AlertsPanel';
+import ActivityTimeline from './ActivityTimeline';
 import BatchDetailsPanel from './BatchDetailsPanel';
 import { RefreshCw } from 'lucide-react';
 import { Button } from './ui/button';
@@ -109,8 +109,8 @@ const CommandCenter = ({ facilities, warehouses, batches }: CommandCenterProps) 
         </div>
       </div>
 
-      {/* Bottom: Alerts Panel */}
-      <AlertsPanel batches={batches} />
+      {/* Bottom: Activity Timeline */}
+      <ActivityTimeline batches={batches} />
     </div>
   );
 };

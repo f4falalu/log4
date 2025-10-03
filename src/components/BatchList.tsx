@@ -210,9 +210,73 @@ const BatchList = ({ batches, onBatchUpdate }: BatchListProps) => {
                 </div>
               </div>
 
-              {/* Expanded Details */}
+              {/* Expanded Details - Schedule View */}
               {isExpanded && (
                 <div className="space-y-3 pt-3 border-t">
+                  {/* Terminal-Style Schedule */}
+                  <div>
+                    <h4 className="font-medium mb-2 flex items-center gap-2">
+                      <Clock className="w-4 h-4" />
+                      Delivery Schedule
+                    </h4>
+                    <div className="bg-muted/50 rounded-lg p-3 font-mono text-xs space-y-2">
+                      {(() => {
+                        const avgSpeed = vehicle?.avgSpeed || 50;
+                        const serviceTime = 15;
+                        let cumulativeTime = 0;
+                        
+                        const [hours, minutes] = batch.scheduledTime.split(':').map(Number);
+                        const scheduleDate = new Date(batch.scheduledDate);
+                        scheduleDate.setHours(hours, minutes, 0);
+                        
+                        const formatTime = (minutesFromStart: number) => {
+                          const time = new Date(scheduleDate.getTime() + minutesFromStart * 60000);
+                          return time.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+                        };
+                        
+                        return (
+                          <>
+                            <div className="flex items-center gap-2">
+                              <span className="text-primary font-bold">🏭</span>
+                              <span className="text-primary font-bold">{formatTime(0)}</span>
+                              <span>→ {batch.warehouseName}</span>
+                            </div>
+                            
+                            {batch.facilities.map((facility, index) => {
+                              const distanceSegment = batch.totalDistance / batch.facilities.length;
+                              const travelTime = (distanceSegment / avgSpeed) * 60;
+                              cumulativeTime += travelTime;
+                              const arrivalTime = cumulativeTime;
+                              cumulativeTime += serviceTime;
+                              
+                              return (
+                                <div key={facility.id} className="pl-4 space-y-1">
+                                  <div className="text-muted-foreground">
+                                    ↓ {distanceSegment.toFixed(0)}km • {travelTime.toFixed(0)}min
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-bold">📍</span>
+                                    <span className="font-bold">{formatTime(arrivalTime)}</span>
+                                    <span>→ {facility.name}</span>
+                                  </div>
+                                  <div className="pl-6 text-muted-foreground">
+                                    [{serviceTime} min]
+                                  </div>
+                                </div>
+                              );
+                            })}
+                            
+                            <div className="flex items-center gap-2 pt-1 border-t border-border">
+                              <span className="font-bold">🏁</span>
+                              <span className="font-bold">{formatTime(cumulativeTime + 30)}</span>
+                              <span>→ Return • Total: {batch.totalDistance}km</span>
+                            </div>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  </div>
+
                   <div>
                     <h4 className="font-medium mb-2 flex items-center gap-2">
                       <MapPin className="w-4 h-4" />

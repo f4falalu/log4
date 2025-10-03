@@ -155,13 +155,59 @@ const ActiveDeliveriesPanel = ({
                           </div>
                         </div>
 
-                        {/* Progress */}
-                        <div>
-                          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-                            <span>Stop {completedStops}/{batch.facilities.length}</span>
-                            <span>{Math.round(progress)}%</span>
+                        {/* Enhanced Progress Display */}
+                        <div className="bg-muted/50 rounded-lg p-3 border">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <Badge 
+                                variant="outline" 
+                                className={`text-sm font-bold ${
+                                  progress >= 70 ? 'bg-green-100 text-green-700 border-green-300' :
+                                  progress >= 30 ? 'bg-yellow-100 text-yellow-700 border-yellow-300' :
+                                  'bg-gray-100 text-gray-700 border-gray-300'
+                                }`}
+                              >
+                                Stop {completedStops}/{batch.facilities.length}
+                              </Badge>
+                              <div className="flex gap-0.5">
+                                {Array.from({ length: batch.facilities.length }).map((_, idx) => (
+                                  <div
+                                    key={idx}
+                                    className={`w-2 h-2 rounded-full ${
+                                      idx < completedStops ? 'bg-primary' : 'bg-muted-foreground/30'
+                                    }`}
+                                  />
+                                ))}
+                              </div>
+                            </div>
                           </div>
-                          <Progress value={progress} className="h-2" />
+                          
+                          {batch.status === 'in-progress' && completedStops < batch.facilities.length && (
+                            <div className="text-xs text-muted-foreground">
+                              <div className="flex items-center gap-1 mb-1">
+                                <MapPin className="h-3 w-3" />
+                                <span className="font-medium">Current: {batch.facilities[completedStops]?.name || 'Unknown'}</span>
+                              </div>
+                              {completedStops + 1 < batch.facilities.length && (
+                                <div className="flex items-center gap-1">
+                                  <Clock className="h-3 w-3" />
+                                  <span>Next: {batch.facilities[completedStops + 1]?.name} • ETA 15 min</span>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          
+                          {batch.status === 'assigned' && (
+                            <div className="text-xs text-muted-foreground">
+                              Ready to depart from {batch.warehouseName}
+                            </div>
+                          )}
+                          
+                          {batch.status === 'completed' && (
+                            <div className="text-xs text-green-600 font-medium">
+                              ✓ All stops completed
+                            </div>
+                          )}
                         </div>
 
                         {/* Stats */}
