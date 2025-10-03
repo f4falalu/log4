@@ -27,8 +27,9 @@ import {
   Target
 } from 'lucide-react';
 import { Facility, DeliveryBatch, Driver, Vehicle, Warehouse as WarehouseType } from '@/types';
-import { WAREHOUSES } from '@/data/warehouses';
-import { DRIVERS, VEHICLES } from '@/data/fleet';
+import { useWarehouses } from '@/hooks/useWarehouses';
+import { useDrivers } from '@/hooks/useDrivers';
+import { useVehicles } from '@/hooks/useVehicles';
 import { optimizeBatchDelivery } from '@/lib/routeOptimization';
 import TacticalMapView from './TacticalMapView';
 
@@ -39,8 +40,12 @@ interface TacticalDispatchSchedulerProps {
 }
 
 const TacticalDispatchScheduler = ({ facilities, batches, onBatchCreate }: TacticalDispatchSchedulerProps) => {
+  const { data: warehouses = [] } = useWarehouses();
+  const { data: drivers = [] } = useDrivers();
+  const { data: vehicles = [] } = useVehicles();
+  
   const [selectedFacilities, setSelectedFacilities] = useState<string[]>([]);
-  const [selectedWarehouseId, setSelectedWarehouseId] = useState<string>(WAREHOUSES[0]?.id || '');
+  const [selectedWarehouseId, setSelectedWarehouseId] = useState<string>('');
   const [formData, setFormData] = useState({
     batchName: '',
     scheduledDate: '',
@@ -55,6 +60,13 @@ const TacticalDispatchScheduler = ({ facilities, batches, onBatchCreate }: Tacti
   const [optimizedRoute, setOptimizedRoute] = useState<any>(null);
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Set initial warehouse when data loads
+  useEffect(() => {
+    if (warehouses.length > 0 && !selectedWarehouseId) {
+      setSelectedWarehouseId(warehouses[0].id);
+    }
+  }, [warehouses, selectedWarehouseId]);
 
   const facilityGroups = [
     { id: 'all', name: 'All Facilities', facilities },
@@ -75,7 +87,7 @@ const TacticalDispatchScheduler = ({ facilities, batches, onBatchCreate }: Tacti
         const centerLat = selectedFacilityObjects.reduce((sum, f) => sum + f.lat, 0) / selectedFacilityObjects.length;
         const centerLng = selectedFacilityObjects.reduce((sum, f) => sum + f.lng, 0) / selectedFacilityObjects.length;
         
-        const optimalWarehouse = WAREHOUSES.reduce((best, current) => {
+        const optimalWarehouse = warehouses.reduce((best, current) => {
           const distToBest = Math.sqrt(Math.pow(centerLat - best.lat, 2) + Math.pow(centerLng - best.lng, 2));
           const distToCurrent = Math.sqrt(Math.pow(centerLat - current.lat, 2) + Math.pow(centerLng - current.lng, 2));
           return distToCurrent < distToBest ? current : best;
@@ -134,7 +146,7 @@ const TacticalDispatchScheduler = ({ facilities, batches, onBatchCreate }: Tacti
         selectedFacilities.includes(f.id)
       );
 
-      const selectedWarehouse = WAREHOUSES.find(w => w.id === selectedWarehouseId);
+      const selectedWarehouse = warehouses.find(w => w.id === selectedWarehouseId);
       if (!selectedWarehouse) {
         throw new Error("Selected warehouse not found");
       }
@@ -171,7 +183,7 @@ const TacticalDispatchScheduler = ({ facilities, batches, onBatchCreate }: Tacti
         selectedFacilities.includes(f.id)
       );
 
-      const warehouse = WAREHOUSES.find(w => w.id === selectedWarehouseId);
+      const warehouse = warehouses.find(w => w.id === selectedWarehouseId);
       
       const batch: DeliveryBatch = {
         id: `batch-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -225,9 +237,9 @@ const TacticalDispatchScheduler = ({ facilities, batches, onBatchCreate }: Tacti
   };
 
   const selectedFacilityObjects = facilities.filter(f => selectedFacilities.includes(f.id));
-  const selectedWarehouse = WAREHOUSES.find(w => w.id === selectedWarehouseId);
-  const availableDrivers = DRIVERS.filter(d => d.status === 'available');
-  const availableVehicles = VEHICLES.filter(v => v.status === 'available');
+  const selectedWarehouse = warehouses.find(w => w.id === selectedWarehouseId);
+  const availableDrivers = drivers.filter(d => d.status === 'available');
+  const availableVehicles = vehicles.filter(v => v.status === 'available');
 
   return (
     <div className="h-screen flex flex-col">
@@ -395,7 +407,7 @@ const TacticalDispatchScheduler = ({ facilities, batches, onBatchCreate }: Tacti
                       <SelectValue placeholder="Select warehouse" />
                     </SelectTrigger>
                     <SelectContent>
-                      {WAREHOUSES.map(warehouse => (
+                      {warehouses.map(warehouse => (
                         <SelectItem key={warehouse.id} value={warehouse.id}>
                           <div className="flex items-center gap-2">
                             <Warehouse className="w-4 h-4" />
@@ -551,7 +563,7 @@ const TacticalDispatchScheduler = ({ facilities, batches, onBatchCreate }: Tacti
         <div className="flex-1">
           <TacticalMapView
             facilities={facilities}
-            warehouses={WAREHOUSES}
+            warehouses={warehouses}
             selectedFacilities={selectedFacilityObjects}
             selectedWarehouse={selectedWarehouse}
             optimizedRoute={optimizedRoute}

@@ -1,6 +1,6 @@
 import React from 'react';
 const { useState, useMemo } = React;
-import { Facility, Delivery, DeliveryBatch } from '@/types';
+import { Delivery, DeliveryBatch } from '@/types';
 import Layout from '@/components/Layout';
 import Dashboard from '@/components/Dashboard';
 import CommandCenter from '@/components/CommandCenter';
@@ -9,23 +9,29 @@ import SchedulingForm from '@/components/SchedulingForm';
 import TacticalDispatchScheduler from '@/components/TacticalDispatchScheduler';
 import DeliveryList from '@/components/DeliveryList';
 import BatchList from '@/components/BatchList';
-import { WAREHOUSES } from '@/data/warehouses';
+import { useFacilities } from '@/hooks/useFacilities';
+import { useWarehouses } from '@/hooks/useWarehouses';
+import { useDeliveryBatches, useCreateDeliveryBatch } from '@/hooks/useDeliveryBatches';
 import { optimizeRoutes } from '@/lib/routeOptimization';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [facilities, setFacilities] = useState<Facility[]>([]);
   const [deliveries, setDeliveries] = useState<Delivery[]>([]);
-  const [deliveryBatches, setDeliveryBatches] = useState<DeliveryBatch[]>([]);
+  
+  // Fetch data from database
+  const { data: facilities = [], refetch: refetchFacilities } = useFacilities();
+  const { data: warehouses = [] } = useWarehouses();
+  const { data: deliveryBatches = [] } = useDeliveryBatches();
+  const createBatch = useCreateDeliveryBatch();
 
   // Calculate optimized routes
   const optimizedRoutes = useMemo(() => {
-    if (facilities.length === 0) return [];
-    return optimizeRoutes(facilities, WAREHOUSES);
-  }, [facilities]);
+    if (facilities.length === 0 || warehouses.length === 0) return [];
+    return optimizeRoutes(facilities, warehouses);
+  }, [facilities, warehouses]);
 
-  const handleFacilitiesUpdate = (newFacilities: Facility[]) => {
-    setFacilities(newFacilities);
+  const handleFacilitiesUpdate = () => {
+    refetchFacilities();
   };
 
   const handleDeliveryCreate = (delivery: Delivery) => {
@@ -43,17 +49,12 @@ const Index = () => {
   };
 
   const handleBatchCreate = (batch: DeliveryBatch) => {
-    setDeliveryBatches(prev => [...prev, batch]);
+    createBatch.mutate(batch);
   };
 
   const handleBatchUpdate = (batchId: string, updates: Partial<DeliveryBatch>) => {
-    setDeliveryBatches(prev => 
-      prev.map(batch => 
-        batch.id === batchId 
-          ? { ...batch, ...updates }
-          : batch
-      )
-    );
+    // TODO: Implement database update
+    console.log('Batch update:', batchId, updates);
   };
 
   const renderContent = () => {
@@ -64,7 +65,7 @@ const Index = () => {
         return (
           <CommandCenter
             facilities={facilities}
-            warehouses={WAREHOUSES}
+            warehouses={warehouses}
             batches={deliveryBatches}
           />
         );

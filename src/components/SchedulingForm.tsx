@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { toast } from 'sonner';
 import { Calendar, Clock, AlertTriangle, AlertCircle, Warehouse, Package } from 'lucide-react';
 import { Facility, Delivery } from '@/types';
-import { WAREHOUSES } from '@/data/warehouses';
+import { useWarehouses } from '@/hooks/useWarehouses';
 import { findOptimalWarehouse, calculateDistance } from '@/lib/routeOptimization';
 
 interface SchedulingFormProps {
@@ -19,6 +19,8 @@ interface SchedulingFormProps {
 }
 
 const SchedulingForm = ({ facilities, deliveries, onDeliveryCreate }: SchedulingFormProps) => {
+  const { data: warehouses = [] } = useWarehouses();
+  
   const [formData, setFormData] = useState({
     facilityId: '',
     warehouseId: '',
@@ -51,7 +53,7 @@ const SchedulingForm = ({ facilities, deliveries, onDeliveryCreate }: Scheduling
       let distance = 0;
 
       if (!warehouseId) {
-        const optimalWarehouse = findOptimalWarehouse(facility, WAREHOUSES);
+        const optimalWarehouse = findOptimalWarehouse(facility, warehouses);
         warehouseId = optimalWarehouse.id;
         warehouseName = optimalWarehouse.name;
         distance = calculateDistance(
@@ -61,7 +63,7 @@ const SchedulingForm = ({ facilities, deliveries, onDeliveryCreate }: Scheduling
           optimalWarehouse.lng
         );
       } else {
-        const selectedWarehouse = WAREHOUSES.find(w => w.id === warehouseId);
+        const selectedWarehouse = warehouses.find(w => w.id === warehouseId);
         if (selectedWarehouse) {
           warehouseName = selectedWarehouse.name;
           distance = calculateDistance(
@@ -186,7 +188,7 @@ const SchedulingForm = ({ facilities, deliveries, onDeliveryCreate }: Scheduling
                     <SelectValue placeholder="Auto-assign optimal warehouse" />
                   </SelectTrigger>
                   <SelectContent>
-                    {WAREHOUSES.map(warehouse => (
+                    {warehouses.map(warehouse => (
                       <SelectItem key={warehouse.id} value={warehouse.id}>
                         <div className="flex items-center gap-2">
                           <span className={`w-2 h-2 rounded-full ${
