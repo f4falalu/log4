@@ -201,11 +201,73 @@ const TacticalMapView = ({
     if (!mapRef.current || mapInstanceRef.current) return;
 
     try {
-      const map = L.map(mapRef.current).setView([12.0, 8.5], 6);
+      const map = L.map(mapRef.current, {
+        zoomControl: false // We'll add custom controls
+      }).setView([12.0, 8.5], 6);
       
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      // Define multiple tile layers
+      const humanitarianOSM = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Tiles style by <a href="https://www.hotosm.org/" target="_blank">Humanitarian OpenStreetMap Team</a>',
+        maxZoom: 19
+      });
+
+      const standardOSM = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 19
+      });
+
+      const cartoLight = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        maxZoom: 19
+      });
+
+      const cartoDark = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        maxZoom: 19
+      });
+
+      // Add default layer (Humanitarian OSM - best for medical facilities)
+      humanitarianOSM.addTo(map);
+
+      // Layer control
+      const baseMaps = {
+        "Humanitarian (Recommended)": humanitarianOSM,
+        "Standard": standardOSM,
+        "Light": cartoLight,
+        "Dark": cartoDark
+      };
+
+      L.control.layers(baseMaps, undefined, { position: 'topright' }).addTo(map);
+
+      // Add zoom control to bottom right
+      L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+      // Add scale control
+      L.control.scale({ 
+        position: 'bottomleft',
+        metric: true,
+        imperial: false
       }).addTo(map);
+
+      // Add custom reset view button
+      const resetControl = L.Control.extend({
+        options: { position: 'bottomright' },
+        onAdd: function() {
+          const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
+          container.innerHTML = '<a href="#" title="Reset View" style="width: 30px; height: 30px; line-height: 30px; display: flex; align-items: center; justify-content: center; font-size: 18px; text-decoration: none; background: white; color: #333;">↻</a>';
+          container.onclick = (e) => {
+            e.preventDefault();
+            if (markersRef.current.length > 0) {
+              const group = new L.FeatureGroup(markersRef.current);
+              map.fitBounds(group.getBounds().pad(0.1));
+            } else {
+              map.setView([12.0, 8.5], 6);
+            }
+          };
+          return container;
+        }
+      });
+      map.addControl(new resetControl());
 
       mapInstanceRef.current = map;
     } catch (error) {
