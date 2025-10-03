@@ -14,7 +14,375 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      delivery_batches: {
+        Row: {
+          actual_end_time: string | null
+          actual_start_time: string | null
+          created_at: string | null
+          driver_id: string | null
+          estimated_duration: number
+          facility_ids: string[]
+          id: string
+          medication_type: string
+          name: string
+          notes: string | null
+          optimized_route: Json
+          priority: Database["public"]["Enums"]["delivery_priority"]
+          scheduled_date: string
+          scheduled_time: string
+          status: Database["public"]["Enums"]["batch_status"]
+          total_distance: number
+          total_quantity: number
+          updated_at: string | null
+          vehicle_id: string | null
+          warehouse_id: string
+        }
+        Insert: {
+          actual_end_time?: string | null
+          actual_start_time?: string | null
+          created_at?: string | null
+          driver_id?: string | null
+          estimated_duration: number
+          facility_ids: string[]
+          id?: string
+          medication_type: string
+          name: string
+          notes?: string | null
+          optimized_route: Json
+          priority?: Database["public"]["Enums"]["delivery_priority"]
+          scheduled_date: string
+          scheduled_time: string
+          status?: Database["public"]["Enums"]["batch_status"]
+          total_distance: number
+          total_quantity: number
+          updated_at?: string | null
+          vehicle_id?: string | null
+          warehouse_id: string
+        }
+        Update: {
+          actual_end_time?: string | null
+          actual_start_time?: string | null
+          created_at?: string | null
+          driver_id?: string | null
+          estimated_duration?: number
+          facility_ids?: string[]
+          id?: string
+          medication_type?: string
+          name?: string
+          notes?: string | null
+          optimized_route?: Json
+          priority?: Database["public"]["Enums"]["delivery_priority"]
+          scheduled_date?: string
+          scheduled_time?: string
+          status?: Database["public"]["Enums"]["batch_status"]
+          total_distance?: number
+          total_quantity?: number
+          updated_at?: string | null
+          vehicle_id?: string | null
+          warehouse_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_batches_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_batches_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_batches_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      drivers: {
+        Row: {
+          created_at: string | null
+          current_lat: number | null
+          current_lng: number | null
+          id: string
+          license_type: Database["public"]["Enums"]["license_type"]
+          max_hours: number
+          name: string
+          phone: string
+          shift_end: string
+          shift_start: string
+          status: Database["public"]["Enums"]["driver_status"]
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          current_lat?: number | null
+          current_lng?: number | null
+          id?: string
+          license_type?: Database["public"]["Enums"]["license_type"]
+          max_hours?: number
+          name: string
+          phone: string
+          shift_end: string
+          shift_start: string
+          status?: Database["public"]["Enums"]["driver_status"]
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          current_lat?: number | null
+          current_lng?: number | null
+          id?: string
+          license_type?: Database["public"]["Enums"]["license_type"]
+          max_hours?: number
+          name?: string
+          phone?: string
+          shift_end?: string
+          shift_start?: string
+          status?: Database["public"]["Enums"]["driver_status"]
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      facilities: {
+        Row: {
+          address: string
+          capacity: number | null
+          contact_person: string | null
+          created_at: string | null
+          id: string
+          lat: number
+          lng: number
+          name: string
+          operating_hours: string | null
+          phone: string | null
+          type: Database["public"]["Enums"]["facility_type"]
+          updated_at: string | null
+        }
+        Insert: {
+          address: string
+          capacity?: number | null
+          contact_person?: string | null
+          created_at?: string | null
+          id?: string
+          lat: number
+          lng: number
+          name: string
+          operating_hours?: string | null
+          phone?: string | null
+          type?: Database["public"]["Enums"]["facility_type"]
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string
+          capacity?: number | null
+          contact_person?: string | null
+          created_at?: string | null
+          id?: string
+          lat?: number
+          lng?: number
+          name?: string
+          operating_hours?: string | null
+          phone?: string | null
+          type?: Database["public"]["Enums"]["facility_type"]
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      optimization_cache: {
+        Row: {
+          cache_key: string
+          created_at: string | null
+          estimated_duration: number
+          expires_at: string
+          facility_ids: string[]
+          id: string
+          optimized_route: Json
+          total_distance: number
+          warehouse_id: string
+        }
+        Insert: {
+          cache_key: string
+          created_at?: string | null
+          estimated_duration: number
+          expires_at: string
+          facility_ids: string[]
+          id?: string
+          optimized_route: Json
+          total_distance: number
+          warehouse_id: string
+        }
+        Update: {
+          cache_key?: string
+          created_at?: string | null
+          estimated_duration?: number
+          expires_at?: string
+          facility_ids?: string[]
+          id?: string
+          optimized_route?: Json
+          total_distance?: number
+          warehouse_id?: string
+        }
+        Relationships: []
+      }
+      route_history: {
+        Row: {
+          actual_arrival: string | null
+          actual_duration: number | null
+          batch_id: string
+          created_at: string | null
+          distance_from_previous: number | null
+          facility_id: string
+          id: string
+          notes: string | null
+          planned_arrival: string | null
+          planned_duration: number | null
+          sequence_number: number
+        }
+        Insert: {
+          actual_arrival?: string | null
+          actual_duration?: number | null
+          batch_id: string
+          created_at?: string | null
+          distance_from_previous?: number | null
+          facility_id: string
+          id?: string
+          notes?: string | null
+          planned_arrival?: string | null
+          planned_duration?: number | null
+          sequence_number: number
+        }
+        Update: {
+          actual_arrival?: string | null
+          actual_duration?: number | null
+          batch_id?: string
+          created_at?: string | null
+          distance_from_previous?: number | null
+          facility_id?: string
+          id?: string
+          notes?: string | null
+          planned_arrival?: string | null
+          planned_duration?: number | null
+          sequence_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "route_history_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "route_history_facility_id_fkey"
+            columns: ["facility_id"]
+            isOneToOne: false
+            referencedRelation: "facilities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vehicles: {
+        Row: {
+          avg_speed: number
+          capacity: number
+          created_at: string | null
+          current_driver_id: string | null
+          fuel_efficiency: number
+          fuel_type: Database["public"]["Enums"]["fuel_type"]
+          id: string
+          max_weight: number
+          model: string
+          plate_number: string
+          status: Database["public"]["Enums"]["vehicle_status"]
+          type: Database["public"]["Enums"]["vehicle_type"]
+          updated_at: string | null
+        }
+        Insert: {
+          avg_speed?: number
+          capacity: number
+          created_at?: string | null
+          current_driver_id?: string | null
+          fuel_efficiency: number
+          fuel_type: Database["public"]["Enums"]["fuel_type"]
+          id?: string
+          max_weight: number
+          model: string
+          plate_number: string
+          status?: Database["public"]["Enums"]["vehicle_status"]
+          type: Database["public"]["Enums"]["vehicle_type"]
+          updated_at?: string | null
+        }
+        Update: {
+          avg_speed?: number
+          capacity?: number
+          created_at?: string | null
+          current_driver_id?: string | null
+          fuel_efficiency?: number
+          fuel_type?: Database["public"]["Enums"]["fuel_type"]
+          id?: string
+          max_weight?: number
+          model?: string
+          plate_number?: string
+          status?: Database["public"]["Enums"]["vehicle_status"]
+          type?: Database["public"]["Enums"]["vehicle_type"]
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicles_current_driver_id_fkey"
+            columns: ["current_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      warehouses: {
+        Row: {
+          address: string
+          capacity: number
+          created_at: string | null
+          id: string
+          lat: number
+          lng: number
+          name: string
+          operating_hours: string
+          type: Database["public"]["Enums"]["warehouse_type"]
+          updated_at: string | null
+        }
+        Insert: {
+          address: string
+          capacity: number
+          created_at?: string | null
+          id?: string
+          lat: number
+          lng: number
+          name: string
+          operating_hours: string
+          type?: Database["public"]["Enums"]["warehouse_type"]
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string
+          capacity?: number
+          created_at?: string | null
+          id?: string
+          lat?: number
+          lng?: number
+          name?: string
+          operating_hours?: string
+          type?: Database["public"]["Enums"]["warehouse_type"]
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +391,26 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      batch_status:
+        | "planned"
+        | "assigned"
+        | "in-progress"
+        | "completed"
+        | "cancelled"
+      delivery_priority: "low" | "medium" | "high" | "urgent"
+      driver_status: "available" | "busy" | "offline"
+      facility_type:
+        | "hospital"
+        | "clinic"
+        | "health_center"
+        | "pharmacy"
+        | "lab"
+        | "other"
+      fuel_type: "diesel" | "petrol" | "electric"
+      license_type: "standard" | "commercial"
+      vehicle_status: "available" | "in-use" | "maintenance"
+      vehicle_type: "truck" | "van" | "pickup" | "car"
+      warehouse_type: "central" | "zonal" | "regional"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +537,29 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      batch_status: [
+        "planned",
+        "assigned",
+        "in-progress",
+        "completed",
+        "cancelled",
+      ],
+      delivery_priority: ["low", "medium", "high", "urgent"],
+      driver_status: ["available", "busy", "offline"],
+      facility_type: [
+        "hospital",
+        "clinic",
+        "health_center",
+        "pharmacy",
+        "lab",
+        "other",
+      ],
+      fuel_type: ["diesel", "petrol", "electric"],
+      license_type: ["standard", "commercial"],
+      vehicle_status: ["available", "in-use", "maintenance"],
+      vehicle_type: ["truck", "van", "pickup", "car"],
+      warehouse_type: ["central", "zonal", "regional"],
+    },
   },
 } as const
