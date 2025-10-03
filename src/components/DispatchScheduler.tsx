@@ -22,9 +22,11 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { Facility, DeliveryBatch, Driver, Vehicle } from '@/types';
-import { WAREHOUSES } from '@/data/warehouses';
-import { DRIVERS, VEHICLES } from '@/data/fleet';
+import { useWarehouses } from '@/hooks/useWarehouses';
+import { useDrivers } from '@/hooks/useDrivers';
+import { useVehicles } from '@/hooks/useVehicles';
 import { optimizeBatchDelivery } from '@/lib/routeOptimization';
+import { Loader2 } from 'lucide-react';
 
 interface DispatchSchedulerProps {
   facilities: Facility[];
@@ -32,6 +34,10 @@ interface DispatchSchedulerProps {
 }
 
 const DispatchScheduler = ({ facilities, onBatchCreate }: DispatchSchedulerProps) => {
+  const { data: warehouses = [], isLoading: warehousesLoading } = useWarehouses();
+  const { data: drivers = [], isLoading: driversLoading } = useDrivers();
+  const { data: vehicles = [], isLoading: vehiclesLoading } = useVehicles();
+  
   const [selectedFacilities, setSelectedFacilities] = useState<string[]>([]);
   const [formData, setFormData] = useState({
     batchName: '',
@@ -73,16 +79,16 @@ const DispatchScheduler = ({ facilities, onBatchCreate }: DispatchSchedulerProps
 
       const optimization = optimizeBatchDelivery(
         selectedFacilityObjects,
-        WAREHOUSES,
+        warehouses,
         formData.medicationType,
         formData.priority as 'low' | 'medium' | 'high' | 'urgent'
       );
 
       setOptimizedRoute(optimization);
       toast.success(`Route optimized! Total distance: ${optimization.totalDistance}km, Estimated time: ${Math.round(optimization.estimatedDuration)}min`);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Route optimization error:', error);
-      toast.error("Failed to optimize route");
+      toast.error(`Failed to optimize route: ${error.message}`);
     } finally {
       setIsOptimizing(false);
     }
@@ -103,7 +109,7 @@ const DispatchScheduler = ({ facilities, onBatchCreate }: DispatchSchedulerProps
         selectedFacilities.includes(f.id)
       );
 
-      const warehouse = WAREHOUSES.find(w => w.id === optimizedRoute.warehouseId);
+      const warehouse = warehouses.find(w => w.id === optimizedRoute.warehouseId);
       
       const batch: DeliveryBatch = {
         id: `batch-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -144,9 +150,9 @@ const DispatchScheduler = ({ facilities, onBatchCreate }: DispatchSchedulerProps
         priority: 'medium',
         notes: '',
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Batch creation error:', error);
-      toast.error("Failed to create delivery batch");
+      toast.error(`Failed to create delivery batch: ${error.message}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -176,8 +182,10 @@ const DispatchScheduler = ({ facilities, onBatchCreate }: DispatchSchedulerProps
     }
   };
 
-  const availableDrivers = DRIVERS.filter(d => d.status === 'available');
-  const availableVehicles = VEHICLES.filter(v => v.status === 'available');
+  const availableDrivers = drivers.filter(d => d.status === 'available');
+  const availableVehicles = vehicles.filter(v => v.status === 'available');
+  
+  const isLoading = warehousesLoading || driversLoading || vehiclesLoading;
 
   return (
     <div className="space-y-6">
@@ -224,11 +232,20 @@ const DispatchScheduler = ({ facilities, onBatchCreate }: DispatchSchedulerProps
                   variant="outline"
                   size="sm"
                   onClick={handleOptimizeRoute}
-                  disabled={selectedFacilities.length === 0 || isOptimizing}
+                  disabled={selectedFacilities.length === 0 || isOptimizing || isLoading}
                   className="ml-auto"
                 >
-                  <Route className="w-4 h-4 mr-2" />
-                  {isOptimizing ? 'Optimizing...' : 'Optimize Route'}
+                  {isOptimizing ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Optimizing...
+                    </>
+                  ) : (
+                    <>
+                      <Route className="w-4 h-4 mr-2" />
+                      Optimize Route
+                    </>
+                  )}
                 </Button>
               </div>
             </div>
@@ -258,7 +275,7 @@ const DispatchScheduler = ({ facilities, onBatchCreate }: DispatchSchedulerProps
                     </div>
                     <div>
                       <p className="text-muted-foreground">Warehouse</p>
-                      <p className="font-medium">{WAREHOUSES.find(w => w.id === optimizedRoute.warehouseId)?.name}</p>
+                      <p className="font-medium">{warehouses.find(w => w.id === optimizedRoute.warehouseId)?.name}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -413,11 +430,20 @@ const DispatchScheduler = ({ facilities, onBatchCreate }: DispatchSchedulerProps
             <div className="flex justify-end gap-3">
               <Button 
                 type="submit" 
-                disabled={!optimizedRoute || isSubmitting || selectedFacilities.length === 0}
+                disabled={!optimizedRoute || isSubmitting || selectedFacilities.length === 0 || isLoading}
                 className="bg-gradient-medical hover:opacity-90"
               >
-                <Package className="w-4 h-4 mr-2" />
-                {isSubmitting ? 'Creating Batch...' : 'Create Delivery Batch'}
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Creating Batch...
+                  </>
+                ) : (
+                  <>
+                    <Package className="w-4 h-4 mr-2" />
+                    Create Delivery Batch
+                  </>
+                )}
               </Button>
             </div>
           </form>

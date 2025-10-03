@@ -17,13 +17,17 @@ import {
   Package
 } from 'lucide-react';
 import { DeliveryBatch } from '@/types';
-import { DRIVERS, VEHICLES } from '@/data/fleet';
+import { useDrivers } from '@/hooks/useDrivers';
+import { useVehicles } from '@/hooks/useVehicles';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface DriverStatusPanelProps {
   batches: DeliveryBatch[];
 }
 
 const DriverStatusPanel = ({ batches }: DriverStatusPanelProps) => {
+  const { data: drivers = [], isLoading: driversLoading } = useDrivers();
+  const { data: vehicles = [], isLoading: vehiclesLoading } = useVehicles();
   const [selectedTab, setSelectedTab] = useState('active');
 
   // Get active deliveries (assigned, in-progress)
@@ -32,17 +36,17 @@ const DriverStatusPanel = ({ batches }: DriverStatusPanelProps) => {
   );
 
   // Get available drivers
-  const availableDrivers = DRIVERS.filter(driver => driver.status === 'available');
+  const availableDrivers = drivers.filter(driver => driver.status === 'available');
 
   // Get busy drivers
-  const busyDrivers = DRIVERS.filter(driver => driver.status === 'busy');
+  const busyDrivers = drivers.filter(driver => driver.status === 'busy');
 
   const getDriver = (driverId?: string) => {
-    return DRIVERS.find(d => d.id === driverId);
+    return drivers.find(d => d.id === driverId);
   };
 
   const getVehicle = (vehicleId?: string) => {
-    return VEHICLES.find(v => v.id === vehicleId);
+    return vehicles.find(v => v.id === vehicleId);
   };
 
   const getStatusIcon = (status: string) => {
@@ -112,14 +116,20 @@ const DriverStatusPanel = ({ batches }: DriverStatusPanelProps) => {
                 Available ({availableDrivers.length})
               </TabsTrigger>
               <TabsTrigger value="all" className="text-xs">
-                All Drivers ({DRIVERS.length})
+                All Drivers ({drivers.length})
               </TabsTrigger>
             </TabsList>
           </div>
 
           <div className="flex-1 overflow-hidden">
             <TabsContent value="active" className="h-full overflow-y-auto space-y-2 mt-0">
-              {activeDeliveries.length === 0 ? (
+              {driversLoading || vehiclesLoading ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                  {[1, 2, 3, 4].map(i => (
+                    <Skeleton key={i} className="h-40 w-full" />
+                  ))}
+                </div>
+              ) : activeDeliveries.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
                   <Navigation className="w-8 h-8 mb-2" />
                   <p className="text-sm">No active deliveries</p>
@@ -210,7 +220,13 @@ const DriverStatusPanel = ({ batches }: DriverStatusPanelProps) => {
             </TabsContent>
 
             <TabsContent value="available" className="h-full overflow-y-auto space-y-2 mt-0">
-              {availableDrivers.length === 0 ? (
+              {driversLoading ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+                  {[1, 2, 3, 4, 5].map(i => (
+                    <Skeleton key={i} className="h-32 w-full" />
+                  ))}
+                </div>
+              ) : availableDrivers.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
                   <User className="w-8 h-8 mb-2" />
                   <p className="text-sm">No available drivers</p>
@@ -258,8 +274,15 @@ const DriverStatusPanel = ({ batches }: DriverStatusPanelProps) => {
             </TabsContent>
 
             <TabsContent value="all" className="h-full overflow-y-auto space-y-2 mt-0">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                {DRIVERS.map((driver) => {
+              {driversLoading ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                  {[1, 2, 3, 4].map(i => (
+                    <Skeleton key={i} className="h-40 w-full" />
+                  ))}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                  {drivers.map((driver) => {
                   const isAssigned = activeDeliveries.some(batch => batch.driverId === driver.id);
                   const assignedBatch = activeDeliveries.find(batch => batch.driverId === driver.id);
                   
@@ -324,9 +347,10 @@ const DriverStatusPanel = ({ batches }: DriverStatusPanelProps) => {
                         </div>
                       </CardContent>
                     </Card>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+              )}
             </TabsContent>
           </div>
         </Tabs>

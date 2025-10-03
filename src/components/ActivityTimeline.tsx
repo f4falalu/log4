@@ -13,7 +13,7 @@ import {
   Square
 } from 'lucide-react';
 import { DeliveryBatch } from '@/types';
-import { DRIVERS } from '@/data/fleet';
+import { useDrivers } from '@/hooks/useDrivers';
 
 interface ActivityTimelineProps {
   batches: DeliveryBatch[];
@@ -32,6 +32,8 @@ interface TimelineEvent {
 }
 
 const ActivityTimeline = ({ batches }: ActivityTimelineProps) => {
+  const { data: drivers = [] } = useDrivers();
+
   // Generate timeline events from batches
   const generateEvents = (): TimelineEvent[] => {
     const events: TimelineEvent[] = [];
@@ -52,7 +54,7 @@ const ActivityTimeline = ({ batches }: ActivityTimelineProps) => {
 
       // Driver assigned event
       if (batch.driverId) {
-        const driver = DRIVERS.find(d => d.id === batch.driverId);
+        const driver = drivers.find(d => d.id === batch.driverId);
         const assignedTime = new Date(batch.createdAt);
         assignedTime.setMinutes(assignedTime.getMinutes() + 5); // Simulate 5 min after creation
         
@@ -76,7 +78,7 @@ const ActivityTimeline = ({ batches }: ActivityTimelineProps) => {
           type: 'delivery-started',
           timestamp: new Date(batch.actualStartTime),
           title: 'Delivery Started',
-          description: `${batch.name} • ${DRIVERS.find(d => d.id === batch.driverId)?.name || 'Driver'}`,
+          description: `${batch.name} • ${drivers.find(d => d.id === batch.driverId)?.name || 'Driver'}`,
           icon: Play,
           iconColor: 'text-green-600',
           batchId: batch.id,

@@ -4,7 +4,9 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Progress } from '@/components/ui/progress';
 import { Truck, MapPin, Clock, Package } from 'lucide-react';
 import { DeliveryBatch } from '@/types';
-import { DRIVERS, VEHICLES } from '@/data/fleet';
+import { useDrivers } from '@/hooks/useDrivers';
+import { useVehicles } from '@/hooks/useVehicles';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface ActiveDeliveriesPanelProps {
   batches: DeliveryBatch[];
@@ -21,6 +23,8 @@ const ActiveDeliveriesPanel = ({
   onBatchClick,
   onFilterChange 
 }: ActiveDeliveriesPanelProps) => {
+  const { data: drivers = [], isLoading: driversLoading } = useDrivers();
+  const { data: vehicles = [], isLoading: vehiclesLoading } = useVehicles();
   // Filter batches based on status filter
   const filteredBatches = batches.filter(batch => {
     if (statusFilter === 'all') {
@@ -57,12 +61,14 @@ const ActiveDeliveriesPanel = ({
 
   const getDriverName = (driverId?: string) => {
     if (!driverId) return 'Unassigned';
-    return DRIVERS.find(d => d.id === driverId)?.name || 'Unknown';
+    if (driversLoading) return 'Loading...';
+    return drivers.find(d => d.id === driverId)?.name || 'Unknown';
   };
 
   const getVehicleName = (vehicleId?: string) => {
     if (!vehicleId) return 'N/A';
-    const vehicle = VEHICLES.find(v => v.id === vehicleId);
+    if (vehiclesLoading) return 'Loading...';
+    const vehicle = vehicles.find(v => v.id === vehicleId);
     return vehicle ? `${vehicle.model} (${vehicle.plateNumber})` : 'N/A';
   };
 
@@ -105,7 +111,13 @@ const ActiveDeliveriesPanel = ({
       <CardContent className="p-0">
         <ScrollArea className="h-[500px]">
           <div className="space-y-3 p-6 pt-0">
-            {filteredBatches.length === 0 ? (
+            {driversLoading || vehiclesLoading ? (
+              <div className="space-y-3">
+                {[1, 2, 3].map(i => (
+                  <Skeleton key={i} className="h-40 w-full" />
+                ))}
+              </div>
+            ) : filteredBatches.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
                 <Package className="h-12 w-12 mb-3 opacity-50" />
                 <p className="text-sm">No active deliveries</p>

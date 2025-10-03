@@ -5,7 +5,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { X, Truck, MapPin, Clock, Package, User, Phone, Calendar, CheckCircle2, Circle } from 'lucide-react';
 import { DeliveryBatch } from '@/types';
-import { DRIVERS, VEHICLES } from '@/data/fleet';
+import { useDrivers } from '@/hooks/useDrivers';
+import { useVehicles } from '@/hooks/useVehicles';
 
 interface BatchDetailsPanelProps {
   batch: DeliveryBatch;
@@ -13,8 +14,11 @@ interface BatchDetailsPanelProps {
 }
 
 const BatchDetailsPanel = ({ batch, onClose }: BatchDetailsPanelProps) => {
-  const driver = batch.driverId ? DRIVERS.find(d => d.id === batch.driverId) : null;
-  const vehicle = batch.vehicleId ? VEHICLES.find(v => v.id === batch.vehicleId) : null;
+  const { data: drivers = [] } = useDrivers();
+  const { data: vehicles = [] } = useVehicles();
+  
+  const driver = batch.driverId ? drivers.find(d => d.id === batch.driverId) : null;
+  const vehicle = batch.vehicleId ? vehicles.find(v => v.id === batch.vehicleId) : null;
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {

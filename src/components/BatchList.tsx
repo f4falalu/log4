@@ -3,6 +3,7 @@ import { format } from 'date-fns';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
+import { toast } from 'sonner';
 import { 
   Package, 
   MapPin, 
@@ -15,10 +16,13 @@ import {
   Play,
   Square,
   MoreHorizontal,
-  Eye
+  Eye,
+  Loader2
 } from 'lucide-react';
 import { DeliveryBatch } from '@/types';
-import { DRIVERS, VEHICLES } from '@/data/fleet';
+import { useDrivers } from '@/hooks/useDrivers';
+import { useVehicles } from '@/hooks/useVehicles';
+import { Skeleton } from './ui/skeleton';
 
 interface BatchListProps {
   batches: DeliveryBatch[];
@@ -26,7 +30,10 @@ interface BatchListProps {
 }
 
 const BatchList = ({ batches, onBatchUpdate }: BatchListProps) => {
+  const { data: drivers = [], isLoading: driversLoading } = useDrivers();
+  const { data: vehicles = [], isLoading: vehiclesLoading } = useVehicles();
   const [expandedBatch, setExpandedBatch] = useState<string | null>(null);
+  const [updatingBatches, setUpdatingBatches] = useState<Set<string>>(new Set());
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -71,30 +78,63 @@ const BatchList = ({ batches, onBatchUpdate }: BatchListProps) => {
   };
 
   const getDriver = (driverId?: string) => {
-    return DRIVERS.find(d => d.id === driverId);
+    if (!driverId || driversLoading) return null;
+    return drivers.find(d => d.id === driverId);
   };
 
   const getVehicle = (vehicleId?: string) => {
-    return VEHICLES.find(v => v.id === vehicleId);
+    if (!vehicleId || vehiclesLoading) return null;
+    return vehicles.find(v => v.id === vehicleId);
   };
 
-  const handleStatusUpdate = (batchId: string, newStatus: DeliveryBatch['status']) => {
-    const updates: Partial<DeliveryBatch> = { status: newStatus };
+  const handleStatusUpdate = async (batchId: string, newStatus: DeliveryBatch['status']) => {
+    setUpdatingBatches(prev => new Set(prev).add(batchId));
     
-    if (newStatus === 'in-progress' && !batches.find(b => b.id === batchId)?.actualStartTime) {
-      updates.actualStartTime = new Date().toISOString();
-    }
-    
-    if (newStatus === 'completed') {
-      updates.actualEndTime = new Date().toISOString();
-    }
+    try {
+      const updates: Partial<DeliveryBatch> = { status: newStatus };
+      
+      if (newStatus === 'in-progress' && !batches.find(b => b.id === batchId)?.actualStartTime) {
+        updates.actualStartTime = new Date().toISOString();
+      }
+      
+      if (newStatus === 'completed') {
+        updates.actualEndTime = new Date().toISOString();
+      }
 
-    onBatchUpdate(batchId, updates);
+      onBatchUpdate(batchId, updates);
+      toast.success(`Batch status updated to ${newStatus}`);
+    } catch (error: any) {
+      toast.error(`Failed to update batch: ${error.message}`);
+    } finally {
+      setUpdatingBatches(prev => {
+        const next = new Set(prev);
+        next.delete(batchId);
+        return next;
+      });
+    }
   };
 
   const toggleExpanded = (batchId: string) => {
     setExpandedBatch(expandedBatch === batchId ? null : batchId);
   };
+
+  if (driversLoading || vehiclesLoading) {
+    return (
+      <div className="space-y-4">
+        {[1, 2, 3].map(i => (
+          <Card key={i}>
+            <CardHeader>
+              <Skeleton className="h-6 w-3/4" />
+              <Skeleton className="h-4 w-1/2 mt-2" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-24 w-full" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  }
 
   if (batches.length === 0) {
     return (
@@ -124,6 +164,7 @@ const BatchList = ({ batches, onBatchUpdate }: BatchListProps) => {
         const driver = getDriver(batch.driverId);
         const vehicle = getVehicle(batch.vehicleId);
         const isExpanded = expandedBatch === batch.id;
+        const isUpdating = updatingBatches.has(batch.id);
 
         return (
           <Card key={batch.id} className="hover:shadow-md transition-shadow">
@@ -333,8 +374,13 @@ const BatchList = ({ batches, onBatchUpdate }: BatchListProps) => {
                     variant="outline"
                     size="sm"
                     onClick={() => handleStatusUpdate(batch.id, 'assigned')}
+                    disabled={isUpdating}
                   >
-                    <CheckCircle className="w-4 h-4 mr-1" />
+                    {isUpdating ? (
+                      <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                    ) : (
+                      <CheckCircle className="w-4 h-4 mr-1" />
+                    )}
                     Assign
                   </Button>
                 )}
@@ -343,8 +389,13 @@ const BatchList = ({ batches, onBatchUpdate }: BatchListProps) => {
                     variant="default"
                     size="sm"
                     onClick={() => handleStatusUpdate(batch.id, 'in-progress')}
+                    disabled={isUpdating}
                   >
-                    <Play className="w-4 h-4 mr-1" />
+                    {isUpdating ? (
+                      <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                    ) : (
+                      <Play className="w-4 h-4 mr-1" />
+                    )}
                     Start
                   </Button>
                 )}
@@ -353,8 +404,13 @@ const BatchList = ({ batches, onBatchUpdate }: BatchListProps) => {
                     variant="default"
                     size="sm"
                     onClick={() => handleStatusUpdate(batch.id, 'completed')}
+                    disabled={isUpdating}
                   >
-                    <CheckCircle className="w-4 h-4 mr-1" />
+                    {isUpdating ? (
+                      <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                    ) : (
+                      <CheckCircle className="w-4 h-4 mr-1" />
+                    )}
                     Complete
                   </Button>
                 )}
@@ -363,8 +419,13 @@ const BatchList = ({ batches, onBatchUpdate }: BatchListProps) => {
                     variant="outline"
                     size="sm"
                     onClick={() => handleStatusUpdate(batch.id, 'cancelled')}
+                    disabled={isUpdating}
                   >
-                    <Square className="w-4 h-4 mr-1" />
+                    {isUpdating ? (
+                      <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                    ) : (
+                      <Square className="w-4 h-4 mr-1" />
+                    )}
                     Cancel
                   </Button>
                 )}

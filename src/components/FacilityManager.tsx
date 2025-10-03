@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/components/ui/sonner';
+import { useAddFacility } from '@/hooks/useFacilities';
 import { 
   Upload, 
   Building, 
@@ -15,7 +16,8 @@ import {
   User,
   Download,
   AlertCircle,
-  CheckCircle
+  CheckCircle,
+  Loader2
 } from 'lucide-react';
 import {
   Table,
@@ -39,7 +41,7 @@ const FacilityManager = ({ facilities, onFacilitiesUpdate }: FacilityManagerProp
     columnInfo?: string;
   } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  // Remove the useToast hook declaration
+  const addFacility = useAddFacility();
 
   // Flexible column mapping to handle different CSV formats
   const mapColumns = (row: any): CSVFacility => {
@@ -124,7 +126,7 @@ const FacilityManager = ({ facilities, onFacilitiesUpdate }: FacilityManagerProp
     return { valid, errors, columnInfo };
   };
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -139,15 +141,37 @@ const FacilityManager = ({ facilities, onFacilitiesUpdate }: FacilityManagerProp
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
-      complete: (results) => {
+      complete: async (results) => {
         try {
           const { valid, errors, columnInfo } = validateCSVData(results.data);
           
           if (valid.length > 0) {
-            const updatedFacilities = [...facilities, ...valid];
-            onFacilitiesUpdate(updatedFacilities);
+            // Upload facilities to database one by one
+            let successCount = 0;
+            const uploadErrors: string[] = [...errors];
             
-            toast.success(`Successfully uploaded ${valid.length} facilities`);
+            for (const facility of valid) {
+              try {
+                await addFacility.mutateAsync({
+                  name: facility.name,
+                  address: facility.address,
+                  lat: facility.lat,
+                  lng: facility.lng,
+                  type: facility.type,
+                  phone: facility.phone,
+                  contactPerson: facility.contactPerson,
+                  capacity: facility.capacity,
+                  operatingHours: facility.operatingHours,
+                });
+                successCount++;
+              } catch (error: any) {
+                uploadErrors.push(`${facility.name}: ${error.message}`);
+              }
+            }
+            
+            if (successCount > 0) {
+              toast.success(`Successfully uploaded ${successCount} of ${valid.length} facilities to database`);
+            }
           }
           
           setUploadResults({
@@ -203,14 +227,14 @@ const FacilityManager = ({ facilities, onFacilitiesUpdate }: FacilityManagerProp
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center space-x-4">
-            <div>
+            <div className="flex-1">
               <Label htmlFor="csvFile">Choose CSV File</Label>
               <Input
                 id="csvFile"
                 type="file"
                 accept=".csv"
                 onChange={handleFileUpload}
-                disabled={isUploading}
+                disabled={isUploading || addFacility.isPending}
                 ref={fileInputRef}
                 className="mt-1"
               />
@@ -218,10 +242,20 @@ const FacilityManager = ({ facilities, onFacilitiesUpdate }: FacilityManagerProp
             <Button
               variant="outline"
               onClick={downloadTemplate}
+              disabled={isUploading}
               className="flex items-center space-x-2"
             >
-              <Download className="w-4 h-4" />
-              <span>Download Template</span>
+              {isUploading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Uploading...</span>
+                </>
+              ) : (
+                <>
+                  <Download className="w-4 h-4" />
+                  <span>Download Template</span>
+                </>
+              )}
             </Button>
           </div>
 

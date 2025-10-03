@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Facility, Warehouse, RouteOptimization, DeliveryBatch } from '@/types';
-import { DRIVERS } from '@/data/fleet';
+import { useDrivers } from '@/hooks/useDrivers';
 
 // Fix for default marker icons in Leaflet
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
@@ -119,6 +119,7 @@ const MapView = ({
   center = [12.0, 8.5], 
   zoom = 6 
 }: MapViewProps) => {
+  const { data: drivers = [] } = useDrivers();
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersRef = useRef<L.Marker[]>([]);
@@ -272,7 +273,7 @@ const MapView = ({
     });
 
     // Add driver position markers
-    DRIVERS.forEach(driver => {
+    drivers.forEach(driver => {
       if (!mapInstanceRef.current || !driver.currentLocation) return;
 
       // Check if driver is assigned to an in-progress batch
