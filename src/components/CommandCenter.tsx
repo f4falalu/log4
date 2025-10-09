@@ -9,6 +9,9 @@ import BatchDetailsPanel from './BatchDetailsPanel';
 import { RefreshCw } from 'lucide-react';
 import { Button } from './ui/button';
 import { toast } from 'sonner';
+import { useRealtimeBatches } from '@/hooks/useRealtimeBatches';
+import { useRealtimeDrivers } from '@/hooks/useRealtimeDrivers';
+import { useRealtimeRouteProgress } from '@/hooks/useRealtimeRouteProgress';
 
 interface CommandCenterProps {
   facilities: Facility[];
@@ -20,6 +23,11 @@ const CommandCenter = ({ facilities, warehouses, batches }: CommandCenterProps) 
   const [lastRefresh, setLastRefresh] = useState(new Date());
   const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<'all' | 'assigned' | 'in-progress' | 'completed' | 'delayed'>('all');
+  
+  // Enable real-time updates
+  useRealtimeBatches();
+  useRealtimeDrivers();
+  useRealtimeRouteProgress();
 
   const selectedBatch = useMemo(() => 
     batches.find(b => b.id === selectedBatchId),

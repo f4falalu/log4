@@ -105,19 +105,61 @@ export type Database = {
           },
         ]
       }
+      driver_availability: {
+        Row: {
+          available: boolean | null
+          created_at: string | null
+          date: string
+          driver_id: string
+          id: string
+          reason: string | null
+        }
+        Insert: {
+          available?: boolean | null
+          created_at?: string | null
+          date: string
+          driver_id: string
+          id?: string
+          reason?: string | null
+        }
+        Update: {
+          available?: boolean | null
+          created_at?: string | null
+          date?: string
+          driver_id?: string
+          id?: string
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_availability_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       drivers: {
         Row: {
           created_at: string | null
           current_lat: number | null
           current_lng: number | null
           id: string
+          license_expiry: string | null
           license_type: Database["public"]["Enums"]["license_type"]
+          license_verified: boolean | null
+          location_updated_at: string | null
           max_hours: number
           name: string
+          on_time_percentage: number | null
+          onboarding_completed: boolean | null
+          performance_score: number | null
           phone: string
           shift_end: string
           shift_start: string
           status: Database["public"]["Enums"]["driver_status"]
+          total_deliveries: number | null
           updated_at: string | null
         }
         Insert: {
@@ -125,13 +167,20 @@ export type Database = {
           current_lat?: number | null
           current_lng?: number | null
           id?: string
+          license_expiry?: string | null
           license_type?: Database["public"]["Enums"]["license_type"]
+          license_verified?: boolean | null
+          location_updated_at?: string | null
           max_hours?: number
           name: string
+          on_time_percentage?: number | null
+          onboarding_completed?: boolean | null
+          performance_score?: number | null
           phone: string
           shift_end: string
           shift_start: string
           status?: Database["public"]["Enums"]["driver_status"]
+          total_deliveries?: number | null
           updated_at?: string | null
         }
         Update: {
@@ -139,13 +188,20 @@ export type Database = {
           current_lat?: number | null
           current_lng?: number | null
           id?: string
+          license_expiry?: string | null
           license_type?: Database["public"]["Enums"]["license_type"]
+          license_verified?: boolean | null
+          location_updated_at?: string | null
           max_hours?: number
           name?: string
+          on_time_percentage?: number | null
+          onboarding_completed?: boolean | null
+          performance_score?: number | null
           phone?: string
           shift_end?: string
           shift_start?: string
           status?: Database["public"]["Enums"]["driver_status"]
+          total_deliveries?: number | null
           updated_at?: string | null
         }
         Relationships: []
@@ -192,6 +248,42 @@ export type Database = {
           phone?: string | null
           type?: Database["public"]["Enums"]["facility_type"]
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          created_at: string | null
+          id: string
+          message: string
+          read: boolean | null
+          related_entity_id: string | null
+          related_entity_type: string | null
+          title: string
+          type: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          message: string
+          read?: boolean | null
+          related_entity_id?: string | null
+          related_entity_type?: string | null
+          title: string
+          type: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          message?: string
+          read?: boolean | null
+          related_entity_id?: string | null
+          related_entity_type?: string | null
+          title?: string
+          type?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -258,45 +350,122 @@ export type Database = {
         }
         Relationships: []
       }
+      recurring_schedules: {
+        Row: {
+          active: boolean | null
+          created_at: string | null
+          end_date: string | null
+          facility_ids: string[]
+          id: string
+          medication_type: string
+          name: string
+          priority: Database["public"]["Enums"]["delivery_priority"] | null
+          quantity: number
+          recurrence_days: number[] | null
+          recurrence_type: string
+          scheduled_time: string
+          start_date: string
+          warehouse_id: string
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string | null
+          end_date?: string | null
+          facility_ids: string[]
+          id?: string
+          medication_type: string
+          name: string
+          priority?: Database["public"]["Enums"]["delivery_priority"] | null
+          quantity: number
+          recurrence_days?: number[] | null
+          recurrence_type: string
+          scheduled_time: string
+          start_date: string
+          warehouse_id: string
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string | null
+          end_date?: string | null
+          facility_ids?: string[]
+          id?: string
+          medication_type?: string
+          name?: string
+          priority?: Database["public"]["Enums"]["delivery_priority"] | null
+          quantity?: number
+          recurrence_days?: number[] | null
+          recurrence_type?: string
+          scheduled_time?: string
+          start_date?: string
+          warehouse_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recurring_schedules_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       route_history: {
         Row: {
           actual_arrival: string | null
           actual_duration: number | null
           batch_id: string
+          check_in_time: string | null
+          check_out_time: string | null
           created_at: string | null
+          delay_reason: string | null
           distance_from_previous: number | null
           facility_id: string
           id: string
           notes: string | null
           planned_arrival: string | null
           planned_duration: number | null
+          proof_of_delivery_url: string | null
+          recipient_name: string | null
           sequence_number: number
+          status: string | null
         }
         Insert: {
           actual_arrival?: string | null
           actual_duration?: number | null
           batch_id: string
+          check_in_time?: string | null
+          check_out_time?: string | null
           created_at?: string | null
+          delay_reason?: string | null
           distance_from_previous?: number | null
           facility_id: string
           id?: string
           notes?: string | null
           planned_arrival?: string | null
           planned_duration?: number | null
+          proof_of_delivery_url?: string | null
+          recipient_name?: string | null
           sequence_number: number
+          status?: string | null
         }
         Update: {
           actual_arrival?: string | null
           actual_duration?: number | null
           batch_id?: string
+          check_in_time?: string | null
+          check_out_time?: string | null
           created_at?: string | null
+          delay_reason?: string | null
           distance_from_previous?: number | null
           facility_id?: string
           id?: string
           notes?: string | null
           planned_arrival?: string | null
           planned_duration?: number | null
+          proof_of_delivery_url?: string | null
+          recipient_name?: string | null
           sequence_number?: number
+          status?: string | null
         }
         Relationships: [
           {
@@ -338,6 +507,114 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      vehicle_maintenance: {
+        Row: {
+          completed_date: string | null
+          cost: number | null
+          created_at: string | null
+          description: string | null
+          id: string
+          maintenance_type: string
+          odometer_reading: number | null
+          scheduled_date: string
+          status: string | null
+          vehicle_id: string
+        }
+        Insert: {
+          completed_date?: string | null
+          cost?: number | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          maintenance_type: string
+          odometer_reading?: number | null
+          scheduled_date: string
+          status?: string | null
+          vehicle_id: string
+        }
+        Update: {
+          completed_date?: string | null
+          cost?: number | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          maintenance_type?: string
+          odometer_reading?: number | null
+          scheduled_date?: string
+          status?: string | null
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_maintenance_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vehicle_trips: {
+        Row: {
+          batch_id: string | null
+          created_at: string | null
+          driver_id: string | null
+          end_odometer: number | null
+          end_time: string | null
+          fuel_consumed: number | null
+          id: string
+          start_odometer: number | null
+          start_time: string | null
+          vehicle_id: string
+        }
+        Insert: {
+          batch_id?: string | null
+          created_at?: string | null
+          driver_id?: string | null
+          end_odometer?: number | null
+          end_time?: string | null
+          fuel_consumed?: number | null
+          id?: string
+          start_odometer?: number | null
+          start_time?: string | null
+          vehicle_id: string
+        }
+        Update: {
+          batch_id?: string | null
+          created_at?: string | null
+          driver_id?: string | null
+          end_odometer?: number | null
+          end_time?: string | null
+          fuel_consumed?: number | null
+          id?: string
+          start_odometer?: number | null
+          start_time?: string | null
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_trips_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_trips_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_trips_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       vehicles: {
         Row: {
