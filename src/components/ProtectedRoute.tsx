@@ -6,6 +6,11 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
+  // ⚠️ AUTHENTICATION TEMPORARILY DISABLED FOR TESTING ⚠️
+  // TODO: RE-ENABLE BEFORE PRODUCTION!
+  return <>{children}</>;
+  
+  /* ORIGINAL CODE - UNCOMMENT TO RE-ENABLE AUTHENTICATION
   const { user, loading } = useAuth();
 
   if (loading) {
@@ -24,4 +29,5 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   }
 
   return <>{children}</>;
+  */
 }
