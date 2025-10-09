@@ -115,23 +115,3 @@ export interface CSVFacility {
   capacity?: string;
   operatingHours?: string;
 }
-
-// Auth & IAM Types
-export type AppRole = 'system_admin' | 'warehouse_officer' | 'driver' | 'zonal_manager' | 'viewer';
-
-export interface Profile {
-  id: string;
-  full_name?: string;
-  phone?: string;
-  avatar_url?: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface UserRole {
-  id: string;
-  user_id: string;
-  role: AppRole;
-  assigned_by?: string;
-  assigned_at: string;
-}

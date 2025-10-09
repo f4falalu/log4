@@ -9,7 +9,6 @@ import {
   Route,
   Package
 } from 'lucide-react';
-import { UserMenu } from './UserMenu';
 
 interface LayoutProps {
   children: ReactNode;
@@ -42,7 +41,6 @@ const Layout = ({ children, activeTab, onTabChange }: LayoutProps) => {
                 <p className="text-sm text-muted-foreground">Delivery Management Platform</p>
               </div>
             </div>
-            <UserMenu />
           </div>
         </div>
       </header>
