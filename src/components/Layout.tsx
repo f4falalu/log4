@@ -7,7 +7,9 @@ import {
   BarChart3,
   Truck,
   Route,
-  Package
+  Package,
+  User,
+  FileText
 } from 'lucide-react';
 import { UserMenu } from './UserMenu';
 import { NotificationCenter } from './NotificationCenter';
@@ -21,11 +23,13 @@ interface LayoutProps {
 const Layout = ({ children, activeTab, onTabChange }: LayoutProps) => {
   const tabs = [
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
-    { id: 'map', label: 'Map View', icon: MapPin },
+    { id: 'map', label: 'Command Center', icon: MapPin },
     { id: 'facilities', label: 'Facilities', icon: Building },
-    { id: 'schedule', label: 'VRP Scheduler', icon: Route },
-    { id: 'batches', label: 'Delivery Batches', icon: Package },
-    { id: 'deliveries', label: 'Legacy Deliveries', icon: Truck },
+    { id: 'schedule', label: 'Dispatch', icon: Route },
+    { id: 'batches', label: 'Batches', icon: Package },
+    { id: 'drivers', label: 'Drivers', icon: User },
+    { id: 'vehicles', label: 'Vehicles', icon: Truck },
+    { id: 'reports', label: 'Reports', icon: FileText },
   ];
 
   return (

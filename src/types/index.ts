@@ -53,7 +53,11 @@ export interface Driver {
   };
   shiftStart: string;
   shiftEnd: string;
-  maxHours: number; // maximum working hours per day
+  maxHours: number;
+  licenseExpiry?: string;
+  performanceScore?: number;
+  totalDeliveries?: number;
+  onTimePercentage?: number;
 }
 
 export interface Vehicle {

@@ -9,9 +9,13 @@ import SchedulingForm from '@/components/SchedulingForm';
 import TacticalDispatchScheduler from '@/components/TacticalDispatchScheduler';
 import DeliveryList from '@/components/DeliveryList';
 import BatchList from '@/components/BatchList';
+import DriverManagement from '@/components/DriverManagement';
+import VehicleManagement from '@/components/VehicleManagement';
+import ReportsPage from '@/components/ReportsPage';
 import { useFacilities } from '@/hooks/useFacilities';
 import { useWarehouses } from '@/hooks/useWarehouses';
 import { useDeliveryBatches, useCreateDeliveryBatch } from '@/hooks/useDeliveryBatches';
+import { useBatchUpdate } from '@/hooks/useBatchUpdate';
 import { optimizeRoutes } from '@/lib/routeOptimization';
 
 const Index = () => {
@@ -52,9 +56,10 @@ const Index = () => {
     createBatch.mutate(batch);
   };
 
+  const updateBatch = useBatchUpdate();
+
   const handleBatchUpdate = (batchId: string, updates: Partial<DeliveryBatch>) => {
-    // TODO: Implement database update
-    console.log('Batch update:', batchId, updates);
+    updateBatch.mutate({ batchId, updates });
   };
 
   const renderContent = () => {
@@ -71,14 +76,20 @@ const Index = () => {
         );
       case 'facilities':
         return <FacilityManager facilities={facilities} onFacilitiesUpdate={handleFacilitiesUpdate} />;
-        case 'schedule':
-          return (
-            <TacticalDispatchScheduler
-              facilities={facilities}
-              batches={deliveryBatches}
-              onBatchCreate={handleBatchCreate}
-            />
-          );
+      case 'schedule':
+        return (
+          <TacticalDispatchScheduler
+            facilities={facilities}
+            batches={deliveryBatches}
+            onBatchCreate={handleBatchCreate}
+          />
+        );
+      case 'drivers':
+        return <DriverManagement />;
+      case 'vehicles':
+        return <VehicleManagement />;
+      case 'reports':
+        return <ReportsPage />;
       case 'legacy-schedule':
         return <SchedulingForm facilities={facilities} deliveries={deliveries} onDeliveryCreate={handleDeliveryCreate} />;
       case 'deliveries':
