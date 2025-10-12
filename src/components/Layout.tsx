@@ -14,6 +14,7 @@ import {
 import { UserMenu } from './UserMenu';
 import { NotificationCenter } from './NotificationCenter';
 import { RoleSwitcher } from './RoleSwitcher';
+import { usePermissions, Permission } from '@/hooks/usePermissions';
 
 interface LayoutProps {
   children: ReactNode;
@@ -22,16 +23,64 @@ interface LayoutProps {
 }
 
 const Layout = ({ children, activeTab, onTabChange }: LayoutProps) => {
-  const tabs = [
-    { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
-    { id: 'map', label: 'Command Center', icon: MapPin },
-    { id: 'facilities', label: 'Facilities', icon: Building },
-    { id: 'schedule', label: 'Dispatch', icon: Route },
-    { id: 'batches', label: 'Batches', icon: Package },
-    { id: 'drivers', label: 'Drivers', icon: User },
-    { id: 'vehicles', label: 'Vehicles', icon: Truck },
-    { id: 'reports', label: 'Reports', icon: FileText },
+  const { hasPermission } = usePermissions();
+
+  // Define all possible tabs with their required permissions
+  const allTabs = [
+    { 
+      id: 'dashboard', 
+      label: 'Dashboard', 
+      icon: BarChart3,
+      permission: null
+    },
+    { 
+      id: 'map', 
+      label: 'Command Center', 
+      icon: MapPin,
+      permission: 'view_batches' as Permission
+    },
+    { 
+      id: 'facilities', 
+      label: 'Facilities', 
+      icon: Building,
+      permission: 'manage_facilities' as Permission
+    },
+    { 
+      id: 'schedule', 
+      label: 'Dispatch', 
+      icon: Route,
+      permission: 'assign_drivers' as Permission
+    },
+    { 
+      id: 'batches', 
+      label: 'Batches', 
+      icon: Package,
+      permission: 'view_batches' as Permission
+    },
+    { 
+      id: 'drivers', 
+      label: 'Drivers', 
+      icon: User,
+      permission: 'manage_drivers' as Permission
+    },
+    { 
+      id: 'vehicles', 
+      label: 'Vehicles', 
+      icon: Truck,
+      permission: 'manage_vehicles' as Permission
+    },
+    { 
+      id: 'reports', 
+      label: 'Reports', 
+      icon: FileText,
+      permission: 'view_reports' as Permission
+    },
   ];
+
+  // Filter tabs based on user permissions
+  const tabs = allTabs.filter(tab => 
+    !tab.permission || hasPermission(tab.permission)
+  );
 
   return (
     <div className="min-h-screen bg-gradient-light">

@@ -12,11 +12,13 @@ import BatchList from '@/components/BatchList';
 import DriverManagement from '@/components/DriverManagement';
 import VehicleManagement from '@/components/VehicleManagement';
 import ReportsPage from '@/components/ReportsPage';
+import { AccessDenied } from '@/components/AccessDenied';
 import { useFacilities } from '@/hooks/useFacilities';
 import { useWarehouses } from '@/hooks/useWarehouses';
 import { useDeliveryBatches, useCreateDeliveryBatch } from '@/hooks/useDeliveryBatches';
 import { useBatchUpdate } from '@/hooks/useBatchUpdate';
 import { optimizeRoutes } from '@/lib/routeOptimization';
+import { usePermissions } from '@/hooks/usePermissions';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -62,40 +64,52 @@ const Index = () => {
     updateBatch.mutate({ batchId, updates });
   };
 
+  const { hasPermission } = usePermissions();
+
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
         return <Dashboard facilities={facilities} deliveries={deliveries} />;
       case 'map':
-        return (
+        return hasPermission('view_batches') ? (
           <CommandCenter
             facilities={facilities}
             warehouses={warehouses}
             batches={deliveryBatches}
           />
-        );
+        ) : <AccessDenied />;
       case 'facilities':
-        return <FacilityManager facilities={facilities} onFacilitiesUpdate={handleFacilitiesUpdate} />;
+        return hasPermission('manage_facilities') ? (
+          <FacilityManager facilities={facilities} onFacilitiesUpdate={handleFacilitiesUpdate} />
+        ) : <AccessDenied />;
       case 'schedule':
-        return (
+        return hasPermission('assign_drivers') ? (
           <TacticalDispatchScheduler
             facilities={facilities}
             batches={deliveryBatches}
             onBatchCreate={handleBatchCreate}
           />
-        );
+        ) : <AccessDenied />;
       case 'drivers':
-        return <DriverManagement />;
+        return hasPermission('manage_drivers') ? (
+          <DriverManagement />
+        ) : <AccessDenied />;
       case 'vehicles':
-        return <VehicleManagement />;
+        return hasPermission('manage_vehicles') ? (
+          <VehicleManagement />
+        ) : <AccessDenied />;
       case 'reports':
-        return <ReportsPage />;
+        return hasPermission('view_reports') ? (
+          <ReportsPage />
+        ) : <AccessDenied />;
       case 'legacy-schedule':
         return <SchedulingForm facilities={facilities} deliveries={deliveries} onDeliveryCreate={handleDeliveryCreate} />;
       case 'deliveries':
         return <DeliveryList deliveries={deliveries} onDeliveryUpdate={handleDeliveryUpdate} />;
       case 'batches':
-        return <BatchList batches={deliveryBatches} onBatchUpdate={handleBatchUpdate} />;
+        return hasPermission('view_batches') ? (
+          <BatchList batches={deliveryBatches} onBatchUpdate={handleBatchUpdate} />
+        ) : <AccessDenied />;
       default:
         return <Dashboard facilities={facilities} deliveries={deliveries} />;
     }
