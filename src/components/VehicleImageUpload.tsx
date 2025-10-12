@@ -137,7 +137,7 @@ export const VehicleImageUpload = ({
                 <img
                   src={previewUrl}
                   alt="Vehicle preview"
-                  className="w-full h-48 object-cover rounded-lg border"
+                  className="w-full aspect-[16/9] object-contain rounded-lg border bg-muted/10 p-4"
                 />
               </div>
             )}
@@ -166,7 +166,7 @@ export const VehicleImageUpload = ({
                 <img
                   src={previewUrl}
                   alt="Vehicle preview"
-                  className="w-full h-48 object-cover rounded-lg border"
+                  className="w-full aspect-[16/9] object-contain rounded-lg border bg-muted/10 p-4"
                 />
               </div>
             )}

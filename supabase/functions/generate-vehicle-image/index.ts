@@ -32,8 +32,18 @@ serve(async (req) => {
 
     console.log(`Generating image for ${vehicleType} - ${model}`);
 
-    // Generate detailed prompt for realistic vehicle image
-    const prompt = `Professional side view photo of a ${model} ${vehicleType}, commercial delivery vehicle, clean white background, studio lighting, high resolution, realistic photography, detailed, 4k quality`;
+    // Generate detailed prompt for realistic vehicle image with strict side view requirements
+    const prompt = `Professional photograph of a ${model} ${vehicleType} commercial delivery vehicle. 
+STRICT REQUIREMENTS:
+- Perfect 90-degree side profile view (horizontal orientation)
+- Vehicle facing right, parallel to camera
+- Complete vehicle visible from front to back
+- Clean white or light gray background
+- Vehicle centered in frame
+- Studio lighting, realistic, high detail
+- Landscape orientation (16:9 aspect ratio)
+- Professional product photography style
+Do NOT show 3/4 view, angled view, or front view. Must be pure side profile.`;
 
     // Call Lovable AI to generate image
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {

@@ -65,12 +65,12 @@ export const VehicleCard = ({ vehicle, onClick, compact = false }: VehicleCardPr
 
         {/* Vehicle Image or Illustration */}
         {vehicle.photo_url ? (
-          <div className="relative w-full h-32 bg-muted/30 rounded-lg overflow-hidden">
-            <img 
-              src={vehicle.photo_url} 
-              alt={`${vehicle.plateNumber} - ${vehicle.model}`}
-              className="w-full h-full object-cover"
-            />
+            <div className="relative w-full aspect-[16/9] bg-muted/30 rounded-lg overflow-hidden">
+              <img 
+                src={vehicle.photo_url} 
+                alt={`${vehicle.plateNumber} - ${vehicle.model}`}
+                className="w-full h-full object-contain p-2"
+              />
             {vehicle.ai_generated && (
               <div className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm px-2 py-1 rounded text-xs border">
                 ✨ AI
