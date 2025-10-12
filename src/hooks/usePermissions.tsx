@@ -35,14 +35,12 @@ const ROLE_PERMISSIONS: Record<string, Permission[]> = {
 };
 
 export function usePermissions() {
-  const { roles, isAdmin } = useUserRole();
+  const { roles, activeRole, isAdmin } = useUserRole();
 
   const hasPermission = (permission: Permission): boolean => {
-    if (!roles || roles.length === 0) return false;
-    return roles.some(role => {
-      const permissions = ROLE_PERMISSIONS[role] || [];
-      return permissions.includes(permission);
-    });
+    if (!activeRole) return false;
+    const permissions = ROLE_PERMISSIONS[activeRole] || [];
+    return permissions.includes(permission);
   };
 
   const hasAnyPermission = (permissions: Permission[]): boolean => {
@@ -58,6 +56,7 @@ export function usePermissions() {
     hasAnyPermission,
     hasAllPermissions,
     roles,
+    activeRole,
     isAdmin
   };
 }

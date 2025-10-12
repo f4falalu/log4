@@ -2,11 +2,14 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
+import { AppRole } from '@/types';
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  activeRole: AppRole | null;
+  setActiveRole: (role: AppRole) => void;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string, fullName: string, phone?: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
@@ -18,7 +21,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [activeRole, setActiveRoleState] = useState<AppRole | null>(() => {
+    // Load active role from localStorage on init
+    const stored = localStorage.getItem('activeRole');
+    return stored as AppRole | null;
+  });
   const navigate = useNavigate();
+
+  const setActiveRole = (role: AppRole) => {
+    setActiveRoleState(role);
+    localStorage.setItem('activeRole', role);
+  };
 
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -67,11 +80,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     await supabase.auth.signOut();
+    localStorage.removeItem('activeRole');
+    setActiveRoleState(null);
     navigate('/auth');
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, activeRole, setActiveRole, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );

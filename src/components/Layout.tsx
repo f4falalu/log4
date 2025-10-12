@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { UserMenu } from './UserMenu';
 import { NotificationCenter } from './NotificationCenter';
+import { RoleSwitcher } from './RoleSwitcher';
 
 interface LayoutProps {
   children: ReactNode;
@@ -48,6 +49,7 @@ const Layout = ({ children, activeTab, onTabChange }: LayoutProps) => {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <RoleSwitcher />
               <NotificationCenter />
               <UserMenu />
             </div>

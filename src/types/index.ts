@@ -121,7 +121,7 @@ export interface CSVFacility {
 }
 
 // Auth & IAM Types
-export type AppRole = 'system_admin' | 'warehouse_officer' | 'driver' | 'zonal_manager' | 'viewer';
+export type AppRole = 'system_admin' | 'warehouse_officer' | 'dispatcher' | 'driver' | 'zonal_manager' | 'viewer';
 
 export interface Profile {
   id: string;
