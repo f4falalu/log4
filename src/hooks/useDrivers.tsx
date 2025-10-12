@@ -25,7 +25,14 @@ export function useDrivers() {
         } : undefined,
         shiftStart: d.shift_start,
         shiftEnd: d.shift_end,
-        maxHours: d.max_hours
+        maxHours: d.max_hours,
+        licenseExpiry: d.license_expiry,
+        performanceScore: d.performance_score ? Number(d.performance_score) : undefined,
+        totalDeliveries: d.total_deliveries || 0,
+        onTimePercentage: d.on_time_percentage ? Number(d.on_time_percentage) : 100,
+        onboardingCompleted: d.onboarding_completed || false,
+        licenseVerified: d.license_verified || false,
+        locationUpdatedAt: d.location_updated_at,
       })) as Driver[];
     }
   });

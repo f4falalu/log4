@@ -140,6 +140,60 @@ export type Database = {
           },
         ]
       }
+      driver_vehicle_history: {
+        Row: {
+          assigned_at: string | null
+          created_at: string | null
+          driver_id: string
+          id: string
+          is_current: boolean | null
+          notes: string | null
+          total_distance: number | null
+          total_trips: number | null
+          unassigned_at: string | null
+          vehicle_id: string
+        }
+        Insert: {
+          assigned_at?: string | null
+          created_at?: string | null
+          driver_id: string
+          id?: string
+          is_current?: boolean | null
+          notes?: string | null
+          total_distance?: number | null
+          total_trips?: number | null
+          unassigned_at?: string | null
+          vehicle_id: string
+        }
+        Update: {
+          assigned_at?: string | null
+          created_at?: string | null
+          driver_id?: string
+          id?: string
+          is_current?: boolean | null
+          notes?: string | null
+          total_distance?: number | null
+          total_trips?: number | null
+          unassigned_at?: string | null
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_vehicle_history_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_vehicle_history_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       drivers: {
         Row: {
           created_at: string | null
@@ -758,6 +812,24 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_driver_vehicles: {
+        Args: { p_driver_id: string }
+        Returns: {
+          ai_generated: boolean
+          assigned_at: string
+          avg_speed: number
+          capacity: number
+          fuel_type: string
+          is_current: boolean
+          model: string
+          photo_url: string
+          plate_number: string
+          thumbnail_url: string
+          total_trips: number
+          type: string
+          vehicle_id: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

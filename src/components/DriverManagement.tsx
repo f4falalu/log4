@@ -10,15 +10,21 @@ import { Badge } from './ui/badge';
 import { useDrivers } from '@/hooks/useDrivers';
 import { useDriverManagement, DriverFormData } from '@/hooks/useDriverManagement';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useRealtimeDrivers } from '@/hooks/useRealtimeDrivers';
 import { Plus, Edit, Trash2, User } from 'lucide-react';
 import { toast } from 'sonner';
+import { DriverDetailPanel } from './DriverDetailPanel';
+import { Driver } from '@/types';
 
 const DriverManagement = () => {
   const { data: drivers = [], isLoading } = useDrivers();
   const { createDriver, updateDriver, deleteDriver, isCreating, isUpdating } = useDriverManagement();
   const { hasPermission } = usePermissions();
+  useRealtimeDrivers(); // Enable real-time updates
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingDriver, setEditingDriver] = useState<any>(null);
+  const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
+  const [isDetailPanelOpen, setIsDetailPanelOpen] = useState(false);
   const [formData, setFormData] = useState<DriverFormData>({
     name: '',
     phone: '',
@@ -83,6 +89,11 @@ const DriverManagement = () => {
     if (confirm('Are you sure you want to delete this driver?')) {
       deleteDriver(id);
     }
+  };
+
+  const handleRowClick = (driver: Driver) => {
+    setSelectedDriver(driver);
+    setIsDetailPanelOpen(true);
   };
 
   if (isLoading) {
@@ -218,7 +229,11 @@ const DriverManagement = () => {
             </TableHeader>
             <TableBody>
               {drivers.map((driver) => (
-                <TableRow key={driver.id}>
+                <TableRow 
+                  key={driver.id}
+                  className="cursor-pointer hover:bg-muted/50 transition-colors"
+                  onClick={() => handleRowClick(driver)}
+                >
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-2">
                       <User className="h-4 w-4 text-muted-foreground" />
@@ -248,14 +263,20 @@ const DriverManagement = () => {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleEdit(driver)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEdit(driver);
+                          }}
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleDelete(driver.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(driver.id);
+                          }}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -268,6 +289,12 @@ const DriverManagement = () => {
           </Table>
         </CardContent>
       </Card>
+
+      <DriverDetailPanel
+        driver={selectedDriver}
+        open={isDetailPanelOpen}
+        onOpenChange={setIsDetailPanelOpen}
+      />
     </div>
   );
 };

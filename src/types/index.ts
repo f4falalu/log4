@@ -58,6 +58,25 @@ export interface Driver {
   performanceScore?: number;
   totalDeliveries?: number;
   onTimePercentage?: number;
+  onboardingCompleted?: boolean;
+  licenseVerified?: boolean;
+  locationUpdatedAt?: string;
+}
+
+export interface DriverVehicleHistory {
+  vehicleId: string;
+  plateNumber: string;
+  model: string;
+  type: string;
+  photoUrl?: string;
+  thumbnailUrl?: string;
+  aiGenerated?: boolean;
+  capacity: number;
+  fuelType: string;
+  avgSpeed: number;
+  isCurrent: boolean;
+  assignedAt: string;
+  totalTrips: number;
 }
 
 export interface Vehicle {
