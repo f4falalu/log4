@@ -6,6 +6,7 @@ import { useDrivers } from '@/hooks/useDrivers';
 import { useVehicles } from '@/hooks/useVehicles';
 import { DeliveryBatch } from '@/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import { VehicleCard } from '@/components/VehicleCard';
 
 interface FleetStatusProps {
   batches: DeliveryBatch[];
@@ -32,7 +33,9 @@ const FleetStatus = ({ batches }: FleetStatusProps) => {
       offline: drivers.filter(d => d.status === 'offline').length
     };
 
-    return { vehicleStats, driverStats };
+    const activeVehicles = vehicles.filter(v => activeVehicleIds.has(v.id) || v.status === 'in-use');
+
+    return { vehicleStats, driverStats, activeVehicles };
   }, [batches, drivers, vehicles]);
 
   if (driversLoading || vehiclesLoading) {
@@ -59,8 +62,9 @@ const FleetStatus = ({ batches }: FleetStatusProps) => {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <Card>
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
             <Truck className="h-4 w-4" />
@@ -139,6 +143,30 @@ const FleetStatus = ({ batches }: FleetStatusProps) => {
           </div>
         </CardContent>
       </Card>
+      </div>
+
+      {/* Active Fleet Section */}
+      {fleetStats.activeVehicles.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Truck className="h-4 w-4" />
+              Active Fleet ({fleetStats.activeVehicles.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {fleetStats.activeVehicles.slice(0, 4).map((vehicle) => (
+                <VehicleCard
+                  key={vehicle.id}
+                  vehicle={vehicle}
+                  compact
+                />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

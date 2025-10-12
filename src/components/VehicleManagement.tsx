@@ -10,8 +10,9 @@ import { Badge } from './ui/badge';
 import { useVehicles } from '@/hooks/useVehicles';
 import { useVehicleManagement, VehicleFormData } from '@/hooks/useVehicleManagement';
 import { usePermissions } from '@/hooks/usePermissions';
-import { Plus, Edit, Trash2, Truck } from 'lucide-react';
+import { Plus, Edit, Trash2, Truck, LayoutGrid, List } from 'lucide-react';
 import { toast } from 'sonner';
+import { VehicleGridView } from './VehicleGridView';
 
 const VehicleManagement = () => {
   const { data: vehicles = [], isLoading } = useVehicles();
@@ -19,6 +20,7 @@ const VehicleManagement = () => {
   const { hasPermission } = usePermissions();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState<any>(null);
+  const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
   const [formData, setFormData] = useState<VehicleFormData>({
     type: 'van',
     model: '',
@@ -101,8 +103,25 @@ const VehicleManagement = () => {
           <h1 className="text-3xl font-bold">Vehicle Management</h1>
           <p className="text-muted-foreground">Manage your delivery fleet</p>
         </div>
-        {canManage && (
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 border rounded-md p-1">
+            <Button
+              variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('grid')}
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </Button>
+            <Button
+              variant={viewMode === 'table' ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('table')}
+            >
+              <List className="h-4 w-4" />
+            </Button>
+          </div>
+          {canManage && (
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button onClick={resetForm}>
                 <Plus className="h-4 w-4 mr-2" />
@@ -223,16 +242,23 @@ const VehicleManagement = () => {
               </form>
             </DialogContent>
           </Dialog>
-        )}
+          )}
+        </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Fleet Overview</CardTitle>
-          <CardDescription>Total: {vehicles.length} vehicles</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
+      {viewMode === 'grid' ? (
+        <VehicleGridView 
+          vehicles={vehicles} 
+          onVehicleClick={handleEdit}
+        />
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle>Fleet Overview</CardTitle>
+            <CardDescription>Total: {vehicles.length} vehicles</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Vehicle</TableHead>
@@ -296,6 +322,7 @@ const VehicleManagement = () => {
           </Table>
         </CardContent>
       </Card>
+      )}
     </div>
   );
 };
