@@ -62,7 +62,7 @@ export interface Driver {
 
 export interface Vehicle {
   id: string;
-  type: 'truck' | 'van' | 'pickup' | 'car';
+  type: string; // Now supports custom types
   model: string;
   plateNumber: string;
   capacity: number; // in cubic meters
@@ -72,6 +72,10 @@ export interface Vehicle {
   status: 'available' | 'in-use' | 'maintenance';
   currentDriverId?: string;
   fuelEfficiency: number; // km per liter
+  photo_url?: string;
+  thumbnail_url?: string;
+  photo_uploaded_at?: string;
+  ai_generated?: boolean;
 }
 
 export interface DeliveryBatch {

@@ -616,8 +616,39 @@ export type Database = {
           },
         ]
       }
+      vehicle_types: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          display_name: string
+          icon_name: string | null
+          id: string
+          is_default: boolean | null
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          display_name: string
+          icon_name?: string | null
+          id?: string
+          is_default?: boolean | null
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          display_name?: string
+          icon_name?: string | null
+          id?: string
+          is_default?: boolean | null
+          name?: string
+        }
+        Relationships: []
+      }
       vehicles: {
         Row: {
+          ai_generated: boolean | null
           avg_speed: number
           capacity: number
           created_at: string | null
@@ -627,12 +658,16 @@ export type Database = {
           id: string
           max_weight: number
           model: string
+          photo_uploaded_at: string | null
+          photo_url: string | null
           plate_number: string
           status: Database["public"]["Enums"]["vehicle_status"]
-          type: Database["public"]["Enums"]["vehicle_type"]
+          thumbnail_url: string | null
+          type: string
           updated_at: string | null
         }
         Insert: {
+          ai_generated?: boolean | null
           avg_speed?: number
           capacity: number
           created_at?: string | null
@@ -642,12 +677,16 @@ export type Database = {
           id?: string
           max_weight: number
           model: string
+          photo_uploaded_at?: string | null
+          photo_url?: string | null
           plate_number: string
           status?: Database["public"]["Enums"]["vehicle_status"]
-          type: Database["public"]["Enums"]["vehicle_type"]
+          thumbnail_url?: string | null
+          type: string
           updated_at?: string | null
         }
         Update: {
+          ai_generated?: boolean | null
           avg_speed?: number
           capacity?: number
           created_at?: string | null
@@ -657,9 +696,12 @@ export type Database = {
           id?: string
           max_weight?: number
           model?: string
+          photo_uploaded_at?: string | null
+          photo_url?: string | null
           plate_number?: string
           status?: Database["public"]["Enums"]["vehicle_status"]
-          type?: Database["public"]["Enums"]["vehicle_type"]
+          thumbnail_url?: string | null
+          type?: string
           updated_at?: string | null
         }
         Relationships: [

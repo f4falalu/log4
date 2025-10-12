@@ -15,7 +15,7 @@ export function useVehicles() {
 
       return data.map(v => ({
         id: v.id,
-        type: v.type as 'truck' | 'van' | 'pickup' | 'car',
+        type: v.type,
         model: v.model,
         plateNumber: v.plate_number,
         capacity: Number(v.capacity),
@@ -24,7 +24,11 @@ export function useVehicles() {
         avgSpeed: v.avg_speed,
         status: v.status as 'available' | 'in-use' | 'maintenance',
         currentDriverId: v.current_driver_id || undefined,
-        fuelEfficiency: Number(v.fuel_efficiency)
+        fuelEfficiency: Number(v.fuel_efficiency),
+        photo_url: v.photo_url,
+        thumbnail_url: v.thumbnail_url,
+        photo_uploaded_at: v.photo_uploaded_at,
+        ai_generated: v.ai_generated,
       })) as Vehicle[];
     }
   });

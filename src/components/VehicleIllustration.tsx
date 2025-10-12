@@ -1,13 +1,25 @@
 import { cn } from '@/lib/utils';
 
 interface VehicleIllustrationProps {
-  type: 'truck' | 'van' | 'pickup' | 'car';
+  type: string;
   className?: string;
   size?: number;
 }
 
 export const VehicleIllustration = ({ type, className, size = 120 }: VehicleIllustrationProps) => {
-  const illustrations = {
+  // Default fallback illustration for unknown types
+  const defaultIllustration = (
+    <svg viewBox="0 0 200 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="50" y="40" width="100" height="35" fill="hsl(var(--primary))" opacity="0.2" stroke="hsl(var(--primary))" strokeWidth="2" rx="4"/>
+      <circle cx="75" cy="80" r="12" fill="hsl(var(--foreground))" opacity="0.8" stroke="hsl(var(--primary))" strokeWidth="2"/>
+      <circle cx="75" cy="80" r="6" fill="hsl(var(--background))"/>
+      <circle cx="125" cy="80" r="12" fill="hsl(var(--foreground))" opacity="0.8" stroke="hsl(var(--primary))" strokeWidth="2"/>
+      <circle cx="125" cy="80" r="6" fill="hsl(var(--background))"/>
+      <rect x="120" y="35" width="25" height="15" fill="hsl(var(--background))" opacity="0.5" stroke="hsl(var(--primary))" strokeWidth="1" rx="2"/>
+    </svg>
+  );
+
+  const illustrations: Record<string, React.ReactNode> = {
     truck: (
       <svg viewBox="0 0 200 120" fill="none" xmlns="http://www.w3.org/2000/svg">
         {/* Cargo container */}
@@ -93,12 +105,32 @@ export const VehicleIllustration = ({ type, className, size = 120 }: VehicleIllu
         <circle cx="125" cy="75" r="10" fill="hsl(var(--foreground))" opacity="0.8" stroke="hsl(var(--primary))" strokeWidth="2"/>
         <circle cx="125" cy="75" r="5" fill="hsl(var(--background))"/>
       </svg>
-    )
+    ),
+    // Add support for motorcycle and rickshaw
+    motorcycle: (
+      <svg viewBox="0 0 200 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="60" cy="85" r="14" fill="none" stroke="hsl(var(--primary))" strokeWidth="3"/>
+        <circle cx="140" cy="85" r="14" fill="none" stroke="hsl(var(--primary))" strokeWidth="3"/>
+        <path d="M 60 85 L 90 50 L 110 50 L 140 85" fill="none" stroke="hsl(var(--primary))" strokeWidth="3"/>
+        <path d="M 90 50 L 95 30 L 115 30" fill="none" stroke="hsl(var(--primary))" strokeWidth="2.5"/>
+        <circle cx="110" cy="50" r="3" fill="hsl(var(--primary))"/>
+      </svg>
+    ),
+    rickshaw: (
+      <svg viewBox="0 0 200 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="70" y="40" width="70" height="35" fill="hsl(var(--primary))" opacity="0.2" stroke="hsl(var(--primary))" strokeWidth="2" rx="5"/>
+        <path d="M 70 75 L 80 40 L 130 40 L 140 75" fill="none" stroke="hsl(var(--primary))" strokeWidth="3"/>
+        <circle cx="85" cy="85" r="12" fill="none" stroke="hsl(var(--primary))" strokeWidth="2.5"/>
+        <circle cx="125" cy="85" r="12" fill="none" stroke="hsl(var(--primary))" strokeWidth="2.5"/>
+        <line x1="50" y1="75" x2="70" y2="75" stroke="hsl(var(--primary))" strokeWidth="2.5"/>
+        <line x1="50" y1="60" x2="60" y2="70" stroke="hsl(var(--primary))" strokeWidth="2"/>
+      </svg>
+    ),
   };
 
   return (
     <div className={cn("flex items-center justify-center", className)} style={{ width: size, height: size * 0.6 }}>
-      {illustrations[type]}
+      {illustrations[type] || defaultIllustration}
     </div>
   );
 };

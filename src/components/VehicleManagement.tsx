@@ -9,16 +9,21 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Badge } from './ui/badge';
 import { useVehicles } from '@/hooks/useVehicles';
 import { useVehicleManagement, VehicleFormData } from '@/hooks/useVehicleManagement';
+import { useVehicleTypes } from '@/hooks/useVehicleTypes';
 import { usePermissions } from '@/hooks/usePermissions';
-import { Plus, Edit, Trash2, Truck, LayoutGrid, List } from 'lucide-react';
+import { Plus, Edit, Trash2, Truck, LayoutGrid, List, Settings } from 'lucide-react';
 import { toast } from 'sonner';
 import { VehicleGridView } from './VehicleGridView';
+import { VehicleImageUpload } from './VehicleImageUpload';
+import { VehicleTypeManager } from './VehicleTypeManager';
 
 const VehicleManagement = () => {
   const { data: vehicles = [], isLoading } = useVehicles();
   const { createVehicle, updateVehicle, deleteVehicle, isCreating, isUpdating } = useVehicleManagement();
+  const { vehicleTypes } = useVehicleTypes();
   const { hasPermission } = usePermissions();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [typeManagerOpen, setTypeManagerOpen] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState<any>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
   const [formData, setFormData] = useState<VehicleFormData>({
@@ -76,7 +81,10 @@ const VehicleManagement = () => {
       max_weight: vehicle.maxWeight,
       fuel_type: vehicle.fuelType,
       fuel_efficiency: vehicle.fuelEfficiency,
-      avg_speed: vehicle.avgSpeed
+      avg_speed: vehicle.avgSpeed,
+      photo_url: vehicle.photo_url,
+      thumbnail_url: vehicle.thumbnail_url,
+      ai_generated: vehicle.ai_generated
     });
     setIsDialogOpen(true);
   };
@@ -128,7 +136,7 @@ const VehicleManagement = () => {
                 Add Vehicle
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>{editingVehicle ? 'Edit Vehicle' : 'Add New Vehicle'}</DialogTitle>
                 <DialogDescription>
@@ -136,24 +144,51 @@ const VehicleManagement = () => {
                 </DialogDescription>
               </DialogHeader>
               <form onSubmit={handleSubmit}>
-                <div className="grid grid-cols-2 gap-4 py-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="type">Vehicle Type</Label>
-                    <Select
-                      value={formData.type}
-                      onValueChange={(value: any) => setFormData({ ...formData, type: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="truck">Truck</SelectItem>
-                        <SelectItem value="van">Van</SelectItem>
-                        <SelectItem value="pickup">Pickup</SelectItem>
-                        <SelectItem value="car">Car</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                <div className="space-y-4 py-4">
+                  <VehicleImageUpload
+                    vehicleType={formData.type}
+                    model={formData.model}
+                    plateNumber={formData.plate_number}
+                    currentPhotoUrl={formData.photo_url}
+                    onImageGenerated={(photoUrl, thumbnailUrl, aiGenerated) => {
+                      setFormData({
+                        ...formData,
+                        photo_url: photoUrl,
+                        thumbnail_url: thumbnailUrl,
+                        ai_generated: aiGenerated,
+                      });
+                    }}
+                  />
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Label htmlFor="type">Vehicle Type</Label>
+                        <Button 
+                          type="button" 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => setTypeManagerOpen(true)}
+                        >
+                          <Settings className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <Select
+                        value={formData.type}
+                        onValueChange={(value: any) => setFormData({ ...formData, type: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {vehicleTypes?.map((type) => (
+                            <SelectItem key={type.name} value={type.name}>
+                              {type.icon_name} {type.display_name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   <div className="space-y-2">
                     <Label htmlFor="model">Model</Label>
                     <Input
@@ -230,6 +265,7 @@ const VehicleManagement = () => {
                       required
                     />
                   </div>
+                </div>
                 </div>
                 <DialogFooter>
                   <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
@@ -323,6 +359,11 @@ const VehicleManagement = () => {
         </CardContent>
       </Card>
       )}
+
+      <VehicleTypeManager 
+        open={typeManagerOpen} 
+        onOpenChange={setTypeManagerOpen}
+      />
     </div>
   );
 };

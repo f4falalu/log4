@@ -63,13 +63,28 @@ export const VehicleCard = ({ vehicle, onClick, compact = false }: VehicleCardPr
           </Badge>
         </div>
 
-        {/* Vehicle Illustration */}
-        <div className="flex items-center justify-center py-4 bg-muted/30 rounded-lg">
-          <VehicleIllustration 
-            type={vehicle.type} 
-            size={compact ? 80 : 120}
-          />
-        </div>
+        {/* Vehicle Image or Illustration */}
+        {vehicle.photo_url ? (
+          <div className="relative w-full h-32 bg-muted/30 rounded-lg overflow-hidden">
+            <img 
+              src={vehicle.photo_url} 
+              alt={`${vehicle.plateNumber} - ${vehicle.model}`}
+              className="w-full h-full object-cover"
+            />
+            {vehicle.ai_generated && (
+              <div className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm px-2 py-1 rounded text-xs border">
+                ✨ AI
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="flex items-center justify-center py-4 bg-muted/30 rounded-lg">
+            <VehicleIllustration 
+              type={vehicle.type} 
+              size={compact ? 80 : 120}
+            />
+          </div>
+        )}
 
         {/* Vehicle Details */}
         {!compact && (
