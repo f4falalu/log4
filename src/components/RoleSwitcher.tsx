@@ -33,8 +33,8 @@ const ROLE_COLORS: Record<AppRole, string> = {
 export function RoleSwitcher() {
   const { roles, activeRole, switchRole } = useUserRole();
 
-  // Only show role switcher if user has multiple roles
-  if (!roles || roles.length <= 1) {
+  // Only show role switcher if user has system_admin role
+  if (!roles || !roles.includes('system_admin')) {
     return null;
   }
 
