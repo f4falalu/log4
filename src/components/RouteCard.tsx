@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Route } from '@/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -19,6 +20,12 @@ interface RouteCardProps {
 }
 
 export function RouteCard({ route }: RouteCardProps) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const getStatusBadge = (status: Route['status']) => {
     const statusMap = {
       on_the_way: { label: 'ON THE WAY', className: 'bg-green-500' },
@@ -59,26 +66,28 @@ export function RouteCard({ route }: RouteCardProps) {
 
         {/* Mini Map */}
         <div className="h-32 rounded-lg overflow-hidden mb-3 border">
-          <MapContainer
-            center={route.mapPoints[0]}
-            zoom={13}
-            scrollWheelZoom={false}
-            zoomControl={false}
-            dragging={false}
-            style={{ height: '100%', width: '100%' }}
-          >
-            <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-            {route.mapPoints.map((point, idx) => (
-              <Marker key={idx} position={[point.lat, point.lng]} />
-            ))}
-            {route.mapPoints.length > 1 && (
-              <Polyline
-                positions={route.mapPoints.map(p => [p.lat, p.lng] as [number, number])}
-                color="#3b82f6"
-                weight={3}
-              />
-            )}
-          </MapContainer>
+          {mounted && (
+            <MapContainer
+              center={route.mapPoints[0]}
+              zoom={13}
+              scrollWheelZoom={false}
+              zoomControl={false}
+              dragging={false}
+              style={{ height: '100%', width: '100%' }}
+            >
+              <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+              {route.mapPoints.map((point, idx) => (
+                <Marker key={idx} position={[point.lat, point.lng]} />
+              ))}
+              {route.mapPoints.length > 1 && (
+                <Polyline
+                  positions={route.mapPoints.map(p => [p.lat, p.lng] as [number, number])}
+                  color="#3b82f6"
+                  weight={3}
+                />
+              )}
+            </MapContainer>
+          )}
         </div>
 
         {/* Stats Grid */}

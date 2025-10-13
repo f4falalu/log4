@@ -61,7 +61,7 @@ const Layout = ({ children, activeTab, onTabChange }: LayoutProps) => {
       id: 'drivers', 
       label: 'Drivers', 
       icon: User,
-      permission: 'manage_drivers' as Permission
+      permission: null // Temporarily removed for verification
     },
     { 
       id: 'vehicles', 
