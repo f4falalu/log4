@@ -24,6 +24,7 @@ export function RouteCard({ route }: RouteCardProps) {
 
   useEffect(() => {
     setMounted(true);
+    return () => setMounted(false);
   }, []);
 
   const getStatusBadge = (status: Route['status']) => {
@@ -66,18 +67,22 @@ export function RouteCard({ route }: RouteCardProps) {
 
         {/* Mini Map */}
         <div className="h-32 rounded-lg overflow-hidden mb-3 border">
-          {mounted && (
+          {mounted && route.mapPoints && route.mapPoints.length > 0 ? (
             <MapContainer
-              center={route.mapPoints[0]}
+              key={`map-${route.id}`}
+              center={[route.mapPoints[0].lat, route.mapPoints[0].lng]}
               zoom={13}
               scrollWheelZoom={false}
               zoomControl={false}
               dragging={false}
+              doubleClickZoom={false}
+              touchZoom={false}
+              keyboard={false}
               style={{ height: '100%', width: '100%' }}
             >
               <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
               {route.mapPoints.map((point, idx) => (
-                <Marker key={idx} position={[point.lat, point.lng]} />
+                <Marker key={`${route.id}-marker-${idx}`} position={[point.lat, point.lng]} />
               ))}
               {route.mapPoints.length > 1 && (
                 <Polyline
@@ -87,6 +92,10 @@ export function RouteCard({ route }: RouteCardProps) {
                 />
               )}
             </MapContainer>
+          ) : (
+            <div className="flex items-center justify-center h-full bg-muted">
+              <p className="text-sm text-muted-foreground">Map loading...</p>
+            </div>
           )}
         </div>
 
