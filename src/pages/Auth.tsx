@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -28,10 +28,11 @@ export default function Auth() {
   const [success, setSuccess] = useState<string>('');
 
   // Redirect if already logged in
-  if (user) {
-    navigate('/');
-    return null;
-  }
+  // Avoid navigating during render; use an effect instead
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (user) navigate('/');
+  }, [user, navigate]);
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();

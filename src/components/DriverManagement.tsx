@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useDrivers } from '@/hooks/useDrivers';
 import { useAllDriverVehicles } from '@/hooks/useAllDriverVehicles';
 import { useDriverFavorites } from '@/hooks/useDriverFavorites';
@@ -20,9 +20,11 @@ export default function DriverManagement() {
   const isLoading = driversLoading || vehiclesLoading;
 
   // Auto-select first driver if none selected
-  if (!selectedDriverId && drivers && drivers.length > 0) {
-    setSelectedDriverId(drivers[0].id);
-  }
+  useEffect(() => {
+    if (!selectedDriverId && drivers && drivers.length > 0) {
+      setSelectedDriverId(drivers[0].id);
+    }
+  }, [drivers, selectedDriverId]);
 
   const selectedDriver = drivers?.find(d => d.id === selectedDriverId);
 
