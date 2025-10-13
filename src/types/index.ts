@@ -79,6 +79,42 @@ export interface DriverVehicleHistory {
   totalTrips: number;
 }
 
+export interface Route {
+  id: string;
+  driverId: string;
+  packageCount: number;
+  address: string;
+  destination: string;
+  distance: number;
+  timeLeft: number;
+  weight: number;
+  volume: number;
+  date: string;
+  status: 'on_the_way' | 'loading' | 'unloading' | 'waiting' | 'completed';
+  mapPoints: { lat: number; lng: number }[];
+}
+
+export interface TimeCategory {
+  onTheWay: number;
+  unloading: number;
+  loading: number;
+  waiting: number;
+}
+
+export interface WorkingTimeData {
+  date: string;
+  workingTime: number;
+  averageTime: number;
+}
+
+export interface DriverStatistics {
+  timeCategories: TimeCategory;
+  workingTimeData: WorkingTimeData[];
+  totalDistance: number;
+  totalDeliveries: number;
+  averageRating: number;
+}
+
 export interface Vehicle {
   id: string;
   type: string; // Now supports custom types
