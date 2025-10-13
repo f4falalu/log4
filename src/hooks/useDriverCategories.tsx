@@ -16,11 +16,11 @@ interface CategorizedDrivers {
 
 export function useDriverCategories(
   drivers: Driver[] | undefined,
-  allVehicles: DriverVehicleHistory[],
+  allVehicles: (DriverVehicleHistory & { driverId: string })[] | undefined,
   favorites: string[]
 ) {
   return useMemo(() => {
-    if (!drivers) return null;
+    if (!drivers || !allVehicles) return null;
 
     const categories: CategorizedDrivers = {
       favorites: [],
@@ -31,7 +31,7 @@ export function useDriverCategories(
     };
 
     drivers.forEach(driver => {
-      const currentVehicle = allVehicles.find(v => v.isCurrent);
+      const currentVehicle = allVehicles.find(v => v.driverId === driver.id && v.isCurrent);
       const driverWithVehicle = { driver, vehicle: currentVehicle };
 
       if (favorites.includes(driver.id)) {

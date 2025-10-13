@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useDrivers } from '@/hooks/useDrivers';
-import { useDriverVehicles } from '@/hooks/useDriverVehicles';
+import { useAllDriverVehicles } from '@/hooks/useAllDriverVehicles';
 import { useDriverFavorites } from '@/hooks/useDriverFavorites';
 import { useRealtimeDrivers } from '@/hooks/useRealtimeDrivers';
 import { DriverSidebar } from './DriverSidebar';
@@ -10,16 +10,14 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 export default function DriverManagement() {
   const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
-  const { data: drivers, isLoading } = useDrivers();
+  const { data: drivers, isLoading: driversLoading } = useDrivers();
+  const { data: allVehicles, isLoading: vehiclesLoading } = useAllDriverVehicles();
   const { favorites, toggleFavorite } = useDriverFavorites();
-  
-  // Fetch all vehicles for all drivers
-  const driverIds = drivers?.map(d => d.id) || [];
-  const allVehiclesQueries = driverIds.map(id => useDriverVehicles(id));
-  const allVehicles = allVehiclesQueries.flatMap(query => query.data || []);
 
   // Real-time updates
   useRealtimeDrivers();
+
+  const isLoading = driversLoading || vehiclesLoading;
 
   // Auto-select first driver if none selected
   if (!selectedDriverId && drivers && drivers.length > 0) {

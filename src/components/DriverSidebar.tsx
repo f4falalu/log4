@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 
 interface DriverSidebarProps {
   drivers: Driver[] | undefined;
-  allVehicles: DriverVehicleHistory[];
+  allVehicles: (DriverVehicleHistory & { driverId: string })[] | undefined;
   selectedDriverId: string | null;
   onSelectDriver: (driverId: string) => void;
   favorites: string[];
