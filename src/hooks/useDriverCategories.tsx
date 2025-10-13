@@ -20,7 +20,10 @@ export function useDriverCategories(
   favorites: string[]
 ) {
   return useMemo(() => {
-    if (!drivers || !allVehicles) return null;
+    // Guard against null/undefined inputs
+    if (!drivers || !Array.isArray(drivers)) return null;
+    if (!allVehicles || !Array.isArray(allVehicles)) return null;
+    if (!Array.isArray(favorites)) return null;
 
     const categories: CategorizedDrivers = {
       favorites: [],
@@ -30,25 +33,36 @@ export function useDriverCategories(
       other: [],
     };
 
-    drivers.forEach(driver => {
-      const currentVehicle = allVehicles.find(v => v.driverId === driver.id && v.isCurrent);
-      const driverWithVehicle = { driver, vehicle: currentVehicle };
+    try {
+      drivers.forEach(driver => {
+        if (!driver || !driver.id) return;
 
-      if (favorites.includes(driver.id)) {
-        categories.favorites.push(driverWithVehicle);
-      }
+        const currentVehicle = allVehicles.find(v => 
+          v && v.driverId === driver.id && v.isCurrent === true
+        );
+        const driverWithVehicle = { driver, vehicle: currentVehicle };
 
-      const type = currentVehicle?.type?.toLowerCase();
-      if (type?.includes('truck')) {
-        categories.trucks.push(driverWithVehicle);
-      } else if (type?.includes('van') || type?.includes('sprinter') || type?.includes('transporter')) {
-        categories.vans.push(driverWithVehicle);
-      } else if (type?.includes('car')) {
-        categories.cars.push(driverWithVehicle);
-      } else {
-        categories.other.push(driverWithVehicle);
-      }
-    });
+        // Add to favorites if in the favorites list
+        if (favorites.includes(driver.id)) {
+          categories.favorites.push(driverWithVehicle);
+        }
+
+        // Categorize by vehicle type
+        const type = currentVehicle?.type?.toLowerCase() || '';
+        if (type.includes('truck')) {
+          categories.trucks.push(driverWithVehicle);
+        } else if (type.includes('van') || type.includes('sprinter') || type.includes('transporter')) {
+          categories.vans.push(driverWithVehicle);
+        } else if (type.includes('car')) {
+          categories.cars.push(driverWithVehicle);
+        } else {
+          categories.other.push(driverWithVehicle);
+        }
+      });
+    } catch (error) {
+      console.error('Error categorizing drivers:', error);
+      return null;
+    }
 
     return categories;
   }, [drivers, allVehicles, favorites]);

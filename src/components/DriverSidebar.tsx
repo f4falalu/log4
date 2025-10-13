@@ -38,12 +38,58 @@ export function DriverSidebar({
 
   const filteredCategories = categories
     ? Object.entries(categories).reduce((acc, [key, items]) => {
+        if (!Array.isArray(items)) {
+          return { ...acc, [key]: [] };
+        }
         const filtered = items.filter(({ driver }) =>
-          driver.name.toLowerCase().includes(searchQuery.toLowerCase())
+          driver?.name?.toLowerCase().includes(searchQuery.toLowerCase())
         );
         return { ...acc, [key]: filtered };
       }, {} as typeof categories)
     : null;
+
+  // Show loading state if data isn't ready
+  if (!drivers || !allVehicles) {
+    return (
+      <div className="flex flex-col h-full bg-background border-r">
+        <div className="p-4 border-b">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search drivers..."
+              disabled
+              className="pl-9"
+            />
+          </div>
+        </div>
+        <div className="flex-1 flex items-center justify-center p-4">
+          <p className="text-sm text-muted-foreground">Loading drivers...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show empty state if no categories
+  if (!filteredCategories) {
+    return (
+      <div className="flex flex-col h-full bg-background border-r">
+        <div className="p-4 border-b">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search drivers..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+        </div>
+        <div className="flex-1 flex items-center justify-center p-4">
+          <p className="text-sm text-muted-foreground">No drivers available</p>
+        </div>
+      </div>
+    );
+  }
 
   const toggleSection = (section: keyof typeof openSections) => {
     setOpenSections(prev => ({ ...prev, [section]: !prev[section] }));

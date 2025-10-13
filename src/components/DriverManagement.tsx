@@ -7,17 +7,20 @@ import { DriverSidebar } from './DriverSidebar';
 import { DriverDetailView } from './DriverDetailView';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export default function DriverManagement() {
   const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
-  const { data: drivers, isLoading: driversLoading } = useDrivers();
-  const { data: allVehicles, isLoading: vehiclesLoading } = useAllDriverVehicles();
+  const { data: drivers, isLoading: driversLoading, error: driversError } = useDrivers();
+  const { data: allVehicles, isLoading: vehiclesLoading, error: vehiclesError } = useAllDriverVehicles();
   const { favorites, toggleFavorite } = useDriverFavorites();
 
   // Real-time updates
   useRealtimeDrivers();
 
   const isLoading = driversLoading || vehiclesLoading;
+  const hasError = driversError || vehiclesError;
 
   // Auto-select first driver if none selected
   useEffect(() => {
@@ -28,6 +31,21 @@ export default function DriverManagement() {
 
   const selectedDriver = drivers?.find(d => d.id === selectedDriverId);
 
+  // Error state
+  if (hasError) {
+    return (
+      <div className="flex h-screen items-center justify-center p-6">
+        <Alert variant="destructive" className="max-w-md">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Failed to load driver data. Please refresh the page or contact support if the issue persists.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
+  // Loading state
   if (isLoading) {
     return (
       <div className="flex h-screen">
