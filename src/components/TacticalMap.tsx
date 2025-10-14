@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { MapContainer, TileLayer, useMap, Marker, Popup, Polygon } from 'react-leaflet';
 import { Icon, LatLngBounds } from 'leaflet';
+import type L from 'leaflet';
 import { useDrivers } from '@/hooks/useDrivers';
 import { useRealtimeDrivers } from '@/hooks/useRealtimeDrivers';
 import { useServiceZones } from '@/hooks/useServiceZones';
@@ -13,11 +14,6 @@ import { BottomDataPanel } from './map/BottomDataPanel';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import 'leaflet/dist/leaflet.css';
-import 'leaflet-draw/dist/leaflet.draw.css';
-
-// Import leaflet-draw
-import 'leaflet-draw';
-import L from 'leaflet';
 
 const driverIcons = {
   available: new Icon({
@@ -57,43 +53,7 @@ const driverIcons = {
   }),
 };
 
-function DrawingLayer() {
-  const map = useMap();
-  const drawControlRef = useRef<L.Control.Draw | null>(null);
-
-  useEffect(() => {
-    const drawnItems = new L.FeatureGroup();
-    map.addLayer(drawnItems);
-
-    const drawControl = new L.Control.Draw({
-      draw: {
-        polygon: {
-          allowIntersection: false,
-          showArea: true,
-        },
-        polyline: false,
-        rectangle: false,
-        circle: false,
-        marker: false,
-        circlemarker: false,
-      },
-      edit: {
-        featureGroup: drawnItems,
-      },
-    });
-
-    drawControlRef.current = drawControl;
-
-    return () => {
-      if (drawControlRef.current) {
-        map.removeControl(drawControlRef.current);
-      }
-      map.removeLayer(drawnItems);
-    };
-  }, [map]);
-
-  return null;
-}
+// Drawing layer removed - will be implemented with proper leaflet-draw integration later
 
 export default function TacticalMap() {
   const { data: drivers = [], isLoading: driversLoading } = useDrivers();
@@ -201,8 +161,6 @@ export default function TacticalMap() {
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-
-        <DrawingLayer />
 
         {/* Driver Markers */}
         {drivers.map(driver => {
