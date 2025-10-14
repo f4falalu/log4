@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Truck, AlertCircle } from 'lucide-react';
 import { z } from 'zod';
@@ -26,6 +25,7 @@ export default function Auth() {
   const [error, setError] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState<string>('');
+  const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
 
   // Redirect if already logged in
   // Avoid navigating during render; use an effect instead
@@ -110,13 +110,25 @@ export default function Auth() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="login" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login">Login</TabsTrigger>
-              <TabsTrigger value="signup">Sign Up</TabsTrigger>
-            </TabsList>
+          <div className="w-full">
+            <div className="grid w-full grid-cols-2 gap-2 mb-4">
+              <Button
+                type="button"
+                variant={activeTab === 'login' ? 'default' : 'secondary'}
+                onClick={() => setActiveTab('login')}
+              >
+                Login
+              </Button>
+              <Button
+                type="button"
+                variant={activeTab === 'signup' ? 'default' : 'secondary'}
+                onClick={() => setActiveTab('signup')}
+              >
+                Sign Up
+              </Button>
+            </div>
 
-            <TabsContent value="login">
+            {activeTab === 'login' && (
               <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="login-email">Email</Label>
@@ -147,9 +159,9 @@ export default function Auth() {
                   {loading ? 'Logging in...' : 'Log In'}
                 </Button>
               </form>
-            </TabsContent>
+            )}
 
-            <TabsContent value="signup">
+            {activeTab === 'signup' && (
               <form onSubmit={handleSignup} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="signup-name">Full Name</Label>
@@ -204,8 +216,8 @@ export default function Auth() {
                   {loading ? 'Creating account...' : 'Create Account'}
                 </Button>
               </form>
-            </TabsContent>
-          </Tabs>
+            )}
+          </div>
         </CardContent>
       </Card>
     </div>
