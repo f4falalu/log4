@@ -13,6 +13,7 @@ import { DrawControls } from './map/DrawControls';
 import { BottomDataPanel } from './map/BottomDataPanel';
 import { DriverLayer } from './map/DriverLayer';
 import { ZoneLayer } from './map/ZoneLayer';
+import { MapInstanceCapture } from './map/MapInstanceCapture';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import 'leaflet/dist/leaflet.css';
@@ -128,24 +129,22 @@ export default function TacticalMap() {
   const defaultCenter: [number, number] = [9.0192, 38.7525]; // Addis Ababa
   const defaultZoom = 12;
 
+  const handleMapReady = useCallback((map: L.Map) => {
+    if (!mapRef.current) {
+      mapRef.current = map;
+      requestAnimationFrame(() => {
+        map.invalidateSize();
+      });
+      setMapReady(true);
+    }
+  }, []);
+
   return (
     <div className="relative h-screen w-full">
       <MapContainer
         center={defaultCenter}
         zoom={defaultZoom}
         className="h-full w-full"
-        ref={(mapInstance) => {
-          if (mapInstance && !mapRef.current) {
-            console.info('[TacticalMap] Map instance captured');
-            mapRef.current = mapInstance;
-            requestAnimationFrame(() => {
-              if (mapRef.current) {
-                mapRef.current.invalidateSize();
-              }
-            });
-            setMapReady(true);
-          }
-        }}
         preferCanvas={true}
         zoomAnimation={false}
         fadeAnimation={false}
@@ -153,6 +152,8 @@ export default function TacticalMap() {
         inertia={false}
       >
         <>
+          <MapInstanceCapture onMapReady={handleMapReady} />
+          
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
