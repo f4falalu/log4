@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { MapContainer, TileLayer } from 'react-leaflet';
-import { LatLngBounds } from 'leaflet';
-import type L from 'leaflet';
+import L from 'leaflet';
 import { useDrivers } from '@/hooks/useDrivers';
 import { useRealtimeDrivers } from '@/hooks/useRealtimeDrivers';
 import { useServiceZones } from '@/hooks/useServiceZones';
@@ -83,7 +82,7 @@ export default function TacticalMap() {
     if (zone && mapRef.current) {
       try {
         const coords = zone.geometry.geometry.coordinates[0] as [number, number][];
-        const bounds = new LatLngBounds(coords.map(coord => [coord[1], coord[0]] as [number, number]));
+        const bounds = new L.LatLngBounds(coords.map(coord => [coord[1], coord[0]] as [number, number]));
         if (bounds.isValid()) {
           mapRef.current.fitBounds(bounds, { padding: [50, 50] });
         }
