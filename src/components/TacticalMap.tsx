@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { MapContainer, TileLayer } from 'react-leaflet';
 import L from 'leaflet';
 import { useDrivers } from '@/hooks/useDrivers';
 import { useRealtimeDrivers } from '@/hooks/useRealtimeDrivers';
@@ -10,12 +9,10 @@ import { MapToolsToolbar } from './map/MapToolsToolbar';
 import { ServiceAreasMenu } from './map/ServiceAreasMenu';
 import { DrawControls } from './map/DrawControls';
 import { BottomDataPanel } from './map/BottomDataPanel';
-import { DriverLayer } from './map/DriverLayer';
-import { ZoneLayer } from './map/ZoneLayer';
-import { MapInstanceCapture } from './map/MapInstanceCapture';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import 'leaflet/dist/leaflet.css';
+import { LeafletMapCore } from './map/LeafletMapCore';
 
 // Drawing layer removed - will be implemented with proper leaflet-draw integration later
 
@@ -26,6 +23,31 @@ export default function TacticalMap() {
   const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
   const mapRef = useRef<L.Map | null>(null);
   const [mapReady, setMapReady] = useState(false);
+  
+  // Layer groups for imperative rendering
+  const zonesLayerRef = useRef<L.LayerGroup | null>(null);
+  const driversLayerRef = useRef<L.LayerGroup | null>(null);
+
+  // Driver marker icon factory (same colors as previous component)
+  const createDriverIcon = (status: string) => {
+    const colors: Record<string, string> = {
+      available: '#10b981',
+      busy: '#f59e0b',
+      offline: '#6b7280',
+    };
+    const color = colors[status] ?? colors.offline;
+    return new L.Icon({
+      iconUrl: `data:image/svg+xml;base64,${btoa(
+        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="${color}" width="32" height="32">
+          <circle cx="12" cy="12" r="10" stroke="white" stroke-width="2"/>
+          <circle cx="12" cy="12" r="4" fill="white"/>
+        </svg>`
+      )}`,
+      iconSize: [32, 32],
+      iconAnchor: [16, 16],
+      popupAnchor: [0, -16],
+    });
+  };
   
   const {
     drawingState,
@@ -131,6 +153,9 @@ export default function TacticalMap() {
   const handleMapReady = useCallback((map: L.Map) => {
     if (!mapRef.current) {
       mapRef.current = map;
+      // Initialize overlay layer groups
+      zonesLayerRef.current = L.layerGroup().addTo(map);
+      driversLayerRef.current = L.layerGroup().addTo(map);
       requestAnimationFrame(() => {
         map.invalidateSize();
       });
@@ -138,44 +163,85 @@ export default function TacticalMap() {
     }
   }, []);
 
+  // Sync drivers layer
+  useEffect(() => {
+    if (!mapReady || !mapRef.current) return;
+    if (!driversLayerRef.current) {
+      driversLayerRef.current = L.layerGroup().addTo(mapRef.current);
+    }
+    const layer = driversLayerRef.current;
+    layer.clearLayers();
+
+    drivers.forEach((driver) => {
+      if (!driver?.currentLocation) return;
+      const marker = L.marker([driver.currentLocation.lat, driver.currentLocation.lng], {
+        icon: createDriverIcon(driver.status),
+      }).on('click', () => handleDriverClick(driver));
+
+      marker.bindPopup(
+        `<div style="padding:8px;">
+           <h3 style="font-weight:600;margin:0 0 4px 0;">${driver.name ?? 'Driver'}</h3>
+           <p style="margin:0;font-size:12px;color:#6b7280;text-transform:capitalize;">${driver.status ?? ''}</p>
+         </div>`
+      );
+
+      marker.addTo(layer);
+    });
+
+    return () => {
+      layer.clearLayers();
+    };
+  }, [drivers, mapReady, handleDriverClick]);
+
+  // Sync zones layer
+  useEffect(() => {
+    if (!mapReady || !mapRef.current) return;
+    if (!zonesLayerRef.current) {
+      zonesLayerRef.current = L.layerGroup().addTo(mapRef.current);
+    }
+    const layer = zonesLayerRef.current;
+    layer.clearLayers();
+
+    zones.forEach((zone) => {
+      if (!visibleZones.has(zone.id)) return;
+
+      const coords = (zone.geometry.geometry.coordinates[0] as [number, number][]) 
+        .map((coord) => [coord[1], coord[0]] as [number, number]);
+
+      const polygon = L.polygon(coords, {
+        color: zone.color,
+        fillColor: zone.color,
+        fillOpacity: drawingState.selectedZoneId === zone.id ? 0.4 : 0.2,
+        weight: drawingState.selectedZoneId === zone.id ? 3 : 2,
+      }).on('click', () => selectZone(zone.id));
+
+      const description = zone.description
+        ? `<p style="margin:4px 0 0 0;font-size:12px;color:#6b7280;">${zone.description}</p>`
+        : '';
+
+      polygon.bindPopup(
+        `<div style="padding:8px;">
+           <h3 style="font-weight:600;margin:0 0 4px 0;">${zone.name}</h3>
+           ${description}
+         </div>`
+      );
+
+      polygon.addTo(layer);
+    });
+
+    return () => {
+      layer.clearLayers();
+    };
+  }, [zones, visibleZones, drawingState.selectedZoneId, mapReady, selectZone]);
+
   return (
     <div className="relative h-screen w-full">
-      <MapContainer
+      <LeafletMapCore
         center={defaultCenter}
         zoom={defaultZoom}
         className="h-full w-full"
-        preferCanvas={true}
-        zoomAnimation={false}
-        fadeAnimation={false}
-        markerZoomAnimation={false}
-        inertia={false}
-      >
-        <>
-          <MapInstanceCapture onMapReady={handleMapReady} />
-          
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
-
-          {mapReady && (
-            <>
-              <ZoneLayer
-                zones={zones}
-                visibleZones={visibleZones}
-                selectedZoneId={drawingState.selectedZoneId}
-                onZoneClick={selectZone}
-              />
-              
-              <DriverLayer
-                drivers={drivers}
-                onDriverClick={handleDriverClick}
-                selectedDriverId={selectedDriverId}
-              />
-            </>
-          )}
-        </>
-      </MapContainer>
+        onReady={handleMapReady}
+      />
 
       <MapToolsToolbar
         onLocateMe={handleLocateMe}
