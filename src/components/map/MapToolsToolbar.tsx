@@ -1,0 +1,109 @@
+import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { 
+  Target, 
+  Map as MapIcon, 
+  Search, 
+  Edit3, 
+  Layers 
+} from 'lucide-react';
+
+interface MapToolsToolbarProps {
+  onLocateMe: () => void;
+  onServiceAreasClick: () => void;
+  onSearchClick: () => void;
+  onDrawToggle: () => void;
+  onLayersClick: () => void;
+  isDrawing: boolean;
+}
+
+export function MapToolsToolbar({
+  onLocateMe,
+  onServiceAreasClick,
+  onSearchClick,
+  onDrawToggle,
+  onLayersClick,
+  isDrawing,
+}: MapToolsToolbarProps) {
+  return (
+    <div className="absolute top-24 left-4 z-[1000] flex flex-col gap-2">
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            size="icon"
+            variant="secondary"
+            className="h-10 w-10 rounded-full bg-background/95 backdrop-blur hover:bg-accent"
+            onClick={onLocateMe}
+            aria-label="Locate me"
+          >
+            <Target className="h-4 w-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="right">Locate Me</TooltipContent>
+      </Tooltip>
+
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            size="icon"
+            variant="secondary"
+            className="h-10 w-10 rounded-full bg-background/95 backdrop-blur hover:bg-accent"
+            onClick={onServiceAreasClick}
+            aria-label="Service areas"
+          >
+            <MapIcon className="h-4 w-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="right">Service Areas</TooltipContent>
+      </Tooltip>
+
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            size="icon"
+            variant="secondary"
+            className="h-10 w-10 rounded-full bg-background/95 backdrop-blur hover:bg-accent"
+            onClick={onSearchClick}
+            aria-label="Search"
+          >
+            <Search className="h-4 w-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="right">Search</TooltipContent>
+      </Tooltip>
+
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            size="icon"
+            variant="secondary"
+            className={`h-10 w-10 rounded-full bg-background/95 backdrop-blur hover:bg-accent ${
+              isDrawing ? 'bg-primary text-primary-foreground' : ''
+            }`}
+            onClick={onDrawToggle}
+            aria-label="Draw mode"
+            aria-pressed={isDrawing}
+          >
+            <Edit3 className="h-4 w-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="right">Draw / Edit</TooltipContent>
+      </Tooltip>
+
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            size="icon"
+            variant="secondary"
+            className="h-10 w-10 rounded-full bg-background/95 backdrop-blur hover:bg-accent"
+            onClick={onLayersClick}
+            aria-label="Layers"
+          >
+            <Layers className="h-4 w-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="right">Layers</TooltipContent>
+      </Tooltip>
+    </div>
+  );
+}

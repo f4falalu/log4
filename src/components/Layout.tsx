@@ -9,7 +9,8 @@ import {
   Route,
   Package,
   User,
-  FileText
+  FileText,
+  Map
 } from 'lucide-react';
 import { UserMenu } from './UserMenu';
 import { NotificationCenter } from './NotificationCenter';
@@ -38,6 +39,12 @@ const Layout = ({ children, activeTab, onTabChange }: LayoutProps) => {
       label: 'Command Center', 
       icon: MapPin,
       permission: 'view_batches' as Permission
+    },
+    { 
+      id: 'tactical-map', 
+      label: 'Tactical Map', 
+      icon: Map,
+      permission: 'view_tactical_map' as Permission
     },
     { 
       id: 'facilities', 

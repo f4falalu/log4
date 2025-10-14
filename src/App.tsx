@@ -11,6 +11,7 @@ import AuthCallback from "./pages/AuthCallback";
 import NotFound from "./pages/NotFound";
 import ErrorBoundary from "./components/ErrorBoundary";
 import DriverManagement from "./components/DriverManagement";
+import TacticalMap from "./components/TacticalMap";
 
 const queryClient = new QueryClient();
 
@@ -37,6 +38,11 @@ const App = () => (
               <Route path="/drivers" element={
                 <ProtectedRoute>
                   <DriverManagement />
+                </ProtectedRoute>
+              } />
+              <Route path="/tactical-map" element={
+                <ProtectedRoute>
+                  <TacticalMap />
                 </ProtectedRoute>
               } />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

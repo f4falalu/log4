@@ -1,5 +1,6 @@
 import React from 'react';
-const { useState, useMemo } = React;
+const { useState, useMemo, useEffect } = React;
+import { useNavigate } from 'react-router-dom';
 import { Delivery, DeliveryBatch } from '@/types';
 import Layout from '@/components/Layout';
 import Dashboard from '@/components/Dashboard';
@@ -21,6 +22,7 @@ import { optimizeRoutes } from '@/lib/routeOptimization';
 import { usePermissions } from '@/hooks/usePermissions';
 
 const Index = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [deliveries, setDeliveries] = useState<Delivery[]>([]);
   
@@ -29,6 +31,15 @@ const Index = () => {
   const { data: warehouses = [] } = useWarehouses();
   const { data: deliveryBatches = [] } = useDeliveryBatches();
   const createBatch = useCreateDeliveryBatch();
+
+  // Handle navigation for external routes
+  useEffect(() => {
+    if (activeTab === 'tactical-map') {
+      navigate('/tactical-map');
+    } else if (activeTab === 'drivers') {
+      navigate('/drivers');
+    }
+  }, [activeTab, navigate]);
 
   // Calculate optimized routes
   const optimizedRoutes = useMemo(() => {

@@ -11,20 +11,21 @@ export type Permission =
   | 'manage_facilities'
   | 'view_reports'
   | 'manage_users'
-  | 'view_analytics';
+  | 'view_analytics'
+  | 'view_tactical_map';
 
 export const ROLE_PERMISSIONS: Record<AppRole, Permission[]> = {
   system_admin: [
     'view_batches', 'create_batches', 'update_batches', 'delete_batches',
     'assign_drivers', 'manage_drivers', 'manage_vehicles', 'manage_facilities',
-    'view_reports', 'manage_users', 'view_analytics'
+    'view_reports', 'manage_users', 'view_analytics', 'view_tactical_map'
   ],
   warehouse_officer: [
     'view_batches', 'create_batches', 'update_batches',
-    'assign_drivers', 'manage_facilities', 'view_reports', 'view_analytics'
+    'assign_drivers', 'manage_facilities', 'view_reports', 'view_analytics', 'view_tactical_map'
   ],
   dispatcher: [
-    'view_batches', 'update_batches', 'assign_drivers', 'view_reports'
+    'view_batches', 'update_batches', 'assign_drivers', 'view_reports', 'view_tactical_map'
   ],
   driver: [
     'view_batches'
