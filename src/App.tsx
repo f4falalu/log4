@@ -3,6 +3,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
+import { MapStateProvider } from "./contexts/MapStateContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -25,27 +26,29 @@ const App = () => (
         }}
       >
         <AuthProvider>
-          <Routes>
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/auth/callback" element={<AuthCallback />} />
-            <Route path="/" element={
-              <ProtectedRoute>
-                <Index />
-              </ProtectedRoute>
-            } />
-            <Route path="/drivers" element={
-              <ProtectedRoute>
-                <DriverManagement />
-              </ProtectedRoute>
-            } />
-            <Route path="/tactical-map" element={
-              <ProtectedRoute>
-                <TacticalMap />
-              </ProtectedRoute>
-            } />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <MapStateProvider>
+            <Routes>
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/auth/callback" element={<AuthCallback />} />
+              <Route path="/" element={
+                <ProtectedRoute>
+                  <Index />
+                </ProtectedRoute>
+              } />
+              <Route path="/drivers" element={
+                <ProtectedRoute>
+                  <DriverManagement />
+                </ProtectedRoute>
+              } />
+              <Route path="/tactical-map" element={
+                <ProtectedRoute>
+                  <TacticalMap />
+                </ProtectedRoute>
+              } />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </MapStateProvider>
         </AuthProvider>
       </BrowserRouter>
     </ErrorBoundary>

@@ -7,11 +7,13 @@ import { useRealtimeZones } from '@/hooks/useRealtimeZones';
 import { useZoneDrawing } from '@/hooks/useZoneDrawing';
 import { useFacilities } from '@/hooks/useFacilities';
 import { useWarehouses } from '@/hooks/useWarehouses';
+import { useMapState } from '@/contexts/MapStateContext';
 import { MapToolsToolbar } from './map/MapToolsToolbar';
 import { ServiceAreasMenu } from './map/ServiceAreasMenu';
 import { DrawControls } from './map/DrawControls';
 import { BottomDataPanel } from './map/BottomDataPanel';
 import { SearchPanel } from './map/SearchPanel';
+import { LayersPanel } from './map/LayersPanel';
 import { Button } from './ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -26,11 +28,12 @@ export default function TacticalMap() {
   const { data: facilities = [] } = useFacilities();
   const { data: warehouses = [] } = useWarehouses();
   
+  const { state: mapState, selectDriver, selectFacility, selectWarehouse } = useMapState();
+  
   const [visibleZones, setVisibleZones] = useState<Set<string>>(new Set());
-  const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
-  const [selectedFacilityId, setSelectedFacilityId] = useState<string | null>(null);
   const [serviceAreasOpen, setServiceAreasOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [layersOpen, setLayersOpen] = useState(false);
   
   const mapRef = useRef<L.Map | null>(null);
   const [mapReady, setMapReady] = useState(false);
@@ -261,12 +264,12 @@ export default function TacticalMap() {
       try {
         console.info('[TacticalMap] Centering on driver:', driver.id);
         mapRef.current.setView([driver.currentLocation.lat, driver.currentLocation.lng], 15);
-        setSelectedDriverId(driver.id);
+        selectDriver(driver.id);
       } catch (error) {
         console.error('[TacticalMap] Error centering on driver:', error);
       }
     }
-  }, []);
+  }, [selectDriver]);
 
   // Auto-fit bounds to all data
   const calculateMapBounds = useCallback(() => {
@@ -341,11 +344,13 @@ export default function TacticalMap() {
 
     facilitiesLayerRef.current.clearLayers();
 
+    if (!mapState.visibleLayers.facilities) return;
+
     facilities.forEach((facility) => {
       if (!facility.lat || !facility.lng) return;
 
       const icon = L.divIcon({
-        html: `<div style="background: ${selectedFacilityId === facility.id ? '#1D6AFF' : '#3B82F6'}; width: 24px; height: 24px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
+        html: `<div style="background: ${mapState.selectedFacilityId === facility.id ? '#1D6AFF' : '#3B82F6'}; width: 24px; height: 24px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
         className: '',
         iconSize: [24, 24],
         iconAnchor: [12, 12],
@@ -361,18 +366,20 @@ export default function TacticalMap() {
           </div>
         `)
         .on('click', () => {
-          setSelectedFacilityId(facility.id);
+          selectFacility(facility.id);
         });
 
       facilitiesLayerRef.current?.addLayer(marker);
     });
-  }, [mapReady, facilities, selectedFacilityId]);
+  }, [mapReady, facilities, mapState.selectedFacilityId, mapState.visibleLayers.facilities, selectFacility]);
 
   // Sync warehouses layer
   useEffect(() => {
     if (!mapReady || !warehousesLayerRef.current) return;
 
     warehousesLayerRef.current.clearLayers();
+
+    if (!mapState.visibleLayers.warehouses) return;
 
     warehouses.forEach((warehouse) => {
       if (!warehouse.lat || !warehouse.lng) return;
@@ -396,12 +403,13 @@ export default function TacticalMap() {
         .on('click', () => {
           if (mapRef.current) {
             mapRef.current.setView([warehouse.lat!, warehouse.lng!], 15);
+            selectWarehouse(warehouse.id);
           }
         });
 
       warehousesLayerRef.current?.addLayer(marker);
     });
-  }, [mapReady, warehouses]);
+  }, [mapReady, warehouses, mapState.visibleLayers.warehouses, selectWarehouse]);
 
   // Sync drivers layer
   useEffect(() => {
@@ -411,6 +419,8 @@ export default function TacticalMap() {
     }
     const layer = driversLayerRef.current;
     layer.clearLayers();
+
+    if (!mapState.visibleLayers.drivers) return;
 
     drivers.forEach((driver) => {
       if (!driver?.currentLocation) return;
@@ -431,7 +441,7 @@ export default function TacticalMap() {
     return () => {
       layer.clearLayers();
     };
-  }, [drivers, mapReady, handleDriverClick]);
+  }, [drivers, mapReady, mapState.visibleLayers.drivers, handleDriverClick]);
 
   // Sync zones layer
   useEffect(() => {
@@ -441,6 +451,8 @@ export default function TacticalMap() {
     }
     const layer = zonesLayerRef.current;
     layer.clearLayers();
+
+    if (!mapState.visibleLayers.zones) return;
 
     zones.forEach((zone) => {
       if (!visibleZones.has(zone.id)) return;
@@ -472,7 +484,7 @@ export default function TacticalMap() {
     return () => {
       layer.clearLayers();
     };
-  }, [zones, visibleZones, drawingState.selectedZoneId, mapReady, selectZone]);
+  }, [zones, visibleZones, drawingState.selectedZoneId, mapReady, mapState.visibleLayers.zones, selectZone]);
 
   const defaultCenter: [number, number] = [9.0192, 38.7525];
   const defaultZoom = 12;
@@ -501,7 +513,7 @@ export default function TacticalMap() {
         onServiceAreasClick={() => setServiceAreasOpen(!serviceAreasOpen)}
         onSearchClick={() => setSearchOpen(!searchOpen)}
         onDrawToggle={handleStartDrawing}
-        onLayersClick={handleResetView}
+        onLayersClick={() => setLayersOpen(!layersOpen)}
         isDrawing={drawingState.isDrawing}
       />
 
@@ -539,6 +551,11 @@ export default function TacticalMap() {
         isOpen={searchOpen}
         onClose={() => setSearchOpen(false)}
         onLocationSelect={handleLocationSelect}
+      />
+
+      <LayersPanel
+        isOpen={layersOpen}
+        onClose={() => setLayersOpen(false)}
       />
 
       <ServiceAreasMenu
