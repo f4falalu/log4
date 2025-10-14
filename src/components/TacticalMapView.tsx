@@ -202,8 +202,17 @@ const TacticalMapView = ({
 
     try {
       const map = L.map(mapRef.current, {
-        zoomControl: false // We'll add custom controls
+        zoomControl: false,
+        zoomAnimation: false,
+        fadeAnimation: false,
+        markerZoomAnimation: false,
+        inertia: false
       }).setView([12.0, 8.5], 6);
+      
+      // Invalidate size on next frame to prevent position errors
+      requestAnimationFrame(() => {
+        map.invalidateSize();
+      });
       
       // Define multiple tile layers
       const humanitarianOSM = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
@@ -276,7 +285,13 @@ const TacticalMapView = ({
 
     return () => {
       if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove();
+        try {
+          mapInstanceRef.current.stop();
+          mapInstanceRef.current.off();
+          mapInstanceRef.current.remove();
+        } catch (error) {
+          console.error('[TacticalMapView] Error during cleanup:', error);
+        }
         mapInstanceRef.current = null;
       }
     };
@@ -475,11 +490,20 @@ const TacticalMapView = ({
       routeLinesRef.current.push(batchRoute);
     });
 
-    // Fit bounds to include all markers
+    // Fit bounds to include all markers (with safety checks)
     const allMarkers = [...markersRef.current];
-    if (allMarkers.length > 0) {
-      const group = new L.FeatureGroup(allMarkers);
-      mapInstanceRef.current.fitBounds(group.getBounds().pad(0.1));
+    if (allMarkers.length > 0 && mapInstanceRef.current) {
+      try {
+        const group = new L.FeatureGroup(allMarkers);
+        const bounds = group.getBounds();
+        if (bounds.isValid() && mapInstanceRef.current.getSize()?.x > 0) {
+          requestAnimationFrame(() => {
+            mapInstanceRef.current?.fitBounds(bounds.pad(0.1));
+          });
+        }
+      } catch (error) {
+        console.error('[TacticalMapView] Error fitting bounds:', error);
+      }
     }
 
   }, [validFacilities, warehouses, selectedFacilities, selectedWarehouse, optimizedRoute, batches, onFacilityToggle]);

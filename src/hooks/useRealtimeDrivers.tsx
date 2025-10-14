@@ -1,9 +1,10 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
 export function useRealtimeDrivers() {
   const queryClient = useQueryClient();
+  const timeoutRef = useRef<NodeJS.Timeout>();
 
   useEffect(() => {
     const channel = supabase
@@ -17,12 +18,23 @@ export function useRealtimeDrivers() {
         },
         (payload) => {
           console.log('Driver update received:', payload);
-          queryClient.invalidateQueries({ queryKey: ['drivers'] });
+          
+          // Debounce invalidation to prevent rapid re-renders
+          if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+          }
+          
+          timeoutRef.current = setTimeout(() => {
+            queryClient.invalidateQueries({ queryKey: ['drivers'] });
+          }, 300);
         }
       )
       .subscribe();
 
     return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
       supabase.removeChannel(channel);
     };
   }, [queryClient]);

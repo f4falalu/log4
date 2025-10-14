@@ -61,6 +61,7 @@ export default function TacticalMap() {
   const [visibleZones, setVisibleZones] = useState<Set<string>>(new Set());
   const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
   const mapRef = useRef<L.Map | null>(null);
+  const [mapReady, setMapReady] = useState(false);
   
   const {
     drawingState,
@@ -86,8 +87,12 @@ export default function TacticalMap() {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const { latitude, longitude } = position.coords;
-          mapRef.current?.setView([latitude, longitude], 15);
-          toast.success('Location found');
+          try {
+            mapRef.current?.setView([latitude, longitude], 15);
+            toast.success('Location found');
+          } catch (error) {
+            console.error('[TacticalMap] Error setting view:', error);
+          }
         },
         () => {
           toast.error('Could not get your location');
@@ -111,10 +116,16 @@ export default function TacticalMap() {
   const handleCenterOnZone = useCallback((zoneId: string) => {
     const zone = zones.find(z => z.id === zoneId);
     if (zone && mapRef.current) {
-      const coords = zone.geometry.geometry.coordinates[0] as [number, number][];
-      const bounds = new LatLngBounds(coords.map(coord => [coord[1], coord[0]] as [number, number]));
-      mapRef.current.fitBounds(bounds, { padding: [50, 50] });
-      selectZone(zoneId);
+      try {
+        const coords = zone.geometry.geometry.coordinates[0] as [number, number][];
+        const bounds = new LatLngBounds(coords.map(coord => [coord[1], coord[0]] as [number, number]));
+        if (bounds.isValid()) {
+          mapRef.current.fitBounds(bounds, { padding: [50, 50] });
+        }
+        selectZone(zoneId);
+      } catch (error) {
+        console.error('[TacticalMap] Error centering on zone:', error);
+      }
     }
   }, [zones, selectZone]);
 
@@ -155,6 +166,19 @@ export default function TacticalMap() {
         center={defaultCenter}
         zoom={defaultZoom}
         className="h-full w-full"
+        preferCanvas={true}
+        zoomAnimation={false}
+        fadeAnimation={false}
+        markerZoomAnimation={false}
+        inertia={false}
+        whenReady={() => {
+          requestAnimationFrame(() => {
+            if (mapRef.current) {
+              mapRef.current.invalidateSize();
+              setMapReady(true);
+            }
+          });
+        }}
         ref={mapRef}
       >
         <TileLayer
