@@ -14,6 +14,7 @@ import { DrawControls } from './map/DrawControls';
 import { BottomDataPanel } from './map/BottomDataPanel';
 import { SearchPanel } from './map/SearchPanel';
 import { LayersPanel } from './map/LayersPanel';
+import { MapLegend } from './map/MapLegend';
 import { Button } from './ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -34,6 +35,8 @@ export default function TacticalMap() {
   const [serviceAreasOpen, setServiceAreasOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [layersOpen, setLayersOpen] = useState(false);
+  const [legendOpen, setLegendOpen] = useState(false);
+  const [isMeasuring, setIsMeasuring] = useState(false);
   
   const mapRef = useRef<L.Map | null>(null);
   const [mapReady, setMapReady] = useState(false);
@@ -514,7 +517,13 @@ export default function TacticalMap() {
         onSearchClick={() => setSearchOpen(!searchOpen)}
         onDrawToggle={handleStartDrawing}
         onLayersClick={() => setLayersOpen(!layersOpen)}
+        onMeasureClick={() => {
+          setIsMeasuring(!isMeasuring);
+          toast.info(isMeasuring ? 'Measurement mode disabled' : 'Measurement tool coming soon');
+        }}
+        onLegendClick={() => setLegendOpen(!legendOpen)}
         isDrawing={drawingState.isDrawing}
+        isMeasuring={isMeasuring}
       />
 
       {drawingState.isDrawing && (
@@ -556,6 +565,11 @@ export default function TacticalMap() {
       <LayersPanel
         isOpen={layersOpen}
         onClose={() => setLayersOpen(false)}
+      />
+
+      <MapLegend
+        isOpen={legendOpen}
+        onClose={() => setLegendOpen(false)}
       />
 
       <ServiceAreasMenu

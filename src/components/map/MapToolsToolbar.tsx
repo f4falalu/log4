@@ -5,7 +5,9 @@ import {
   Map as MapIcon, 
   Search, 
   Edit3, 
-  Layers 
+  Layers,
+  Ruler,
+  Info
 } from 'lucide-react';
 
 interface MapToolsToolbarProps {
@@ -14,7 +16,10 @@ interface MapToolsToolbarProps {
   onSearchClick: () => void;
   onDrawToggle: () => void;
   onLayersClick: () => void;
+  onMeasureClick: () => void;
+  onLegendClick: () => void;
   isDrawing: boolean;
+  isMeasuring?: boolean;
 }
 
 export function MapToolsToolbar({
@@ -23,7 +28,10 @@ export function MapToolsToolbar({
   onSearchClick,
   onDrawToggle,
   onLayersClick,
+  onMeasureClick,
+  onLegendClick,
   isDrawing,
+  isMeasuring = false,
 }: MapToolsToolbarProps) {
   return (
     <TooltipProvider delayDuration={150}>
@@ -104,6 +112,39 @@ export function MapToolsToolbar({
             </Button>
           </TooltipTrigger>
           <TooltipContent side="right">Layers</TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              size="icon"
+              variant="secondary"
+              className={`h-10 w-10 rounded-full bg-background/95 backdrop-blur hover:bg-accent ${
+                isMeasuring ? 'bg-primary text-primary-foreground' : ''
+              }`}
+              onClick={onMeasureClick}
+              aria-label="Measure distance"
+              aria-pressed={isMeasuring}
+            >
+              <Ruler className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="right">Measure Distance</TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              size="icon"
+              variant="secondary"
+              className="h-10 w-10 rounded-full bg-background/95 backdrop-blur hover:bg-accent"
+              onClick={onLegendClick}
+              aria-label="Legend"
+            >
+              <Info className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="right">Legend</TooltipContent>
         </Tooltip>
       </div>
     </TooltipProvider>

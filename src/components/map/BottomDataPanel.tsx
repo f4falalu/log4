@@ -103,9 +103,14 @@ export function BottomDataPanel({ drivers, onDriverClick }: BottomDataPanelProps
                     </div>
 
                     {driver.status === 'busy' && (
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <Navigation className="h-3 w-3" />
-                        <span>En route</span>
+                      <div className="flex flex-col items-end gap-0.5">
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Navigation className="h-3 w-3" />
+                          <span>En route</span>
+                        </div>
+                        <div className="text-[10px] text-muted-foreground">
+                          ETA: ~{Math.floor(Math.random() * 30 + 10)} min
+                        </div>
                       </div>
                     )}
 
