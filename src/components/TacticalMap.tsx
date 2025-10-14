@@ -99,9 +99,15 @@ export default function TacticalMap() {
       warehousesLayerRef.current = L.layerGroup().addTo(map);
       drawLayerRef.current = L.featureGroup().addTo(map);
       
-      requestAnimationFrame(() => {
-        map.invalidateSize();
-      });
+      // Ensure proper sizing after mount
+      try {
+        const container = map.getContainer();
+        if ((container as any)?.isConnected) {
+          map.invalidateSize();
+        }
+      } catch (e) {
+        console.warn('[TacticalMap] Could not invalidate size on ready', e);
+      }
       setMapReady(true);
     }
   }, []);
@@ -499,6 +505,34 @@ export default function TacticalMap() {
         zoom={defaultZoom}
         className="h-full w-full"
         onReady={handleMapReady}
+        onDestroy={() => {
+          try {
+            // Clear any drawing controls
+            if ((currentDrawControlRef.current as any)?.disable) {
+              (currentDrawControlRef.current as any).disable();
+            }
+          } catch (e) {
+            console.warn('[TacticalMap] Error disabling draw control on destroy', e);
+          }
+          currentDrawControlRef.current = null;
+
+          // Clear and null overlay layer groups
+          try { zonesLayerRef.current?.clearLayers(); } catch {}
+          try { driversLayerRef.current?.clearLayers(); } catch {}
+          try { facilitiesLayerRef.current?.clearLayers(); } catch {}
+          try { warehousesLayerRef.current?.clearLayers(); } catch {}
+          try { drawLayerRef.current?.clearLayers(); } catch {}
+
+          zonesLayerRef.current = null;
+          driversLayerRef.current = null;
+          facilitiesLayerRef.current = null;
+          warehousesLayerRef.current = null;
+          drawLayerRef.current = null;
+
+          // Mark map as not ready and drop reference to destroyed map
+          mapRef.current = null;
+          setMapReady(false);
+        }}
       />
 
       <MapToolsToolbar

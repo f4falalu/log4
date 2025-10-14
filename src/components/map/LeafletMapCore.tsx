@@ -7,9 +7,10 @@ interface LeafletMapCoreProps {
   zoom: number;
   className?: string;
   onReady: (map: L.Map) => void;
+  onDestroy?: () => void;
 }
 
-export function LeafletMapCore({ center, zoom, className, onReady }: LeafletMapCoreProps) {
+export function LeafletMapCore({ center, zoom, className, onReady, onDestroy }: LeafletMapCoreProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<L.Map | null>(null);
 
@@ -32,19 +33,29 @@ export function LeafletMapCore({ center, zoom, className, onReady }: LeafletMapC
 
     mapRef.current = map;
 
-    // Invalidate size after first paint to avoid layout issues
-    requestAnimationFrame(() => map.invalidateSize());
-    onReady(map);
+// Invalidate size after first paint to avoid layout issues
+const rafId = requestAnimationFrame(() => {
+  try {
+    map.invalidateSize();
+  } catch (e) {
+    console.warn('[LeafletMapCore] Skipped invalidateSize after unmount');
+  }
+});
+onReady(map);
 
     return () => {
+      try {
+        cancelAnimationFrame(rafId);
+      } catch {}
       try {
         map.remove();
       } catch (e) {
         console.error('[LeafletMapCore] Error during map cleanup', e);
       }
+      onDestroy?.();
       mapRef.current = null;
     };
-  }, [center, zoom, onReady]);
+  }, [center, zoom, onReady, onDestroy]);
 
   return <div ref={containerRef} className={className ?? 'h-full w-full'} />;
 }
