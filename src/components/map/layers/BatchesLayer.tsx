@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import { DeliveryBatch, Warehouse } from '@/types';
+import { MapUtils } from '@/lib/mapUtils';
 
 interface BatchesLayerProps {
   map: L.Map | null;
@@ -21,11 +22,16 @@ export function BatchesLayer({
   const linesRef = useRef<L.Polyline[]>([]);
 
   useEffect(() => {
-    if (!map) return;
+    if (!MapUtils.isMapReady(map)) return;
 
     // Initialize layer group if needed
     if (!layerRef.current) {
-      layerRef.current = L.layerGroup().addTo(map);
+      try {
+        layerRef.current = L.layerGroup().addTo(map);
+      } catch (e) {
+        console.error('[BatchesLayer] Failed to initialize layer:', e);
+        return;
+      }
     }
 
     // Clear existing lines
@@ -116,12 +122,16 @@ export function BatchesLayer({
         batchPolyline.on('click', () => onBatchClick(batch.id));
       }
 
-      batchPolyline.addTo(layerRef.current);
-      linesRef.current.push(batchPolyline);
+      try {
+        batchPolyline.addTo(layerRef.current);
+        linesRef.current.push(batchPolyline);
+      } catch (e) {
+        console.error('[BatchesLayer] Failed to add polyline:', e);
+      }
     });
 
     // Auto-zoom to selected batch if exists
-    if (selectedBatchId && map) {
+    if (selectedBatchId && MapUtils.isMapReady(map)) {
       const selectedBatch = batches.find(b => b.id === selectedBatchId);
       if (selectedBatch && selectedBatch.facilities.length > 0) {
         const warehouse = warehouses.find(w => w.id === selectedBatch.warehouseId);

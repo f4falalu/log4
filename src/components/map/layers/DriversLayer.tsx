@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import { Driver, DeliveryBatch } from '@/types';
 import { MapIcons } from '@/lib/mapIcons';
+import { MapUtils } from '@/lib/mapUtils';
 
 interface DriversLayerProps {
   map: L.Map | null;
@@ -21,11 +22,16 @@ export function DriversLayer({
   const linesRef = useRef<L.Polyline[]>([]);
 
   useEffect(() => {
-    if (!map) return;
+    if (!MapUtils.isMapReady(map)) return;
 
     // Initialize layer group if needed
     if (!layerRef.current) {
-      layerRef.current = L.layerGroup().addTo(map);
+      try {
+        layerRef.current = L.layerGroup().addTo(map);
+      } catch (e) {
+        console.error('[DriversLayer] Failed to initialize layer:', e);
+        return;
+      }
     }
 
     // Clear existing markers and lines
@@ -84,25 +90,29 @@ export function DriversLayer({
         marker.on('click', () => onDriverClick(driver.id));
       }
 
-      marker.addTo(layerRef.current);
-      markersRef.current.push(marker);
+      try {
+        marker.addTo(layerRef.current);
+        markersRef.current.push(marker);
 
-      // If driver is active, draw dashed line to next destination
-      if (isActive && driverBatch) {
-        const nextFacility = driverBatch.facilities[0]; // Simplified: first facility
-        if (nextFacility) {
-          const dashedLine = L.polyline(
-            [[driver.currentLocation.lat, driver.currentLocation.lng], [nextFacility.lat, nextFacility.lng]],
-            {
-              color: '#22c55e',
-              weight: 2,
-              opacity: 0.6,
-              dashArray: '5, 10'
-            }
-          );
-          dashedLine.addTo(layerRef.current);
-          linesRef.current.push(dashedLine);
+        // If driver is active, draw dashed line to next destination
+        if (isActive && driverBatch) {
+          const nextFacility = driverBatch.facilities[0]; // Simplified: first facility
+          if (nextFacility) {
+            const dashedLine = L.polyline(
+              [[driver.currentLocation.lat, driver.currentLocation.lng], [nextFacility.lat, nextFacility.lng]],
+              {
+                color: '#22c55e',
+                weight: 2,
+                opacity: 0.6,
+                dashArray: '5, 10'
+              }
+            );
+            dashedLine.addTo(layerRef.current);
+            linesRef.current.push(dashedLine);
+          }
         }
+      } catch (e) {
+        console.error('[DriversLayer] Failed to add marker/line:', e);
       }
     });
 

@@ -36,8 +36,20 @@ const MapView = ({
   // Handle map ready
   const handleMapReady = (mapInstance: L.Map) => {
     console.log('[MapView] Map ready');
-    setMap(mapInstance);
-    MapUtils.safeInvalidateSize(mapInstance);
+    
+    // Wait for map to be fully initialized before setting state
+    if (MapUtils.isMapReady(mapInstance)) {
+      setMap(mapInstance);
+      MapUtils.safeInvalidateSize(mapInstance);
+    } else {
+      // Retry after a short delay if map isn't fully ready
+      setTimeout(() => {
+        if (MapUtils.isMapReady(mapInstance)) {
+          setMap(mapInstance);
+          MapUtils.safeInvalidateSize(mapInstance);
+        }
+      }, 100);
+    }
   };
 
   return (

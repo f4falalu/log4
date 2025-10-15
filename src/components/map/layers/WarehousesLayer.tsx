@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import { Warehouse } from '@/types';
 import { MapIcons } from '@/lib/mapIcons';
+import { MapUtils } from '@/lib/mapUtils';
 
 interface WarehousesLayerProps {
   map: L.Map | null;
@@ -20,11 +21,16 @@ export function WarehousesLayer({
   const markersRef = useRef<L.Marker[]>([]);
 
   useEffect(() => {
-    if (!map) return;
+    if (!MapUtils.isMapReady(map)) return;
 
     // Initialize layer group if needed
     if (!layerRef.current) {
-      layerRef.current = L.layerGroup().addTo(map);
+      try {
+        layerRef.current = L.layerGroup().addTo(map);
+      } catch (e) {
+        console.error('[WarehousesLayer] Failed to initialize layer:', e);
+        return;
+      }
     }
 
     // Clear existing markers
@@ -65,8 +71,12 @@ export function WarehousesLayer({
         marker.on('click', () => onWarehouseClick(warehouse.id));
       }
 
-      marker.addTo(layerRef.current);
-      markersRef.current.push(marker);
+      try {
+        marker.addTo(layerRef.current);
+        markersRef.current.push(marker);
+      } catch (e) {
+        console.error('[WarehousesLayer] Failed to add marker:', e);
+      }
     });
 
     return () => {

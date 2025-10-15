@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import { Facility } from '@/types';
 import { MapIcons } from '@/lib/mapIcons';
+import { MapUtils } from '@/lib/mapUtils';
 
 interface FacilitiesLayerProps {
   map: L.Map | null;
@@ -20,11 +21,16 @@ export function FacilitiesLayer({
   const markersRef = useRef<L.Marker[]>([]);
 
   useEffect(() => {
-    if (!map) return;
+    if (!MapUtils.isMapReady(map)) return;
 
     // Initialize layer group if needed
     if (!layerRef.current) {
-      layerRef.current = L.layerGroup().addTo(map);
+      try {
+        layerRef.current = L.layerGroup().addTo(map);
+      } catch (e) {
+        console.error('[FacilitiesLayer] Failed to initialize layer:', e);
+        return;
+      }
     }
 
     // Clear existing markers
@@ -78,8 +84,12 @@ export function FacilitiesLayer({
         marker.on('click', () => onFacilityClick(facility.id));
       }
 
-      marker.addTo(layerRef.current);
-      markersRef.current.push(marker);
+      try {
+        marker.addTo(layerRef.current);
+        markersRef.current.push(marker);
+      } catch (e) {
+        console.error('[FacilitiesLayer] Failed to add marker:', e);
+      }
     });
 
     return () => {

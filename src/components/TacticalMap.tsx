@@ -22,6 +22,7 @@ import 'leaflet/dist/leaflet.css';
 import 'leaflet-draw';
 import 'leaflet-draw/dist/leaflet.draw.css';
 import { LeafletMapCore } from './map/LeafletMapCore';
+import { MapUtils } from '@/lib/mapUtils';
 
 export default function TacticalMap() {
   const { data: drivers = [], isLoading: driversLoading } = useDrivers();
@@ -90,24 +91,23 @@ export default function TacticalMap() {
   }, [zones]);
 
   const handleMapReady = useCallback((map: L.Map) => {
-    if (!mapRef.current) {
+    if (!mapRef.current && MapUtils.isMapReady(map)) {
       mapRef.current = map;
-      // Initialize overlay layer groups
-      zonesLayerRef.current = L.layerGroup().addTo(map);
-      driversLayerRef.current = L.layerGroup().addTo(map);
-      facilitiesLayerRef.current = L.layerGroup().addTo(map);
-      warehousesLayerRef.current = L.layerGroup().addTo(map);
-      drawLayerRef.current = L.featureGroup().addTo(map);
+      
+      // Initialize overlay layer groups with error handling
+      try {
+        zonesLayerRef.current = L.layerGroup().addTo(map);
+        driversLayerRef.current = L.layerGroup().addTo(map);
+        facilitiesLayerRef.current = L.layerGroup().addTo(map);
+        warehousesLayerRef.current = L.layerGroup().addTo(map);
+        drawLayerRef.current = L.featureGroup().addTo(map);
+      } catch (e) {
+        console.error('[TacticalMap] Failed to initialize layers:', e);
+        return;
+      }
       
       // Ensure proper sizing after mount
-      try {
-        const container = map.getContainer();
-        if ((container as any)?.isConnected) {
-          map.invalidateSize();
-        }
-      } catch (e) {
-        console.warn('[TacticalMap] Could not invalidate size on ready', e);
-      }
+      MapUtils.safeInvalidateSize(map);
       setMapReady(true);
     }
   }, []);
@@ -335,16 +335,22 @@ export default function TacticalMap() {
   }, [calculateMapBounds]);
 
   const handleLocationSelect = useCallback((lat: number, lng: number, address: string) => {
-    if (!mapRef.current) return;
-    mapRef.current.setView([lat, lng], 16);
+    if (!MapUtils.isMapReady(mapRef.current)) return;
     
-    const marker = L.marker([lat, lng])
-      .bindPopup(`<strong>Searched Location</strong><br/>${address}`)
-      .addTo(mapRef.current)
-      .openPopup();
+    mapRef.current!.setView([lat, lng], 16);
     
-    setTimeout(() => marker.remove(), 10000);
-    toast.success('Location found');
+    try {
+      const marker = L.marker([lat, lng])
+        .bindPopup(`<strong>Searched Location</strong><br/>${address}`)
+        .addTo(mapRef.current!)
+        .openPopup();
+      
+      setTimeout(() => marker.remove(), 10000);
+      toast.success('Location found');
+    } catch (e) {
+      console.error('[TacticalMap] Failed to add search marker:', e);
+      toast.error('Failed to display location marker');
+    }
   }, []);
 
   // Sync facilities layer
@@ -378,7 +384,11 @@ export default function TacticalMap() {
           selectFacility(facility.id);
         });
 
-      facilitiesLayerRef.current?.addLayer(marker);
+      try {
+        facilitiesLayerRef.current?.addLayer(marker);
+      } catch (e) {
+        console.error('[TacticalMap] Failed to add facility marker:', e);
+      }
     });
   }, [mapReady, facilities, mapState.selectedFacilityId, mapState.visibleLayers.facilities, selectFacility]);
 
@@ -416,16 +426,27 @@ export default function TacticalMap() {
           }
         });
 
-      warehousesLayerRef.current?.addLayer(marker);
+      try {
+        warehousesLayerRef.current?.addLayer(marker);
+      } catch (e) {
+        console.error('[TacticalMap] Failed to add warehouse marker:', e);
+      }
     });
   }, [mapReady, warehouses, mapState.visibleLayers.warehouses, selectWarehouse]);
 
   // Sync drivers layer
   useEffect(() => {
-    if (!mapReady || !mapRef.current) return;
+    if (!mapReady || !MapUtils.isMapReady(mapRef.current)) return;
+    
     if (!driversLayerRef.current) {
-      driversLayerRef.current = L.layerGroup().addTo(mapRef.current);
+      try {
+        driversLayerRef.current = L.layerGroup().addTo(mapRef.current!);
+      } catch (e) {
+        console.error('[TacticalMap] Failed to initialize drivers layer:', e);
+        return;
+      }
     }
+    
     const layer = driversLayerRef.current;
     layer.clearLayers();
 
@@ -433,6 +454,7 @@ export default function TacticalMap() {
 
     drivers.forEach((driver) => {
       if (!driver?.currentLocation) return;
+      
       const marker = L.marker([driver.currentLocation.lat, driver.currentLocation.lng], {
         icon: createDriverIcon(driver.status),
       }).on('click', () => handleDriverClick(driver));
@@ -444,7 +466,11 @@ export default function TacticalMap() {
          </div>`
       );
 
-      marker.addTo(layer);
+      try {
+        marker.addTo(layer);
+      } catch (e) {
+        console.error('[TacticalMap] Failed to add driver marker:', e);
+      }
     });
 
     return () => {
@@ -454,10 +480,17 @@ export default function TacticalMap() {
 
   // Sync zones layer
   useEffect(() => {
-    if (!mapReady || !mapRef.current) return;
+    if (!mapReady || !MapUtils.isMapReady(mapRef.current)) return;
+    
     if (!zonesLayerRef.current) {
-      zonesLayerRef.current = L.layerGroup().addTo(mapRef.current);
+      try {
+        zonesLayerRef.current = L.layerGroup().addTo(mapRef.current!);
+      } catch (e) {
+        console.error('[TacticalMap] Failed to initialize zones layer:', e);
+        return;
+      }
     }
+    
     const layer = zonesLayerRef.current;
     layer.clearLayers();
 
@@ -487,7 +520,11 @@ export default function TacticalMap() {
          </div>`
       );
 
-      polygon.addTo(layer);
+      try {
+        polygon.addTo(layer);
+      } catch (e) {
+        console.error('[TacticalMap] Failed to add zone polygon:', e);
+      }
     });
 
     return () => {

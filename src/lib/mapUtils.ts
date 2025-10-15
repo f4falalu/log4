@@ -2,6 +2,32 @@ import L from 'leaflet';
 
 export const MapUtils = {
   /**
+   * Checks if map is fully initialized and ready for layer operations
+   */
+  isMapReady: (map: L.Map | null): boolean => {
+    if (!map) return false;
+    
+    try {
+      const container = map.getContainer();
+      // Check if container is connected to DOM
+      if (!(container as any)?.isConnected) return false;
+      
+      // Check if map panes exist (critical for layer operations)
+      const panes = map.getPanes();
+      if (!panes || !panes.overlayPane) return false;
+      
+      // Check if map has valid size
+      const size = map.getSize();
+      if (!size || size.x === 0 || size.y === 0) return false;
+      
+      return true;
+    } catch (e) {
+      console.warn('[MapUtils] Map readiness check failed:', e);
+      return false;
+    }
+  },
+  
+  /**
    * Fits map bounds to include all markers with optional padding
    */
   fitBoundsToMarkers: (map: L.Map, markers: L.Marker[], padding = 0.1) => {

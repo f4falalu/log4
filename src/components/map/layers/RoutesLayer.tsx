@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import { RouteOptimization, Warehouse } from '@/types';
+import { MapUtils } from '@/lib/mapUtils';
 
 interface RoutesLayerProps {
   map: L.Map | null;
@@ -13,11 +14,16 @@ export function RoutesLayer({ map, routes, warehouses }: RoutesLayerProps) {
   const linesRef = useRef<L.Polyline[]>([]);
 
   useEffect(() => {
-    if (!map) return;
+    if (!MapUtils.isMapReady(map)) return;
 
     // Initialize layer group if needed
     if (!layerRef.current) {
-      layerRef.current = L.layerGroup().addTo(map);
+      try {
+        layerRef.current = L.layerGroup().addTo(map);
+      } catch (e) {
+        console.error('[RoutesLayer] Failed to initialize layer:', e);
+        return;
+      }
     }
 
     // Clear existing lines
@@ -48,8 +54,12 @@ export function RoutesLayer({ map, routes, warehouses }: RoutesLayerProps) {
         dashArray: '10, 10'
       });
 
-      polyline.addTo(layerRef.current);
-      linesRef.current.push(polyline);
+      try {
+        polyline.addTo(layerRef.current);
+        linesRef.current.push(polyline);
+      } catch (e) {
+        console.error('[RoutesLayer] Failed to add polyline:', e);
+      }
     });
 
     return () => {
