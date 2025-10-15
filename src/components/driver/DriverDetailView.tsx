@@ -8,9 +8,9 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Phone, MessageSquare, MoreVertical, FileText, CheckCircle2, XCircle } from 'lucide-react';
-import { VehicleIllustration } from './VehicleIllustration';
-import { RouteCard } from './RouteCard';
-import { DriverStatisticsCharts } from './DriverStatisticsCharts';
+import { VehicleIllustration } from '@/components/vehicle/VehicleIllustration';
+import { RouteCard } from '@/components/dispatch/RouteCard';
+import { DriverStatisticsCharts } from '@/components/driver/DriverStatisticsCharts';
 import { generateMockRoutes } from '@/lib/mockRouteData';
 import { generateMockStatistics } from '@/lib/mockStatisticsData';
 

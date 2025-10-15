@@ -6,7 +6,7 @@ import { useDrivers } from '@/hooks/useDrivers';
 import { useVehicles } from '@/hooks/useVehicles';
 import { DeliveryBatch } from '@/types';
 import { Skeleton } from '@/components/ui/skeleton';
-import { VehicleCard } from '@/components/VehicleCard';
+import { VehicleCard } from '@/components/vehicle/VehicleCard';
 
 interface FleetStatusProps {
   batches: DeliveryBatch[];

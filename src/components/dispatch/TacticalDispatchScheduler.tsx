@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { Input } from './ui/input';
-import { Label } from './ui/label';
-import { Button } from './ui/button';
-import { Textarea } from './ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Checkbox } from './ui/checkbox';
-import { Badge } from './ui/badge';
-import { Separator } from './ui/separator';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { 
   Calendar, 
@@ -31,7 +31,7 @@ import { useWarehouses } from '@/hooks/useWarehouses';
 import { useDrivers } from '@/hooks/useDrivers';
 import { useVehicles } from '@/hooks/useVehicles';
 import { optimizeBatchDelivery } from '@/lib/routeOptimization';
-import MapView from './MapView';
+import MapView from '@/components/MapView';
 
 interface TacticalDispatchSchedulerProps {
   facilities: Facility[];

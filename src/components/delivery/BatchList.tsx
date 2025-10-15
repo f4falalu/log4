@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { format } from 'date-fns';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { Badge } from './ui/badge';
-import { Button } from './ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { 
   Package, 
@@ -22,7 +22,7 @@ import {
 import { DeliveryBatch } from '@/types';
 import { useDrivers } from '@/hooks/useDrivers';
 import { useVehicles } from '@/hooks/useVehicles';
-import { Skeleton } from './ui/skeleton';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface BatchListProps {
   batches: DeliveryBatch[];

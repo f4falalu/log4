@@ -13,7 +13,7 @@ import {
   CheckCircle,
   Package
 } from 'lucide-react';
-import MapView from './MapView';
+import MapView from '@/components/MapView';
 
 interface DashboardProps {
   facilities: Facility[];

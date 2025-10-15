@@ -1,7 +1,7 @@
 import { useFacilities } from '@/hooks/useFacilities';
 import { useWarehouses } from '@/hooks/useWarehouses';
 import { useDeliveryBatches } from '@/hooks/useDeliveryBatches';
-import CommandCenter from '@/components/CommandCenter';
+import CommandCenter from '@/pages/CommandCenter';
 
 export default function CommandCenterPage() {
   const { data: facilities = [] } = useFacilities();

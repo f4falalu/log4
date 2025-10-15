@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Vehicle } from '@/types';
-import { VehicleCard } from './VehicleCard';
-import { Input } from './ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { VehicleCard } from '@/components/vehicle/VehicleCard';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Search } from 'lucide-react';
 
 interface VehicleGridViewProps {

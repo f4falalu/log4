@@ -2,7 +2,7 @@ import { ChevronLeft, ChevronRight, Package } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
-import { VehicleIllustration } from '@/components/VehicleIllustration';
+import { VehicleIllustration } from '@/components/vehicle/VehicleIllustration';
 import { DriverVehicleHistory } from '@/types';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 

@@ -1,9 +1,9 @@
 import { DeliveryBatch } from '@/types';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Badge } from './ui/badge';
-import { Button } from './ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { CheckCircle2, Circle, Clock, MapPin } from 'lucide-react';
-import { Progress } from './ui/progress';
+import { Progress } from '@/components/ui/progress';
 import { useMemo } from 'react';
 
 interface RouteProgressTrackerProps {

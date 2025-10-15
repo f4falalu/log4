@@ -1,6 +1,6 @@
 import { useFacilities } from '@/hooks/useFacilities';
 import { useDeliveryBatches } from '@/hooks/useDeliveryBatches';
-import TacticalDispatchScheduler from '@/components/TacticalDispatchScheduler';
+import TacticalDispatchScheduler from '@/components/dispatch/TacticalDispatchScheduler';
 
 export default function DispatchPage() {
   const { data: facilities = [] } = useFacilities();

@@ -4,14 +4,14 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { MapStateProvider } from "./contexts/MapStateContext";
-import { ProtectedRoute } from "./components/ProtectedRoute";
+import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import AuthCallback from "./pages/AuthCallback";
 import NotFound from "./pages/NotFound";
 import ErrorBoundary from "./components/ErrorBoundary";
-import DriverManagement from "./components/DriverManagement";
-import TacticalMap from "./components/TacticalMap";
+import DriverManagement from "./pages/DriverManagement";
+import TacticalMap from "./pages/TacticalMap";
 import CommandCenterPage from "./pages/CommandCenterPage";
 import DispatchPage from "./pages/DispatchPage";
 

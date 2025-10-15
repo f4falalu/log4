@@ -1,6 +1,6 @@
-import { Card, CardContent } from './ui/card';
-import { Badge } from './ui/badge';
-import { VehicleIllustration } from './VehicleIllustration';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { VehicleIllustration } from '@/components/vehicle/VehicleIllustration';
 import { Vehicle } from '@/types';
 import { Clock, Package, Fuel, User } from 'lucide-react';
 import { cn } from '@/lib/utils';

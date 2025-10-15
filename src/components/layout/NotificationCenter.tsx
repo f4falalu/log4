@@ -1,12 +1,12 @@
 import { Bell, Check, CheckCheck, X } from 'lucide-react';
-import { Button } from './ui/button';
+import { Button } from '@/components/ui/button';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from './ui/popover';
-import { Badge } from './ui/badge';
-import { ScrollArea } from './ui/scroll-area';
+} from '@/components/ui/popover';
+import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { useNotifications } from '@/hooks/useNotifications';
 import { formatDistanceToNow } from 'date-fns';
 
