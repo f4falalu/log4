@@ -92,14 +92,15 @@ const CommandCenter = ({ facilities, warehouses, batches }: CommandCenterProps) 
 
         {/* RIGHT: Map + Details */}
         <div className="lg:col-span-2 space-y-4">
-          <MapView
-            facilities={facilities}
-            warehouses={warehouses}
-            batches={batches}
-            selectedBatchId={selectedBatchId}
-            center={[12.0, 8.5]}
-            zoom={7}
-          />
+        <MapView
+          facilities={facilities}
+          warehouses={warehouses}
+          batches={batches}
+          selectedBatchId={selectedBatchId}
+          onBatchClick={handleBatchClick}
+          center={[12.0, 8.5]}
+          zoom={7}
+        />
 
           {/* Batch Details Panel */}
           {selectedBatch && (

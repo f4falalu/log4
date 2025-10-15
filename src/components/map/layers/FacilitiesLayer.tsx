@@ -54,7 +54,7 @@ export function FacilitiesLayer({
 
       const isSelected = selectedIds.includes(facility.id);
       const marker = L.marker([facility.lat, facility.lng], {
-        icon: MapIcons.facility(isSelected)
+        icon: MapIcons.facility(isSelected, facility.type)
       });
 
       // Create popup content

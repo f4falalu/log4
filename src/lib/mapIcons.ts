@@ -11,43 +11,106 @@ L.Icon.Default.mergeOptions({
   shadowUrl: markerShadow,
 });
 
+// Color palette for facility types
+const FACILITY_TYPE_COLORS: Record<string, string> = {
+  hospital: '#EF4444', // red
+  clinic: '#3B82F6', // blue
+  pharmacy: '#10B981', // green
+  'health center': '#8B5CF6', // purple
+  'medical center': '#F59E0B', // amber
+  default: '#6B7280', // gray
+};
+
+// Helper to get facility color
+const getFacilityColor = (type: string): string => {
+  const lowerType = type.toLowerCase();
+  for (const [key, color] of Object.entries(FACILITY_TYPE_COLORS)) {
+    if (lowerType.includes(key)) return color;
+  }
+  return FACILITY_TYPE_COLORS.default;
+};
+
 export const MapIcons = {
-  facility: (selected = false) => L.icon({
-    iconUrl: markerIcon,
-    iconRetinaUrl: markerIcon2x,
-    shadowUrl: markerShadow,
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-    shadowSize: [41, 41]
-  }),
-  
-  warehouse: (selected = false) => L.divIcon({
-    html: `
-      <div style="
-        background-color: hsl(195 100% 28%);
-        border: 3px solid hsl(0 0% 100%);
-        border-radius: 50%;
-        width: 20px;
-        height: 20px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 2px 10px -2px hsl(195 100% 28% / 0.3);
-      ">
+  /**
+   * Facility marker with type-based coloring
+   */
+  facility: (selected = false, type = 'default') => {
+    const color = getFacilityColor(type);
+    const size = selected ? 28 : 24;
+    const borderWidth = selected ? 3 : 2;
+    const boxShadow = selected 
+      ? `0 4px 12px rgba(0,0,0,0.4), 0 0 0 3px ${color}40`
+      : '0 2px 6px rgba(0,0,0,0.3)';
+    
+    return L.divIcon({
+      html: `
         <div style="
-          background-color: hsl(0 0% 100%);
-          width: 8px;
-          height: 8px;
+          background: ${color};
+          width: ${size}px;
+          height: ${size}px;
           border-radius: 50%;
-        "></div>
-      </div>
-    `,
-    className: 'warehouse-marker',
-    iconSize: [20, 20],
-    iconAnchor: [10, 10],
-    popupAnchor: [0, -10]
-  }),
+          border: ${borderWidth}px solid white;
+          box-shadow: ${boxShadow};
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s ease;
+          ${selected ? 'transform: scale(1.2);' : ''}
+        ">
+          <div style="
+            width: 8px;
+            height: 8px;
+            background: white;
+            border-radius: 50%;
+          "></div>
+        </div>
+      `,
+      className: 'facility-marker',
+      iconSize: [size, size],
+      iconAnchor: [size / 2, size / 2],
+      popupAnchor: [0, -size / 2],
+    });
+  },
+  
+  /**
+   * Warehouse marker
+   */
+  warehouse: (selected = false) => {
+    const size = selected ? 28 : 24;
+    const innerSize = selected ? 12 : 10;
+    const borderWidth = selected ? 3 : 2;
+    const boxShadow = selected 
+      ? '0 4px 12px rgba(0,120,150,0.5), 0 0 0 3px rgba(0,120,150,0.2)'
+      : '0 2px 8px rgba(0,120,150,0.3)';
+    
+    return L.divIcon({
+      html: `
+        <div style="
+          background: linear-gradient(135deg, #0078A0 0%, #006080 100%);
+          border: ${borderWidth}px solid white;
+          border-radius: 50%;
+          width: ${size}px;
+          height: ${size}px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: ${boxShadow};
+          ${selected ? 'transform: scale(1.2);' : ''}
+        ">
+          <div style="
+            background: white;
+            width: ${innerSize}px;
+            height: ${innerSize}px;
+            border-radius: 50%;
+          "></div>
+        </div>
+      `,
+      className: 'warehouse-marker',
+      iconSize: [size, size],
+      iconAnchor: [size / 2, size / 2],
+      popupAnchor: [0, -size / 2],
+    });
+  },
   
   driver: (status: 'available' | 'busy' | 'offline', initials: string, isActive = false) => {
     const statusColors = {
@@ -93,28 +156,38 @@ export const MapIcons = {
     });
   },
   
-  waypoint: (number: number) => L.divIcon({
-    html: `
-      <div style="
-        background-color: hsl(0 0% 100%);
-        border: 2px solid hsl(195 100% 28%);
-        border-radius: 50%;
-        width: 24px;
-        height: 24px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 600;
-        color: hsl(195 100% 28%);
-        font-size: 12px;
-        box-shadow: 0 2px 8px -2px rgba(0,0,0,0.3);
-      ">
-        ${number}
-      </div>
-    `,
-    className: 'waypoint-marker',
-    iconSize: [24, 24],
-    iconAnchor: [12, 12],
-    popupAnchor: [0, -12]
-  }),
+  /**
+   * Waypoint marker for route stops
+   */
+  waypoint: (number: number, isStart = false, isEnd = false) => {
+    const size = 32;
+    const bgColor = isStart ? '#10B981' : isEnd ? '#EF4444' : '#3B82F6';
+    const label = isStart ? 'S' : isEnd ? 'E' : number.toString();
+    
+    return L.divIcon({
+      html: `
+        <div style="
+          background: white;
+          border: 3px solid ${bgColor};
+          border-radius: 50%;
+          width: ${size}px;
+          height: ${size}px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 700;
+          color: ${bgColor};
+          font-size: 14px;
+          box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        ">
+          ${label}
+        </div>
+      `,
+      className: 'waypoint-marker',
+      iconSize: [size, size],
+      iconAnchor: [size / 2, size / 2],
+      popupAnchor: [0, -size / 2],
+    });
+  },
 };
