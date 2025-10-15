@@ -1,8 +1,8 @@
 import { ReactNode } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { 
   MapPin, 
-  Calendar, 
   Building, 
   BarChart3,
   Truck,
@@ -19,75 +19,72 @@ import { usePermissions, Permission } from '@/hooks/usePermissions';
 
 interface LayoutProps {
   children: ReactNode;
-  activeTab: string;
-  onTabChange: (tab: string) => void;
 }
 
-const Layout = ({ children, activeTab, onTabChange }: LayoutProps) => {
+const Layout = ({ children }: LayoutProps) => {
   const { hasPermission } = usePermissions();
+  const location = useLocation();
 
-  // Define all possible tabs with their required permissions
-  const allTabs = [
+  // Define all navigation items with their routes and permissions
+  const navigationItems = [
     { 
-      id: 'dashboard', 
+      path: '/', 
       label: 'Dashboard', 
       icon: BarChart3,
       permission: null
     },
     { 
-      id: 'map', 
+      path: '/command-center', 
       label: 'Command Center', 
       icon: MapPin,
       permission: 'view_batches' as Permission
     },
     { 
-      id: 'tactical-map', 
+      path: '/tactical', 
       label: 'Tactical Map', 
       icon: Map,
       permission: 'view_tactical_map' as Permission
     },
     { 
-      id: 'facilities', 
+      path: '/facilities', 
       label: 'Facilities', 
       icon: Building,
       permission: 'manage_facilities' as Permission
     },
     { 
-      id: 'schedule', 
+      path: '/dispatch', 
       label: 'Dispatch', 
       icon: Route,
       permission: 'assign_drivers' as Permission
     },
     { 
-      id: 'batches', 
-      label: 'Batches', 
-      icon: Package,
-      permission: 'view_batches' as Permission
-    },
-    { 
-      id: 'drivers', 
+      path: '/drivers', 
       label: 'Drivers', 
       icon: User,
-      permission: null // Temporarily removed for verification
+      permission: null
     },
     { 
-      id: 'vehicles', 
+      path: '/vehicles', 
       label: 'Vehicles', 
       icon: Truck,
       permission: 'manage_vehicles' as Permission
     },
     { 
-      id: 'reports', 
+      path: '/reports', 
       label: 'Reports', 
       icon: FileText,
       permission: 'view_reports' as Permission
     },
   ];
 
-  // Filter tabs based on user permissions
-  const tabs = allTabs.filter(tab => 
-    !tab.permission || hasPermission(tab.permission)
+  // Filter navigation items based on user permissions
+  const visibleNavItems = navigationItems.filter(item => 
+    !item.permission || hasPermission(item.permission)
   );
+
+  const isActive = (path: string) => {
+    return location.pathname === path;
+  };
 
   return (
     <div className="min-h-screen bg-gradient-light">
@@ -117,22 +114,22 @@ const Layout = ({ children, activeTab, onTabChange }: LayoutProps) => {
       <nav className="bg-card border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex space-x-8">
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
+            {visibleNavItems.map((item) => {
+              const Icon = item.icon;
               return (
-                <button
-                  key={tab.id}
-                  onClick={() => onTabChange(tab.id)}
+                <Link
+                  key={item.path}
+                  to={item.path}
                   className={cn(
                     "flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors",
-                    activeTab === tab.id
+                    isActive(item.path)
                       ? "border-primary text-primary"
                       : "border-transparent text-muted-foreground hover:text-foreground hover:border-muted"
                   )}
                 >
                   <Icon className="w-4 h-4" />
-                  <span>{tab.label}</span>
-                </button>
+                  <span>{item.label}</span>
+                </Link>
               );
             })}
           </div>

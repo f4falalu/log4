@@ -86,15 +86,17 @@ export function LeafletMapCore({
 
     mapRef.current = map;
 
-// Invalidate size after first paint to avoid layout issues
-const rafId = requestAnimationFrame(() => {
-  try {
-    map.invalidateSize();
-  } catch (e) {
-    console.warn('[LeafletMapCore] Skipped invalidateSize after unmount');
-  }
-});
-onReady(map);
+    // Invalidate size after first paint to avoid layout issues
+    const rafId = requestAnimationFrame(() => {
+      try {
+        map.invalidateSize();
+      } catch (e) {
+        console.warn('[LeafletMapCore] Skipped invalidateSize after unmount');
+      }
+    });
+    
+    // Call onReady with map instance
+    onReady(map);
 
     return () => {
       try {
@@ -108,7 +110,8 @@ onReady(map);
       onDestroy?.();
       mapRef.current = null;
     };
-  }, [center, zoom, onReady, onDestroy]);
+    // Only re-run if map configuration changes, NOT on callback changes
+  }, [center, zoom, tileProvider, showLayerSwitcher, showScaleControl, showResetControl]);
 
   return <div ref={containerRef} className={className ?? 'h-full w-full'} />;
 }

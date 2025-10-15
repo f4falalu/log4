@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import Layout from '@/components/layout/Layout';
 import { Facility, Warehouse, DeliveryBatch } from '@/types';
 import KPIMetrics from '@/components/dashboard/KPIMetrics';
 import FleetStatus from '@/components/dashboard/FleetStatus';
@@ -56,7 +57,8 @@ const CommandCenter = ({ facilities, warehouses, batches }: CommandCenterProps) 
   };
 
   return (
-    <div className="space-y-6 p-6">
+    <Layout>
+      <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -118,9 +120,10 @@ const CommandCenter = ({ facilities, warehouses, batches }: CommandCenterProps) 
         </div>
       </div>
 
-      {/* Bottom: Activity Timeline */}
-      <ActivityTimeline batches={batches} />
-    </div>
+        {/* Bottom: Activity Timeline */}
+        <ActivityTimeline batches={batches} />
+      </div>
+    </Layout>
   );
 };
 

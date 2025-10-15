@@ -1,3 +1,4 @@
+import Layout from '@/components/layout/Layout';
 import { useFacilities } from '@/hooks/useFacilities';
 import { useDeliveryBatches } from '@/hooks/useDeliveryBatches';
 import TacticalDispatchScheduler from '@/components/dispatch/TacticalDispatchScheduler';
@@ -7,15 +8,16 @@ export default function DispatchPage() {
   const { data: batches = [] } = useDeliveryBatches();
   
   const handleBatchCreate = (batch: any) => {
-    // This will be handled by TacticalDispatchScheduler's internal logic
     console.log('Batch created:', batch);
   };
   
   return (
-    <TacticalDispatchScheduler 
-      facilities={facilities}
-      batches={batches}
-      onBatchCreate={handleBatchCreate}
-    />
+    <Layout>
+      <TacticalDispatchScheduler 
+        facilities={facilities}
+        batches={batches}
+        onBatchCreate={handleBatchCreate}
+      />
+    </Layout>
   );
 }

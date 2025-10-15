@@ -1,4 +1,4 @@
-import { useState, ReactNode } from 'react';
+import { useState, ReactNode, useCallback } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { LeafletMapCore } from './LeafletMapCore';
@@ -88,7 +88,7 @@ export function UnifiedMapContainer({
     ? MAP_DESIGN_SYSTEM.layout.dashboard
     : MAP_DESIGN_SYSTEM.layout.embedded;
 
-  const handleMapReady = (mapInstance: L.Map) => {
+  const handleMapReady = useCallback((mapInstance: L.Map) => {
     if (MapUtils.isMapReady(mapInstance)) {
       setMap(mapInstance);
       MapUtils.safeInvalidateSize(mapInstance);
@@ -103,7 +103,7 @@ export function UnifiedMapContainer({
         }
       }, 100);
     }
-  };
+  }, [onMapReady]);
 
   return (
     <div className={cn('relative', layoutClass, className)}>

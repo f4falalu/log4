@@ -14,6 +14,9 @@ import DriverManagement from "./pages/DriverManagement";
 import TacticalMap from "./pages/TacticalMap";
 import CommandCenterPage from "./pages/CommandCenterPage";
 import DispatchPage from "./pages/DispatchPage";
+import FacilityManagerPage from "./pages/FacilityManagerPage";
+import VehicleManagementPage from "./pages/VehicleManagementPage";
+import ReportsPageWrapper from "./pages/ReportsPageWrapper";
 
 const queryClient = new QueryClient();
 
@@ -42,6 +45,11 @@ const App = () => (
                   <CommandCenterPage />
                 </ProtectedRoute>
               } />
+              <Route path="/facilities" element={
+                <ProtectedRoute>
+                  <FacilityManagerPage />
+                </ProtectedRoute>
+              } />
               <Route path="/tactical" element={
                 <ProtectedRoute>
                   <TacticalMap />
@@ -55,6 +63,16 @@ const App = () => (
               <Route path="/drivers" element={
                 <ProtectedRoute>
                   <DriverManagement />
+                </ProtectedRoute>
+              } />
+              <Route path="/vehicles" element={
+                <ProtectedRoute>
+                  <VehicleManagementPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/reports" element={
+                <ProtectedRoute>
+                  <ReportsPageWrapper />
                 </ProtectedRoute>
               } />
               {/* Legacy route redirects */}
