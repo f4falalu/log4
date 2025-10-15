@@ -1,104 +1,12 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Facility, Warehouse, RouteOptimization, DeliveryBatch } from '@/types';
 import { useDrivers } from '@/hooks/useDrivers';
-
-// Fix for default marker icons in Leaflet
-import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
-import markerIcon from 'leaflet/dist/images/marker-icon.png';
-import markerShadow from 'leaflet/dist/images/marker-shadow.png';
-
-// Setup icons outside component to prevent re-initialization
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconUrl: markerIcon,
-  iconRetinaUrl: markerIcon2x,
-  shadowUrl: markerShadow,
-});
-
-const facilityIcon = L.icon({
-  iconUrl: markerIcon,
-  iconRetinaUrl: markerIcon2x,
-  shadowUrl: markerShadow,
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41]
-});
-
-// Create a custom warehouse icon (larger, different color)
-const warehouseIcon = L.divIcon({
-  html: `
-    <div style="
-      background-color: hsl(195 100% 28%);
-      border: 3px solid hsl(0 0% 100%);
-      border-radius: 50%;
-      width: 20px;
-      height: 20px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 2px 10px -2px hsl(195 100% 28% / 0.3);
-    ">
-      <div style="
-        background-color: hsl(0 0% 100%);
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-      "></div>
-    </div>
-  `,
-  className: 'warehouse-marker',
-  iconSize: [20, 20],
-  iconAnchor: [10, 10],
-  popupAnchor: [0, -10]
-});
-
-// Create driver marker icon generator
-const createDriverIcon = (initials: string, status: 'available' | 'busy' | 'offline', isActive: boolean) => {
-  const statusColors = {
-    available: 'hsl(142 76% 36%)',
-    busy: 'hsl(38 92% 50%)',
-    offline: 'hsl(240 3.8% 46.1%)'
-  };
-  
-  const bgColor = statusColors[status];
-  const pulseAnimation = isActive ? `
-    @keyframes pulse-driver {
-      0%, 100% { box-shadow: 0 0 0 0 ${bgColor}80; }
-      50% { box-shadow: 0 0 0 8px ${bgColor}00; }
-    }
-  ` : '';
-  
-  return L.divIcon({
-    html: `
-      <style>${pulseAnimation}</style>
-      <div style="
-        background-color: ${bgColor};
-        border: 3px solid hsl(0 0% 100%);
-        border-radius: 50%;
-        width: 40px;
-        height: 40px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 2px 10px -2px ${bgColor}80;
-        font-weight: 600;
-        color: white;
-        font-size: 14px;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-        ${isActive ? `animation: pulse-driver 2s infinite;` : ''}
-      ">
-        ${initials}
-      </div>
-    `,
-    className: 'driver-marker',
-    iconSize: [40, 40],
-    iconAnchor: [20, 20],
-    popupAnchor: [0, -20]
-  });
-};
+import { LeafletMapCore } from './map/LeafletMapCore';
+import { MapIcons } from '@/lib/mapIcons';
+import { MapUtils } from '@/lib/mapUtils';
+import { MAP_CONFIG } from '@/lib/mapConfig';
 
 interface MapViewProps {
   facilities: Facility[];
@@ -116,12 +24,11 @@ const MapView = ({
   routes = [], 
   batches = [], 
   selectedBatchId = null,
-  center = [12.0, 8.5], 
-  zoom = 6 
+  center = MAP_CONFIG.defaultCenter, 
+  zoom = MAP_CONFIG.defaultZoom 
 }: MapViewProps) => {
   const { data: drivers = [] } = useDrivers();
-  const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<L.Map | null>(null);
+  const [map, setMap] = useState<L.Map | null>(null);
   const markersRef = useRef<L.Marker[]>([]);
   const routeLinesRef = useRef<L.Polyline[]>([]);
 
@@ -140,130 +47,39 @@ const MapView = ({
     });
   }, [facilities]);
 
-  // Initialize map
-  useEffect(() => {
-    if (!mapRef.current || mapInstanceRef.current) return;
-
-    console.log('Initializing Leaflet map');
+  // Handle map ready
+  const handleMapReady = (mapInstance: L.Map) => {
+    console.log('[MapView] Map ready');
+    setMap(mapInstance);
     
-    try {
-      const map = L.map(mapRef.current, {
-        zoomControl: false,
-        zoomAnimation: false,
-        fadeAnimation: false,
-        markerZoomAnimation: false,
-        inertia: false
-      }).setView(center, zoom);
-      
-      // Invalidate size on next frame to prevent position errors
-      requestAnimationFrame(() => {
-        map.invalidateSize();
-      });
-      
-      // Define multiple tile layers
-      const humanitarianOSM = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Tiles style by <a href="https://www.hotosm.org/" target="_blank">Humanitarian OpenStreetMap Team</a>',
-        maxZoom: 19
-      });
-
-      const standardOSM = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        maxZoom: 19
-      });
-
-      const cartoLight = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-        maxZoom: 19
-      });
-
-      const cartoDark = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-        maxZoom: 19
-      });
-
-      // Add default layer (Humanitarian OSM - best for medical facilities)
-      humanitarianOSM.addTo(map);
-
-      // Layer control
-      const baseMaps = {
-        "Humanitarian (Recommended)": humanitarianOSM,
-        "Standard": standardOSM,
-        "Light": cartoLight,
-        "Dark": cartoDark
-      };
-
-      L.control.layers(baseMaps, undefined, { position: 'topright' }).addTo(map);
-
-      // Add zoom control to bottom right
-      L.control.zoom({ position: 'bottomright' }).addTo(map);
-
-      // Add scale control
-      L.control.scale({ 
-        position: 'bottomleft',
-        metric: true,
-        imperial: false
-      }).addTo(map);
-
-      // Add custom reset view button
-      const resetControl = L.Control.extend({
-        options: { position: 'bottomright' },
-        onAdd: function() {
-          const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
-          container.innerHTML = '<a href="#" title="Reset View" style="width: 30px; height: 30px; line-height: 30px; display: flex; align-items: center; justify-content: center; font-size: 18px; text-decoration: none; background: white; color: #333;">↻</a>';
-          container.onclick = (e) => {
-            e.preventDefault();
-            if (markersRef.current.length > 0) {
-              const group = new L.FeatureGroup(markersRef.current);
-              map.fitBounds(group.getBounds().pad(0.1));
-            } else {
-              map.setView(center, zoom);
-            }
-          };
-          return container;
-        }
-      });
-      map.addControl(new resetControl());
-
-      mapInstanceRef.current = map;
-      console.log('Map initialized successfully');
-    } catch (error) {
-      console.error('Error initializing map:', error);
-    }
-
-    return () => {
-      if (mapInstanceRef.current) {
-        console.log('Cleaning up map');
-        try {
-          mapInstanceRef.current.stop();
-          mapInstanceRef.current.off();
-          mapInstanceRef.current.remove();
-        } catch (error) {
-          console.error('[MapView] Error during cleanup:', error);
-        }
-        mapInstanceRef.current = null;
-      }
-    };
-  }, [center, zoom]);
+    // Add custom reset control
+    const ResetControl = MapUtils.createResetControl(
+      mapInstance,
+      () => markersRef.current,
+      { center, zoom }
+    );
+    mapInstance.addControl(new ResetControl());
+    
+    MapUtils.safeInvalidateSize(mapInstance);
+  };
 
   // Update markers and routes when data changes
   useEffect(() => {
-    if (!mapInstanceRef.current) return;
+    if (!map) return;
 
     // Clear existing markers and routes
     markersRef.current.forEach(marker => {
-      mapInstanceRef.current?.removeLayer(marker);
+      map.removeLayer(marker);
     });
     routeLinesRef.current.forEach(line => {
-      mapInstanceRef.current?.removeLayer(line);
+      map.removeLayer(line);
     });
     markersRef.current = [];
     routeLinesRef.current = [];
 
     // Add warehouse markers
     warehouses.forEach(warehouse => {
-      if (!mapInstanceRef.current) return;
-
-      const marker = L.marker([warehouse.lat, warehouse.lng], { icon: warehouseIcon });
+      const marker = L.marker([warehouse.lat, warehouse.lng], { icon: MapIcons.warehouse() });
       
       const popupContent = `
         <div style="padding: 8px;">
@@ -283,13 +99,13 @@ const MapView = ({
       `;
 
       marker.bindPopup(popupContent, { maxWidth: 300 });
-      marker.addTo(mapInstanceRef.current);
+      marker.addTo(map);
       markersRef.current.push(marker);
     });
 
     // Add driver position markers
     drivers.forEach(driver => {
-      if (!mapInstanceRef.current || !driver.currentLocation) return;
+      if (!driver.currentLocation) return;
 
       // Check if driver is assigned to an in-progress batch
       const driverBatch = batches.find(b => b.driverId === driver.id && b.status === 'in-progress');
@@ -298,7 +114,7 @@ const MapView = ({
       // Get driver initials
       const initials = driver.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
       
-      const driverIcon = createDriverIcon(initials, driver.status, isActive);
+      const driverIcon = MapIcons.driver(driver.status, initials, isActive);
       const marker = L.marker([driver.currentLocation.lat, driver.currentLocation.lng], { icon: driverIcon });
       
       const popupContent = `
@@ -330,7 +146,7 @@ const MapView = ({
       `;
 
       marker.bindPopup(popupContent, { maxWidth: 300 });
-      marker.addTo(mapInstanceRef.current);
+      marker.addTo(map);
       markersRef.current.push(marker);
 
       // If driver is active, draw dashed line to next destination
@@ -343,10 +159,10 @@ const MapView = ({
               color: '#22c55e',
               weight: 2,
               opacity: 0.6,
-              dashArray: '5, 10'
+            dashArray: '5, 10'
             }
           );
-          dashedLine.addTo(mapInstanceRef.current);
+          dashedLine.addTo(map);
           routeLinesRef.current.push(dashedLine);
         }
       }
@@ -354,9 +170,7 @@ const MapView = ({
 
     // Add facility markers
     validFacilities.forEach(facility => {
-      if (!mapInstanceRef.current) return;
-
-      const marker = L.marker([facility.lat, facility.lng], { icon: facilityIcon });
+      const marker = L.marker([facility.lat, facility.lng], { icon: MapIcons.facility() });
       
       const popupContent = `
         <div style="padding: 8px;">
@@ -378,13 +192,13 @@ const MapView = ({
       `;
 
       marker.bindPopup(popupContent, { maxWidth: 300 });
-      marker.addTo(mapInstanceRef.current);
+      marker.addTo(map);
       markersRef.current.push(marker);
     });
 
     // Add route lines
     routes.forEach((route, index) => {
-      if (!mapInstanceRef.current || route.facilities.length === 0) return;
+      if (route.facilities.length === 0) return;
 
       const warehouse = warehouses.find(w => w.id === route.warehouseId);
       if (!warehouse) return;
@@ -406,29 +220,16 @@ const MapView = ({
         dashArray: '10, 10'
       });
 
-      polyline.addTo(mapInstanceRef.current);
+      polyline.addTo(map);
       routeLinesRef.current.push(polyline);
     });
 
-    // Fit bounds to include all markers (with safety checks)
-    const allMarkers = [...markersRef.current];
-    if (allMarkers.length > 0 && mapInstanceRef.current) {
-      try {
-        const group = new L.FeatureGroup(allMarkers);
-        const bounds = group.getBounds();
-        if (bounds.isValid() && mapInstanceRef.current.getSize()?.x > 0) {
-          requestAnimationFrame(() => {
-            mapInstanceRef.current?.fitBounds(bounds.pad(0.1));
-          });
-        }
-      } catch (error) {
-        console.error('[MapView] Error fitting bounds:', error);
-      }
-    }
+    // Fit bounds to include all markers
+    MapUtils.fitBoundsToMarkers(map, markersRef.current);
 
     // Add batch route lines (with focus mode styling)
     batches.forEach((batch, index) => {
-      if (!mapInstanceRef.current || batch.facilities.length === 0 || batch.status === 'cancelled') return;
+      if (batch.facilities.length === 0 || batch.status === 'cancelled') return;
 
       const warehouse = warehouses.find(w => w.id === batch.warehouseId);
       if (!warehouse) return;
@@ -514,12 +315,12 @@ const MapView = ({
       `;
 
       batchPolyline.bindPopup(popupContent, { maxWidth: 250 });
-      batchPolyline.addTo(mapInstanceRef.current);
+      batchPolyline.addTo(map);
       routeLinesRef.current.push(batchPolyline);
     });
 
     // Auto-zoom to selected batch if exists
-    if (selectedBatchId && mapInstanceRef.current) {
+    if (selectedBatchId && map) {
       const selectedBatch = batches.find(b => b.id === selectedBatchId);
       if (selectedBatch && selectedBatch.facilities.length > 0) {
         const warehouse = warehouses.find(w => w.id === selectedBatch.warehouseId);
@@ -531,7 +332,7 @@ const MapView = ({
             ]);
             if (bounds.isValid()) {
               requestAnimationFrame(() => {
-                mapInstanceRef.current?.fitBounds(bounds.pad(0.2));
+                map.fitBounds(bounds.pad(0.2));
               });
             }
           } catch (error) {
@@ -542,11 +343,19 @@ const MapView = ({
     }
 
     console.log(`Added ${validFacilities.length} facility markers, ${warehouses.length} warehouse markers, ${routes.length} routes, and ${batches.length} batch routes`);
-  }, [validFacilities, warehouses, routes, batches, selectedBatchId]);
+  }, [map, validFacilities, warehouses, routes, batches, selectedBatchId]);
 
   return (
     <div className="h-[600px] w-full rounded-lg overflow-hidden shadow-card border">
-      <div ref={mapRef} className="h-full w-full" />
+      <LeafletMapCore
+        center={center}
+        zoom={zoom}
+        tileProvider="standard"
+        showLayerSwitcher={true}
+        showScaleControl={true}
+        className="h-full w-full"
+        onReady={handleMapReady}
+      />
     </div>
   );
 };

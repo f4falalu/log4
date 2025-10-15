@@ -31,7 +31,7 @@ import { useWarehouses } from '@/hooks/useWarehouses';
 import { useDrivers } from '@/hooks/useDrivers';
 import { useVehicles } from '@/hooks/useVehicles';
 import { optimizeBatchDelivery } from '@/lib/routeOptimization';
-import TacticalMapView from './TacticalMapView';
+import MapView from './MapView';
 
 interface TacticalDispatchSchedulerProps {
   facilities: Facility[];
@@ -561,14 +561,10 @@ const TacticalDispatchScheduler = ({ facilities, batches, onBatchCreate }: Tacti
 
         {/* Column 3: Tactical Map */}
         <div className="flex-1">
-          <TacticalMapView
+          <MapView
             facilities={facilities}
             warehouses={warehouses}
-            selectedFacilities={selectedFacilityObjects}
-            selectedWarehouse={selectedWarehouse}
-            optimizedRoute={optimizedRoute}
             batches={batches}
-            onFacilityToggle={handleMapFacilityToggle}
           />
         </div>
       </div>
