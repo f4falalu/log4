@@ -1,9 +1,37 @@
+import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Handoff, completeHandoff, cancelHandoff } from '@/lib/handoffManagement';
 
 export function useActiveHandoffs() {
+  const queryClient = useQueryClient();
+
+  // Setup realtime subscription
+  useEffect(() => {
+    const channel = supabase
+      .channel('handoffs-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'handoffs' },
+        (payload) => {
+          console.log('Handoff update:', payload);
+          queryClient.invalidateQueries({ queryKey: ['active-handoffs'] });
+          
+          if (payload.eventType === 'INSERT') {
+            toast.info('New handoff initiated');
+          } else if (payload.eventType === 'UPDATE' && (payload.new as any).status === 'completed') {
+            toast.success('Handoff completed');
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
   return useQuery({
     queryKey: ['active-handoffs'],
     queryFn: async () => {

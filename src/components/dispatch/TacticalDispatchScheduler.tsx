@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import { 
   Calendar, 
@@ -24,14 +25,16 @@ import {
   Warehouse,
   Navigation,
   Timer,
-  Target
+  Target,
+  ChevronDown
 } from 'lucide-react';
 import { Facility, DeliveryBatch, Driver, Vehicle, Warehouse as WarehouseType } from '@/types';
 import { useWarehouses } from '@/hooks/useWarehouses';
 import { useDrivers } from '@/hooks/useDrivers';
 import { useVehicles } from '@/hooks/useVehicles';
-import { optimizeBatchDelivery } from '@/lib/routeOptimization';
+import { optimizeBatchDelivery, optimizeBatchDeliveryWithAPI } from '@/lib/routeOptimization';
 import MapView from '@/components/MapView';
+import PayloadPlanner from '@/components/dispatch/PayloadPlanner';
 
 interface TacticalDispatchSchedulerProps {
   facilities: Facility[];
@@ -60,6 +63,11 @@ const TacticalDispatchScheduler = ({ facilities, batches, onBatchCreate }: Tacti
   const [optimizedRoute, setOptimizedRoute] = useState<any>(null);
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [optimizationMethod, setOptimizationMethod] = useState<'client' | 'api'>('client');
+  const [payloadValidated, setPayloadValidated] = useState(false);
+  const [totalWeight, setTotalWeight] = useState(0);
+  const [totalVolume, setTotalVolume] = useState(0);
+  const [suggestedVehicle, setSuggestedVehicle] = useState<Vehicle | null>(null);
 
   // Set initial warehouse when data loads
   useEffect(() => {
@@ -128,7 +136,7 @@ const TacticalDispatchScheduler = ({ facilities, batches, onBatchCreate }: Tacti
     setOptimizedRoute(null);
   };
 
-  const handleOptimizeRoute = () => {
+  const handleOptimizeRoute = async (method: 'client' | 'api') => {
     if (selectedFacilities.length === 0) {
       toast.error("Please select at least one facility");
       return;
@@ -140,6 +148,7 @@ const TacticalDispatchScheduler = ({ facilities, batches, onBatchCreate }: Tacti
     }
 
     setIsOptimizing(true);
+    setOptimizationMethod(method);
     
     try {
       const selectedFacilityObjects = facilities.filter(f => 
@@ -151,15 +160,27 @@ const TacticalDispatchScheduler = ({ facilities, batches, onBatchCreate }: Tacti
         throw new Error("Selected warehouse not found");
       }
 
-      const optimization = optimizeBatchDelivery(
-        selectedFacilityObjects,
-        [selectedWarehouse],
-        formData.medicationType,
-        formData.priority as 'low' | 'medium' | 'high' | 'urgent'
-      );
+      let optimization;
+      
+      if (method === 'api') {
+        optimization = await optimizeBatchDeliveryWithAPI(
+          selectedFacilityObjects,
+          [selectedWarehouse],
+          formData.medicationType,
+          formData.priority as 'low' | 'medium' | 'high' | 'urgent'
+        );
+        toast.success(`API optimization complete! ${selectedFacilities.length} stops, ${optimization.totalDistance}km`);
+      } else {
+        optimization = optimizeBatchDelivery(
+          selectedFacilityObjects,
+          [selectedWarehouse],
+          formData.medicationType,
+          formData.priority as 'low' | 'medium' | 'high' | 'urgent'
+        );
+        toast.success(`Route optimized! ${selectedFacilities.length} stops, ${optimization.totalDistance}km`);
+      }
 
       setOptimizedRoute(optimization);
-      toast.success(`Route optimized! ${selectedFacilities.length} stops, ${optimization.totalDistance}km, ${Math.round(optimization.estimatedDuration)}min`);
     } catch (error) {
       console.error('Route optimization error:', error);
       toast.error("Failed to optimize route");
@@ -269,16 +290,30 @@ const TacticalDispatchScheduler = ({ facilities, batches, onBatchCreate }: Tacti
               </SelectContent>
             </Select>
 
-            {/* Route Optimizer Button */}
-            <Button
-              onClick={handleOptimizeRoute}
-              disabled={selectedFacilities.length === 0 || isOptimizing || !selectedWarehouseId}
-              className="bg-white/20 hover:bg-white/30 text-white border-white/30"
-              size="lg"
-            >
-              <Route className="w-4 h-4 mr-2" />
-              {isOptimizing ? 'Optimizing...' : 'Optimize Route'}
-            </Button>
+            {/* Route Optimizer Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  disabled={selectedFacilities.length === 0 || isOptimizing || !selectedWarehouseId}
+                  className="bg-white/20 hover:bg-white/30 text-white border-white/30"
+                  size="lg"
+                >
+                  <Route className="w-4 h-4 mr-2" />
+                  {isOptimizing ? 'Optimizing...' : 'Optimize Route'}
+                  <ChevronDown className="w-4 h-4 ml-2" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleOptimizeRoute('client')}>
+                  <Target className="w-4 h-4 mr-2" />
+                  Client-Side Algorithm
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleOptimizeRoute('api')}>
+                  <Navigation className="w-4 h-4 mr-2" />
+                  Advanced API Optimization
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </div>
@@ -342,23 +377,28 @@ const TacticalDispatchScheduler = ({ facilities, batches, onBatchCreate }: Tacti
           <div className="p-4 border-b">
             <h2 className="font-semibold text-sm mb-2">Route Information</h2>
             {optimizedRoute && (
-              <div className="grid grid-cols-2 gap-3 text-center">
-                <div className="bg-muted/50 rounded-lg p-2">
-                  <div className="text-lg font-bold">{selectedFacilities.length}</div>
-                  <div className="text-xs text-muted-foreground">Stops</div>
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-3 text-center">
+                  <div className="bg-muted/50 rounded-lg p-2">
+                    <div className="text-lg font-bold">{selectedFacilities.length}</div>
+                    <div className="text-xs text-muted-foreground">Stops</div>
+                  </div>
+                  <div className="bg-muted/50 rounded-lg p-2">
+                    <div className="text-lg font-bold">{optimizedRoute.totalDistance}km</div>
+                    <div className="text-xs text-muted-foreground">Distance</div>
+                  </div>
+                  <div className="bg-muted/50 rounded-lg p-2">
+                    <div className="text-lg font-bold">{Math.round(optimizedRoute.estimatedDuration)}min</div>
+                    <div className="text-xs text-muted-foreground">Duration</div>
+                  </div>
+                  <div className="bg-muted/50 rounded-lg p-2">
+                    <div className="text-lg font-bold">{selectedWarehouse?.name.split(' ')[0]}</div>
+                    <div className="text-xs text-muted-foreground">Origin</div>
+                  </div>
                 </div>
-                <div className="bg-muted/50 rounded-lg p-2">
-                  <div className="text-lg font-bold">{optimizedRoute.totalDistance}km</div>
-                  <div className="text-xs text-muted-foreground">Distance</div>
-                </div>
-                <div className="bg-muted/50 rounded-lg p-2">
-                  <div className="text-lg font-bold">{Math.round(optimizedRoute.estimatedDuration)}min</div>
-                  <div className="text-xs text-muted-foreground">Duration</div>
-                </div>
-                <div className="bg-muted/50 rounded-lg p-2">
-                  <div className="text-lg font-bold">{selectedWarehouse?.name.split(' ')[0]}</div>
-                  <div className="text-xs text-muted-foreground">Origin</div>
-                </div>
+                <Badge variant="outline" className="w-full justify-center">
+                  {optimizationMethod === 'api' ? 'API Optimization' : 'Client-Side Algorithm'}
+                </Badge>
               </div>
             )}
           </div>
@@ -417,6 +457,41 @@ const TacticalDispatchScheduler = ({ facilities, batches, onBatchCreate }: Tacti
                       ))}
                     </SelectContent>
                   </Select>
+                </CardContent>
+              </Card>
+
+              {/* Payload Planning */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">Payload Planning</CardTitle>
+                  <CardDescription className="text-xs">
+                    Plan cargo and validate vehicle capacity
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <PayloadPlanner
+                    selectedVehicle={formData.vehicleId ? availableVehicles.find(v => v.id === formData.vehicleId) : undefined}
+                    availableVehicles={availableVehicles}
+                    onPayloadValidated={(items, weight, volume, utilization) => {
+                      setPayloadValidated(items.length > 0 && utilization <= 100);
+                      setTotalWeight(weight);
+                      setTotalVolume(volume);
+                    }}
+                    onVehicleSuggested={(vehicle) => {
+                      setSuggestedVehicle(vehicle);
+                      if (vehicle) {
+                        handleInputChange('vehicleId', vehicle.id);
+                        toast.success(`Suggested vehicle: ${vehicle.model}`);
+                      }
+                    }}
+                  />
+                  {totalWeight > 0 && formData.vehicleId && (
+                    <div className="mt-3 space-y-1">
+                      <div className="text-xs text-muted-foreground">
+                        Weight: {totalWeight.toFixed(0)}kg • Volume: {totalVolume.toFixed(2)}m³
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
