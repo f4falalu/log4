@@ -134,7 +134,69 @@ function calculateRouteDistance(route: [number, number][]): number {
   return totalDistance;
 }
 
-// Enhanced batch optimization for multiple facility deliveries
+// Enhanced batch optimization with API fallback
+export async function optimizeBatchDeliveryWithAPI(
+  facilities: Facility[], 
+  warehouses: Warehouse[],
+  medicationType: string,
+  priority: 'low' | 'medium' | 'high' | 'urgent',
+  vehicleType?: string
+): Promise<RouteOptimization> {
+  // Find optimal warehouse
+  const centerLat = facilities.reduce((sum, f) => sum + f.lat, 0) / facilities.length;
+  const centerLng = facilities.reduce((sum, f) => sum + f.lng, 0) / facilities.length;
+  
+  const optimalWarehouse = warehouses.reduce((best, current) => {
+    const distToBest = calculateDistance(centerLat, centerLng, best.lat, best.lng);
+    const distToCurrent = calculateDistance(centerLat, centerLng, current.lat, current.lng);
+    return distToCurrent < distToBest ? current : best;
+  });
+
+  // Try API optimization first, fallback to client-side
+  try {
+    const waypoints = [
+      { lat: optimalWarehouse.lat, lng: optimalWarehouse.lng },
+      ...facilities.map(f => ({ lat: f.lat, lng: f.lng }))
+    ];
+
+    const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/optimize-route`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+      },
+      body: JSON.stringify({
+        waypoints,
+        vehicle_type: vehicleType || 'truck',
+        constraints: {}
+      })
+    });
+
+    if (response.ok) {
+      const result = await response.json();
+      if (result.success) {
+        const optimizedRoute = result.route.coordinates.map((coord: any) => 
+          [coord.lat, coord.lng] as [number, number]
+        );
+        
+        return {
+          warehouseId: optimalWarehouse.id,
+          facilities,
+          totalDistance: result.route.distance_km,
+          estimatedDuration: result.route.estimated_minutes,
+          optimizedRoute
+        };
+      }
+    }
+  } catch (error) {
+    console.warn('API optimization failed, using client-side algorithm:', error);
+  }
+
+  // Fallback to client-side optimization
+  return optimizeBatchDelivery(facilities, warehouses, medicationType, priority);
+}
+
+// Original client-side optimization (kept as fallback)
 export function optimizeBatchDelivery(
   facilities: Facility[], 
   warehouses: Warehouse[],
