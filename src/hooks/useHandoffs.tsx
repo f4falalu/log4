@@ -7,7 +7,7 @@ export function useActiveHandoffs() {
   return useQuery({
     queryKey: ['active-handoffs'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('handoffs')
         .select(`
           *,

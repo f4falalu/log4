@@ -7,7 +7,7 @@ export function usePayloadItems(batchId: string) {
   return useQuery({
     queryKey: ['payload-items', batchId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('payload_items')
         .select('*')
         .eq('batch_id', batchId)
@@ -35,7 +35,7 @@ export function useCreatePayloadItems() {
         handling_instructions: item.handling_instructions
       }));
 
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('payload_items')
         .insert(itemsToInsert)
         .select();

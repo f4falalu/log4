@@ -34,7 +34,7 @@ export interface Handoff {
 }
 
 export async function initiateHandoff(request: HandoffRequest): Promise<Handoff> {
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('handoffs')
     .insert({
       from_vehicle_id: request.fromVehicleId,
@@ -53,14 +53,14 @@ export async function initiateHandoff(request: HandoffRequest): Promise<Handoff>
     .single();
 
   if (error) throw error;
-  return data;
+  return data as Handoff;
 }
 
 export async function completeHandoff(
   handoffId: string,
   actualEndTime?: string
 ): Promise<void> {
-  const { error } = await supabase
+  const { error } = await (supabase as any)
     .from('handoffs')
     .update({
       status: 'completed',
@@ -72,7 +72,7 @@ export async function completeHandoff(
 }
 
 export async function cancelHandoff(handoffId: string, reason?: string): Promise<void> {
-  const { error } = await supabase
+  const { error } = await (supabase as any)
     .from('handoffs')
     .update({
       status: 'cancelled',
@@ -84,14 +84,14 @@ export async function cancelHandoff(handoffId: string, reason?: string): Promise
 }
 
 export async function getActiveHandoffs(): Promise<Handoff[]> {
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('handoffs')
     .select('*')
     .in('status', ['planned', 'in-progress'])
     .order('planned_time', { ascending: true });
 
   if (error) throw error;
-  return data || [];
+  return (data || []) as Handoff[];
 }
 
 export async function validateHandoffLocation(
