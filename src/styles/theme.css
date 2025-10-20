@@ -1,0 +1,22 @@
+:root {
+  /* BIKO Brand Colors */
+  --biko-primary: 222.2 47.4% 11.2%;
+  --biko-secondary: 210 40% 96.1%;
+  --biko-accent: 210 40% 96.1%;
+  
+  /* Workspace Themes */
+  --fleetops-bg: 222.2 84% 4.9%;
+  --fleetops-fg: 210 40% 98%;
+  --storefront-bg: 0 0% 100%;
+  --storefront-fg: 222.2 84% 4.9%;
+}
+
+.workspace-fleetops {
+  background: hsl(var(--fleetops-bg));
+  color: hsl(var(--fleetops-fg));
+}
+
+.workspace-storefront {
+  background: hsl(var(--storefront-bg));
+  color: hsl(var(--storefront-fg));
+}

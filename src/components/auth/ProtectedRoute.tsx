@@ -7,6 +7,13 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { user, loading } = useAuth();
+  
+  // TEMPORARY: Auth bypass for development (remove before production)
+  const AUTH_BYPASS = localStorage.getItem('biko_dev_access') === 'granted';
+  
+  if (AUTH_BYPASS) {
+    return <>{children}</>;
+  }
 
   if (loading) {
     return (

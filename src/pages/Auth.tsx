@@ -104,9 +104,9 @@ export default function Auth() {
               <Truck className="h-8 w-8 text-primary" />
             </div>
           </div>
-          <CardTitle className="text-2xl font-bold">Log4 Platform</CardTitle>
+          <CardTitle className="text-2xl font-bold">BIKO Platform</CardTitle>
           <CardDescription>
-            Health Supply Visibility System
+            Integrated Operations Platform
           </CardDescription>
         </CardHeader>
         <CardContent>

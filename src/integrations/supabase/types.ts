@@ -21,18 +21,24 @@ export type Database = {
           created_at: string | null
           driver_id: string | null
           estimated_duration: number
+          external_route_data: Json | null
           facility_ids: string[]
           id: string
           medication_type: string
           name: string
           notes: string | null
           optimized_route: Json
+          payload_utilization_pct: number | null
           priority: Database["public"]["Enums"]["delivery_priority"]
+          route_constraints: Json | null
+          route_optimization_method: string | null
           scheduled_date: string
           scheduled_time: string
           status: Database["public"]["Enums"]["batch_status"]
           total_distance: number
           total_quantity: number
+          total_volume: number | null
+          total_weight: number | null
           updated_at: string | null
           vehicle_id: string | null
           warehouse_id: string
@@ -43,18 +49,24 @@ export type Database = {
           created_at?: string | null
           driver_id?: string | null
           estimated_duration: number
+          external_route_data?: Json | null
           facility_ids: string[]
           id?: string
           medication_type: string
           name: string
           notes?: string | null
           optimized_route: Json
+          payload_utilization_pct?: number | null
           priority?: Database["public"]["Enums"]["delivery_priority"]
+          route_constraints?: Json | null
+          route_optimization_method?: string | null
           scheduled_date: string
           scheduled_time: string
           status?: Database["public"]["Enums"]["batch_status"]
           total_distance: number
           total_quantity: number
+          total_volume?: number | null
+          total_weight?: number | null
           updated_at?: string | null
           vehicle_id?: string | null
           warehouse_id: string
@@ -65,18 +77,24 @@ export type Database = {
           created_at?: string | null
           driver_id?: string | null
           estimated_duration?: number
+          external_route_data?: Json | null
           facility_ids?: string[]
           id?: string
           medication_type?: string
           name?: string
           notes?: string | null
           optimized_route?: Json
+          payload_utilization_pct?: number | null
           priority?: Database["public"]["Enums"]["delivery_priority"]
+          route_constraints?: Json | null
+          route_optimization_method?: string | null
           scheduled_date?: string
           scheduled_time?: string
           status?: Database["public"]["Enums"]["batch_status"]
           total_distance?: number
           total_quantity?: number
+          total_volume?: number | null
+          total_weight?: number | null
           updated_at?: string | null
           vehicle_id?: string | null
           warehouse_id?: string
@@ -305,6 +323,73 @@ export type Database = {
         }
         Relationships: []
       }
+      handoffs: {
+        Row: {
+          actual_time: string | null
+          created_at: string | null
+          created_by: string | null
+          from_batch_id: string
+          from_vehicle_id: string
+          id: string
+          location_lat: number
+          location_lng: number
+          notes: string | null
+          scheduled_time: string | null
+          status: string | null
+          to_vehicle_id: string
+        }
+        Insert: {
+          actual_time?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          from_batch_id: string
+          from_vehicle_id: string
+          id?: string
+          location_lat: number
+          location_lng: number
+          notes?: string | null
+          scheduled_time?: string | null
+          status?: string | null
+          to_vehicle_id: string
+        }
+        Update: {
+          actual_time?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          from_batch_id?: string
+          from_vehicle_id?: string
+          id?: string
+          location_lat?: number
+          location_lng?: number
+          notes?: string | null
+          scheduled_time?: string | null
+          status?: string | null
+          to_vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "handoffs_from_batch_id_fkey"
+            columns: ["from_batch_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "handoffs_from_vehicle_id_fkey"
+            columns: ["from_vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "handoffs_to_vehicle_id_fkey"
+            columns: ["to_vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string | null
@@ -376,6 +461,50 @@ export type Database = {
           warehouse_id?: string
         }
         Relationships: []
+      }
+      payload_items: {
+        Row: {
+          batch_id: string
+          created_at: string | null
+          handling_instructions: string | null
+          id: string
+          name: string
+          quantity: number
+          temperature_required: boolean | null
+          volume_m3: number
+          weight_kg: number
+        }
+        Insert: {
+          batch_id: string
+          created_at?: string | null
+          handling_instructions?: string | null
+          id?: string
+          name: string
+          quantity: number
+          temperature_required?: boolean | null
+          volume_m3: number
+          weight_kg: number
+        }
+        Update: {
+          batch_id?: string
+          created_at?: string | null
+          handling_instructions?: string | null
+          id?: string
+          name?: string
+          quantity?: number
+          temperature_required?: boolean | null
+          volume_m3?: number
+          weight_kg?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payload_items_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_batches"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -474,6 +603,7 @@ export type Database = {
           delay_reason: string | null
           distance_from_previous: number | null
           facility_id: string
+          handoff_id: string | null
           id: string
           notes: string | null
           planned_arrival: string | null
@@ -493,6 +623,7 @@ export type Database = {
           delay_reason?: string | null
           distance_from_previous?: number | null
           facility_id: string
+          handoff_id?: string | null
           id?: string
           notes?: string | null
           planned_arrival?: string | null
@@ -512,6 +643,7 @@ export type Database = {
           delay_reason?: string | null
           distance_from_previous?: number | null
           facility_id?: string
+          handoff_id?: string | null
           id?: string
           notes?: string | null
           planned_arrival?: string | null
@@ -534,6 +666,13 @@ export type Database = {
             columns: ["facility_id"]
             isOneToOne: false
             referencedRelation: "facilities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "route_history_handoff_id_fkey"
+            columns: ["handoff_id"]
+            isOneToOne: false
+            referencedRelation: "handoffs"
             referencedColumns: ["id"]
           },
         ]
@@ -845,6 +984,57 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      zone_alerts: {
+        Row: {
+          acknowledged: boolean | null
+          driver_id: string
+          event_type: string
+          id: string
+          location_lat: number
+          location_lng: number
+          notes: string | null
+          timestamp: string | null
+          zone_id: string
+        }
+        Insert: {
+          acknowledged?: boolean | null
+          driver_id: string
+          event_type: string
+          id?: string
+          location_lat: number
+          location_lng: number
+          notes?: string | null
+          timestamp?: string | null
+          zone_id: string
+        }
+        Update: {
+          acknowledged?: boolean | null
+          driver_id?: string
+          event_type?: string
+          id?: string
+          location_lat?: number
+          location_lng?: number
+          notes?: string | null
+          timestamp?: string | null
+          zone_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "zone_alerts_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "zone_alerts_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "service_zones"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

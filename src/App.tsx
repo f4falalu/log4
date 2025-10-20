@@ -4,7 +4,13 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { MapStateProvider } from "./contexts/MapStateContext";
+import { WorkspaceProvider } from "./contexts/WorkspaceContext";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
+import { FleetOpsLayout } from "./pages/fleetops/layout";
+import { StorefrontLayout } from "./pages/storefront/layout";
+import FleetOpsHome from "./pages/fleetops/page";
+import StorefrontHome from "./pages/storefront/page";
+import StorefrontFacilities from "./pages/storefront/facilities/page";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import AuthCallback from "./pages/AuthCallback";
@@ -31,56 +37,52 @@ const App = () => (
         }}
       >
         <AuthProvider>
-          <MapStateProvider>
-            <Routes>
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/auth/callback" element={<AuthCallback />} />
-              <Route path="/" element={
-                <ProtectedRoute>
-                  <Index />
-                </ProtectedRoute>
-              } />
-              <Route path="/command-center" element={
-                <ProtectedRoute>
-                  <CommandCenterPage />
-                </ProtectedRoute>
-              } />
-              <Route path="/facilities" element={
-                <ProtectedRoute>
-                  <FacilityManagerPage />
-                </ProtectedRoute>
-              } />
-              <Route path="/tactical" element={
-                <ProtectedRoute>
-                  <TacticalMap />
-                </ProtectedRoute>
-              } />
-              <Route path="/dispatch" element={
-                <ProtectedRoute>
-                  <DispatchPage />
-                </ProtectedRoute>
-              } />
-              <Route path="/drivers" element={
-                <ProtectedRoute>
-                  <DriverManagement />
-                </ProtectedRoute>
-              } />
-              <Route path="/vehicles" element={
-                <ProtectedRoute>
-                  <VehicleManagementPage />
-                </ProtectedRoute>
-              } />
-              <Route path="/reports" element={
-                <ProtectedRoute>
-                  <ReportsPageWrapper />
-                </ProtectedRoute>
-              } />
-              {/* Legacy route redirects */}
-              <Route path="/tactical-map" element={<Navigate to="/tactical" replace />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </MapStateProvider>
+          <WorkspaceProvider>
+            <MapStateProvider>
+              <Routes>
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/auth/callback" element={<AuthCallback />} />
+                
+                {/* FleetOps Workspace */}
+                <Route path="/fleetops" element={
+                  <ProtectedRoute>
+                    <FleetOpsLayout />
+                  </ProtectedRoute>
+                }>
+                  <Route index element={<FleetOpsHome />} />
+                  <Route path="drivers" element={<DriverManagement />} />
+                  <Route path="dispatch" element={<DispatchPage />} />
+                  <Route path="tactical" element={<TacticalMap />} />
+                  <Route path="vehicles" element={<VehicleManagementPage />} />
+                  <Route path="reports" element={<ReportsPageWrapper />} />
+                </Route>
+
+                {/* Storefront Workspace */}
+                <Route path="/storefront" element={
+                  <ProtectedRoute>
+                    <StorefrontLayout />
+                  </ProtectedRoute>
+                }>
+                  <Route index element={<StorefrontHome />} />
+                  <Route path="facilities" element={<StorefrontFacilities />} />
+                </Route>
+
+                {/* Legacy routes - redirect to workspace structure */}
+                <Route path="/" element={<Navigate to="/fleetops" replace />} />
+                <Route path="/command-center" element={<Navigate to="/fleetops" replace />} />
+                <Route path="/facilities" element={<Navigate to="/storefront/facilities" replace />} />
+                <Route path="/tactical" element={<Navigate to="/fleetops/tactical" replace />} />
+                <Route path="/tactical-map" element={<Navigate to="/fleetops/tactical" replace />} />
+                <Route path="/dispatch" element={<Navigate to="/fleetops/dispatch" replace />} />
+                <Route path="/drivers" element={<Navigate to="/fleetops/drivers" replace />} />
+                <Route path="/vehicles" element={<Navigate to="/fleetops/vehicles" replace />} />
+                <Route path="/reports" element={<Navigate to="/fleetops/reports" replace />} />
+                
+                {/* Catch-all */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </MapStateProvider>
+          </WorkspaceProvider>
         </AuthProvider>
       </BrowserRouter>
     </ErrorBoundary>
