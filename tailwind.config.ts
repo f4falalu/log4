@@ -1,33 +1,48 @@
 import type { Config } from "tailwindcss";
 
+const { fontFamily } = require('tailwindcss/defaultTheme');
+
 export default {
   darkMode: ["class"],
-  content: ["./pages/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./app/**/*.{ts,tsx}", "./src/**/*.{ts,tsx}"],
+  content: [
+    "./pages/**/*.{ts,tsx}",
+    "./components/**/*.{ts,tsx}",
+    "./app/**/*.{ts,tsx}",
+    "./src/**/*.{ts,tsx}"
+  ],
   safelist: [
-    // Borders & text
-    'border-biko-border', 'text-operational', 'heading-operational',
     // Status colors
-    'text-biko-success', 'text-biko-warning', 'text-biko-danger', 'text-biko-primary', 'text-biko-accent', 'text-biko-muted',
-    'bg-biko-success/10', 'bg-biko-warning/10', 'bg-biko-danger/10', 'bg-biko-primary/10', 'bg-biko-accent/10', 'bg-biko-muted/10',
-    'border-biko-success/30', 'border-biko-warning/30', 'border-biko-danger/30', 'border-biko-primary/30', 'border-biko-accent/30',
-    // Shadows and radius
-    'shadow-biko-sm', 'shadow-biko-md', 'shadow-biko-lg', 'shadow-biko-xl',
-    'rounded-biko-sm', 'rounded-biko-md', 'rounded-biko-lg',
-    // Background gradients
-    'bg-gradient-to-r', 'from-biko-primary', 'to-biko-accent',
+    'text-success', 'bg-success/10', 'border-success/20',
+    'text-warning', 'bg-warning/10', 'border-warning/20',
+    'text-destructive', 'bg-destructive/10', 'border-destructive/20',
+    'text-primary', 'bg-primary/10', 'border-primary/20',
+    'text-muted-foreground', 'bg-muted', 'border-border',
+    // Typography
+    'text-2xl', 'text-xl', 'text-lg', 'text-base', 'text-sm', 'text-xs',
+    'font-semibold', 'font-medium', 'font-normal',
+    // Spacing
+    'p-2', 'p-3', 'p-4', 'p-6', 'py-2', 'px-3', 'space-y-2', 'space-y-4', 'space-y-6',
+    // Layout
+    'grid-cols-1', 'grid-cols-2', 'grid-cols-3', 'grid-cols-4', 'md:grid-cols-2', 'lg:grid-cols-4',
+    // Interactive states
+    'hover:bg-muted/50', 'hover:text-foreground', 'focus-visible:ring-2', 'focus-visible:ring-ring',
   ],
   prefix: "",
   theme: {
     container: {
       center: true,
-      padding: "2rem",
+      padding: "1rem",
       screens: {
         "2xl": "1400px",
       },
     },
     extend: {
+      fontFamily: {
+        sans: ['var(--font-sans)', ...fontFamily.sans],
+        heading: ['var(--font-heading)', ...fontFamily.sans],
+      },
       colors: {
-        // Shadcn base colors
+        // BIKO Design System Colors
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
@@ -45,6 +60,14 @@ export default {
           DEFAULT: "hsl(var(--destructive))",
           foreground: "hsl(var(--destructive-foreground))",
         },
+        success: {
+          DEFAULT: "hsl(var(--success))",
+          foreground: "hsl(var(--success-foreground))",
+        },
+        warning: {
+          DEFAULT: "hsl(var(--warning))",
+          foreground: "hsl(var(--warning-foreground))",
+        },
         muted: {
           DEFAULT: "hsl(var(--muted))",
           foreground: "hsl(var(--muted-foreground))",
@@ -60,6 +83,7 @@ export default {
         card: {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
+          border: "hsl(var(--card-border))",
         },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
@@ -71,33 +95,6 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
-        
-        // BIKO Design System Colors
-        biko: {
-          primary: "var(--biko-primary)",
-          accent: "var(--biko-accent)",
-          success: "var(--biko-success)",
-          warning: "var(--biko-warning)",
-          danger: "var(--biko-danger)",
-          muted: "var(--biko-muted)",
-          dark: "var(--biko-dark)",
-          "dark-700": "var(--biko-dark-700)",
-          light: "var(--biko-light)",
-          border: "var(--biko-border)",
-          highlight: "var(--biko-highlight)",
-        },
-        
-        // Workspace-specific colors
-        fleetops: {
-          bg: "var(--background)",
-          "bg-secondary": "var(--background-secondary)",
-          fg: "var(--foreground)",
-          "fg-muted": "var(--foreground-muted)",
-          border: "var(--border)",
-          "card-bg": "var(--card-background)",
-          "card-border": "var(--card-border)",
-          hover: "var(--hover-background)",
-          active: "var(--active-background)",
         },
         
         // Legacy support
@@ -165,10 +162,13 @@ export default {
       
       // BIKO Border Radius
       borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
-        'biko-sm': "var(--radius-sm)",
+        none: '0px',
+        sm: 'calc(var(--radius) - 4px)',
+        DEFAULT: 'calc(var(--radius) - 2px)',
+        md: 'var(--radius)',
+        lg: 'calc(var(--radius) + 2px)',
+        xl: 'calc(var(--radius) + 4px)',
+        full: '9999px',
         'biko-md': "var(--radius-md)",
         'biko-lg': "var(--radius-lg)",
       },
@@ -238,29 +238,25 @@ export default {
         },
         "pulse-operational": {
           "0%, 100%": {
-            opacity: "1",
-          },
-          "50%": {
-            opacity: "0.7",
-          },
+      },
+      "shimmer": {
+        "0%": {
+          transform: "translateX(-100%)",
         },
-        "shimmer": {
-          "0%": {
-            transform: "translateX(-100%)",
-          },
-          "100%": {
-            transform: "translateX(100%)",
-          },
+        "100%": {
+          transform: "translateX(100%)",
         },
       },
-      animation: {
-        "accordion-down": "accordion-down 0.2s ease-out",
-        "accordion-up": "accordion-up 0.2s ease-out",
-        "fade-in": "fade-in var(--duration-medium) var(--ease-standard)",
-        "slide-in-right": "slide-in-right var(--duration-medium) var(--ease-standard)",
-        "pulse-operational": "pulse-operational 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
-        "shimmer": "shimmer 2s linear infinite",
-      },
+    },
+    animation: {
+      "accordion-down": "accordion-down 0.2s ease-out",
+      "accordion-up": "accordion-up 0.2s ease-out",
+      "fade-in": "fade-in 150ms ease-out",
+      "slide-up": "slide-up 200ms ease-out",
+      "fade-in": "fade-in var(--duration-medium) var(--ease-standard)",
+      "slide-in-right": "slide-in-right var(--duration-medium) var(--ease-standard)",
+      "pulse-operational": "pulse-operational 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+      "shimmer": "shimmer 2s linear infinite",
     },
   },
   plugins: [require("tailwindcss-animate")],
