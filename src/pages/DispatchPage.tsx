@@ -37,13 +37,13 @@ export default function DispatchPage() {
       <Dialog open={handoffDialogOpen} onOpenChange={setHandoffDialogOpen}>
         <DialogTrigger asChild>
           <Button 
-            className="fixed bottom-6 right-6 rounded-full shadow-lg h-14 px-6"
+            className="fixed bottom-6 right-6 rounded-full shadow-lg h-14 px-6 border border-border backdrop-blur-sm"
             size="lg"
           >
             <RefreshCw className="w-5 h-5 mr-2" />
             Manage Handoffs
             {activeHandoffsCount > 0 && (
-              <Badge className="ml-2" variant="destructive">
+              <Badge className="ml-2 bg-red-500/10 text-red-700 border-transparent">
                 {activeHandoffsCount}
               </Badge>
             )}

@@ -7,6 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { DataTable } from '@/components/shared/DataTable';
+import { ColumnDef } from '@tanstack/react-table';
 import { useVehicles } from '@/hooks/useVehicles';
 import { useVehicleManagement, VehicleFormData } from '@/hooks/useVehicleManagement';
 import { useVehicleTypes } from '@/hooks/useVehicleTypes';
@@ -36,7 +38,10 @@ const VehicleManagement = () => {
     max_weight: 1000,
     fuel_type: 'diesel',
     fuel_efficiency: 12,
-    avg_speed: 50
+    avg_speed: 50,
+    fleet_id: '',
+    capacity_volume_m3: 0,
+    capacity_weight_kg: 0
   });
 
   const canManage = hasPermission('manage_vehicles');
@@ -50,10 +55,98 @@ const VehicleManagement = () => {
       max_weight: 1000,
       fuel_type: 'diesel',
       fuel_efficiency: 12,
-      avg_speed: 50
+      avg_speed: 50,
+      fleet_id: '',
+      capacity_volume_m3: 0,
+      capacity_weight_kg: 0
     });
     setEditingVehicle(null);
   };
+
+  // BDS status token mapping
+  const getVehicleStatusClass = (status: string) => {
+    switch (status) {
+      case 'available':
+        return 'bg-green-500/10 text-green-700 border-transparent';
+      case 'in-use':
+        return 'bg-amber-500/10 text-amber-700 border-transparent';
+      case 'maintenance':
+        return 'bg-red-500/10 text-red-700 border-transparent';
+      default:
+        return 'bg-secondary text-secondary-foreground border-transparent';
+    }
+  };
+
+  type VehicleRow = {
+    id: string;
+    model: string;
+    plateNumber: string;
+    type: string;
+    status: string;
+    capacity: number;
+    maxWeight: number;
+    fuelType: string;
+  };
+
+  const columns: ColumnDef<VehicleRow>[] = [
+    {
+      accessorKey: 'model',
+      header: 'Vehicle',
+      cell: ({ row }) => (
+        <div className="flex items-center gap-2">
+          <Truck className="h-4 w-4 text-muted-foreground" />
+          <span className="font-medium">{row.original.model}</span>
+        </div>
+      ),
+    },
+    {
+      accessorKey: 'plateNumber',
+      header: 'Plate Number',
+    },
+    {
+      accessorKey: 'type',
+      header: 'Type',
+      cell: ({ row }) => <span className="capitalize">{row.original.type}</span>,
+    },
+    {
+      accessorKey: 'status',
+      header: 'Status',
+      cell: ({ row }) => (
+        <Badge className={getVehicleStatusClass(row.original.status)}>
+          {row.original.status}
+        </Badge>
+      ),
+    },
+    {
+      id: 'capacity',
+      header: 'Capacity',
+      cell: ({ row }) => (
+        <div className="text-sm">
+          <div>{row.original.capacity} m³</div>
+          <div className="text-muted-foreground">{row.original.maxWeight} kg</div>
+        </div>
+      ),
+    },
+    {
+      accessorKey: 'fuelType',
+      header: 'Fuel Type',
+      cell: ({ row }) => <span className="capitalize">{row.original.fuelType}</span>,
+    },
+    {
+      id: 'actions',
+      header: 'Actions',
+      cell: ({ row }) => (
+        <div className="flex justify-start gap-2">
+          <Button variant="ghost" size="sm" onClick={() => handleEdit(row.original as any)}>
+            <Edit className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => handleDelete(row.original.id)}>
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      ),
+    },
+  ];
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,7 +179,10 @@ const VehicleManagement = () => {
       avg_speed: vehicle.avgSpeed,
       photo_url: vehicle.photo_url,
       thumbnail_url: vehicle.thumbnail_url,
-      ai_generated: vehicle.ai_generated
+      ai_generated: vehicle.ai_generated,
+      fleet_id: vehicle.fleet_id || '',
+      capacity_volume_m3: vehicle.capacity_volume_m3 || 0,
+      capacity_weight_kg: vehicle.capacity_weight_kg || 0
     });
     setIsDialogOpen(true);
   };
@@ -290,76 +386,12 @@ const VehicleManagement = () => {
           onVehicleClick={handleEdit}
         />
       ) : (
-        <Card>
-          <CardHeader>
-            <CardTitle>Fleet Overview</CardTitle>
-            <CardDescription>Total: {vehicles.length} vehicles</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Vehicle</TableHead>
-                <TableHead>Plate Number</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Capacity</TableHead>
-                <TableHead>Fuel Type</TableHead>
-                {canManage && <TableHead className="text-right">Actions</TableHead>}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {vehicles.map((vehicle) => (
-                <TableRow key={vehicle.id}>
-                  <TableCell className="font-medium">
-                    <div className="flex items-center gap-2">
-                      <Truck className="h-4 w-4 text-muted-foreground" />
-                      {vehicle.model}
-                    </div>
-                  </TableCell>
-                  <TableCell>{vehicle.plateNumber}</TableCell>
-                  <TableCell className="capitalize">{vehicle.type}</TableCell>
-                  <TableCell>
-                    <Badge variant={
-                      vehicle.status === 'available' ? 'default' :
-                      vehicle.status === 'in-use' ? 'secondary' : 'outline'
-                    }>
-                      {vehicle.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-sm">
-                      <div>{vehicle.capacity} m³</div>
-                      <div className="text-muted-foreground">{vehicle.maxWeight} kg</div>
-                    </div>
-                  </TableCell>
-                  <TableCell className="capitalize">{vehicle.fuelType}</TableCell>
-                  {canManage && (
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEdit(vehicle)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDelete(vehicle.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  )}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+        <DataTable
+          columns={columns}
+          data={vehicles as unknown as VehicleRow[]}
+          title="Fleet Overview"
+          description={`Total: ${vehicles.length} vehicles`}
+        />
       )}
 
       <VehicleTypeManager 

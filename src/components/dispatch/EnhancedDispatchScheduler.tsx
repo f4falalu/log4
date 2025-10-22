@@ -13,7 +13,7 @@ import { Plus, Truck, Package, Calculator, Route, AlertTriangle, CheckCircle, Cl
 import { toast } from 'sonner';
 import { useVehicles } from '@/hooks/useVehicles';
 import { useFacilities } from '@/hooks/useFacilities';
-import { useDeliveryBatches, useCreateDeliveryBatch } from '@/hooks/useDeliveryBatches';
+import { useEnhancedDeliveryBatches, useCreateEnhancedDispatch } from '@/hooks/useEnhancedDispatch';
 import { useCreatePayloadItem } from '@/hooks/usePayloadItems';
 import { PayloadTracker } from '@/components/realtime/PayloadTracker';
 
@@ -39,9 +39,9 @@ interface DispatchFormData {
 export default function EnhancedDispatchScheduler() {
   const { data: vehicles = [], isLoading: vehiclesLoading } = useVehicles();
   const { data: facilities = [], isLoading: facilitiesLoading } = useFacilities();
-  const { data: batches = [], isLoading: batchesLoading } = useDeliveryBatches();
+  const { data: batches = [], isLoading: batchesLoading } = useEnhancedDeliveryBatches();
   
-  const createBatchMutation = useCreateDeliveryBatch();
+  const createBatchMutation = useCreateEnhancedDispatch();
   const createPayloadItemMutation = useCreatePayloadItem();
 
   const [activeTab, setActiveTab] = useState('create');
@@ -163,7 +163,7 @@ export default function EnhancedDispatchScheduler() {
       // Create delivery batch
       const batchData = {
         vehicle_id: selectedVehicle.id,
-        driver_id: dispatchFormData.driverId || null,
+        driver_id: dispatchFormData.driverId || undefined,
         facility_ids: payloadItems.map(item => item.facilityId),
         estimated_start_time: dispatchFormData.estimatedStartTime,
         estimated_end_time: dispatchFormData.estimatedEndTime,
@@ -637,7 +637,7 @@ export default function EnhancedDispatchScheduler() {
                           {batch.id.slice(0, 8)}...
                         </TableCell>
                         <TableCell>
-                          {(batch as any).vehicle?.model || 'Unknown Vehicle'}
+                          {batch.vehicle?.model || 'Unknown Vehicle'}
                         </TableCell>
                         <TableCell>
                           {batch.facility_ids?.length || 0} facilities
@@ -645,11 +645,11 @@ export default function EnhancedDispatchScheduler() {
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <Progress 
-                              value={(batch as any).payload_utilization_pct || 0} 
+                              value={batch.payload_utilization_pct || 0} 
                               className="h-2 w-16" 
                             />
                             <span className="text-sm">
-                              {((batch as any).payload_utilization_pct || 0).toFixed(0)}%
+                              {(batch.payload_utilization_pct || 0).toFixed(0)}%
                             </span>
                           </div>
                         </TableCell>

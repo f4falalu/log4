@@ -94,7 +94,7 @@ const ActiveDeliveriesPanel = ({
             <button
               key={status}
               onClick={() => onFilterChange?.(status)}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
                 statusFilter === status
                   ? 'bg-primary text-primary-foreground'
                   : 'bg-muted text-muted-foreground hover:bg-muted/80'
@@ -131,12 +131,20 @@ const ActiveDeliveriesPanel = ({
                 return (
                   <Card 
                     key={batch.id}
-                    className={`cursor-pointer transition-all duration-200 ${
+                    className={`cursor-pointer transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
                       isSelected 
                         ? 'border-2 border-primary shadow-lg scale-[1.02]' 
                         : 'border hover:border-muted-foreground/50 hover:shadow-md'
                     }`}
                     onClick={() => onBatchClick?.(batch.id)}
+                    tabIndex={0}
+                    role="button"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        onBatchClick?.(batch.id);
+                      }
+                    }}
                   >
                     <CardContent className="p-4">
                       <div className="space-y-3">

@@ -67,9 +67,9 @@ const KPIMetrics = ({ batches }: KPIMetricsProps) => {
 
   const getStatusColor = (status: KPICard['status']) => {
     switch (status) {
-      case 'success': return 'text-green-600 dark:text-green-400';
-      case 'warning': return 'text-amber-600 dark:text-amber-400';
-      case 'danger': return 'text-red-600 dark:text-red-400';
+      case 'success': return 'text-green-700';
+      case 'warning': return 'text-amber-700';
+      case 'danger': return 'text-red-700';
       default: return 'text-muted-foreground';
     }
   };
@@ -83,20 +83,22 @@ const KPIMetrics = ({ batches }: KPIMetricsProps) => {
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
       {kpis.map((kpi, index) => (
-        <Card key={index} className="p-4 hover:shadow-lg transition-shadow">
-          <div className="flex flex-col">
-            <span className="text-sm text-muted-foreground mb-1">{kpi.label}</span>
-            <div className="flex items-baseline justify-between">
-              <span className={`text-3xl font-bold ${getStatusColor(kpi.status)}`}>
-                {kpi.value}
-              </span>
-              <div className={`flex items-center gap-1 text-sm ${getStatusColor(kpi.status)}`}>
-                {getTrendIcon(kpi.trend)}
+        <Card key={index} className="relative overflow-hidden">
+          <div className="p-5">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <p className="text-[13px] font-medium text-muted-foreground">{kpi.label}</p>
+                <div className="mt-2 flex items-baseline gap-2">
+                  <h3 className="text-2xl font-semibold tracking-tight">{kpi.value}</h3>
+                  <div className={`flex items-center gap-0.5 ${getStatusColor(kpi.status)}`}>
+                    {getTrendIcon(kpi.trend)}
+                  </div>
+                </div>
+                <p className="mt-1 text-[12px] text-muted-foreground">{kpi.trendValue}</p>
               </div>
             </div>
-            <span className="text-xs text-muted-foreground mt-2">{kpi.trendValue}</span>
           </div>
         </Card>
       ))}

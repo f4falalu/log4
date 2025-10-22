@@ -3,31 +3,35 @@ import { WorkspaceSwitcher } from '@/components/shared/WorkspaceSwitcher';
 import { UserMenu } from '@/components/layout/UserMenu';
 import { NotificationCenter } from '@/components/layout/NotificationCenter';
 import { Package } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 export function FleetOpsLayout() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800">
-      <header className="bg-slate-900 border-b border-slate-700">
-        <div className="max-w-[2000px] mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-primary rounded flex items-center justify-center">
-                <Package className="w-5 h-5 text-primary-foreground" />
+    <div className="min-h-screen bg-background">
+      <header className="sticky top-0 z-50 border-b border-border/50 bg-card">
+        <div className="mx-auto max-w-[1400px] px-6">
+          <div className="flex h-14 items-center justify-between">
+            <div className="flex items-center gap-6">
+              <div className="flex items-center gap-2">
+                <div className="flex h-7 w-7 items-center justify-center rounded-md bg-foreground">
+                  <Package className="h-4 w-4 text-background" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-sm font-semibold tracking-tight">
+                    FleetOps
+                  </span>
+                </div>
               </div>
-              <div className="flex flex-col">
-                <span className="font-bold text-lg leading-none text-white">BIKO FleetOps</span>
-                <span className="text-xs text-slate-400">Operations & Delivery</span>
-              </div>
+              <WorkspaceSwitcher />
             </div>
-            <WorkspaceSwitcher />
-          </div>
-          <div className="flex gap-2">
-            <NotificationCenter />
-            <UserMenu />
+            <div className="flex items-center gap-3">
+              <NotificationCenter />
+              <UserMenu />
+            </div>
           </div>
         </div>
       </header>
-      <main className="h-[calc(100vh-4rem)]">
+      <main className="mx-auto max-w-[1400px] px-6 py-8">
         <Outlet />
       </main>
     </div>

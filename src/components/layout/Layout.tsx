@@ -87,21 +87,20 @@ const Layout = ({ children }: LayoutProps) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-light">
-      {/* Header */}
-      <header className="bg-card border-b shadow-card">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-gradient-medical rounded-lg flex items-center justify-center">
-                <Truck className="w-5 h-5 text-primary-foreground" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-foreground">BIKO</h1>
-                <p className="text-sm text-muted-foreground">Fleet & Warehouse Operations</p>
+    <div className="min-h-screen bg-background">
+      {/* Minimal CRM Header */}
+      <header className="border-b border-border/50 bg-card">
+        <div className="mx-auto max-w-[1400px] px-6">
+          <div className="flex h-14 items-center justify-between">
+            <div className="flex items-center gap-8">
+              <div className="flex items-center gap-2">
+                <div className="flex h-7 w-7 items-center justify-center rounded-md bg-foreground">
+                  <Truck className="h-4 w-4 text-background" />
+                </div>
+                <span className="text-sm font-semibold tracking-tight">BIKO</span>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               <RoleSwitcher />
               <NotificationCenter />
               <UserMenu />
@@ -110,10 +109,10 @@ const Layout = ({ children }: LayoutProps) => {
         </div>
       </header>
 
-      {/* Navigation */}
-      <nav className="bg-card border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex space-x-8">
+      {/* Minimal Navigation */}
+      <nav className="border-b border-border/30 bg-card">
+        <div className="mx-auto max-w-[1400px] px-6">
+          <div className="flex gap-1">
             {visibleNavItems.map((item) => {
               const Icon = item.icon;
               return (
@@ -121,13 +120,13 @@ const Layout = ({ children }: LayoutProps) => {
                   key={item.path}
                   to={item.path}
                   className={cn(
-                    "flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors",
+                    "flex items-center gap-2 rounded-md px-3 py-2 text-[13px] font-medium transition-colors",
                     isActive(item.path)
-                      ? "border-primary text-primary"
-                      : "border-transparent text-muted-foreground hover:text-foreground hover:border-muted"
+                      ? "bg-secondary text-foreground"
+                      : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
                   )}
                 >
-                  <Icon className="w-4 h-4" />
+                  <Icon className="h-[15px] w-[15px]" />
                   <span>{item.label}</span>
                 </Link>
               );
@@ -137,7 +136,7 @@ const Layout = ({ children }: LayoutProps) => {
       </nav>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="mx-auto max-w-[1400px] px-6 py-8">
         {children}
       </main>
     </div>

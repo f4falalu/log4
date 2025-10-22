@@ -54,9 +54,9 @@ export default function TacticalMap() {
   // Driver marker icon factory
   const createDriverIcon = (status: string) => {
     const colors: Record<string, string> = {
-      available: '#10b981',
-      busy: '#f59e0b',
-      offline: '#6b7280',
+      available: 'hsl(var(--biko-success))',
+      busy: 'hsl(var(--biko-warning))',
+      offline: 'hsl(var(--biko-muted))',
     };
     const color = colors[status] ?? colors.offline;
     return new L.Icon({
@@ -118,7 +118,7 @@ export default function TacticalMap() {
     
     const drawControl = new (L.Draw as any).Polygon(mapRef.current, {
       shapeOptions: {
-        color: '#1D6AFF',
+        color: 'hsl(var(--biko-primary))',
         fillOpacity: 0.3,
       },
       allowIntersection: false,
@@ -144,7 +144,7 @@ export default function TacticalMap() {
           body: {
             name,
             geometry: geoJSON,
-            color: '#1D6AFF',
+            color: 'hsl(var(--biko-primary))',
             description: '',
           }
         });
@@ -511,7 +511,7 @@ export default function TacticalMap() {
       }).on('click', () => selectZone(zone.id));
 
       const description = zone.description
-        ? `<p style="margin:4px 0 0 0;font-size:12px;color:#6b7280;">${zone.description}</p>`
+        ? `<p style="margin:4px 0 0 0;font-size:12px;color:hsl(var(--biko-muted));">${zone.description}</p>`
         : '';
 
       polygon.bindPopup(
@@ -621,8 +621,8 @@ export default function TacticalMap() {
       )}
 
       {drawingState.isEditing && (
-        <div className="absolute top-20 right-4 z-[1000] bg-background/95 backdrop-blur border rounded-lg p-4 shadow-lg">
-          <p className="text-sm mb-2">Editing zone - drag vertices to modify</p>
+        <div className="absolute top-20 right-4 z-[1000] bg-background/95 backdrop-blur-sm border-biko-border rounded-biko-md p-4 shadow-biko-lg">
+          <p className="text-sm mb-2 text-operational">Editing zone - drag vertices to modify</p>
           <Button size="sm" variant="outline" onClick={handleCancelEditing}>
             Cancel Editing
           </Button>

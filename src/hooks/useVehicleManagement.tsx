@@ -14,6 +14,9 @@ export interface VehicleFormData {
   photo_url?: string;
   thumbnail_url?: string;
   ai_generated?: boolean;
+  fleet_id?: string;
+  capacity_volume_m3?: number;
+  capacity_weight_kg?: number;
 }
 
 export function useVehicleManagement() {

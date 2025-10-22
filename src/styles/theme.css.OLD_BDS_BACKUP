@@ -1,0 +1,83 @@
+:root/* =====================================================
+   BIKO DESIGN SYSTEM (BDS) v1.0 - THEME TOKENS
+   "Operational Console Minimalism"
+   ===================================================== */
+
+:root {
+  /* ===== BIKO COLOR TOKENS ===== */
+  --biko-primary: #2563eb;        /* Electric Blue - CTAs, primary buttons */
+  --biko-accent: #06b6d4;         /* Cyan - Highlights, progress bars */
+  --biko-success: #10b981;        /* Green - Success alerts, good status */
+  --biko-warning: #f59e0b;        /* Amber - Caution, limited availability */
+  --biko-danger: #ef4444;         /* Red - Errors, failed deliveries */
+  --biko-muted: #94a3b8;          /* Gray - Secondary text/icons */
+  --biko-dark: #0f172a;           /* FleetOps background */
+  --biko-dark-700: #1e293b;       /* Secondary dark - Card background */
+  --biko-light: #f8fafc;          /* Storefront background */
+  --biko-border: #e2e8f0;         /* Borders, dividers */
+  --biko-highlight: rgba(37, 99, 235, 0.1); /* Soft accent - Active/hover */
+  
+  /* ===== TYPOGRAPHY TOKENS ===== */
+  --font-family: "Inter", sans-serif;
+  --font-size-xs: 12px;           /* Small labels */
+  --font-size-sm: 13px;           /* Table content */
+  --font-size-md: 14px;           /* Base UI text */
+  --font-size-lg: 16px;           /* Section headings */
+  --font-size-xl: 20px;           /* Page headings */
+  --font-size-2xl: 24px;          /* Major headings */
+  --line-height-normal: 1.5;      /* Default readability */
+  --line-height-tight: 1.3;       /* Dashboard metrics */
+  --line-height-relaxed: 1.6;     /* Long form content */
+  
+  /* ===== SPACING TOKENS ===== */
+  --space-1: 4px;                 /* Tight padding */
+  --space-2: 8px;                 /* Compact spacing */
+  --space-3: 12px;                /* Internal component padding */
+  --space-4: 16px;                /* Standard gap */
+  --space-5: 20px;                /* Table row height */
+  --space-6: 24px;                /* Card internal padding */
+  --space-8: 32px;                /* Section padding */
+  --space-10: 40px;               /* Page margins */
+  --space-12: 48px;               /* Large sections */
+  --space-16: 64px;               /* Extra large spacing */
+  
+  /* ===== RADIUS & SHADOWS ===== */
+  --radius-sm: 6px;               /* Buttons, badges */
+  --radius-md: 10px;              /* Cards, panels */
+  --radius-lg: 14px;              /* Drawers, modals */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);      /* Light elevation */
+  --shadow-md: 0 2px 6px rgba(0,0,0,0.15);     /* Cards */
+  --shadow-lg: 0 4px 12px rgba(0,0,0,0.25);    /* Floating UI */
+  --shadow-xl: 0 8px 24px rgba(0,0,0,0.35);    /* Modals */
+  
+  /* ===== MOTION TOKENS ===== */
+  --duration-fast: 120ms;         /* Hover/active transitions */
+  --duration-medium: 200ms;       /* Modal, Drawer animations */
+  --duration-slow: 400ms;         /* Map/payload animations */
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);     /* Default curve */
+  --ease-overshoot: cubic-bezier(0.34, 1.56, 0.64, 1); /* Bounce effect */
+  --ease-sharp: cubic-bezier(0.4, 0, 0.6, 1);        /* Sharp transitions */
+  
+  /* ===== COMPONENT SIZING ===== */
+  --button-height: 40px;
+  --input-height: 40px;
+  --table-row-height: 48px;
+  --header-height: 64px;
+  --sidebar-width: 280px;
+  --sidebar-collapsed: 72px;
+  --drawer-width: 380px;
+  --modal-max-width: 640px;
+  --fleetops-fg: 210 40% 98%;
+  --storefront-bg: 0 0% 100%;
+  --storefront-fg: 222.2 84% 4.9%;
+}
+
+.workspace-fleetops {
+  background: hsl(var(--fleetops-bg));
+  color: hsl(var(--fleetops-fg));
+}
+
+.workspace-storefront {
+  background: hsl(var(--storefront-bg));
+  color: hsl(var(--storefront-fg));
+}
