@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import Layout from '@/components/layout/Layout';
 import { BreadcrumbNavigation } from '@/components/ui/breadcrumb-navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -66,8 +65,7 @@ export default function BatchManagement() {
   ];
 
   return (
-    <Layout>
-      <div className="space-y-6">
+    <div className="p-6 space-y-6">
         {/* Breadcrumbs */}
         <BreadcrumbNavigation items={breadcrumbItems} />
 
@@ -248,7 +246,6 @@ export default function BatchManagement() {
             />
           </TabsContent>
         </Tabs>
-      </div>
-    </Layout>
+    </div>
   );
 }

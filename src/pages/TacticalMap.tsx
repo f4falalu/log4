@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import L from 'leaflet';
-import Layout from '@/components/layout/Layout';
 import { useDrivers } from '@/hooks/useDrivers';
 import { useRealtimeDrivers } from '@/hooks/useRealtimeDrivers';
 import { useServiceZones } from '@/hooks/useServiceZones';
@@ -537,8 +536,7 @@ export default function TacticalMap() {
   const defaultZoom = 12;
 
   return (
-    <Layout>
-      <div className="relative h-screen w-full">
+    <div className="relative h-screen w-full">
       <LeafletMapCore
         center={defaultCenter}
         zoom={defaultZoom}
@@ -665,7 +663,6 @@ export default function TacticalMap() {
           if (driver) handleDriverClick(driver);
         }}
       />
-      </div>
-    </Layout>
+    </div>
   );
 }

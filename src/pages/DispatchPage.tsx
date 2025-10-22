@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import Layout from '@/components/layout/Layout';
 import { BreadcrumbNavigation } from '@/components/ui/breadcrumb-navigation';
 import { useFacilities } from '@/hooks/useFacilities';
 import { useDeliveryBatches } from '@/hooks/useDeliveryBatches';
@@ -32,8 +31,7 @@ export default function DispatchPage() {
   ];
   
   return (
-    <Layout>
-      <div className="space-y-6">
+    <div className="p-6 space-y-6">
         <BreadcrumbNavigation items={breadcrumbItems} />
         
         <TacticalDispatchScheduler 
@@ -69,7 +67,6 @@ export default function DispatchPage() {
             />
           </DialogContent>
         </Dialog>
-      </div>
-    </Layout>
+    </div>
   );
 }

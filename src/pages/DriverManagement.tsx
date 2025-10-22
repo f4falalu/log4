@@ -10,8 +10,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
-import Layout from '@/components/layout/Layout';
-
 export default function DriverManagement() {
   const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
   const { data: drivers, isLoading: driversLoading, error: driversError } = useDrivers();
@@ -36,40 +34,35 @@ export default function DriverManagement() {
   // Error state
   if (hasError) {
     return (
-      <Layout>
-        <div className="flex h-screen items-center justify-center p-6">
-          <Alert variant="destructive" className="max-w-md">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              Failed to load driver data. Please refresh the page or contact support if the issue persists.
-            </AlertDescription>
-          </Alert>
-        </div>
-      </Layout>
+      <div className="flex h-screen items-center justify-center p-6">
+        <Alert variant="destructive" className="max-w-md">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Failed to load driver data. Please refresh the page or contact support if the issue persists.
+          </AlertDescription>
+        </Alert>
+      </div>
     );
   }
 
   // Loading state
   if (isLoading) {
     return (
-      <Layout>
-        <div className="flex h-screen">
-          <div className="w-80 border-r p-4 space-y-4">
-            {[...Array(5)].map((_, i) => (
-              <Skeleton key={i} className="h-16 w-full" />
-            ))}
-          </div>
-          <div className="flex-1 p-6">
-            <Skeleton className="h-full w-full" />
-          </div>
+      <div className="flex h-screen">
+        <div className="w-80 border-r p-4 space-y-4">
+          {[...Array(5)].map((_, i) => (
+            <Skeleton key={i} className="h-16 w-full" />
+          ))}
         </div>
-      </Layout>
+        <div className="flex-1 p-6">
+          <Skeleton className="h-full w-full" />
+        </div>
+      </div>
     );
   }
 
   return (
-    <Layout>
-      <div className="flex h-screen w-full overflow-hidden">
+    <div className="flex h-screen w-full overflow-hidden">
         {/* Left Sidebar */}
         <div className="w-80 flex-shrink-0">
           <DriverSidebar
@@ -97,9 +90,8 @@ export default function DriverManagement() {
                 </CardContent>
               </Card>
             </div>
-          )}
-        </div>
+        )}
       </div>
-    </Layout>
+    </div>
   );
 }
