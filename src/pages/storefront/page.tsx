@@ -1,5 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Package, Warehouse, ClipboardList, Truck } from 'lucide-react';
+import { Package, Warehouse, ClipboardList } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function StorefrontHome() {
@@ -24,13 +24,6 @@ export default function StorefrontHome() {
       icon: Package,
       href: '/storefront/payloads',
       color: 'bg-purple-500'
-    },
-    {
-      title: 'Batch Management',
-      description: 'Organize deliveries into batches',
-      icon: Truck,
-      href: '/storefront/batches',
-      color: 'bg-orange-500'
     }
   ];
 
@@ -43,7 +36,7 @@ export default function StorefrontHome() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {modules.map((module) => (
           <Link key={module.href} to={module.href}>
             <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">

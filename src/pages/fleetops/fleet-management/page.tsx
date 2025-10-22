@@ -164,8 +164,7 @@ export default function FleetManagementPage() {
   };
 
   return (
-    <Layout>
-      <div className="space-y-6">
+    <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -538,7 +537,6 @@ export default function FleetManagementPage() {
             />
           </TabsContent>
         </Tabs>
-      </div>
-    </Layout>
+    </div>
   );
 }
