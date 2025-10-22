@@ -238,7 +238,12 @@ export default {
         },
         "pulse-operational": {
           "0%, 100%": {
-      },
+            opacity: "1",
+          },
+          "50%": {
+            opacity: ".5",
+          },
+        },
       "shimmer": {
         "0%": {
           transform: "translateX(-100%)",
