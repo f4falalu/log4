@@ -27,6 +27,7 @@ import DispatchPage from "./pages/DispatchPage";
 import FacilityManagerPage from "./pages/FacilityManagerPage";
 import VehicleManagementPage from "./pages/VehicleManagementPage";
 import ReportsPageWrapper from "./pages/ReportsPageWrapper";
+import TestTailwind from "./TestTailwind";
 
 const queryClient = new QueryClient();
 
@@ -34,6 +35,9 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <ErrorBoundary>
       <Toaster />
+      {/* Test Tailwind CSS - Remove this after verification */}
+      <TestTailwind />
+      {/* End Test */}
       <BrowserRouter 
         future={{
           v7_startTransition: true,
