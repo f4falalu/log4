@@ -12,9 +12,7 @@ import FleetOpsHome from "./pages/fleetops/page";
 import StorefrontHome from "./pages/storefront/page";
 import StorefrontFacilities from "./pages/storefront/facilities/page";
 import StorefrontPayloads from "./pages/storefront/payloads/page";
-import StorefrontRequisitions from "./pages/storefront/requisitions/page";
 import FleetManagement from "./pages/fleetops/fleet-management/page";
-import BatchPlanner from "./pages/fleetops/batch-planner/page";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import AuthCallback from "./pages/AuthCallback";
@@ -34,7 +32,7 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <ErrorBoundary>
       <Toaster />
-      <BrowserRouter
+      <BrowserRouter 
         future={{
           v7_startTransition: true,
           v7_relativeSplatPath: true,
@@ -59,7 +57,6 @@ const App = () => (
                   <Route path="tactical" element={<TacticalMap />} />
                   <Route path="vehicles" element={<VehicleManagementPage />} />
                   <Route path="fleet-management" element={<FleetManagement />} />
-                  <Route path="batch-planner" element={<BatchPlanner />} />
                   <Route path="reports" element={<ReportsPageWrapper />} />
                 </Route>
 
@@ -72,7 +69,6 @@ const App = () => (
                   <Route index element={<StorefrontHome />} />
                   <Route path="facilities" element={<StorefrontFacilities />} />
                   <Route path="payloads" element={<StorefrontPayloads />} />
-                  <Route path="requisitions" element={<StorefrontRequisitions />} />
                 </Route>
 
                 {/* Legacy routes - redirect to workspace structure */}
@@ -85,7 +81,6 @@ const App = () => (
                 <Route path="/drivers" element={<Navigate to="/fleetops/drivers" replace />} />
                 <Route path="/vehicles" element={<Navigate to="/fleetops/vehicles" replace />} />
                 <Route path="/reports" element={<Navigate to="/fleetops/reports" replace />} />
-                <Route path="/storefront/batches" element={<Navigate to="/fleetops/batch-planner" replace />} />
                 
                 {/* Catch-all */}
                 <Route path="*" element={<NotFound />} />

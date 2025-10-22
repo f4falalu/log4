@@ -9,15 +9,12 @@ import { useVehicles } from '@/hooks/useVehicles';
 import { Download, FileText, TrendingUp, Users, Truck, Package } from 'lucide-react';
 import { exportToCSV, exportToPDF } from '@/lib/exportUtils';
 import { toast } from 'sonner';
-import { SkeletonCard, EmptyState } from '@/components/shared/LoadingStates';
 
 const ReportsPage = () => {
-  const { data: batches = [], isLoading: batchesLoading } = useDeliveryBatches();
-  const { data: drivers = [], isLoading: driversLoading } = useDrivers();
-  const { data: vehicles = [], isLoading: vehiclesLoading } = useVehicles();
+  const { data: batches = [] } = useDeliveryBatches();
+  const { data: drivers = [] } = useDrivers();
+  const { data: vehicles = [] } = useVehicles();
   const [timeRange, setTimeRange] = useState('7');
-
-  const isLoading = batchesLoading || driversLoading || vehiclesLoading;
 
   const filterByTimeRange = (date: string) => {
     const itemDate = new Date(date);
@@ -104,20 +101,6 @@ const ReportsPage = () => {
   const handleExportPDF = (reportType: string) => {
     toast.info('PDF export coming soon');
   };
-
-  if (isLoading) {
-    return (
-      <div className="p-6 space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <SkeletonCard />
-          <SkeletonCard />
-          <SkeletonCard />
-          <SkeletonCard />
-        </div>
-        <SkeletonCard className="h-96" />
-      </div>
-    );
-  }
 
   return (
     <div className="p-6 space-y-6">
@@ -222,7 +205,7 @@ const ReportsPage = () => {
             <CardContent>
               <div className="space-y-2">
                 {filteredBatches.slice(0, 10).map(batch => (
-                  <div key={batch.id} className="flex items-center justify-between p-3 border-biko-border rounded-biko-md">
+                  <div key={batch.id} className="flex items-center justify-between p-3 border rounded-lg">
                     <div>
                       <div className="font-medium">{batch.name}</div>
                       <div className="text-sm text-muted-foreground">
@@ -261,7 +244,7 @@ const ReportsPage = () => {
             <CardContent>
               <div className="space-y-2">
                 {driverStats.slice(0, 10).map(driver => (
-                  <div key={driver.name} className="flex items-center justify-between p-3 border-biko-border rounded-biko-md">
+                  <div key={driver.name} className="flex items-center justify-between p-3 border rounded-lg">
                     <div>
                       <div className="font-medium">{driver.name}</div>
                       <div className="text-sm text-muted-foreground">
@@ -300,7 +283,7 @@ const ReportsPage = () => {
             <CardContent>
               <div className="space-y-2">
                 {vehicleStats.slice(0, 10).map(vehicle => (
-                  <div key={vehicle.plateNumber} className="flex items-center justify-between p-3 border-biko-border rounded-biko-md">
+                  <div key={vehicle.plateNumber} className="flex items-center justify-between p-3 border rounded-lg">
                     <div>
                       <div className="font-medium">{vehicle.model}</div>
                       <div className="text-sm text-muted-foreground">{vehicle.plateNumber}</div>

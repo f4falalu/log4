@@ -27,24 +27,11 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { DataTable } from '@/components/shared/DataTable';
-import { ColumnDef } from '@tanstack/react-table';
 
 interface FacilityManagerProps {
   facilities: Facility[];
   onFacilitiesUpdate: (facilities: Facility[]) => void;
 }
-
-type FacilityRow = {
-  id: string;
-  name: string;
-  type: string;
-  address: string;
-  lat: number;
-  lng: number;
-  phone?: string;
-  contactPerson?: string;
-};
 
 const FacilityManager = ({ facilities, onFacilitiesUpdate }: FacilityManagerProps) => {
   const [isUploading, setIsUploading] = useState(false);
@@ -86,7 +73,7 @@ const FacilityManager = ({ facilities, onFacilitiesUpdate }: FacilityManagerProp
       'Laboratory': 'lab',
       'Other': 'other',
     };
-
+    
     const rawType = row.type || row['Type'] || row['Facility Type'] || row['facility_type'];
     mapped.type = typeMapping[rawType] || rawType?.toLowerCase() || 'clinic';
     
@@ -98,66 +85,6 @@ const FacilityManager = ({ facilities, onFacilitiesUpdate }: FacilityManagerProp
     
     return mapped as CSVFacility;
   };
-
-  const getTypeClass = (type: string) => {
-    return type === 'hospital'
-      ? 'bg-blue-500/10 text-blue-700 border-transparent'
-      : type === 'pharmacy'
-      ? 'bg-purple-500/10 text-purple-700 border-transparent'
-      : 'bg-secondary text-secondary-foreground border-transparent';
-  };
-
-  const columns: ColumnDef<FacilityRow>[] = [
-    {
-      accessorKey: 'name',
-      header: 'Name',
-      cell: ({ row }) => <span className="font-medium">{row.original.name}</span>,
-    },
-    {
-      accessorKey: 'type',
-      header: 'Type',
-      cell: ({ row }) => (
-        <Badge className={getTypeClass(row.original.type)}>{row.original.type}</Badge>
-      ),
-    },
-    {
-      accessorKey: 'address',
-      header: 'Address',
-      cell: ({ row }) => <span className="max-w-xs truncate block">{row.original.address}</span>,
-    },
-    {
-      id: 'location',
-      header: 'Location',
-      cell: ({ row }) => (
-        <div className="flex items-center space-x-1 text-sm text-muted-foreground">
-          <MapPin className="w-3 h-3" />
-          <span>
-            {row.original.lat.toFixed(4)}, {row.original.lng.toFixed(4)}
-          </span>
-        </div>
-      ),
-    },
-    {
-      id: 'contact',
-      header: 'Contact',
-      cell: ({ row }) => (
-        <div className="space-y-1">
-          {row.original.phone && (
-            <div className="flex items-center space-x-1 text-sm">
-              <Phone className="w-3 h-3 text-muted-foreground" />
-              <span>{row.original.phone}</span>
-            </div>
-          )}
-          {row.original.contactPerson && (
-            <div className="flex items-center space-x-1 text-sm">
-              <User className="w-3 h-3 text-muted-foreground" />
-              <span>{row.original.contactPerson}</span>
-            </div>
-          )}
-        </div>
-      ),
-    },
-  ];
 
   const validateCSVData = (data: any[]): { valid: Facility[]; errors: string[]; columnInfo: string } => {
     const valid: Facility[] = [];
@@ -395,12 +322,72 @@ const FacilityManager = ({ facilities, onFacilitiesUpdate }: FacilityManagerProp
       </Card>
 
       {/* Facilities List */}
-      <DataTable
-        columns={columns}
-        data={facilities as unknown as FacilityRow[]}
-        title={`Facilities (${facilities.length})`}
-        description="View and manage all facilities in the system"
-      />
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Building className="w-5 h-5 text-primary" />
+            <span>Facilities ({facilities.length})</span>
+          </CardTitle>
+          <CardDescription>
+            View and manage all facilities in the system
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {facilities.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <Building className="w-12 h-12 mx-auto mb-4 opacity-50" />
+              <p>No facilities found. Upload a CSV file to get started.</p>
+            </div>
+          ) : (
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Address</TableHead>
+                    <TableHead>Location</TableHead>
+                    <TableHead>Contact</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {facilities.map((facility) => (
+                    <TableRow key={facility.id}>
+                      <TableCell className="font-medium">{facility.name}</TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">{facility.type}</Badge>
+                      </TableCell>
+                      <TableCell className="max-w-xs truncate">{facility.address}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center space-x-1 text-sm text-muted-foreground">
+                          <MapPin className="w-3 h-3" />
+                          <span>{facility.lat.toFixed(4)}, {facility.lng.toFixed(4)}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          {facility.phone && (
+                            <div className="flex items-center space-x-1 text-sm">
+                              <Phone className="w-3 h-3 text-muted-foreground" />
+                              <span>{facility.phone}</span>
+                            </div>
+                          )}
+                          {facility.contactPerson && (
+                            <div className="flex items-center space-x-1 text-sm">
+                              <User className="w-3 h-3 text-muted-foreground" />
+                              <span>{facility.contactPerson}</span>
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };

@@ -280,7 +280,7 @@ export default function EnhancedHandoffManager() {
                     <SelectContent>
                       {inTransitBatches.map((batch) => (
                         <SelectItem key={batch.id} value={batch.id}>
-                          Batch {batch.id.slice(0, 8)}... ({Array.isArray(batch.facilities) ? batch.facilities.length : 0} facilities)
+                          Batch {batch.id.slice(0, 8)}... ({batch.facility_ids?.length || 0} facilities)
                         </SelectItem>
                       ))}
                     </SelectContent>
