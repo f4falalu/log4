@@ -1,6 +1,5 @@
 import type { Config } from "tailwindcss";
-
-const { fontFamily } = require('tailwindcss/defaultTheme');
+import { fontFamily } from 'tailwindcss/defaultTheme';
 
 export default {
   darkMode: ["class"],
@@ -95,22 +94,14 @@ export default {
           border: "hsl(var(--sidebar-border) / <alpha-value>)",
           ring: "hsl(var(--sidebar-ring) / <alpha-value>)",
         },
-        },
-        
         // Legacy support
         medical: {
           DEFAULT: "hsl(var(--medical-blue) / <alpha-value>)",
           light: "hsl(var(--medical-light) / <alpha-value>)",
           accent: "hsl(var(--medical-accent) / <alpha-value>)",
         },
-        success: "hsl(var(--success) / <alpha-value>)",
-        warning: "hsl(var(--warning) / <alpha-value>)",
       },
       // BIKO Typography
-      fontFamily: {
-        sans: ["var(--font-family)", "Inter", "sans-serif"],
-        operational: ["var(--font-family)", "Inter", "sans-serif"],
-      },
       fontSize: {
         xs: "var(--font-size-xs)",
         sm: "var(--font-size-sm)",
@@ -244,24 +235,24 @@ export default {
             opacity: ".5",
           },
         },
-      "shimmer": {
-        "0%": {
-          transform: "translateX(-100%)",
-        },
-        "100%": {
-          transform: "translateX(100%)",
+        "shimmer": {
+          "0%": {
+            transform: "translateX(-100%)",
+          },
+          "100%": {
+            transform: "translateX(100%)",
+          },
         },
       },
-    },
-    animation: {
-      "accordion-down": "accordion-down 0.2s ease-out",
-      "accordion-up": "accordion-up 0.2s ease-out",
-      "fade-in": "fade-in 150ms ease-out",
-      "slide-up": "slide-up 200ms ease-out",
-      "fade-in": "fade-in var(--duration-medium) var(--ease-standard)",
-      "slide-in-right": "slide-in-right var(--duration-medium) var(--ease-standard)",
-      "pulse-operational": "pulse-operational 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
-      "shimmer": "shimmer 2s linear infinite",
+      animation: {
+        "accordion-down": "accordion-down 0.2s ease-out",
+        "accordion-up": "accordion-up 0.2s ease-out",
+        "fade-in": "fade-in var(--duration-medium) var(--ease-standard)",
+        "slide-up": "slide-up 200ms ease-out",
+        "slide-in-right": "slide-in-right var(--duration-medium) var(--ease-standard)",
+        "pulse-operational": "pulse-operational 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+        "shimmer": "shimmer 2s linear infinite",
+      },
     },
   },
   plugins: [require("tailwindcss-animate")],
