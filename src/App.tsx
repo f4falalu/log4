@@ -12,6 +12,7 @@ import FleetOpsHome from "./pages/fleetops/page";
 import StorefrontHome from "./pages/storefront/page";
 import StorefrontFacilities from "./pages/storefront/facilities/page";
 import StorefrontPayloads from "./pages/storefront/payloads/page";
+import StorefrontRequisitions from "./pages/storefront/requisitions/page";
 import FleetManagement from "./pages/fleetops/fleet-management/page";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -68,6 +69,7 @@ const App = () => (
                 }>
                   <Route index element={<StorefrontHome />} />
                   <Route path="facilities" element={<StorefrontFacilities />} />
+                  <Route path="requisitions" element={<StorefrontRequisitions />} />
                   <Route path="payloads" element={<StorefrontPayloads />} />
                 </Route>
 

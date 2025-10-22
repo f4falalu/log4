@@ -16,6 +16,8 @@ import { useFacilities } from '@/hooks/useFacilities';
 import { useDeliveryBatches, useCreateDeliveryBatch } from '@/hooks/useDeliveryBatches';
 import { useCreatePayloadItem } from '@/hooks/usePayloadItems';
 import { PayloadTracker } from '@/components/realtime/PayloadTracker';
+import { supabase } from '@/integrations/supabase/client';
+import { DeliveryBatch } from '@/types';
 
 interface PayloadItem {
   id: string;
@@ -30,6 +32,7 @@ interface PayloadItem {
 interface DispatchFormData {
   vehicleId: string;
   driverId: string;
+  warehouseId: string;
   estimatedStartTime: string;
   estimatedEndTime: string;
   priority: 'low' | 'medium' | 'high';
@@ -54,6 +57,7 @@ export default function EnhancedDispatchScheduler() {
   const [dispatchFormData, setDispatchFormData] = useState<DispatchFormData>({
     vehicleId: '',
     driverId: '',
+    warehouseId: '',
     estimatedStartTime: '',
     estimatedEndTime: '',
     priority: 'medium',
@@ -160,16 +164,40 @@ export default function EnhancedDispatchScheduler() {
     }
 
     try {
+      // Get facility details
+      const selectedFacilities = await Promise.all(
+        payloadItems.map(async (item) => {
+          const { data } = await supabase
+            .from('facilities')
+            .select('*')
+            .eq('id', item.facilityId)
+            .single();
+          return data;
+        })
+      );
+      
+      // Get warehouse details
+      const { data: warehouse } = await supabase
+        .from('warehouses')
+        .select('*')
+        .eq('id', dispatchFormData.warehouseId)
+        .single();
+
       // Create delivery batch
-      const batchData = {
-        vehicle_id: selectedVehicle.id,
-        driver_id: dispatchFormData.driverId || null,
-        facility_ids: payloadItems.map(item => item.facilityId),
-        estimated_start_time: dispatchFormData.estimatedStartTime,
-        estimated_end_time: dispatchFormData.estimatedEndTime,
-        estimated_distance_km: routeOptimization?.totalDistance || 0,
-        estimated_duration_min: routeOptimization?.estimatedDuration || 0,
-        payload_utilization_pct: payloadUtilization,
+      const batchData: Omit<DeliveryBatch, 'id' | 'createdAt'> = {
+        name: `Batch-${Date.now()}`,
+        warehouseId: dispatchFormData.warehouseId,
+        warehouseName: warehouse?.name || 'Unknown',
+        facilities: selectedFacilities.filter(Boolean),
+        vehicleId: selectedVehicle.id,
+        driverId: dispatchFormData.driverId || undefined,
+        scheduledDate: dispatchFormData.estimatedStartTime,
+        scheduledTime: new Date(dispatchFormData.estimatedStartTime).toTimeString().slice(0, 8),
+        medicationType: dispatchFormData.priority,
+        totalQuantity: payloadItems.reduce((sum, item) => sum + item.quantity, 0),
+        optimizedRoute: routeOptimization?.optimizedRoute || [],
+        totalDistance: routeOptimization?.totalDistance || 0,
+        estimatedDuration: routeOptimization?.estimatedDuration || 0,
         priority: dispatchFormData.priority,
         notes: dispatchFormData.notes,
         status: 'planned'
@@ -196,6 +224,7 @@ export default function EnhancedDispatchScheduler() {
       setDispatchFormData({
         vehicleId: '',
         driverId: '',
+        warehouseId: '',
         estimatedStartTime: '',
         estimatedEndTime: '',
         priority: 'medium',
@@ -640,7 +669,7 @@ export default function EnhancedDispatchScheduler() {
                           {(batch as any).vehicle?.model || 'Unknown Vehicle'}
                         </TableCell>
                         <TableCell>
-                          {batch.facility_ids?.length || 0} facilities
+                          {batch.facilities?.length || 0} facilities
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
@@ -659,7 +688,7 @@ export default function EnhancedDispatchScheduler() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
-                          {new Date(batch.created_at).toLocaleDateString()}
+                          {new Date(batch.createdAt).toLocaleDateString()}
                         </TableCell>
                       </TableRow>
                     ))}
@@ -689,7 +718,7 @@ export default function EnhancedDispatchScheduler() {
                   <PayloadTracker
                     key={batch.id}
                     batchId={batch.id}
-                    vehicleId={batch.vehicle_id}
+                    vehicleId={batch.vehicleId}
                   />
                 ))}
             </div>

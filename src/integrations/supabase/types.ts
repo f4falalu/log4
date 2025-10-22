@@ -592,6 +592,99 @@ export type Database = {
           },
         ]
       }
+      requisition_items: {
+        Row: {
+          created_at: string
+          handling_instructions: string | null
+          id: string
+          item_name: string
+          quantity: number
+          requisition_id: string
+          temperature_required: boolean | null
+          unit: string
+          volume_m3: number | null
+          weight_kg: number | null
+        }
+        Insert: {
+          created_at?: string
+          handling_instructions?: string | null
+          id?: string
+          item_name: string
+          quantity: number
+          requisition_id: string
+          temperature_required?: boolean | null
+          unit?: string
+          volume_m3?: number | null
+          weight_kg?: number | null
+        }
+        Update: {
+          created_at?: string
+          handling_instructions?: string | null
+          id?: string
+          item_name?: string
+          quantity?: number
+          requisition_id?: string
+          temperature_required?: boolean | null
+          unit?: string
+          volume_m3?: number | null
+          weight_kg?: number | null
+        }
+        Relationships: []
+      }
+      requisitions: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          facility_id: string
+          fulfilled_at: string | null
+          id: string
+          notes: string | null
+          priority: string
+          rejection_reason: string | null
+          requested_by: string
+          requested_delivery_date: string
+          requisition_number: string
+          status: string
+          updated_at: string
+          warehouse_id: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          facility_id: string
+          fulfilled_at?: string | null
+          id?: string
+          notes?: string | null
+          priority?: string
+          rejection_reason?: string | null
+          requested_by: string
+          requested_delivery_date: string
+          requisition_number: string
+          status?: string
+          updated_at?: string
+          warehouse_id: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          facility_id?: string
+          fulfilled_at?: string | null
+          id?: string
+          notes?: string | null
+          priority?: string
+          rejection_reason?: string | null
+          requested_by?: string
+          requested_delivery_date?: string
+          requisition_number?: string
+          status?: string
+          updated_at?: string
+          warehouse_id?: string
+        }
+        Relationships: []
+      }
       route_history: {
         Row: {
           actual_arrival: string | null
@@ -1066,10 +1159,7 @@ export type Database = {
         }
         Returns: boolean
       }
-      setup_test_admin: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      setup_test_admin: { Args: never; Returns: undefined }
     }
     Enums: {
       app_role:
