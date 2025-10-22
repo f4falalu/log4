@@ -11,49 +11,10 @@ import { Progress } from '@/components/ui/progress';
 import { Plus, Package, Truck, Calculator, Trash2, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import Layout from '@/components/layout/Layout';
+import { useVehicles } from '@/hooks/useVehicles';
+import { useFacilities } from '@/hooks/useFacilities';
+import { useCreatePayloadItem, useDeletePayloadItem } from '@/hooks/usePayloadItems';
 
-// Mock data - will be replaced with actual hooks
-const mockVehicles = [
-  {
-    id: '1',
-    model: 'Toyota Hiace',
-    plateNumber: 'ABC-123-XY',
-    type: 'van',
-    capacityVolume: 8.0,
-    capacityWeight: 2000,
-    status: 'available'
-  },
-  {
-    id: '2',
-    model: 'Isuzu NPR',
-    plateNumber: 'DEF-456-ZW',
-    type: 'truck',
-    capacityVolume: 15.0,
-    capacityWeight: 5000,
-    status: 'available'
-  }
-];
-
-const mockFacilities = [
-  {
-    id: '1',
-    name: 'Central Hospital Lagos',
-    address: '123 Main St, Lagos',
-    type: 'hospital'
-  },
-  {
-    id: '2',
-    name: 'Community Clinic Ikeja',
-    address: '456 Oak Ave, Ikeja',
-    type: 'clinic'
-  },
-  {
-    id: '3',
-    name: 'Pharmacy Plus Victoria Island',
-    address: '789 Pine Rd, VI',
-    type: 'pharmacy'
-  }
-];
 
 const boxTypes = [
   { value: 'small', label: 'Small (45×30×67cm)', volume: 0.091 },
@@ -76,6 +37,12 @@ interface PayloadItem {
 }
 
 export default function PayloadPlannerPage() {
+  // Real data hooks
+  const { data: vehicles = [], isLoading: vehiclesLoading } = useVehicles();
+  const { data: facilities = [], isLoading: facilitiesLoading } = useFacilities();
+  const createPayloadItemMutation = useCreatePayloadItem();
+  const deletePayloadItemMutation = useDeletePayloadItem();
+
   const [selectedVehicle, setSelectedVehicle] = useState<any>(null);
   const [payloadItems, setPayloadItems] = useState<PayloadItem[]>([]);
   const [isAddItemDialogOpen, setIsAddItemDialogOpen] = useState(false);
@@ -131,7 +98,7 @@ export default function PayloadPlannerPage() {
       return;
     }
 
-    const facility = mockFacilities.find(f => f.id === itemFormData.facilityId);
+    const facility = facilities.find(f => f.id === itemFormData.facilityId);
     if (!facility) return;
 
     const volume = calculateVolume(
@@ -235,7 +202,7 @@ export default function PayloadPlannerPage() {
                 <Select
                   value={selectedVehicle?.id || ''}
                   onValueChange={(value) => {
-                    const vehicle = mockVehicles.find(v => v.id === value);
+                    const vehicle = vehicles.find(v => v.id === value);
                     setSelectedVehicle(vehicle);
                   }}
                 >
@@ -243,12 +210,12 @@ export default function PayloadPlannerPage() {
                     <SelectValue placeholder="Select vehicle" />
                   </SelectTrigger>
                   <SelectContent>
-                    {mockVehicles.map((vehicle) => (
+                    {vehicles.map((vehicle) => (
                       <SelectItem key={vehicle.id} value={vehicle.id}>
                         <div className="flex flex-col">
                           <span>{vehicle.model} ({vehicle.plateNumber})</span>
                           <span className="text-sm text-muted-foreground">
-                            {vehicle.capacityVolume}m³ • {vehicle.capacityWeight}kg
+                            {(vehicle as any).capacity_volume_m3 || 0}m³ • {(vehicle as any).capacity_weight_kg || 0}kg
                           </span>
                         </div>
                       </SelectItem>
@@ -260,11 +227,11 @@ export default function PayloadPlannerPage() {
                   <div className="space-y-3 p-4 bg-muted/50 rounded-lg">
                     <div className="flex justify-between text-sm">
                       <span>Capacity:</span>
-                      <span>{selectedVehicle.capacityVolume}m³</span>
+                      <span>{(selectedVehicle as any).capacity_volume_m3 || 0}m³</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span>Max Weight:</span>
-                      <span>{selectedVehicle.capacityWeight}kg</span>
+                      <span>{(selectedVehicle as any).capacity_weight_kg || 0}kg</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span>Status:</span>
@@ -288,7 +255,7 @@ export default function PayloadPlannerPage() {
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span>Volume Used:</span>
-                      <span>{totalVolume.toFixed(2)}m³ / {selectedVehicle.capacityVolume}m³</span>
+                      <span>{totalVolume.toFixed(2)}m³ / {(selectedVehicle as any).capacity_volume_m3 || 0}m³</span>
                     </div>
                     <Progress 
                       value={payloadUtilization} 
@@ -368,7 +335,7 @@ export default function PayloadPlannerPage() {
                                 <SelectValue placeholder="Select facility" />
                               </SelectTrigger>
                               <SelectContent>
-                                {mockFacilities.map((facility) => (
+                                {facilities.map((facility) => (
                                   <SelectItem key={facility.id} value={facility.id}>
                                     <div className="flex flex-col">
                                       <span>{facility.name}</span>

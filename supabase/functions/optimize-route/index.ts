@@ -7,12 +7,29 @@ const corsHeaders = {
 };
 
 interface OptimizeRouteRequest {
-  waypoints: Array<{ lat: number; lng: number }>;
+  waypoints: Array<{ 
+    lat: number; 
+    lng: number; 
+    facility_id?: string;
+    payload_volume?: number;
+    payload_weight?: number;
+    priority?: 'low' | 'medium' | 'high';
+    time_window?: {
+      start: string;
+      end: string;
+    };
+  }>;
   vehicle_type?: string;
+  vehicle_capacity?: {
+    volume_m3: number;
+    weight_kg: number;
+  };
   constraints?: {
     avoid_highways?: boolean;
     avoid_tolls?: boolean;
     prefer_shortest?: boolean;
+    respect_time_windows?: boolean;
+    optimize_for?: 'distance' | 'time' | 'fuel' | 'payload_efficiency';
   };
 }
 

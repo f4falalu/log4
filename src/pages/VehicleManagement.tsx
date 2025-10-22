@@ -11,6 +11,7 @@ import { useVehicles } from '@/hooks/useVehicles';
 import { useVehicleManagement, VehicleFormData } from '@/hooks/useVehicleManagement';
 import { useVehicleTypes } from '@/hooks/useVehicleTypes';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useFleets } from '@/hooks/useFleets';
 import { Plus, Edit, Trash2, Truck, LayoutGrid, List, Settings } from 'lucide-react';
 import { toast } from 'sonner';
 import { VehicleGridView } from '@/components/vehicle/VehicleGridView';
@@ -22,6 +23,7 @@ const VehicleManagement = () => {
   const { createVehicle, updateVehicle, deleteVehicle, isCreating, isUpdating } = useVehicleManagement();
   const { vehicleTypes } = useVehicleTypes();
   const { hasPermission } = usePermissions();
+  const { data: fleets = [] } = useFleets();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [typeManagerOpen, setTypeManagerOpen] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState<any>(null);

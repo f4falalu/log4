@@ -14,74 +14,21 @@ import Layout from '@/components/layout/Layout';
 import { useFleets, useCreateFleet, useUpdateFleet, useDeleteFleet } from '@/hooks/useFleets';
 import { useVendors, useCreateVendor, useUpdateVendor, useDeleteVendor } from '@/hooks/useVendors';
 import { useVehicles } from '@/hooks/useVehicles';
-
-// Mock data - will be replaced with actual hooks
-const mockFleets = [
-  {
-    id: '1',
-    name: 'Main Fleet',
-    vendor: 'BIKO Logistics',
-    status: 'active',
-    mission: 'Primary delivery operations for Lagos and surrounding areas',
-    vehicleCount: 12,
-    parentFleet: null
-  },
-  {
-    id: '2', 
-    name: 'Northern Operations',
-    vendor: 'Regional Delivery Services',
-    status: 'active',
-    mission: 'Specialized fleet for northern Nigeria operations',
-    vehicleCount: 8,
-    parentFleet: null
-  }
-];
-
-const mockVendors = [
-  {
-    id: '1',
-    name: 'BIKO Logistics',
-    contactName: 'John Manager',
-    contactPhone: '+234-800-BIKO-001',
-    email: 'fleet@biko.ng',
-    address: 'Lagos, Nigeria',
-    fleetCount: 1
-  },
-  {
-    id: '2',
-    name: 'Partner Transport Co',
-    contactName: 'Sarah Wilson', 
-    contactPhone: '+234-800-PART-002',
-    email: 'ops@partnertransport.ng',
-    address: 'Abuja, Nigeria',
-    fleetCount: 0
-  }
-];
-
-const mockVehicles = [
-  {
-    id: '1',
-    model: 'Toyota Hiace',
-    plateNumber: 'ABC-123-XY',
-    type: 'van',
-    fleet: 'Main Fleet',
-    status: 'available',
-    capacityVolume: 8.0,
-    capacityWeight: 2000
-  },
-  {
-    id: '2',
-    model: 'Isuzu NPR',
-    plateNumber: 'DEF-456-ZW',
-    type: 'truck', 
-    fleet: 'Main Fleet',
-    status: 'in-use',
-    capacityVolume: 15.0,
-    capacityWeight: 5000
-  }
-];
+import { FleetHierarchyVisualization } from '@/components/fleet/FleetHierarchyVisualization';
 
 export default function FleetManagementPage() {
+  // Real data hooks
+  const { data: fleets = [], isLoading: fleetsLoading } = useFleets();
+  const { data: vendors = [], isLoading: vendorsLoading } = useVendors();
+  const { data: vehicles = [], isLoading: vehiclesLoading } = useVehicles();
+
+  const createFleetMutation = useCreateFleet();
+  const updateFleetMutation = useUpdateFleet();
+  const deleteFleetMutation = useDeleteFleet();
+
+  const createVendorMutation = useCreateVendor();
+  const updateVendorMutation = useUpdateVendor();
+  const deleteVendorMutation = useDeleteVendor();
   const [activeTab, setActiveTab] = useState('fleets');
   const [isFleetDialogOpen, setIsFleetDialogOpen] = useState(false);
   const [isVendorDialogOpen, setIsVendorDialogOpen] = useState(false);
@@ -124,28 +71,70 @@ export default function FleetManagementPage() {
     setEditingVendor(null);
   };
 
-  const handleFleetSubmit = (e: React.FormEvent) => {
+  const handleFleetSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement fleet creation/update logic
-    toast.success(editingFleet ? 'Fleet updated successfully' : 'Fleet created successfully');
-    setIsFleetDialogOpen(false);
-    resetFleetForm();
+    try {
+      if (editingFleet) {
+        await updateFleetMutation.mutateAsync({
+          id: editingFleet.id,
+          data: {
+            name: fleetFormData.name,
+            vendor_id: fleetFormData.vendorId || undefined,
+            mission: fleetFormData.mission,
+            status: fleetFormData.status as 'active' | 'inactive'
+          }
+        });
+      } else {
+        await createFleetMutation.mutateAsync({
+          name: fleetFormData.name,
+          vendor_id: fleetFormData.vendorId || undefined,
+          mission: fleetFormData.mission,
+          status: fleetFormData.status as 'active' | 'inactive'
+        });
+      }
+      setIsFleetDialogOpen(false);
+      resetFleetForm();
+    } catch (error) {
+      console.error('Error submitting fleet:', error);
+    }
   };
 
-  const handleVendorSubmit = (e: React.FormEvent) => {
+  const handleVendorSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement vendor creation/update logic
-    toast.success(editingVendor ? 'Vendor updated successfully' : 'Vendor created successfully');
-    setIsVendorDialogOpen(false);
-    resetVendorForm();
+    try {
+      if (editingVendor) {
+        await updateVendorMutation.mutateAsync({
+          id: editingVendor.id,
+          data: {
+            name: vendorFormData.name,
+            contact_name: vendorFormData.contactName,
+            contact_phone: vendorFormData.contactPhone,
+            email: vendorFormData.email,
+            address: vendorFormData.address
+          }
+        });
+      } else {
+        await createVendorMutation.mutateAsync({
+          name: vendorFormData.name,
+          contact_name: vendorFormData.contactName,
+          contact_phone: vendorFormData.contactPhone,
+          email: vendorFormData.email,
+          address: vendorFormData.address
+        });
+      }
+      setIsVendorDialogOpen(false);
+      resetVendorForm();
+    } catch (error) {
+      console.error('Error submitting vendor:', error);
+    }
   };
 
   const handleEditFleet = (fleet: any) => {
     setEditingFleet(fleet);
     setFleetFormData({
       name: fleet.name,
-      vendorId: fleet.vendorId || '',
-      mission: fleet.mission,
+      vendorId: fleet.vendor_id || '',
+      mission: fleet.mission || '',
       status: fleet.status
     });
     setIsFleetDialogOpen(true);
@@ -155,10 +144,10 @@ export default function FleetManagementPage() {
     setEditingVendor(vendor);
     setVendorFormData({
       name: vendor.name,
-      contactName: vendor.contactName,
-      contactPhone: vendor.contactPhone,
-      email: vendor.email,
-      address: vendor.address
+      contactName: vendor.contact_name || '',
+      contactPhone: vendor.contact_phone || '',
+      email: vendor.email || '',
+      address: vendor.address || ''
     });
     setIsVendorDialogOpen(true);
   };
@@ -245,7 +234,7 @@ export default function FleetManagementPage() {
                             <SelectValue placeholder="Select vendor" />
                           </SelectTrigger>
                           <SelectContent>
-                            {mockVendors.map((vendor) => (
+                            {vendors.map((vendor) => (
                               <SelectItem key={vendor.id} value={vendor.id}>
                                 {vendor.name}
                               </SelectItem>
@@ -309,17 +298,29 @@ export default function FleetManagementPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {mockFleets.map((fleet) => (
+                    {fleetsLoading ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center py-8">
+                          Loading fleets...
+                        </TableCell>
+                      </TableRow>
+                    ) : fleets.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                          No fleets found. Create your first fleet to get started.
+                        </TableCell>
+                      </TableRow>
+                    ) : fleets.map((fleet) => (
                       <TableRow key={fleet.id}>
                         <TableCell className="font-medium">{fleet.name}</TableCell>
-                        <TableCell>{fleet.vendor}</TableCell>
+                        <TableCell>{fleet.vendor?.name || 'No vendor'}</TableCell>
                         <TableCell>
                           <Badge className={getStatusColor(fleet.status)}>
                             {fleet.status}
                           </Badge>
                         </TableCell>
-                        <TableCell>{fleet.vehicleCount}</TableCell>
-                        <TableCell className="max-w-xs truncate">{fleet.mission}</TableCell>
+                        <TableCell>{fleet.vehicle_count || 0}</TableCell>
+                        <TableCell className="max-w-xs truncate">{fleet.mission || 'No mission'}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
                             <Button
@@ -366,12 +367,12 @@ export default function FleetManagementPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {mockVehicles.map((vehicle) => (
+                    {vehicles.map((vehicle) => (
                       <TableRow key={vehicle.id}>
                         <TableCell className="font-medium">{vehicle.model}</TableCell>
                         <TableCell>{vehicle.plateNumber}</TableCell>
                         <TableCell className="capitalize">{vehicle.type}</TableCell>
-                        <TableCell>{vehicle.fleet}</TableCell>
+                        <TableCell>{(vehicle as any).fleet?.name || 'No fleet'}</TableCell>
                         <TableCell>
                           <Badge className={getStatusColor(vehicle.status)}>
                             {vehicle.status}
@@ -379,8 +380,8 @@ export default function FleetManagementPage() {
                         </TableCell>
                         <TableCell>
                           <div className="text-sm">
-                            <div>{vehicle.capacityVolume} m³</div>
-                            <div className="text-muted-foreground">{vehicle.capacityWeight} kg</div>
+                            <div>{(vehicle as any).capacity_volume_m3 || 0} m³</div>
+                            <div className="text-muted-foreground">{(vehicle as any).capacity_weight_kg || 0} kg</div>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -485,13 +486,13 @@ export default function FleetManagementPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {mockVendors.map((vendor) => (
+                    {vendors.map((vendor) => (
                       <TableRow key={vendor.id}>
                         <TableCell className="font-medium">{vendor.name}</TableCell>
-                        <TableCell>{vendor.contactName}</TableCell>
-                        <TableCell>{vendor.contactPhone}</TableCell>
-                        <TableCell>{vendor.email}</TableCell>
-                        <TableCell>{vendor.fleetCount}</TableCell>
+                        <TableCell>{vendor.contact_name || 'N/A'}</TableCell>
+                        <TableCell>{vendor.contact_phone || 'N/A'}</TableCell>
+                        <TableCell>{vendor.email || 'N/A'}</TableCell>
+                        <TableCell>{vendor.fleet_count || 0}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
                             <Button
@@ -520,19 +521,21 @@ export default function FleetManagementPage() {
 
           {/* Fleet Hierarchy Tab */}
           <TabsContent value="hierarchy" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Fleet Hierarchy</CardTitle>
-                <CardDescription>Organizational structure of fleets and sub-fleets</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-12 text-muted-foreground">
-                  <TreePine className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Fleet hierarchy visualization coming soon</p>
-                  <p className="text-sm">This will show parent-child fleet relationships</p>
-                </div>
-              </CardContent>
-            </Card>
+            <FleetHierarchyVisualization
+              onCreateSubFleet={(parentFleetId) => {
+                setFleetFormData({
+                  ...fleetFormData,
+                  name: '',
+                  vendorId: '',
+                  mission: '',
+                  status: 'active'
+                });
+                // Set parent fleet ID for sub-fleet creation
+                // This would need to be added to the form data structure
+                setIsFleetDialogOpen(true);
+              }}
+              onEditFleet={handleEditFleet}
+            />
           </TabsContent>
         </Tabs>
       </div>
