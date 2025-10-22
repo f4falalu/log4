@@ -116,17 +116,10 @@ export default function EnhancedHandoffManager() {
     }
 
     try {
-      // Note: completeHandoff only marks handoffs as complete
-      // For creating new handoffs, we need a different mutation
-      toast.info('Creating handoff - please use the main handoff system');
-      setIsCreateDialogOpen(false);
-        notes: handoffFormData.notes,
-        status: 'planned'
-      });
-
+      // Note: Handoff creation needs to be implemented with proper mutation
+      toast.info('Creating handoff - feature in development');
       setIsCreateDialogOpen(false);
       resetForm();
-      toast.success('Handoff scheduled successfully');
     } catch (error) {
       console.error('Error creating handoff:', error);
       toast.error('Failed to create handoff');
