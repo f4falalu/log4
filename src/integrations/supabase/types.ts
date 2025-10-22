@@ -1066,10 +1066,7 @@ export type Database = {
         }
         Returns: boolean
       }
-      setup_test_admin: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      setup_test_admin: { Args: never; Returns: undefined }
     }
     Enums: {
       app_role:

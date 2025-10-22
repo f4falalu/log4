@@ -96,16 +96,16 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-secondary/5 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1 text-center">
-          <div className="flex items-center justify-center mb-4">
-            <div className="p-3 bg-primary/10 rounded-lg">
-              <Truck className="h-8 w-8 text-primary" />
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-primary/10 p-4">
+      <Card className="w-full max-w-md shadow-xl">
+        <CardHeader className="space-y-1 text-center pb-4">
+          <div className="flex items-center justify-center mb-6">
+            <div className="p-4 bg-primary/10 rounded-2xl">
+              <Truck className="h-10 w-10 text-primary" />
             </div>
           </div>
-          <CardTitle className="text-2xl font-bold">BIKO Platform</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-3xl font-bold">BIKO Platform</CardTitle>
+          <CardDescription className="text-base">
             Integrated Operations Platform
           </CardDescription>
         </CardHeader>
@@ -114,15 +114,17 @@ export default function Auth() {
             <div className="grid w-full grid-cols-2 gap-2 mb-4">
               <Button
                 type="button"
-                variant={activeTab === 'login' ? 'default' : 'secondary'}
+                variant={activeTab === 'login' ? 'default' : 'outline'}
                 onClick={() => setActiveTab('login')}
+                className="w-full"
               >
                 Login
               </Button>
               <Button
                 type="button"
-                variant={activeTab === 'signup' ? 'default' : 'secondary'}
+                variant={activeTab === 'signup' ? 'default' : 'outline'}
                 onClick={() => setActiveTab('signup')}
+                className="w-full"
               >
                 Sign Up
               </Button>

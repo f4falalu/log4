@@ -94,10 +94,10 @@ const Layout = ({ children }: LayoutProps) => {
           <div className="flex h-14 items-center justify-between">
             <div className="flex items-center gap-8">
               <div className="flex items-center gap-2">
-                <div className="flex h-7 w-7 items-center justify-center rounded-md bg-foreground">
-                  <Truck className="h-4 w-4 text-background" />
-                </div>
-                <span className="text-sm font-semibold tracking-tight">BIKO</span>
+              <div className="h-7 w-7 items-center justify-center rounded-lg bg-primary flex">
+                <Truck className="h-4 w-4 text-white" />
+              </div>
+              <span className="text-base font-bold tracking-tight">BIKO</span>
               </div>
             </div>
             <div className="flex items-center gap-3">

@@ -1,0 +1,3 @@
+-- Enable RLS on critical tables with PII
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_roles ENABLE ROW LEVEL SECURITY;
