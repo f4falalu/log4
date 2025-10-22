@@ -35,6 +35,17 @@ interface FacilityManagerProps {
   onFacilitiesUpdate: (facilities: Facility[]) => void;
 }
 
+type FacilityRow = {
+  id: string;
+  name: string;
+  type: string;
+  address: string;
+  lat: number;
+  lng: number;
+  phone?: string;
+  contactPerson?: string;
+};
+
 const FacilityManager = ({ facilities, onFacilitiesUpdate }: FacilityManagerProps) => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadResults, setUploadResults] = useState<{
@@ -76,15 +87,16 @@ const FacilityManager = ({ facilities, onFacilitiesUpdate }: FacilityManagerProp
       'Other': 'other',
     };
 
-  type FacilityRow = {
-    id: string;
-    name: string;
-    type: string;
-    address: string;
-    lat: number;
-    lng: number;
-    phone?: string;
-    contactPerson?: string;
+    const rawType = row.type || row['Type'] || row['Facility Type'] || row['facility_type'];
+    mapped.type = typeMapping[rawType] || rawType?.toLowerCase() || 'clinic';
+    
+    // Optional fields
+    mapped.phone = row.phone || row['Phone'] || row['Phone Number'] || row['phone_number'];
+    mapped.contactPerson = row.contactPerson || row['Contact Person'] || row['contact_person'] || row['Contact'];
+    mapped.capacity = row.capacity || row['Capacity'];
+    mapped.operatingHours = row.operatingHours || row['Operating Hours'] || row['operating_hours'] || row['Hours'];
+    
+    return mapped as CSVFacility;
   };
 
   const getTypeClass = (type: string) => {
@@ -146,18 +158,6 @@ const FacilityManager = ({ facilities, onFacilitiesUpdate }: FacilityManagerProp
       ),
     },
   ];
-    
-    const rawType = row.type || row['Type'] || row['Facility Type'] || row['facility_type'];
-    mapped.type = typeMapping[rawType] || rawType?.toLowerCase() || 'clinic';
-    
-    // Optional fields
-    mapped.phone = row.phone || row['Phone'] || row['Phone Number'] || row['phone_number'];
-    mapped.contactPerson = row.contactPerson || row['Contact Person'] || row['contact_person'] || row['Contact'];
-    mapped.capacity = row.capacity || row['Capacity'];
-    mapped.operatingHours = row.operatingHours || row['Operating Hours'] || row['operating_hours'] || row['Hours'];
-    
-    return mapped as CSVFacility;
-  };
 
   const validateCSVData = (data: any[]): { valid: Facility[]; errors: string[]; columnInfo: string } => {
     const valid: Facility[] = [];

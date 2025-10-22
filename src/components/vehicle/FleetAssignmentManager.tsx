@@ -70,14 +70,16 @@ export function FleetAssignmentManager({ onAssignmentComplete }: FleetAssignment
     }
 
     try {
-      const promises = Array.from(selectedVehicles).map(vehicleId =>
-        updateVehicle.mutateAsync({
-          id: vehicleId,
-          data: { fleet_id: targetFleetId }
+      const updatePromises = Array.from(selectedVehicles).map(vehicleId =>
+        new Promise((resolve, reject) => {
+          updateVehicle(
+            { id: vehicleId, data: { fleet_id: targetFleetId } },
+            { onSuccess: resolve, onError: reject }
+          );
         })
       );
 
-      await Promise.all(promises);
+      await Promise.all(updatePromises);
 
       setSelectedVehicles(new Set());
       setTargetFleetId('');
@@ -91,16 +93,14 @@ export function FleetAssignmentManager({ onAssignmentComplete }: FleetAssignment
     }
   };
 
-  const handleRemoveFromFleet = async (vehicleId: string) => {
-    try {
-      await updateVehicle.mutateAsync({
-        id: vehicleId,
-        data: { fleet_id: null }
-      });
-      toast.success('Vehicle removed from fleet');
-    } catch (error) {
-      toast.error('Failed to remove vehicle from fleet');
-    }
+  const handleRemoveFromFleet = (vehicleId: string) => {
+    updateVehicle(
+      { id: vehicleId, data: { fleet_id: null } },
+      { 
+        onSuccess: () => toast.success('Vehicle removed from fleet'),
+        onError: () => toast.error('Failed to remove vehicle from fleet')
+      }
+    );
   };
 
   const getFleetName = (fleetId: string) => {

@@ -210,8 +210,8 @@ export default function FleetManagementPage() {
                 <Users className="h-4 w-4 text-purple-700" />
               </div>
               <div>
-                <p className="text-[13px] font-medium text-muted-foreground">Active Vendors</p>
-                <p className="text-xl font-semibold">{vendors.filter(v => v.status === 'active').length}</p>
+                <p className="text-[13px] font-medium text-muted-foreground">Total Vendors</p>
+                <p className="text-xl font-semibold">{vendors.length}</p>
               </div>
             </div>
           </Card>

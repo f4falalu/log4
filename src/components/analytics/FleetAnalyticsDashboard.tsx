@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { BarChart3, TrendingUp, Truck, Package, AlertTriangle, CheckCircle, Clock, DollarSign } from 'lucide-react';
+import { BarChart3, TrendingUp, Truck, Package, AlertTriangle, CheckCircle, Clock, DollarSign, Building2 } from 'lucide-react';
 import { useFleets } from '@/hooks/useFleets';
 import { useVehicles } from '@/hooks/useVehicles';
 import { useEnhancedDeliveryBatches } from '@/hooks/useEnhancedDispatch';
