@@ -84,3 +84,25 @@ export function useCreateDeliveryBatch() {
     }
   });
 }
+
+export function useDeleteDeliveryBatch() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (batchId: string) => {
+      const { error } = await supabase
+        .from('delivery_batches')
+        .delete()
+        .eq('id', batchId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['delivery-batches'] });
+      toast.success('Batch deleted successfully');
+    },
+    onError: (error) => {
+      toast.error(`Failed to delete batch: ${error.message}`);
+    }
+  });
+}

@@ -20,8 +20,11 @@ export function useActiveHandoffs() {
           
           if (payload.eventType === 'INSERT') {
             toast.info('New handoff initiated');
-          } else if (payload.eventType === 'UPDATE' && (payload.new as any).status === 'completed') {
-            toast.success('Handoff completed');
+          } else if (payload.eventType === 'UPDATE') {
+            const newData = payload.new as { status?: string };
+            if (newData.status === 'completed') {
+              toast.success('Handoff completed');
+            }
           }
         }
       )
@@ -35,7 +38,23 @@ export function useActiveHandoffs() {
   return useQuery({
     queryKey: ['active-handoffs'],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      interface HandoffRow {
+        id: string;
+        from_vehicle_id: string;
+        to_vehicle_id: string;
+        from_batch_id: string;
+        status: string;
+        location_lat: number;
+        location_lng: number;
+        scheduled_time?: string;
+        actual_time?: string;
+        notes?: string;
+        from_vehicle?: { model: string; plate_number: string };
+        to_vehicle?: { model: string; plate_number: string };
+        from_batch?: { name: string };
+      }
+
+      const { data, error } = await supabase
         .from('handoffs')
         .select(`
           *,
@@ -47,7 +66,7 @@ export function useActiveHandoffs() {
         .order('planned_time', { ascending: true });
 
       if (error) throw error;
-      return data as any[];
+      return (data || []) as HandoffRow[];
     },
     refetchInterval: 15000, // Refetch every 15 seconds
   });

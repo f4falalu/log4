@@ -37,17 +37,17 @@ export function useAddFacility() {
     mutationFn: async (facility: Omit<Facility, 'id'>) => {
       const { data, error } = await supabase
         .from('facilities')
-        .insert([{
+        .insert({
           name: facility.name,
           address: facility.address,
           lat: facility.lat,
           lng: facility.lng,
-          type: facility.type as any,
+          type: facility.type as 'hospital' | 'clinic' | 'health_center' | 'pharmacy' | 'lab' | 'other',
           phone: facility.phone || null,
           contact_person: facility.contactPerson || null,
           capacity: facility.capacity || null,
           operating_hours: facility.operatingHours || null
-        }])
+        })
         .select()
         .single();
 

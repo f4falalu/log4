@@ -397,10 +397,10 @@ export default function EnhancedHandoffManager() {
                           {handoff.id.slice(0, 8)}...
                         </TableCell>
                         <TableCell>
-                          {(handoff as any).from_vehicle?.model || 'Unknown'}
+                          {handoff.from_vehicle?.model || 'Unknown'}
                         </TableCell>
                         <TableCell>
-                          {(handoff as any).to_vehicle?.model || 'Unknown'}
+                          {handoff.to_vehicle?.model || 'Unknown'}
                         </TableCell>
                         <TableCell>
                           {handoff.from_batch_id.slice(0, 8)}...
@@ -500,8 +500,8 @@ export default function EnhancedHandoffManager() {
                         </TableCell>
                         <TableCell>
                           <div className="text-sm">
-                            <div>{(handoff as any).from_vehicle?.model || 'Unknown'}</div>
-                            <div className="text-muted-foreground">→ {(handoff as any).to_vehicle?.model || 'Unknown'}</div>
+                            <div>{handoff.from_vehicle?.model || 'Unknown'}</div>
+                            <div className="text-muted-foreground">→ {handoff.to_vehicle?.model || 'Unknown'}</div>
                           </div>
                         </TableCell>
                         <TableCell>{handoff.from_batch_id.slice(0, 8)}...</TableCell>

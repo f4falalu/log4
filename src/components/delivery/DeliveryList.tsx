@@ -72,7 +72,9 @@ const DeliveryList = ({ deliveries, onDeliveryUpdate }: DeliveryListProps) => {
   };
 
   const handleStatusChange = (deliveryId: string, newStatus: string) => {
-    onDeliveryUpdate(deliveryId, { status: newStatus as any });
+    onDeliveryUpdate(deliveryId, { 
+      status: newStatus as 'scheduled' | 'in-progress' | 'completed' | 'cancelled' 
+    });
     
     const delivery = deliveries.find(d => d.id === deliveryId);
     if (delivery) {

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import Layout from '@/components/layout/Layout';
+import { BreadcrumbNavigation } from '@/components/ui/breadcrumb-navigation';
 import { useFacilities } from '@/hooks/useFacilities';
 import { useDeliveryBatches } from '@/hooks/useDeliveryBatches';
 import { useVehicles } from '@/hooks/useVehicles';
@@ -9,7 +10,7 @@ import HandoffManager from '@/components/dispatch/HandoffManager';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Truck, RefreshCw } from 'lucide-react';
+import { RefreshCw, Package } from 'lucide-react';
 
 export default function DispatchPage() {
   const { data: facilities = [] } = useFacilities();
@@ -18,48 +19,57 @@ export default function DispatchPage() {
   const { data: handoffs = [] } = useActiveHandoffs();
   const [handoffDialogOpen, setHandoffDialogOpen] = useState(false);
   
-  const handleBatchCreate = (batch: any) => {
+  const handleBatchCreate = (batch: unknown) => {
     console.log('Batch created:', batch);
   };
 
   const activeBatches = batches.filter(b => b.status === 'in-progress' || b.status === 'planned');
   const activeHandoffsCount = handoffs?.length || 0;
+
+  const breadcrumbItems = [
+    { label: 'FleetOps', href: '/fleetops' },
+    { label: 'Dispatch', icon: <Package className="h-4 w-4" /> }
+  ];
   
   return (
     <Layout>
-      <TacticalDispatchScheduler 
-        facilities={facilities}
-        batches={batches}
-        onBatchCreate={handleBatchCreate}
-      />
-      
-      {/* Floating Handoff Manager Button */}
-      <Dialog open={handoffDialogOpen} onOpenChange={setHandoffDialogOpen}>
-        <DialogTrigger asChild>
-          <Button 
-            className="fixed bottom-6 right-6 rounded-full shadow-lg h-14 px-6"
-            size="lg"
-          >
-            <RefreshCw className="w-5 h-5 mr-2" />
-            Manage Handoffs
-            {activeHandoffsCount > 0 && (
-              <Badge className="ml-2" variant="destructive">
-                {activeHandoffsCount}
-              </Badge>
-            )}
-          </Button>
-        </DialogTrigger>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Vehicle Handoff Management</DialogTitle>
-          </DialogHeader>
-          <HandoffManager 
-            activeBatches={activeBatches}
-            vehicles={vehicles}
-            onHandoffCreated={() => setHandoffDialogOpen(false)}
-          />
-        </DialogContent>
-      </Dialog>
+      <div className="space-y-6">
+        <BreadcrumbNavigation items={breadcrumbItems} />
+        
+        <TacticalDispatchScheduler 
+          facilities={facilities}
+          batches={batches}
+          onBatchCreate={handleBatchCreate}
+        />
+        
+        {/* Floating Handoff Manager Button */}
+        <Dialog open={handoffDialogOpen} onOpenChange={setHandoffDialogOpen}>
+          <DialogTrigger asChild>
+            <Button 
+              className="fixed bottom-6 right-6 rounded-full shadow-lg h-14 px-6"
+              size="lg"
+            >
+              <RefreshCw className="w-5 h-5 mr-2" />
+              Manage Handoffs
+              {activeHandoffsCount > 0 && (
+                <Badge className="ml-2" variant="destructive">
+                  {activeHandoffsCount}
+                </Badge>
+              )}
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Vehicle Handoff Management</DialogTitle>
+            </DialogHeader>
+            <HandoffManager 
+              activeBatches={activeBatches}
+              vehicles={vehicles}
+              onHandoffCreated={() => setHandoffDialogOpen(false)}
+            />
+          </DialogContent>
+        </Dialog>
+      </div>
     </Layout>
   );
 }

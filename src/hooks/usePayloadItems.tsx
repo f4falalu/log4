@@ -7,14 +7,26 @@ export function usePayloadItems(batchId: string) {
   return useQuery({
     queryKey: ['payload-items', batchId],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      interface PayloadItemRow {
+        id: string;
+        batch_id: string;
+        name: string;
+        quantity: number;
+        weight_kg: number;
+        volume_m3: number;
+        temperature_required: boolean;
+        handling_instructions?: string;
+        created_at: string;
+      }
+
+      const { data, error } = await supabase
         .from('payload_items')
         .select('*')
         .eq('batch_id', batchId)
         .order('created_at', { ascending: true });
 
       if (error) throw error;
-      return data as PayloadItem[];
+      return (data || []) as PayloadItem[];
     },
     enabled: !!batchId,
   });
@@ -25,7 +37,17 @@ export function useCreatePayloadItems() {
 
   return useMutation({
     mutationFn: async ({ batchId, items }: { batchId: string; items: PayloadItem[] }) => {
-      const itemsToInsert = items.map(item => ({
+      interface PayloadItemInsert {
+        batch_id: string;
+        name: string;
+        quantity: number;
+        weight_kg: number;
+        volume_m3: number;
+        temperature_required: boolean;
+        handling_instructions?: string;
+      }
+
+      const itemsToInsert: PayloadItemInsert[] = items.map(item => ({
         batch_id: batchId,
         name: item.name,
         quantity: item.quantity,
@@ -35,7 +57,7 @@ export function useCreatePayloadItems() {
         handling_instructions: item.handling_instructions
       }));
 
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('payload_items')
         .insert(itemsToInsert)
         .select();
@@ -47,7 +69,7 @@ export function useCreatePayloadItems() {
       queryClient.invalidateQueries({ queryKey: ['payload-items', variables.batchId] });
       toast.success('Payload items saved');
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(`Failed to save payload items: ${error.message}`);
     }
   });

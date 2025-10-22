@@ -26,6 +26,7 @@ import DispatchPage from "./pages/DispatchPage";
 import FacilityManagerPage from "./pages/FacilityManagerPage";
 import VehicleManagementPage from "./pages/VehicleManagementPage";
 import ReportsPageWrapper from "./pages/ReportsPageWrapper";
+import BatchManagement from "./pages/BatchManagement";
 
 const queryClient = new QueryClient();
 
@@ -55,6 +56,7 @@ const App = () => (
                   <Route index element={<FleetOpsHome />} />
                   <Route path="drivers" element={<DriverManagement />} />
                   <Route path="dispatch" element={<DispatchPage />} />
+                  <Route path="batches" element={<BatchManagement />} />
                   <Route path="tactical" element={<TacticalMap />} />
                   <Route path="vehicles" element={<VehicleManagementPage />} />
                   <Route path="fleet-management" element={<FleetManagement />} />
