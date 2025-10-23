@@ -1,6 +1,15 @@
 project_id = "fgkjhpytntgmbuxegntr"
 
+[functions.calculate-payload]
+verify_jwt = true
+
 [functions.check-geofencing]
+verify_jwt = true
+
+[functions.confirm-handoff]
+verify_jwt = true
+
+[functions.create-handoff]
 verify_jwt = true
 
 [functions.create-service-zone]

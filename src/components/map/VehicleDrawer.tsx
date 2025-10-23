@@ -33,11 +33,15 @@ export function VehicleDrawer({
 
   return (
     <Sheet open={open} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent side="right" className="w-[420px] overflow-y-auto biko-scrollbar">
+      <SheetContent 
+        side="right" 
+        className="w-[420px] overflow-y-auto biko-scrollbar"
+        aria-label={`Vehicle details for ${vehicle.plate_number}`}
+      >
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
-            <Truck className="w-5 h-5 text-biko-primary" />
-            {vehicle.plateNumber}
+            <Truck className="w-5 h-5 text-biko-primary" aria-hidden="true" />
+            {vehicle.plate_number}
           </SheetTitle>
           <SheetDescription>
             {vehicle.type} • {vehicle.model}
@@ -162,13 +166,14 @@ export function VehicleDrawer({
           <Separator />
 
           {/* Quick Actions */}
-          <div className="space-y-2">
+          <div className="space-y-2" role="group" aria-label="Vehicle actions">
             <Button
               variant="outline"
               className="w-full justify-start"
               onClick={() => onHandoff?.(vehicle.id)}
+              aria-label={`Initiate handoff for vehicle ${vehicle.plate_number}`}
             >
-              <Handshake className="w-4 h-4 mr-2" />
+              <Handshake className="w-4 h-4 mr-2" aria-hidden="true" />
               Initiate Handoff
             </Button>
             
@@ -176,16 +181,18 @@ export function VehicleDrawer({
               variant="outline"
               className="w-full justify-start"
               onClick={() => onReassign?.(vehicle.id)}
+              aria-label={`Reassign batch for vehicle ${vehicle.plate_number}`}
             >
-              <Navigation className="w-4 h-4 mr-2" />
+              <Navigation className="w-4 h-4 mr-2" aria-hidden="true" />
               Reassign Batch
             </Button>
             
             <Button
               variant="outline"
               className="w-full justify-start"
+              aria-label={`View history for vehicle ${vehicle.plate_number}`}
             >
-              <Clock className="w-4 h-4 mr-2" />
+              <Clock className="w-4 h-4 mr-2" aria-hidden="true" />
               View History
             </Button>
           </div>
