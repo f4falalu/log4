@@ -37,23 +37,23 @@ serve(async (req) => {
     console.log('Creating handoff:', { from_vehicle_id, to_vehicle_id, from_batch_id });
 
     // Validate vehicles exist and are available
-    const { data: fromVehicle, error: fromVehicleError } = await supabase
+    const { data: fromVehicle } = await supabase
       .from('vehicles')
-      .select('id, plate_number, status')
+      .select('id, plate_number, status, current_driver_id')
       .eq('id', from_vehicle_id)
-      .single();
+      .maybeSingle();
 
-    if (fromVehicleError || !fromVehicle) {
+    if (!fromVehicle) {
       throw new Error('Source vehicle not found');
     }
 
-    const { data: toVehicle, error: toVehicleError } = await supabase
+    const { data: toVehicle } = await supabase
       .from('vehicles')
-      .select('id, plate_number, status')
+      .select('id, plate_number, status, current_driver_id')
       .eq('id', to_vehicle_id)
-      .single();
+      .maybeSingle();
 
-    if (toVehicleError || !toVehicle) {
+    if (!toVehicle) {
       throw new Error('Destination vehicle not found');
     }
 
@@ -62,13 +62,13 @@ serve(async (req) => {
     }
 
     // Validate batch exists and is assigned to source vehicle
-    const { data: batch, error: batchError } = await supabase
+    const { data: batch } = await supabase
       .from('delivery_batches')
       .select('id, vehicle_id, name, status')
       .eq('id', from_batch_id)
-      .single();
+      .maybeSingle();
 
-    if (batchError || !batch) {
+    if (!batch) {
       throw new Error('Batch not found');
     }
 
@@ -99,22 +99,10 @@ serve(async (req) => {
 
     console.log('Handoff created:', handoff.id);
 
-    // Send notifications to both drivers
-    const { data: fromDriver } = await supabase
-      .from('drivers')
-      .select('id, name')
-      .eq('id', fromVehicle.current_driver_id)
-      .single();
-
-    const { data: toDriver } = await supabase
-      .from('drivers')
-      .select('id, name')
-      .eq('id', toVehicle.current_driver_id)
-      .single();
-
-    if (fromDriver) {
+    // Send notifications to both drivers if they exist
+    if (fromVehicle.current_driver_id) {
       await supabase.from('notifications').insert({
-        user_id: fromDriver.id,
+        user_id: fromVehicle.current_driver_id,
         type: 'handoff_scheduled',
         title: 'Handoff Scheduled',
         message: `You have a handoff scheduled for batch ${batch.name} to vehicle ${toVehicle.plate_number}`,
@@ -123,9 +111,9 @@ serve(async (req) => {
       });
     }
 
-    if (toDriver) {
+    if (toVehicle.current_driver_id) {
       await supabase.from('notifications').insert({
-        user_id: toDriver.id,
+        user_id: toVehicle.current_driver_id,
         type: 'handoff_scheduled',
         title: 'Incoming Handoff',
         message: `You will receive batch ${batch.name} from vehicle ${fromVehicle.plate_number}`,
@@ -133,6 +121,7 @@ serve(async (req) => {
         related_entity_id: handoff.id,
       });
     }
+
 
     return new Response(
       JSON.stringify({ 
@@ -145,7 +134,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error creating handoff:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
       { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

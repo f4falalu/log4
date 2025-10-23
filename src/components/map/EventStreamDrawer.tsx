@@ -2,7 +2,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useZoneAlerts } from '@/hooks/useZoneAlerts';
+import { useZoneAlerts, useAcknowledgeAlert } from '@/hooks/useZoneAlerts';
 import { Bell, CheckCircle2, AlertTriangle, Info, MapPin } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -12,7 +12,8 @@ interface EventStreamDrawerProps {
 }
 
 export function EventStreamDrawer({ open, onClose }: EventStreamDrawerProps) {
-  const { data: alerts = [], acknowledgeAlert } = useZoneAlerts();
+  const { alerts = [] } = useZoneAlerts();
+  const { acknowledgeAlert } = useAcknowledgeAlert();
 
   const getEventIcon = (eventType: string) => {
     switch (eventType) {

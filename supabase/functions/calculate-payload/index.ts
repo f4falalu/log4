@@ -35,7 +35,7 @@ serve(async (req) => {
         .select('id')
         .eq('vehicle_id', vehicle_id)
         .eq('status', 'in-progress')
-        .single();
+        .maybeSingle();
       
       if (!batch) {
         return new Response(
@@ -74,7 +74,7 @@ serve(async (req) => {
         .from('delivery_batches')
         .select('vehicle_id')
         .eq('id', batch_id)
-        .single();
+        .maybeSingle();
 
       const vehicleIdToUse = vehicle_id || batch?.vehicle_id;
 
@@ -83,7 +83,7 @@ serve(async (req) => {
           .from('vehicles')
           .select('max_weight, capacity')
           .eq('id', vehicleIdToUse)
-          .single();
+          .maybeSingle();
 
         if (vehicle) {
           capacityWeight = vehicle.max_weight;
@@ -136,7 +136,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error calculating payload:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
       { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

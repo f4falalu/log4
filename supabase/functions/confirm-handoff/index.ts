@@ -29,18 +29,13 @@ serve(async (req) => {
     console.log('Confirming handoff:', handoff_id);
 
     // Get handoff details
-    const { data: handoff, error: handoffError } = await supabase
+    const { data: handoff } = await supabase
       .from('handoffs')
-      .select(`
-        *,
-        from_vehicle:vehicles!from_vehicle_id(id, plate_number, current_driver_id),
-        to_vehicle:vehicles!to_vehicle_id(id, plate_number, current_driver_id),
-        batch:delivery_batches!from_batch_id(id, name, status)
-      `)
+      .select('*')
       .eq('id', handoff_id)
-      .single();
+      .maybeSingle();
 
-    if (handoffError || !handoff) {
+    if (!handoff) {
       throw new Error('Handoff not found');
     }
 
@@ -82,38 +77,43 @@ serve(async (req) => {
 
     console.log('Batch transferred to new vehicle');
 
-    // Update route history to mark handoff point
-    const { error: routeHistoryError } = await supabase
-      .from('route_history')
-      .update({ 
-        handoff_id: handoff_id,
-        notes: `Handoff completed from ${handoff.from_vehicle.plate_number} to ${handoff.to_vehicle.plate_number}`,
-      })
-      .eq('batch_id', handoff.from_batch_id)
-      .is('handoff_id', null);
+    // Get vehicle details for notifications
+    const { data: fromVehicle } = await supabase
+      .from('vehicles')
+      .select('plate_number, current_driver_id')
+      .eq('id', handoff.from_vehicle_id)
+      .maybeSingle();
 
-    if (routeHistoryError) {
-      console.error('Error updating route history:', routeHistoryError);
-    }
+    const { data: toVehicle } = await supabase
+      .from('vehicles')
+      .select('plate_number, current_driver_id')
+      .eq('id', handoff.to_vehicle_id)
+      .maybeSingle();
+
+    const { data: batch } = await supabase
+      .from('delivery_batches')
+      .select('name')
+      .eq('id', handoff.from_batch_id)
+      .maybeSingle();
 
     // Send completion notifications
-    if (handoff.from_vehicle?.current_driver_id) {
+    if (fromVehicle?.current_driver_id && batch && toVehicle) {
       await supabase.from('notifications').insert({
-        user_id: handoff.from_vehicle.current_driver_id,
+        user_id: fromVehicle.current_driver_id,
         type: 'handoff_completed',
         title: 'Handoff Completed',
-        message: `Batch ${handoff.batch.name} has been handed off to vehicle ${handoff.to_vehicle.plate_number}`,
+        message: `Batch ${batch.name} has been handed off to vehicle ${toVehicle.plate_number}`,
         related_entity_type: 'handoff',
         related_entity_id: handoff_id,
       });
     }
 
-    if (handoff.to_vehicle?.current_driver_id) {
+    if (toVehicle?.current_driver_id && batch && fromVehicle) {
       await supabase.from('notifications').insert({
-        user_id: handoff.to_vehicle.current_driver_id,
+        user_id: toVehicle.current_driver_id,
         type: 'handoff_completed',
         title: 'Batch Received',
-        message: `You have received batch ${handoff.batch.name} from vehicle ${handoff.from_vehicle.plate_number}`,
+        message: `You have received batch ${batch.name} from vehicle ${fromVehicle.plate_number}`,
         related_entity_type: 'handoff',
         related_entity_id: handoff_id,
       });
@@ -130,7 +130,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error confirming handoff:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
       { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

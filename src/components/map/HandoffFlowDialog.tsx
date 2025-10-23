@@ -41,7 +41,7 @@ export function HandoffFlowDialog({
 
   const fromVehicle = vehicles.find(v => v.id === fromVehicleId);
   const availableVehicles = vehicles.filter(v => v.status === 'available' && v.id !== fromVehicleId);
-  const vehicleBatches = batches.filter(b => b.vehicle_id === fromVehicleId && b.status === 'in-progress');
+  const vehicleBatches = batches.filter(b => b.vehicleId === fromVehicleId && b.status === 'in-progress');
 
   const handleSubmit = async () => {
     if (!fromVehicleId || !toVehicleId || !batchId) {
@@ -84,7 +84,7 @@ export function HandoffFlowDialog({
               <SelectContent>
                 {vehicles.map((vehicle) => (
                   <SelectItem key={vehicle.id} value={vehicle.id}>
-                    {vehicle.plate_number} - {vehicle.type}
+                    {vehicle.plateNumber} - {vehicle.type}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -101,9 +101,9 @@ export function HandoffFlowDialog({
                 </SelectTrigger>
                 <SelectContent>
                   {vehicleBatches.map((batch) => (
-                    <SelectItem key={batch.id} value={batch.id}>
-                      {batch.name} ({batch.total_quantity} items)
-                    </SelectItem>
+                  <SelectItem key={batch.id} value={batch.id}>
+                    {batch.name} ({batch.totalQuantity} items)
+                  </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -132,9 +132,9 @@ export function HandoffFlowDialog({
                 </SelectTrigger>
                 <SelectContent>
                   {availableVehicles.map((vehicle) => (
-                    <SelectItem key={vehicle.id} value={vehicle.id}>
-                      {vehicle.plate_number} - {vehicle.type}
-                    </SelectItem>
+                  <SelectItem key={vehicle.id} value={vehicle.id}>
+                    {vehicle.plateNumber} - {vehicle.type}
+                  </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
