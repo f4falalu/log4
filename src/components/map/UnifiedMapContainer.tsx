@@ -9,6 +9,7 @@ import { WarehousesLayer } from './layers/WarehousesLayer';
 import { DriversLayer } from './layers/DriversLayer';
 import { RoutesLayer } from './layers/RoutesLayer';
 import { BatchesLayer } from './layers/BatchesLayer';
+import { useWorkspace } from '@/contexts/WorkspaceContext';
 import { MAP_DESIGN_SYSTEM, MapMode } from '@/lib/mapDesignSystem';
 import { MAP_CONFIG, TileProvider } from '@/lib/mapConfig';
 import { MapUtils } from '@/lib/mapUtils';
@@ -64,7 +65,7 @@ export function UnifiedMapContainer({
   routes = [],
   center = MAP_CONFIG.defaultCenter,
   zoom = MAP_CONFIG.defaultZoom,
-  tileProvider = 'standard',
+  tileProvider,
   showToolbar = false,
   showBottomPanel = false,
   selectedFacilityIds = [],
@@ -79,7 +80,12 @@ export function UnifiedMapContainer({
   children,
   className,
 }: UnifiedMapContainerProps) {
+  const { workspace } = useWorkspace();
   const [map, setMap] = useState<L.Map | null>(null);
+  
+  // Workspace-aware theme: FleetOps → dark, Storefront → light
+  const effectiveTileProvider = tileProvider || 
+    (workspace === 'fleetops' ? 'cartoDark' : 'cartoLight');
   
   // Determine layout class based on mode
   const layoutClass = mode === 'fullscreen' 
@@ -111,7 +117,7 @@ export function UnifiedMapContainer({
       <LeafletMapCore
         center={center}
         zoom={zoom}
-        tileProvider={tileProvider}
+        tileProvider={effectiveTileProvider}
         showLayerSwitcher={mode === 'fullscreen'}
         showScaleControl={mode === 'fullscreen'}
         showResetControl={mode === 'fullscreen'}

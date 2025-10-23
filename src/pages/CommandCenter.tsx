@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { Facility, Warehouse, DeliveryBatch } from '@/types';
 import KPIMetrics from '@/components/dashboard/KPIMetrics';
 import FleetStatus from '@/components/dashboard/FleetStatus';
-import MapView from '@/components/MapView';
+import { UnifiedMapContainer } from '@/components/map/UnifiedMapContainer';
 import ActiveDeliveriesPanel from '@/components/delivery/ActiveDeliveriesPanel';
 import ActivityTimeline from '@/components/dashboard/ActivityTimeline';
 import BatchDetailsPanel from '@/components/delivery/BatchDetailsPanel';
@@ -92,14 +92,19 @@ const CommandCenter = ({ facilities, warehouses, batches }: CommandCenterProps) 
 
         {/* RIGHT: Map + Details */}
         <div className="lg:col-span-2 space-y-4">
-        <MapView
+        <UnifiedMapContainer
+          mode="dashboard"
           facilities={facilities}
           warehouses={warehouses}
           batches={batches}
           selectedBatchId={selectedBatchId}
-          onBatchClick={handleBatchClick}
           center={[12.0, 8.5]}
           zoom={7}
+          tileProvider="standard"
+          showToolbar={false}
+          showBottomPanel={false}
+          onBatchClick={handleBatchClick}
+          className="rounded-lg overflow-hidden shadow-card border"
         />
 
           {/* Batch Details Panel */}

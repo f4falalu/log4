@@ -33,7 +33,7 @@ import { useWarehouses } from '@/hooks/useWarehouses';
 import { useDrivers } from '@/hooks/useDrivers';
 import { useVehicles } from '@/hooks/useVehicles';
 import { optimizeBatchDelivery, optimizeBatchDeliveryWithAPI } from '@/lib/routeOptimization';
-import MapView from '@/components/MapView';
+import { UnifiedMapContainer } from '@/components/map/UnifiedMapContainer';
 import PayloadPlanner from '@/components/dispatch/PayloadPlanner';
 
 interface TacticalDispatchSchedulerProps {
@@ -636,10 +636,14 @@ const TacticalDispatchScheduler = ({ facilities, batches, onBatchCreate }: Tacti
 
         {/* Column 3: Tactical Map */}
         <div className="flex-1">
-          <MapView
+          <UnifiedMapContainer
+            mode="dashboard"
             facilities={facilities}
             warehouses={warehouses}
             batches={batches}
+            showToolbar={false}
+            showBottomPanel={false}
+            className="h-full w-full rounded-lg overflow-hidden shadow-card border"
           />
         </div>
       </div>

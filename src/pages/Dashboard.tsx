@@ -13,7 +13,7 @@ import {
   CheckCircle,
   Package
 } from 'lucide-react';
-import MapView from '@/components/MapView';
+import { UnifiedMapContainer } from '@/components/map/UnifiedMapContainer';
 
 interface DashboardProps {
   facilities: Facility[];
@@ -174,10 +174,14 @@ const Dashboard = ({ facilities, deliveries }: DashboardProps) => {
           </CardHeader>
           <CardContent>
             {facilities.length > 0 ? (
-              <MapView 
+              <UnifiedMapContainer 
+                mode="embedded"
                 facilities={facilities}
                 center={facilities.length > 0 ? [facilities[0].lat, facilities[0].lng] : undefined}
                 zoom={facilities.length > 1 ? 6 : 10}
+                showToolbar={false}
+                showBottomPanel={false}
+                className="rounded-lg overflow-hidden border"
               />
             ) : (
               <div className="h-[400px] flex items-center justify-center border rounded-lg bg-muted/5">
