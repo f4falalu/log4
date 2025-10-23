@@ -14,9 +14,28 @@ export default {
     },
     extend: {
       colors: {
+        // Existing Shadcn tokens
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
+        
+        // BIKO Design System Tokens
+        'biko-primary': 'hsl(var(--biko-primary))',
+        'biko-primary-600': 'hsl(var(--biko-primary-600))',
+        'biko-primary-700': 'hsl(var(--biko-primary-700))',
+        'biko-secondary': 'hsl(var(--biko-secondary))',
+        'biko-accent': 'hsl(var(--biko-accent))',
+        'biko-success': 'hsl(var(--biko-success))',
+        'biko-warning': 'hsl(var(--biko-warning))',
+        'biko-danger': 'hsl(var(--biko-danger))',
+        'biko-muted': 'hsl(var(--biko-muted))',
+        'biko-bg-dark': 'hsl(var(--biko-bg-dark))',
+        'biko-surface-1': 'hsl(var(--biko-surface-1))',
+        'biko-surface-2': 'hsl(var(--biko-surface-2))',
+        'biko-zone-blue': 'hsl(var(--biko-zone-blue))',
+        'biko-zone-green': 'hsl(var(--biko-zone-green))',
+        'biko-zone-red': 'hsl(var(--biko-zone-red))',
+        'biko-zone-amber': 'hsl(var(--biko-zone-amber))',
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         primary: {
@@ -77,6 +96,35 @@ export default {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+        'biko-sm': 'var(--biko-radius-sm)',
+        'biko-md': 'var(--biko-radius-md)',
+        'biko-lg': 'var(--biko-radius-lg)',
+        'biko-xl': 'var(--biko-radius-xl)',
+      },
+      boxShadow: {
+        'biko-sm': 'var(--biko-shadow-sm)',
+        'biko-md': 'var(--biko-shadow-md)',
+        'biko-lg': 'var(--biko-shadow-lg)',
+        'biko-glow-primary': 'var(--biko-shadow-glow-primary)',
+        'biko-glow-success': 'var(--biko-shadow-glow-success)',
+        'biko-glow-warning': 'var(--biko-shadow-glow-warning)',
+        'biko-glow-danger': 'var(--biko-shadow-glow-danger)',
+      },
+      fontFamily: {
+        biko: ['var(--biko-font-family)'],
+        'biko-mono': ['var(--biko-font-mono)'],
+      },
+      transitionTimingFunction: {
+        'biko': 'var(--biko-ease)',
+        'biko-in': 'var(--biko-ease-in)',
+        'biko-out': 'var(--biko-ease-out)',
+        'biko-in-out': 'var(--biko-ease-in-out)',
+      },
+      transitionDuration: {
+        'biko-fast': 'var(--biko-duration-fast)',
+        'biko-normal': 'var(--biko-duration-normal)',
+        'biko-slow': 'var(--biko-duration-slow)',
+        'biko-slower': 'var(--biko-duration-slower)',
       },
       keyframes: {
         "accordion-down": {

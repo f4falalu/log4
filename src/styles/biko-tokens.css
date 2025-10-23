@@ -1,0 +1,280 @@
+/**
+ * BIKO Tactical Map UI Design Framework
+ * Design Tokens - Single Source of Truth
+ */
+
+:root {
+  /* BIKO Core Colors (Command Center Palette) - HSL Format */
+  --biko-bg-dark: 222.2 84% 4.9%;
+  --biko-surface-1: 215 28% 12%;
+  --biko-surface-2: 215 28% 17%;
+  --biko-primary: 217 91% 60%;        /* Blue action */
+  --biko-primary-600: 217 91% 50%;
+  --biko-primary-700: 217 91% 40%;
+  --biko-secondary: 266 83% 67%;      /* Purple accent */
+  --biko-accent: 189 94% 43%;         /* Cyan info */
+  --biko-success: 142 76% 36%;        /* Green */
+  --biko-warning: 38 92% 50%;         /* Amber */
+  --biko-danger: 0 72% 51%;           /* Red */
+  --biko-muted: 215 20% 65%;
+  --biko-white: 0 0% 100%;
+  --biko-black: 0 0% 0%;
+  
+  /* Zone Colors (with transparency) */
+  --biko-zone-blue: 217 91% 60%;
+  --biko-zone-green: 142 76% 36%;
+  --biko-zone-red: 0 72% 51%;
+  --biko-zone-amber: 38 92% 50%;
+  
+  /* Glass Morphism */
+  --biko-glass: 0 0% 100%;
+  --biko-glass-opacity: 0.04;
+  --biko-glass-border-opacity: 0.08;
+  
+  /* Shadows */
+  --biko-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
+  --biko-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+  --biko-shadow-lg: 0 10px 30px rgba(2, 6, 23, 0.6);
+  --biko-shadow-glow-primary: 0 0 20px hsla(var(--biko-primary) / 0.3);
+  --biko-shadow-glow-success: 0 0 20px hsla(var(--biko-success) / 0.3);
+  --biko-shadow-glow-warning: 0 0 20px hsla(var(--biko-warning) / 0.3);
+  --biko-shadow-glow-danger: 0 0 20px hsla(var(--biko-danger) / 0.3);
+  
+  /* Typography */
+  --biko-font-family: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --biko-font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Monaco, monospace;
+  
+  --biko-text-xs: 0.75rem;    /* 12px */
+  --biko-text-sm: 0.875rem;   /* 14px */
+  --biko-text-base: 1rem;     /* 16px */
+  --biko-text-lg: 1.125rem;   /* 18px */
+  --biko-text-xl: 1.25rem;    /* 20px */
+  --biko-text-2xl: 1.5rem;    /* 24px */
+  
+  --biko-line-height-tight: 1.25;
+  --biko-line-height-normal: 1.5;
+  --biko-line-height-relaxed: 1.75;
+  
+  /* Spacing Scale */
+  --biko-space-0: 0;
+  --biko-space-1: 0.25rem;   /* 4px */
+  --biko-space-2: 0.5rem;    /* 8px */
+  --biko-space-3: 0.75rem;   /* 12px */
+  --biko-space-4: 1rem;      /* 16px */
+  --biko-space-5: 1.5rem;    /* 24px */
+  --biko-space-6: 2rem;      /* 32px */
+  --biko-space-8: 3rem;      /* 48px */
+  --biko-space-10: 4rem;     /* 64px */
+  
+  /* Border Radius */
+  --biko-radius-sm: 0.375rem;   /* 6px */
+  --biko-radius-md: 0.625rem;   /* 10px */
+  --biko-radius-lg: 0.875rem;   /* 14px */
+  --biko-radius-xl: 1rem;       /* 16px */
+  --biko-radius-full: 9999px;
+  
+  /* Motion */
+  --biko-ease: cubic-bezier(0.2, 0.9, 0.2, 1);
+  --biko-ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --biko-ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --biko-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  
+  --biko-duration-fast: 120ms;
+  --biko-duration-normal: 200ms;
+  --biko-duration-slow: 360ms;
+  --biko-duration-slower: 500ms;
+  
+  /* Z-Index Layers */
+  --biko-z-base: 0;
+  --biko-z-dropdown: 1000;
+  --biko-z-sticky: 1020;
+  --biko-z-fixed: 1030;
+  --biko-z-modal-backdrop: 1040;
+  --biko-z-modal: 1050;
+  --biko-z-popover: 1060;
+  --biko-z-tooltip: 1070;
+  
+  /* Map-Specific Z-Index */
+  --biko-map-z-zones: 400;
+  --biko-map-z-routes: 500;
+  --biko-map-z-handoffs: 600;
+  --biko-map-z-facilities: 700;
+  --biko-map-z-vehicles: 800;
+  --biko-map-z-drivers: 900;
+  --biko-map-z-overlays: 1000;
+}
+
+/* FleetOps Operational Dark Theme (Default) */
+.workspace-fleetops,
+.theme-operational-dark {
+  --background: var(--biko-bg-dark);
+  --foreground: 210 40% 98%;
+  --card: var(--biko-surface-1);
+  --card-foreground: 210 40% 98%;
+  --popover: var(--biko-surface-2);
+  --popover-foreground: 210 40% 98%;
+  --primary: var(--biko-primary);
+  --primary-foreground: 210 40% 98%;
+  --secondary: var(--biko-secondary);
+  --secondary-foreground: 210 40% 98%;
+  --muted: var(--biko-muted);
+  --muted-foreground: 215 20% 85%;
+  --accent: var(--biko-accent);
+  --accent-foreground: 210 40% 98%;
+  --destructive: var(--biko-danger);
+  --destructive-foreground: 210 40% 98%;
+  --border: 215 28% 20%;
+  --input: 215 28% 20%;
+  --ring: var(--biko-primary);
+}
+
+/* Pulse Animation for Active Markers */
+@keyframes biko-pulse {
+  0% { 
+    transform: scale(1); 
+    opacity: 0.7; 
+  }
+  50% { 
+    transform: scale(1.6); 
+    opacity: 0.14; 
+  }
+  100% { 
+    transform: scale(1); 
+    opacity: 0.7; 
+  }
+}
+
+.biko-pulse {
+  animation: biko-pulse 1.6s var(--biko-ease) infinite;
+}
+
+/* Glow Animation for Priority Items */
+@keyframes biko-glow {
+  0%, 100% { 
+    box-shadow: 0 0 10px hsla(var(--biko-primary) / 0.4);
+  }
+  50% { 
+    box-shadow: 0 0 20px hsla(var(--biko-primary) / 0.7);
+  }
+}
+
+.biko-glow {
+  animation: biko-glow 2s var(--biko-ease) infinite;
+}
+
+/* Utility Classes */
+.biko-glass {
+  background: hsla(var(--biko-glass) / var(--biko-glass-opacity));
+  backdrop-filter: blur(12px);
+  border: 1px solid hsla(var(--biko-glass) / var(--biko-glass-border-opacity));
+}
+
+.biko-glass-strong {
+  background: hsla(var(--biko-glass) / 0.08);
+  backdrop-filter: blur(16px);
+  border: 1px solid hsla(var(--biko-glass) / 0.12);
+}
+
+/* Gradient Overlays */
+.biko-gradient-primary {
+  background: linear-gradient(135deg, 
+    hsl(var(--biko-primary)) 0%, 
+    hsl(var(--biko-secondary)) 100%
+  );
+}
+
+.biko-gradient-success {
+  background: linear-gradient(135deg, 
+    hsl(var(--biko-success)) 0%, 
+    hsl(var(--biko-accent)) 100%
+  );
+}
+
+.biko-gradient-danger {
+  background: linear-gradient(135deg, 
+    hsl(var(--biko-danger)) 0%, 
+    hsl(var(--biko-warning)) 100%
+  );
+}
+
+/* Focus Styles */
+.biko-focus-ring:focus-visible {
+  outline: 2px solid hsl(var(--biko-primary));
+  outline-offset: 2px;
+}
+
+/* Scrollbar Styling for Dark Theme */
+.biko-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.biko-scrollbar::-webkit-scrollbar-track {
+  background: hsl(var(--biko-surface-1));
+}
+
+.biko-scrollbar::-webkit-scrollbar-thumb {
+  background: hsl(var(--biko-muted) / 0.3);
+  border-radius: var(--biko-radius-full);
+}
+
+.biko-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--biko-muted) / 0.5);
+}
+
+/* Map Control Buttons */
+.biko-map-control {
+  width: 40px;
+  height: 40px;
+  background: hsl(var(--biko-surface-1));
+  border: 1px solid hsl(var(--biko-muted) / 0.2);
+  border-radius: var(--biko-radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--biko-duration-normal) var(--biko-ease);
+  box-shadow: var(--biko-shadow-sm);
+}
+
+.biko-map-control:hover {
+  background: hsl(var(--biko-surface-2));
+  border-color: hsl(var(--biko-primary) / 0.5);
+  transform: translateY(-1px);
+  box-shadow: var(--biko-shadow-md);
+}
+
+.biko-map-control:active {
+  transform: translateY(0);
+}
+
+.biko-map-control.active {
+  background: hsl(var(--biko-primary));
+  border-color: hsl(var(--biko-primary));
+  color: white;
+}
+
+/* Status Badge Colors */
+.biko-status-available {
+  background: hsla(var(--biko-success) / 0.15);
+  color: hsl(var(--biko-success));
+  border: 1px solid hsla(var(--biko-success) / 0.3);
+}
+
+.biko-status-busy {
+  background: hsla(var(--biko-warning) / 0.15);
+  color: hsl(var(--biko-warning));
+  border: 1px solid hsla(var(--biko-warning) / 0.3);
+}
+
+.biko-status-offline {
+  background: hsla(var(--biko-muted) / 0.15);
+  color: hsl(var(--biko-muted));
+  border: 1px solid hsla(var(--biko-muted) / 0.3);
+}
+
+.biko-status-danger {
+  background: hsla(var(--biko-danger) / 0.15);
+  color: hsl(var(--biko-danger));
+  border: 1px solid hsla(var(--biko-danger) / 0.3);
+}

@@ -190,4 +190,84 @@ export const MapIcons = {
       popupAnchor: [0, -size / 2],
     });
   },
+
+  /**
+   * Vehicle marker with payload capacity ring
+   */
+  vehicle: (
+    payloadPct: number = 0, 
+    selected: boolean = false,
+    status: 'available' | 'busy' | 'offline' | 'maintenance' = 'available'
+  ) => {
+    const ringColor = 
+      payloadPct > 90 ? 'hsl(0 72% 51%)' :
+      payloadPct > 60 ? 'hsl(38 92% 50%)' :
+      'hsl(142 76% 36%)';
+    
+    const statusColor = {
+      available: 'hsl(142 76% 36%)',
+      busy: 'hsl(38 92% 50%)',
+      offline: 'hsl(215 20% 65%)',
+      maintenance: 'hsl(266 83% 67%)',
+    }[status];
+    
+    const circumference = 2 * Math.PI * 18;
+    const strokeDasharray = `${(payloadPct / 100) * circumference} ${circumference}`;
+    
+    return L.divIcon({
+      html: `
+        <div class="relative flex items-center justify-center" style="width: 44px; height: 44px;">
+          ${payloadPct > 0 ? `
+            <svg width="44" height="44" class="absolute inset-0" style="transform: rotate(-90deg);">
+              <circle 
+                cx="22" 
+                cy="22" 
+                r="18" 
+                fill="none" 
+                stroke="${ringColor}" 
+                stroke-width="4" 
+                stroke-dasharray="${strokeDasharray}"
+                stroke-linecap="round"
+              />
+            </svg>
+          ` : ''}
+          <div class="relative w-10 h-10 rounded-full flex items-center justify-center text-white text-lg font-semibold shadow-biko-md border-2 border-white ${selected ? 'ring-2 ring-biko-primary ring-offset-2' : ''}" 
+            style="background: ${statusColor};">
+            🚚
+          </div>
+        </div>
+      `,
+      className: '',
+      iconSize: [44, 44],
+      iconAnchor: [22, 22],
+      popupAnchor: [0, -22],
+    });
+  },
+
+  /**
+   * Handoff point marker
+   */
+  handoffPoint: (status: 'planned' | 'pending' | 'completed' | 'cancelled' = 'pending') => {
+    const statusColor = {
+      planned: 'hsl(215 20% 65%)',
+      pending: 'hsl(38 92% 50%)',
+      completed: 'hsl(142 76% 36%)',
+      cancelled: 'hsl(0 72% 51%)',
+    }[status];
+    
+    return L.divIcon({
+      html: `
+        <div class="relative flex items-center justify-center" style="width: 32px; height: 32px;">
+          <div class="w-7 h-7 rounded-full flex items-center justify-center text-sm shadow-biko-md border-2 border-white" 
+            style="background: ${statusColor};">
+            🤝
+          </div>
+        </div>
+      `,
+      className: '',
+      iconSize: [32, 32],
+      iconAnchor: [16, 32],
+      popupAnchor: [0, -32],
+    });
+  },
 };
