@@ -44,17 +44,17 @@ function WorkspaceThemeApplier() {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ErrorBoundary>
-      <AuthProvider>
-        <WorkspaceProvider>
-          <TooltipProvider>
-            <WorkspaceThemeApplier />
-            <Toaster />
-            <BrowserRouter 
-              future={{
-                v7_startTransition: true,
-                v7_relativeSplatPath: true,
-              }}
-            >
+      <BrowserRouter 
+        future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true,
+        }}
+      >
+        <AuthProvider>
+          <WorkspaceProvider>
+            <TooltipProvider>
+              <WorkspaceThemeApplier />
+              <Toaster />
               <MapStateProvider>
                 <Routes>
                   <Route path="/auth" element={<Auth />} />
@@ -103,10 +103,10 @@ const App = () => (
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </MapStateProvider>
-            </BrowserRouter>
-          </TooltipProvider>
-        </WorkspaceProvider>
-      </AuthProvider>
+            </TooltipProvider>
+          </WorkspaceProvider>
+        </AuthProvider>
+      </BrowserRouter>
     </ErrorBoundary>
   </QueryClientProvider>
 );
