@@ -123,6 +123,94 @@ export type Database = {
           },
         ]
       }
+      delivery_schedules: {
+        Row: {
+          confirmed_at: string | null
+          created_at: string | null
+          created_by: string | null
+          dispatched_at: string | null
+          driver_id: string | null
+          facility_ids: string[]
+          id: string
+          notes: string | null
+          optimization_method: string | null
+          planned_date: string
+          route: Json | null
+          status: string | null
+          time_window: string | null
+          title: string
+          total_payload_kg: number | null
+          total_volume_m3: number | null
+          updated_at: string | null
+          vehicle_id: string | null
+          warehouse_id: string
+        }
+        Insert: {
+          confirmed_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          dispatched_at?: string | null
+          driver_id?: string | null
+          facility_ids?: string[]
+          id?: string
+          notes?: string | null
+          optimization_method?: string | null
+          planned_date: string
+          route?: Json | null
+          status?: string | null
+          time_window?: string | null
+          title: string
+          total_payload_kg?: number | null
+          total_volume_m3?: number | null
+          updated_at?: string | null
+          vehicle_id?: string | null
+          warehouse_id: string
+        }
+        Update: {
+          confirmed_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          dispatched_at?: string | null
+          driver_id?: string | null
+          facility_ids?: string[]
+          id?: string
+          notes?: string | null
+          optimization_method?: string | null
+          planned_date?: string
+          route?: Json | null
+          status?: string | null
+          time_window?: string | null
+          title?: string
+          total_payload_kg?: number | null
+          total_volume_m3?: number | null
+          updated_at?: string | null
+          vehicle_id?: string | null
+          warehouse_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_schedules_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_schedules_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_schedules_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       driver_availability: {
         Row: {
           available: boolean | null

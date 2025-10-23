@@ -1,5 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Package, Warehouse, ClipboardList } from 'lucide-react';
+import { Package, Warehouse, ClipboardList, Calendar } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function StorefrontHome() {
@@ -24,6 +24,13 @@ export default function StorefrontHome() {
       icon: Package,
       href: '/storefront/payloads',
       color: 'bg-purple-500'
+    },
+    {
+      title: 'Delivery Schedule Planner',
+      description: 'Plan and optimize multi-day delivery schedules',
+      icon: Calendar,
+      href: '/storefront/schedule-planner',
+      color: 'bg-orange-500'
     }
   ];
 
