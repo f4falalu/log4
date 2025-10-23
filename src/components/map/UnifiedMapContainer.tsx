@@ -26,6 +26,7 @@ export interface UnifiedMapContainerProps {
   drivers?: Driver[];
   batches?: DeliveryBatch[];
   routes?: RouteOptimization[];
+  vehicles?: any[];
   
   // Map configuration
   center?: [number, number];
@@ -35,6 +36,16 @@ export interface UnifiedMapContainerProps {
   // Feature toggles
   showToolbar?: boolean;
   showBottomPanel?: boolean;
+  
+  // Toolbar callbacks
+  onDrawToggle?: () => void;
+  onServiceAreasClick?: () => void;
+  onSearchClick?: () => void;
+  onLayersClick?: () => void;
+  onLegendClick?: () => void;
+  onMeasureClick?: () => void;
+  isDrawing?: boolean;
+  isMeasuring?: boolean;
   
   // Selection state
   selectedFacilityIds?: string[];
@@ -47,6 +58,7 @@ export interface UnifiedMapContainerProps {
   onWarehouseClick?: (id: string) => void;
   onDriverClick?: (id: string) => void;
   onBatchClick?: (id: string) => void;
+  onVehicleClick?: (id: string) => void;
   onMapReady?: (map: L.Map) => void;
   
   // Custom overlays/panels as children
@@ -63,11 +75,20 @@ export function UnifiedMapContainer({
   drivers = [],
   batches = [],
   routes = [],
+  vehicles = [],
   center = MAP_CONFIG.defaultCenter,
   zoom = MAP_CONFIG.defaultZoom,
   tileProvider,
   showToolbar = false,
   showBottomPanel = false,
+  onDrawToggle,
+  onServiceAreasClick,
+  onSearchClick,
+  onLayersClick,
+  onLegendClick,
+  onMeasureClick,
+  isDrawing = false,
+  isMeasuring = false,
   selectedFacilityIds = [],
   selectedWarehouseIds = [],
   selectedDriverId = null,
@@ -76,6 +97,7 @@ export function UnifiedMapContainer({
   onWarehouseClick,
   onDriverClick,
   onBatchClick,
+  onVehicleClick,
   onMapReady,
   children,
   className,
@@ -159,40 +181,42 @@ export function UnifiedMapContainer({
       
       {/* Conditional UI Controls */}
       {showToolbar && mode === 'fullscreen' && (
-        <div className={MAP_DESIGN_SYSTEM.layout.toolbar.position}>
-          <MapToolsToolbar
-            onLocateMe={() => {
-              if (map && navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition((position) => {
-                  map.setView([position.coords.latitude, position.coords.longitude], 13);
-                });
-              }
-            }}
-            onServiceAreasClick={() => {}}
-            onSearchClick={() => {}}
-            onDrawToggle={() => {}}
-            onLayersClick={() => {}}
-            onMeasureClick={() => {}}
-            onLegendClick={() => {}}
-            isDrawing={false}
-            isMeasuring={false}
-          />
-        </div>
+        <MapToolsToolbar
+          map={map}
+          onLocateMe={() => {
+            if (map && navigator.geolocation) {
+              navigator.geolocation.getCurrentPosition((position) => {
+                map.setView([position.coords.latitude, position.coords.longitude], 13);
+              });
+            }
+          }}
+          onServiceAreasClick={onServiceAreasClick || (() => {})}
+          onSearchClick={onSearchClick || (() => {})}
+          onDrawToggle={onDrawToggle || (() => {})}
+          onLayersClick={onLayersClick || (() => {})}
+          onMeasureClick={onMeasureClick || (() => {})}
+          onLegendClick={onLegendClick || (() => {})}
+          isDrawing={isDrawing}
+          isMeasuring={isMeasuring}
+        />
       )}
       
       {showBottomPanel && mode === 'fullscreen' && (
-        <div className={MAP_DESIGN_SYSTEM.layout.bottomPanel.position}>
-          <BottomDataPanel 
-            drivers={drivers}
-            onDriverClick={(driverId) => {
-              onDriverClick?.(driverId);
-              const driver = drivers.find(d => d.id === driverId);
-              if (driver?.currentLocation && map) {
-                map.setView([driver.currentLocation.lat, driver.currentLocation.lng], 14);
-              }
-            }}
-          />
-        </div>
+        <BottomDataPanel 
+          drivers={drivers}
+          vehicles={vehicles}
+          facilities={facilities}
+          warehouses={warehouses}
+          onDriverClick={(driverId) => {
+            onDriverClick?.(driverId);
+            const driver = drivers.find(d => d.id === driverId);
+            if (driver?.currentLocation && map) {
+              map.setView([driver.currentLocation.lat, driver.currentLocation.lng], 14);
+            }
+          }}
+          onVehicleClick={(vehicleId) => onVehicleClick?.(vehicleId)}
+          onFacilityClick={(facilityId) => onFacilityClick?.(facilityId)}
+        />
       )}
       
       {/* Custom Context Overlays */}

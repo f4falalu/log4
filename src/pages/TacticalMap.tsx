@@ -7,6 +7,8 @@ import { useRealtimeZones } from '@/hooks/useRealtimeZones';
 import { useZoneDrawing } from '@/hooks/useZoneDrawing';
 import { useFacilities } from '@/hooks/useFacilities';
 import { useWarehouses } from '@/hooks/useWarehouses';
+import { useVehicles } from '@/hooks/useVehicles';
+import { useDeliveryBatches } from '@/hooks/useDeliveryBatches';
 import { useWorkspace } from '@/contexts/WorkspaceContext';
 import { MapToolsToolbar } from '@/components/map/MapToolsToolbar';
 import { ServiceAreasMenu } from '@/components/map/ServiceAreasMenu';
@@ -35,6 +37,8 @@ export default function TacticalMap() {
   const { data: zones = [] } = useServiceZones();
   const { data: facilities = [] } = useFacilities();
   const { data: warehouses = [] } = useWarehouses();
+  const { data: vehicles = [] } = useVehicles();
+  const { data: batches = [] } = useDeliveryBatches();
   
   const [visibleZones, setVisibleZones] = useState<Set<string>>(
     new Set(zones.map(z => z.id))
@@ -43,6 +47,7 @@ export default function TacticalMap() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [layersOpen, setLayersOpen] = useState(false);
   const [legendOpen, setLegendOpen] = useState(false);
+  const [isMeasuring, setIsMeasuring] = useState(false);
   
   const mapInstanceRef = useRef<L.Map | null>(null);
   const drawLayerRef = useRef<L.FeatureGroup | null>(null);
@@ -261,9 +266,25 @@ export default function TacticalMap() {
         facilities={facilities}
         warehouses={warehouses}
         drivers={drivers}
+        batches={batches}
+        vehicles={vehicles}
         showToolbar={true}
         showBottomPanel={true}
         onMapReady={handleMapCapture}
+        onDrawToggle={handleStartDrawing}
+        onServiceAreasClick={() => setServiceAreasOpen(!serviceAreasOpen)}
+        onSearchClick={() => setSearchOpen(!searchOpen)}
+        onLayersClick={() => setLayersOpen(!layersOpen)}
+        onLegendClick={() => setLegendOpen(!legendOpen)}
+        onMeasureClick={() => setIsMeasuring(!isMeasuring)}
+        isDrawing={drawingState.isDrawing}
+        isMeasuring={isMeasuring}
+        onDriverClick={(id) => console.log('Driver clicked:', id)}
+        onVehicleClick={(id) => console.log('Vehicle clicked:', id)}
+        onFacilityClick={(id) => {
+          console.log('Facility clicked:', id);
+          handleCenterOnZone(id);
+        }}
       >
         {/* Custom layers as children */}
         <ZonesLayer
@@ -285,32 +306,6 @@ export default function TacticalMap() {
           }}
         />
       </UnifiedMapContainer>
-
-      {/* Map Controls Toolbar */}
-      <MapToolsToolbar
-        onDrawToggle={handleStartDrawing}
-        onServiceAreasClick={() => setServiceAreasOpen(!serviceAreasOpen)}
-        onSearchClick={() => setSearchOpen(!searchOpen)}
-        onLayersClick={() => setLayersOpen(!layersOpen)}
-        onLegendClick={() => setLegendOpen(!legendOpen)}
-        onMeasureClick={() => {
-          toast.info('Measure tool coming soon');
-        }}
-        onLocateMe={() => {
-          if (mapInstanceRef.current && navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition((position) => {
-              mapInstanceRef.current?.setView(
-                [position.coords.latitude, position.coords.longitude],
-                15
-              );
-              toast.success('Location found');
-            }, () => {
-              toast.error('Could not get your location');
-            });
-          }
-        }}
-        isDrawing={drawingState.isDrawing}
-      />
 
       {/* Drawing Controls Overlay */}
       {drawingState.isDrawing && (
