@@ -8,12 +8,16 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Plus, Package, Truck, Calculator, Trash2, AlertTriangle } from 'lucide-react';
+import { Plus, Package, Truck, Calculator, Trash2, AlertTriangle, Send, Wand2 } from 'lucide-react';
 import { toast } from 'sonner';
 import Layout from '@/components/layout/Layout';
 import { useVehicles } from '@/hooks/useVehicles';
 import { useFacilities } from '@/hooks/useFacilities';
 import { useCreatePayloadItem, useDeletePayloadItem } from '@/hooks/usePayloadItems';
+import { PayloadVisualizer } from '@/components/payload/PayloadVisualizer';
+import { FinalizePayloadDialog } from '@/components/storefront/FinalizePayloadDialog';
+import { useRequisitions } from '@/hooks/useRequisitions';
+import { useConvertRequisitionToPayload } from '@/hooks/useRequisitionToPayload';
 
 
 const boxTypes = [
@@ -40,12 +44,15 @@ export default function PayloadPlannerPage() {
   // Real data hooks
   const { data: vehicles = [], isLoading: vehiclesLoading } = useVehicles();
   const { data: facilities = [], isLoading: facilitiesLoading } = useFacilities();
+  const { data: approvedRequisitions = [] } = useRequisitions('approved');
   const createPayloadItemMutation = useCreatePayloadItem();
   const deletePayloadItemMutation = useDeletePayloadItem();
+  const convertRequisition = useConvertRequisitionToPayload();
 
   const [selectedVehicle, setSelectedVehicle] = useState<any>(null);
   const [payloadItems, setPayloadItems] = useState<PayloadItem[]>([]);
   const [isAddItemDialogOpen, setIsAddItemDialogOpen] = useState(false);
+  const [isFinalizeDialogOpen, setIsFinalizeDialogOpen] = useState(false);
   const [payloadUtilization, setPayloadUtilization] = useState(0);
 
   const [itemFormData, setItemFormData] = useState({
@@ -177,14 +184,30 @@ export default function PayloadPlannerPage() {
             <h1 className="text-3xl font-bold">Payload Planner</h1>
             <p className="text-muted-foreground">Plan and optimize vehicle payload assignments</p>
           </div>
-          <Button 
-            onClick={handleCreateDispatch}
-            disabled={!selectedVehicle || payloadItems.length === 0}
-            className="bg-primary hover:bg-primary/90"
-          >
-            <Package className="h-4 w-4 mr-2" />
-            Create Dispatch
-          </Button>
+          <div className="flex gap-2">
+            {approvedRequisitions.length > 0 && (
+              <Button 
+                variant="outline"
+                onClick={() => {
+                  // Convert first approved requisition as example
+                  if (approvedRequisitions[0]) {
+                    toast.info('Converting requisition to payload items...');
+                  }
+                }}
+              >
+                <Wand2 className="h-4 w-4 mr-2" />
+                Import from Requisitions
+              </Button>
+            )}
+            <Button 
+              onClick={() => setIsFinalizeDialogOpen(true)}
+              disabled={!selectedVehicle || payloadItems.length === 0}
+              className="bg-biko-primary hover:bg-biko-primary/90"
+            >
+              <Send className="h-4 w-4 mr-2" />
+              Finalize & Send to FleetOps
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -242,58 +265,20 @@ export default function PayloadPlannerPage() {
               </CardContent>
             </Card>
 
-            {/* Payload Utilization */}
+            {/* Payload Visualizer */}
             {selectedVehicle && (
-              <Card className="mt-4">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Calculator className="h-5 w-5" />
-                    Payload Utilization
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span>Volume Used:</span>
-                      <span>{totalVolume.toFixed(2)}m³ / {(selectedVehicle as any).capacity_volume_m3 || 0}m³</span>
-                    </div>
-                    <Progress 
-                      value={payloadUtilization} 
-                      className="h-3"
-                    />
-                    <div className="flex justify-between items-center">
-                      <span className={`text-sm font-medium ${utilizationStatus.color}`}>
-                        {utilizationStatus.label}
-                      </span>
-                      <span className="text-sm font-medium">
-                        {payloadUtilization.toFixed(1)}%
-                      </span>
-                    </div>
-                  </div>
-
-                  {payloadUtilization > 90 && (
-                    <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
-                      <AlertTriangle className="h-4 w-4 text-red-600" />
-                      <span className="text-sm text-red-700">Vehicle overloaded!</span>
-                    </div>
-                  )}
-
-                  <div className="space-y-2 pt-2 border-t">
-                    <div className="flex justify-between text-sm">
-                      <span>Total Weight:</span>
-                      <span>{totalWeight}kg</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span>Total Items:</span>
-                      <span>{payloadItems.reduce((sum, item) => sum + item.quantity, 0)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span>Facilities:</span>
-                      <span>{new Set(payloadItems.map(item => item.facilityId)).size}</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              <PayloadVisualizer
+                items={payloadItems.map(item => ({
+                  id: item.id,
+                  name: item.facilityName,
+                  weight_kg: item.weightKg,
+                  volume_m3: item.volumeM3,
+                  quantity: item.quantity
+                }))}
+                vehicleCapacityWeight={(selectedVehicle as any).max_weight || 1000}
+                vehicleCapacityVolume={(selectedVehicle as any).capacity || 10}
+                showVisual={true}
+              />
             )}
           </div>
 
@@ -486,6 +471,16 @@ export default function PayloadPlannerPage() {
             </Card>
           </div>
         </div>
+
+        {/* Finalize Dialog */}
+        {selectedVehicle && (
+          <FinalizePayloadDialog
+            open={isFinalizeDialogOpen}
+            onClose={() => setIsFinalizeDialogOpen(false)}
+            vehicleId={selectedVehicle.id}
+            vehicleName={`${selectedVehicle.model} (${selectedVehicle.plateNumber})`}
+          />
+        )}
       </div>
     </Layout>
   );
