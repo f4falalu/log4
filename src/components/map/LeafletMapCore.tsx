@@ -81,8 +81,12 @@ export function LeafletMapCore({
       }).addTo(map);
     }
 
-    // Add zoom control to bottom right
-    L.control.zoom({ position: 'bottomright' }).addTo(map);
+    // Add zoom control to top right
+    L.control.zoom({ 
+      position: 'topright',
+      zoomInTitle: 'Zoom in',
+      zoomOutTitle: 'Zoom out'
+    }).addTo(map);
 
     mapRef.current = map;
 

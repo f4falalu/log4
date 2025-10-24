@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+} from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -64,16 +64,16 @@ export function HandoffFlowDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[500px]" aria-describedby="handoff-dialog-description">
-        <DialogHeader>
-          <DialogTitle>Create Handoff</DialogTitle>
-          <DialogDescription id="handoff-dialog-description">
+    <Drawer open={open} onOpenChange={(open) => !open && onClose()}>
+      <DrawerContent className="max-h-[85vh]" aria-describedby="handoff-drawer-description">
+        <DrawerHeader>
+          <DrawerTitle>Create Handoff</DrawerTitle>
+          <DrawerDescription id="handoff-drawer-description">
             Transfer a batch from one vehicle to another at a designated location.
-          </DialogDescription>
-        </DialogHeader>
+          </DrawerDescription>
+        </DrawerHeader>
 
-        <div className="space-y-4 py-4">
+        <div className="space-y-4 px-4 py-4 overflow-y-auto max-h-[calc(85vh-200px)]">
           {/* From Vehicle */}
           <div className="space-y-2">
             <Label htmlFor="from-vehicle">From Vehicle</Label>
@@ -118,7 +118,7 @@ export function HandoffFlowDialog({
           {/* Arrow */}
           {fromVehicleId && (
             <div className="flex items-center justify-center">
-              <ArrowRight className="w-6 h-6 text-biko-primary" aria-hidden="true" />
+              <ArrowRight className="w-6 h-6 text-primary" aria-hidden="true" />
             </div>
           )}
 
@@ -179,7 +179,7 @@ export function HandoffFlowDialog({
           )}
         </div>
 
-        <DialogFooter>
+        <DrawerFooter>
           <Button variant="outline" onClick={onClose} disabled={isCreating}>
             Cancel
           </Button>
@@ -190,8 +190,8 @@ export function HandoffFlowDialog({
           >
             {isCreating ? 'Creating...' : 'Create Handoff'}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </DrawerFooter>
+      </DrawerContent>
+    </Drawer>
   );
 }

@@ -167,3 +167,36 @@
   --shadow-xl: var(--shadow-xl);
   --shadow-2xl: var(--shadow-2xl);
 }
+
+/* Leaflet Map Controls Styling */
+@layer components {
+  :global(.leaflet-control-zoom) {
+    border: 1px solid oklch(var(--border)) !important;
+    border-radius: var(--radius) !important;
+    box-shadow: var(--shadow-sm) !important;
+    background: oklch(var(--background)) !important;
+  }
+
+  :global(.leaflet-control-zoom a) {
+    color: oklch(var(--foreground)) !important;
+    background: oklch(var(--background)) !important;
+    border-bottom: 1px solid oklch(var(--border)) !important;
+    width: 32px !important;
+    height: 32px !important;
+    line-height: 32px !important;
+    transition: background-color 0.2s ease;
+  }
+
+  :global(.leaflet-control-zoom a:hover) {
+    background: oklch(var(--muted)) !important;
+  }
+
+  :global(.leaflet-control-zoom a.leaflet-disabled) {
+    opacity: 0.4 !important;
+    cursor: not-allowed !important;
+  }
+
+  :global(.leaflet-control-zoom a:last-child) {
+    border-bottom: none !important;
+  }
+}

@@ -72,7 +72,7 @@ export function BottomDataPanel({
   };
 
   return (
-    <div className="absolute bottom-0 left-0 right-0 h-60 bg-background/95 backdrop-blur border-t z-[1000]">
+    <div className="absolute bottom-0 left-0 right-0 h-60 bg-background border-t border-border shadow-lg z-[999]">
       <Tabs defaultValue="drivers" className="h-full flex flex-col">
         <div className="flex items-center justify-between px-4 pt-3 pb-2">
           <TabsList>
