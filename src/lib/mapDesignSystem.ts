@@ -12,21 +12,21 @@ export const MAP_DESIGN_SYSTEM = {
       position: 'absolute top-24 left-4 z-[1000]',
       buttonSize: 'h-10 w-10',
       gap: 'gap-2',
-      container: 'flex flex-col bg-background/95 backdrop-blur rounded-lg shadow-lg border p-2',
+      container: 'flex flex-col bg-background/95 backdrop-blur-sm rounded-lg shadow-sm border p-2',
     },
     
     // Bottom data panel
     bottomPanel: {
       height: 'h-60',
       position: 'absolute bottom-0 left-0 right-0 z-[999]',
-      container: 'bg-background/95 backdrop-blur border-t',
+      container: 'bg-background/95 backdrop-blur-sm border-t shadow-sm',
     },
     
     // Side overlay panel
     sidePanel: {
       width: 'w-80 max-w-[90vw]',
       position: 'absolute right-4 top-4 bottom-4 z-[1000]',
-      container: 'bg-background/95 backdrop-blur border rounded-lg shadow-lg',
+      container: 'bg-background/95 backdrop-blur-sm border rounded-lg shadow-md',
     },
     
     // Floating card overlays
@@ -35,25 +35,25 @@ export const MAP_DESIGN_SYSTEM = {
       topLeft: 'absolute top-4 left-20 z-[1000]', // After toolbar
       bottomRight: 'absolute bottom-4 right-4 z-[1000]',
       bottomLeft: 'absolute bottom-4 left-4 z-[1000]',
-      container: 'bg-background/95 backdrop-blur border rounded-lg shadow-lg',
+      container: 'bg-card backdrop-blur-sm border rounded-lg shadow-md',
     },
   },
   
   // Visual styling tokens
   styling: {
     controlButton: cn(
-      'rounded-full bg-background/95 backdrop-blur',
+      'rounded-lg bg-background/95 backdrop-blur-sm',
       'hover:bg-accent hover:text-accent-foreground',
       'transition-colors shadow-sm border'
     ),
     panel: cn(
-      'bg-background/95 backdrop-blur',
-      'border rounded-lg shadow-lg'
+      'bg-card backdrop-blur-sm',
+      'border rounded-lg shadow-md'
     ),
     selectedMarker: 'ring-2 ring-primary ring-offset-2',
     floatingCard: cn(
-      'bg-card border rounded-lg shadow-lg',
-      'backdrop-blur-sm bg-opacity-95'
+      'bg-card border rounded-lg shadow-md',
+      'backdrop-blur-sm'
     ),
   },
   
