@@ -18,17 +18,17 @@ const navItems = [
 
 export function FleetOpsLayout() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800">
-      <header className="bg-slate-900 border-b border-slate-700">
-        <div className="max-w-[2000px] mx-auto px-4 h-16 flex items-center justify-between">
+    <div className="min-h-screen bg-background">
+      <header className="border-b border-border bg-card">
+        <div className="max-w-[2000px] mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-primary rounded flex items-center justify-center">
+              <div className="w-8 h-8 bg-primary rounded-md flex items-center justify-center">
                 <Package className="w-5 h-5 text-primary-foreground" />
               </div>
               <div className="flex flex-col">
-                <span className="font-bold text-lg leading-none text-white">BIKO FleetOps</span>
-                <span className="text-xs text-slate-400">Operations & Delivery</span>
+                <span className="font-semibold text-base leading-none">BIKO FleetOps</span>
+                <span className="text-xs text-muted-foreground">Operations & Delivery</span>
               </div>
             </div>
             <nav className="hidden md:flex items-center gap-1">
@@ -39,10 +39,10 @@ export function FleetOpsLayout() {
                   end={item.end}
                   className={({ isActive }) =>
                     cn(
-                      'flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors',
+                      'flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-colors',
                       isActive
-                        ? 'bg-slate-800 text-white'
-                        : 'text-slate-300 hover:bg-slate-800/50 hover:text-white'
+                        ? 'bg-muted text-foreground'
+                        : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
                     )
                   }
                 >
@@ -59,7 +59,7 @@ export function FleetOpsLayout() {
           </div>
         </div>
       </header>
-      <main className="h-[calc(100vh-4rem)]">
+      <main className="h-[calc(100vh-3.5rem)]">
         <Outlet />
       </main>
     </div>
