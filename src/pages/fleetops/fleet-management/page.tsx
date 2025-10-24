@@ -1,39 +1,199 @@
-import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState, ReactNode, ErrorInfo } from 'react';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from '@/components/ui/select';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogFooter, 
+  DialogHeader, 
+  DialogTitle,
+  DialogTrigger 
+} from '@/components/ui/dialog';
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Edit, Trash2, Building2, Truck, Users, TreePine } from 'lucide-react';
+import { 
+  Plus, 
+  Edit, 
+  Trash2, 
+  Building2, 
+  Truck, 
+  Users, 
+  TreePine, 
+  Search, 
+  Filter, 
+  Download,
+  ChevronDown,
+  ChevronRight
+} from 'lucide-react';
 import { toast } from 'sonner';
-import Layout from '@/components/layout/Layout';
-import { useFleets, useCreateFleet, useUpdateFleet, useDeleteFleet } from '@/hooks/useFleets';
-import { useVendors, useCreateVendor, useUpdateVendor, useDeleteVendor } from '@/hooks/useVendors';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import { Skeleton } from '@/components/ui/skeleton';
+import { 
+  useFleets, 
+  useCreateFleet, 
+  useUpdateFleet, 
+  useDeleteFleet 
+} from '@/hooks/useFleets';
+import { 
+  useVendors, 
+  useCreateVendor, 
+  useUpdateVendor, 
+  useDeleteVendor 
+} from '@/hooks/useVendors';
 import { useVehicles } from '@/hooks/useVehicles';
 import { FleetHierarchyVisualization } from '@/components/fleet/FleetHierarchyVisualization';
+import FleetManagementSkeleton from '@/components/fleet/FleetManagementSkeleton';
+
+// Add error boundary to catch and display errors
+class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean }> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('Error in FleetManagement:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="p-4 text-destructive">
+          <h2 className="text-xl font-bold mb-2">Something went wrong</h2>
+          <p>Please try refreshing the page or contact support if the problem persists.</p>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
 
 export default function FleetManagementPage() {
-  // Real data hooks
-  const { data: fleets = [], isLoading: fleetsLoading } = useFleets();
-  const { data: vendors = [], isLoading: vendorsLoading } = useVendors();
-  const { data: vehicles = [], isLoading: vehiclesLoading } = useVehicles();
+  console.log('Rendering FleetManagementPage');
+  
+  // Data fetching with loading and error states
+  const { 
+    data: fleets = [], 
+    isLoading: fleetsLoading, 
+    isError: fleetsError,
+    error: fleetsErrorData
+  } = useFleets();
+  
+  const { 
+    data: vendors = [], 
+    isLoading: vendorsLoading, 
+    isError: vendorsError,
+    error: vendorsErrorData
+  } = useVendors();
+  
+  const { 
+    data: vehicles = [], 
+    isLoading: vehiclesLoading, 
+    isError: vehiclesError,
+    error: vehiclesErrorData
+  } = useVehicles();
 
+  // Log any errors
+  React.useEffect(() => {
+    if (fleetsError) {
+      console.error('Error fetching fleets:', fleetsErrorData);
+    }
+    if (vendorsError) {
+      console.error('Error fetching vendors:', vendorsErrorData);
+    }
+    if (vehiclesError) {
+      console.error('Error fetching vehicles:', vehiclesErrorData);
+    }
+  }, [fleetsError, vendorsError, vehiclesError, fleetsErrorData, vendorsErrorData, vehiclesErrorData]);
+
+  // Mutations
   const createFleetMutation = useCreateFleet();
   const updateFleetMutation = useUpdateFleet();
   const deleteFleetMutation = useDeleteFleet();
-
   const createVendorMutation = useCreateVendor();
   const updateVendorMutation = useUpdateVendor();
   const deleteVendorMutation = useDeleteVendor();
+
+  // Local state
   const [activeTab, setActiveTab] = useState('fleets');
   const [isFleetDialogOpen, setIsFleetDialogOpen] = useState(false);
   const [isVendorDialogOpen, setIsVendorDialogOpen] = useState(false);
   const [editingFleet, setEditingFleet] = useState<any>(null);
   const [editingVendor, setEditingVendor] = useState<any>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    fleets: true,
+    vendors: false,
+    vehicles: false
+  });
+
+  // Derived state
+  const isLoading = fleetsLoading || vendorsLoading || vehiclesLoading;
+  const hasError = fleetsError || vendorsError || vehiclesError;
+
+  // Toggle section expansion
+  const toggleSection = (section: string) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
+  };
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="container mx-auto p-6">
+        <FleetManagementSkeleton />
+      </div>
+    );
+  }
+
+  // Show error state
+  if (hasError) {
+    return (
+      <div className="container mx-auto p-6">
+        <Card className="border-destructive/20 bg-destructive/5">
+          <CardHeader>
+            <CardTitle className="text-destructive">Error Loading Data</CardTitle>
+            <CardDescription>There was an error loading the fleet management data. Please try again later.</CardDescription>
+          </CardHeader>
+          <CardFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => window.location.reload()}
+              className="border-destructive/20 text-destructive hover:bg-destructive/10"
+            >
+              Retry
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
+    );
+  }
 
   const [fleetFormData, setFleetFormData] = useState({
     name: '',

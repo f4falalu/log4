@@ -22,28 +22,49 @@ export interface CreateVendorData {
 }
 
 export function useVendors() {
-  return useQuery({
+  return useQuery<Vendor[]>({
     queryKey: ['vendors'],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
-        .from('vendors')
-        .select(`
-          *,
-          fleets(count)
-        `)
-        .order('created_at', { ascending: false });
+      try {
+        const { data, error } = await supabase
+          .from('vendors')
+          .select(`
+            *,
+            fleets(count)
+          `)
+          .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Error fetching vendors:', error);
+        if (error) {
+          console.error('Error fetching vendors:', error);
+          throw error;
+        }
+
+        // Handle case where data is null or undefined
+        if (!data) {
+          console.warn('No vendors data returned from the database');
+          return [];
+        }
+
+        // Transform the data to include fleet count with null checks
+        return data.map(vendor => ({
+          id: vendor.id,
+          name: vendor.name || 'Unnamed Vendor',
+          contact_name: vendor.contact_name || '',
+          contact_phone: vendor.contact_phone || '',
+          email: vendor.email || '',
+          address: vendor.address || '',
+          created_at: vendor.created_at,
+          fleet_count: Array.isArray(vendor.fleets) ? vendor.fleets.length : 0
+        }));
+      } catch (error) {
+        console.error('Error in useVendors hook:', error);
         throw error;
       }
-
-      // Transform the data to include fleet count
-      return data?.map(vendor => ({
-        ...vendor,
-        fleet_count: Array.isArray(vendor.fleets) ? vendor.fleets.length : 0
-      })) as Vendor[];
     },
+    // Add retry logic
+    retry: 2,
+    // Add stale time to prevent unnecessary refetches
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 }
 
