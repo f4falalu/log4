@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/components/ui/sonner';
-import { useAddFacility } from '@/hooks/useFacilities';
+// import { useAddFacility } from '@/hooks/useFacilities'; // TODO: Implement this hook
 import { 
   Upload, 
   Building, 
@@ -41,7 +41,7 @@ const FacilityManager = ({ facilities, onFacilitiesUpdate }: FacilityManagerProp
     columnInfo?: string;
   } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const addFacility = useAddFacility();
+  // const addFacility = useAddFacility(); // TODO: Implement this hook
 
   // Flexible column mapping to handle different CSV formats
   const mapColumns = (row: any): CSVFacility => {

@@ -73,7 +73,11 @@ const App = () => (
                     <Route path="batches" element={<BatchManagement />} />
                     <Route path="tactical" element={<TacticalMap />} />
                     <Route path="vehicles" element={<VehicleManagementPage />} />
-                    <Route path="fleet-management" element={<FleetManagement />} />
+                    <Route path="fleet-management" element={
+                      <ErrorBoundary>
+                        <FleetManagement />
+                      </ErrorBoundary>
+                    } />
                     <Route path="reports" element={<ReportsPageWrapper />} />
                   </Route>
 
