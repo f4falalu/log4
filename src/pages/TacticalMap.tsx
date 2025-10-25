@@ -7,28 +7,18 @@ import { useVehicles } from '@/hooks/useVehicles';
 import { useDeliveryBatches } from '@/hooks/useDeliveryBatches';
 import { useRealtimeDrivers } from '@/hooks/useRealtimeDrivers';
 import { useRealtimeZones } from '@/hooks/useRealtimeZones';
-import { useRealtimeVehicles } from '@/hooks/useRealtimeVehicles';
-import { useRealtimeDeliveries } from '@/hooks/useRealtimeDeliveries';
 import { useMapLayers } from '@/hooks/useMapLayers';
 import { UnifiedMapContainer } from '@/components/map/UnifiedMapContainer';
 import { MapInstanceCapture } from '@/components/map/MapInstanceCapture';
-import { OperationalContextBar } from '@/components/map/ui/OperationalContextBar';
+import { MapToolbar } from '@/components/map/ui/MapToolbar';
 import { CommandSidebar } from '@/components/map/ui/CommandSidebar';
-import { MissionControlPanel } from '@/components/map/ui/MissionControlPanel';
-import { DriverDrawer } from '@/components/map/drawers/DriverDrawer';
-import { VehicleDrawer } from '@/components/map/drawers/VehicleDrawer';
-import { BatchDrawer } from '@/components/map/drawers/BatchDrawer';
+import { InsightBar } from '@/components/map/ui/InsightBar';
+import { PanelDrawer } from '@/components/map/ui/PanelDrawer';
 import { ServiceAreasMenu } from '@/components/map/ServiceAreasMenu';
 import { DrawControls } from '@/components/map/DrawControls';
-import { MapToolsToolbar } from '@/components/map/MapToolsToolbar';
-import { SearchPanel } from '@/components/map/SearchPanel';
-import { LayersPanel } from '@/components/map/LayersPanel';
-import { DeliveriesLayer } from '@/components/map/layers/DeliveriesLayer';
-import { RouteOptimizationDialog } from '@/components/map/RouteOptimizationDialog';
 import type { ServiceZone } from '@/types/zones';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { MAP_CONFIG } from '@/lib/mapConfig';
 import L from 'leaflet';
 import 'leaflet-draw';
 
@@ -43,20 +33,11 @@ export default function TacticalMap() {
   
   useRealtimeDrivers();
   useRealtimeZones();
-  useRealtimeVehicles();
-  useRealtimeDeliveries();
   
   const [serviceAreasOpen, setServiceAreasOpen] = useState(false);
   const [isDrawing, setIsDrawing] = useState(false);
   const [visibleZones, setVisibleZones] = useState<Set<string>>(new Set());
   const [editingZone, setEditingZone] = useState<string | null>(null);
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [layersOpen, setLayersOpen] = useState(false);
-  const [legendOpen, setLegendOpen] = useState(false);
-  const [isMeasuring, setIsMeasuring] = useState(false);
-  const [optimizeDialogOpen, setOptimizeDialogOpen] = useState(false);
-  const [selectedDrawerType, setSelectedDrawerType] = useState<'driver' | 'vehicle' | 'batch' | null>(null);
-  const [selectedDrawerId, setSelectedDrawerId] = useState<string | null>(null);
   
   const mapInstanceRef = useRef<L.Map | null>(null);
   const drawingLayerRef = useRef<L.FeatureGroup | null>(null);
@@ -147,56 +128,10 @@ export default function TacticalMap() {
     toast.success('Location found');
   }, []);
 
-  const handleLocateMe = useCallback(() => {
-    if (!mapInstanceRef.current) return;
-    
-    if ('geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          mapInstanceRef.current?.setView([latitude, longitude], 15);
-          toast.success('Location found');
-        },
-        (error) => {
-          console.error('Geolocation error:', error);
-          toast.error('Could not get your location');
-        }
-      );
-    } else {
-      toast.error('Geolocation is not supported by your browser');
-    }
-  }, []);
-
-  const handleEntityClick = (type: 'driver' | 'vehicle' | 'batch', id: string) => {
-    setSelectedDrawerType(type);
-    setSelectedDrawerId(id);
-  };
-
-  const handleCloseDrawer = () => {
-    setSelectedDrawerType(null);
-    setSelectedDrawerId(null);
-  };
-
   return (
     <div className="flex flex-col h-screen overflow-hidden">
-      {/* Operational Context Bar */}
-      <OperationalContextBar
-        onOptimizeClick={() => setOptimizeDialogOpen(true)}
-        onCreateBatchClick={() => {
-          // TODO: Implement create batch dialog
-          console.log('Create batch clicked');
-        }}
-      />
-      
-      {/* ARIA Live Region for Alerts */}
-      <div 
-        role="status" 
-        aria-live="polite" 
-        aria-atomic="true"
-        className="sr-only"
-      >
-        {/* Alert messages will be announced here */}
-      </div>
+      {/* Top Toolbar */}
+      <MapToolbar />
       
       <div className="flex flex-1 overflow-hidden">
         {/* Map Area */}
@@ -211,40 +146,7 @@ export default function TacticalMap() {
             showToolbar={false}
             showBottomPanel={false}
             onMapReady={handleMapCapture}
-          >
-            {/* Floating Map Tools Toolbar */}
-            <MapToolsToolbar
-              map={mapInstanceRef.current}
-              onLocateMe={handleLocateMe}
-              onServiceAreasClick={() => setServiceAreasOpen(!serviceAreasOpen)}
-              onSearchClick={() => setSearchOpen(!searchOpen)}
-              onDrawToggle={() => setIsDrawing(!isDrawing)}
-              onLayersClick={() => setLayersOpen(!layersOpen)}
-              onMeasureClick={() => setIsMeasuring(!isMeasuring)}
-              onLegendClick={() => setLegendOpen(!legendOpen)}
-              isDrawing={isDrawing}
-              isMeasuring={isMeasuring}
-            />
-
-            {/* Search Panel */}
-            <SearchPanel
-              isOpen={searchOpen}
-              onClose={() => setSearchOpen(false)}
-              onLocationSelect={handleLocationSelect}
-            />
-
-            {/* Layers Panel */}
-            <LayersPanel
-              isOpen={layersOpen}
-              onClose={() => setLayersOpen(false)}
-            />
-            
-            {/* DeliveriesLayer */}
-            <DeliveriesLayer
-              map={mapInstanceRef.current}
-              visible={layers.batches}
-            />
-            
+          >            
             {isDrawing && (
               <DrawControls
                 isVisible={isDrawing}
@@ -315,38 +217,14 @@ export default function TacticalMap() {
         </div>
         
         {/* Right Command Sidebar */}
-        <CommandSidebar 
-          mapInstance={mapInstanceRef.current}
-          onEntityClick={handleEntityClick}
-        />
+        <CommandSidebar />
       </div>
       
-      {/* Route Optimization Dialog */}
-      <RouteOptimizationDialog
-        open={optimizeDialogOpen}
-        onOpenChange={setOptimizeDialogOpen}
-        batches={batches}
-      />
+      {/* Bottom Insight Bar */}
+      <InsightBar />
       
-      {/* Mission Control Panel */}
-      <MissionControlPanel />
-      
-      {/* Entity Drawers */}
-      <DriverDrawer
-        isOpen={selectedDrawerType === 'driver'}
-        driverId={selectedDrawerId}
-        onClose={handleCloseDrawer}
-      />
-      <VehicleDrawer
-        isOpen={selectedDrawerType === 'vehicle'}
-        vehicleId={selectedDrawerId}
-        onClose={handleCloseDrawer}
-      />
-      <BatchDrawer
-        isOpen={selectedDrawerType === 'batch'}
-        batchId={selectedDrawerId}
-        onClose={handleCloseDrawer}
-      />
+      {/* Detail Drawer */}
+      <PanelDrawer />
     </div>
   );
 }

@@ -1,51 +1,19 @@
-import { useState } from 'react';
 import { useDrawerState } from '@/hooks/useDrawerState';
 import { useDrivers } from '@/hooks/useDrivers';
 import { useVehicles } from '@/hooks/useVehicles';
-import { useTelemetryData } from '@/hooks/useTelemetryData';
-import { TimelineScrubber } from './TimelineScrubber';
 import { Activity, Navigation, Clock, Package } from 'lucide-react';
 
 export function InsightBar() {
   const { entityType, entityId } = useDrawerState();
   const { data: drivers = [] } = useDrivers();
   const { data: vehicles = [] } = useVehicles();
-  
-  // Only fetch telemetry for supported types
-  const telemetryType = entityType && ['driver', 'vehicle', 'batch'].includes(entityType) 
-    ? (entityType as 'driver' | 'vehicle' | 'batch') 
-    : null;
-  const { data: telemetry } = useTelemetryData(entityId, telemetryType);
-  
-  // Timeline state
-  const [playbackMode, setPlaybackMode] = useState<'live' | 'playback'>('live');
-  const [playbackTime, setPlaybackTime] = useState(new Date());
-  
-  const shiftStart = new Date();
-  shiftStart.setHours(8, 0, 0, 0);
-  const shiftEnd = new Date();
-  shiftEnd.setHours(17, 0, 0, 0);
 
   if (!entityId || !entityType) {
     return (
-      <div className="min-h-[160px] bg-background border-t border-border shadow-lg flex flex-col">
-        <div className="flex-1 flex items-center justify-center">
-          <p className="text-sm text-muted-foreground">
-            Select an entity to view insights
-          </p>
-        </div>
-        <div className="border-t border-border p-3">
-          <TimelineScrubber 
-            mode={playbackMode}
-            currentTime={playbackTime}
-            shiftStart={shiftStart}
-            shiftEnd={shiftEnd}
-            onTimeChange={setPlaybackTime}
-            onModeToggle={() => setPlaybackMode(prev => 
-              prev === 'live' ? 'playback' : 'live'
-            )}
-          />
-        </div>
+      <div className="h-[120px] bg-background border-t border-border shadow-lg flex items-center justify-center">
+        <p className="text-sm text-muted-foreground">
+          Select an entity to view insights
+        </p>
       </div>
     );
   }
@@ -55,36 +23,29 @@ export function InsightBar() {
 
   if (entityType === 'driver') {
     entity = drivers.find(d => d.id === entityId);
-    if (entity && telemetry) {
+    if (entity) {
       metrics = [
-        { icon: Navigation, label: 'Distance', value: telemetry.distance },
-        { icon: Activity, label: 'Idle', value: telemetry.idle },
-        { icon: Clock, label: 'ETA', value: telemetry.eta },
-        { icon: Package, label: 'Deliveries', value: telemetry.deliveries.toString() },
+        { icon: Navigation, label: 'Distance', value: '42 km' },
+        { icon: Activity, label: 'Idle', value: '12%' },
+        { icon: Clock, label: 'ETA', value: '1h 45m' },
+        { icon: Package, label: 'Deliveries', value: '8' },
       ];
     }
   } else if (entityType === 'vehicle') {
     entity = vehicles.find(v => v.id === entityId);
-    if (entity && telemetry) {
+    if (entity) {
       metrics = [
-        { icon: Package, label: 'Payload', value: telemetry.payload },
-        { icon: Navigation, label: 'Route Progress', value: telemetry.routeProgress },
-        { icon: Activity, label: 'Stops Completed', value: telemetry.stopsCompleted },
-        { icon: Clock, label: 'Avg Speed', value: telemetry.avgSpeed },
+        { icon: Package, label: 'Payload', value: '70%' },
+        { icon: Navigation, label: 'Route Progress', value: '60%' },
+        { icon: Activity, label: 'Stops Completed', value: '3/5' },
+        { icon: Clock, label: 'Avg Speed', value: `${entity.avg_speed || 0} km/h` },
       ];
     }
-  } else if (entityType === 'batch' && telemetry) {
-    metrics = [
-      { icon: Package, label: 'Completion', value: telemetry.completion },
-      { icon: Clock, label: 'Avg Stop Time', value: telemetry.avgStopTime },
-      { icon: Navigation, label: 'Total Distance', value: telemetry.totalDistance },
-      { icon: Activity, label: 'ETA Progress', value: telemetry.etaProgress },
-    ];
   }
 
-  if (!entity && entityType !== 'batch') {
+  if (!entity) {
     return (
-      <div className="min-h-[160px] bg-background border-t border-border shadow-lg flex items-center justify-center">
+      <div className="h-[120px] bg-background border-t border-border shadow-lg flex items-center justify-center">
         <p className="text-sm text-muted-foreground">
           Entity not found
         </p>
@@ -93,8 +54,8 @@ export function InsightBar() {
   }
 
   return (
-    <div className="min-h-[160px] bg-background border-t border-border shadow-lg flex flex-col">
-      <div className="flex-1 px-6 py-4">
+    <div className="h-[120px] bg-background border-t border-border shadow-lg px-6 py-4">
+      <div className="flex items-center justify-between h-full">
         <div className="flex items-center gap-8">
           {metrics.map((metric, index) => (
             <div key={index} className="flex items-center gap-3">
@@ -108,19 +69,6 @@ export function InsightBar() {
             </div>
           ))}
         </div>
-      </div>
-      
-      <div className="border-t border-border p-3">
-        <TimelineScrubber 
-          mode={playbackMode}
-          currentTime={playbackTime}
-          shiftStart={shiftStart}
-          shiftEnd={shiftEnd}
-          onTimeChange={setPlaybackTime}
-          onModeToggle={() => setPlaybackMode(prev => 
-            prev === 'live' ? 'playback' : 'live'
-          )}
-        />
       </div>
     </div>
   );

@@ -50,19 +50,11 @@ export function MapToolbar() {
               <TooltipTrigger asChild>
                 <button
                   onClick={() => toggleLayer(key)}
-                  role="switch"
-                  aria-checked={layers[key]}
-                  aria-label={`Toggle ${label} layer ${layers[key] ? 'off' : 'on'}`}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      toggleLayer(key);
-                    }
-                  }}
-                  className={`h-9 px-3 rounded-md inline-flex items-center gap-1.5 text-sm font-medium transition-all duration-200 layer-toggle ${
+                  aria-label={`Toggle ${label}`}
+                  className={`h-9 px-3 rounded-md inline-flex items-center gap-1.5 text-sm font-medium transition-colors ${
                     layers[key]
-                      ? 'bg-primary text-primary-foreground shadow-sm scale-105'
-                      : 'bg-muted text-muted-foreground hover:bg-muted/80 hover:scale-102'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted text-muted-foreground hover:bg-muted/80'
                   }`}
                 >
                   <Icon className="h-4 w-4" />
