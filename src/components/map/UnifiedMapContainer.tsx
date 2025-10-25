@@ -4,12 +4,15 @@ import 'leaflet/dist/leaflet.css';
 import { LeafletMapCore } from './LeafletMapCore';
 import { MapToolsToolbar } from './MapToolsToolbar';
 import { BottomDataPanel } from './BottomDataPanel';
+import { DriversLayer } from './layers/DriversLayer';
 import { FacilitiesLayer } from './layers/FacilitiesLayer';
 import { WarehousesLayer } from './layers/WarehousesLayer';
-import { DriversLayer } from './layers/DriversLayer';
+import { ZonesLayer } from './layers/ZonesLayer';
+import { VehiclesLayer } from './layers/VehiclesLayer';
 import { RoutesLayer } from './layers/RoutesLayer';
 import { BatchesLayer } from './layers/BatchesLayer';
-import { VehiclesLayer } from './layers/VehiclesLayer';
+import { DeliveriesLayer } from './layers/DeliveriesLayer';
+import { MapHUD } from './ui/MapHUD';
 import { useWorkspace } from '@/contexts/WorkspaceContext';
 import { MAP_DESIGN_SYSTEM, MapMode } from '@/lib/mapDesignSystem';
 import { MAP_CONFIG, TileProvider } from '@/lib/mapConfig';
@@ -121,10 +124,13 @@ export function UnifiedMapContainer({
 }: UnifiedMapContainerProps) {
   const { workspace } = useWorkspace();
   const [map, setMap] = useState<L.Map | null>(null);
+  const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
+  const [tileProviderState, setTileProviderState] = useState<TileProvider>(
+    tileProvider || (workspace === 'fleetops' ? 'cartoDark' : 'cartoLight')
+  );
   
   // Workspace-aware theme: FleetOps → dark, Storefront → light
-  const effectiveTileProvider = tileProvider || 
-    (workspace === 'fleetops' ? 'cartoDark' : 'cartoLight');
+  const effectiveTileProvider = tileProvider || tileProviderState;
   
   // Determine layout class based on mode
   const layoutClass = mode === 'fullscreen' 
@@ -162,6 +168,17 @@ export function UnifiedMapContainer({
         showResetControl={mode === 'fullscreen'}
         className="h-full w-full"
         onReady={handleMapReady}
+      />
+
+      {/* Map HUD */}
+      <MapHUD
+        map={map}
+        tileProvider={effectiveTileProvider}
+        onTileProviderToggle={() =>
+          setTileProviderState((prev) =>
+            prev === 'cartoDark' ? 'cartoLight' : 'cartoDark'
+          )
+        }
       />
       
       {/* Modular Layers - Conditionally Rendered */}

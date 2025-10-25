@@ -7,13 +7,17 @@ import { useVehicles } from '@/hooks/useVehicles';
 import { useDeliveryBatches } from '@/hooks/useDeliveryBatches';
 import { useRealtimeDrivers } from '@/hooks/useRealtimeDrivers';
 import { useRealtimeZones } from '@/hooks/useRealtimeZones';
+import { useRealtimeVehicles } from '@/hooks/useRealtimeVehicles';
+import { useRealtimeDeliveries } from '@/hooks/useRealtimeDeliveries';
 import { useMapLayers } from '@/hooks/useMapLayers';
 import { UnifiedMapContainer } from '@/components/map/UnifiedMapContainer';
 import { MapInstanceCapture } from '@/components/map/MapInstanceCapture';
-import { MapToolbar } from '@/components/map/ui/MapToolbar';
+import { OperationalContextBar } from '@/components/map/ui/OperationalContextBar';
 import { CommandSidebar } from '@/components/map/ui/CommandSidebar';
-import { InsightBar } from '@/components/map/ui/InsightBar';
-import { PanelDrawer } from '@/components/map/ui/PanelDrawer';
+import { MissionControlPanel } from '@/components/map/ui/MissionControlPanel';
+import { DriverDrawer } from '@/components/map/drawers/DriverDrawer';
+import { VehicleDrawer } from '@/components/map/drawers/VehicleDrawer';
+import { BatchDrawer } from '@/components/map/drawers/BatchDrawer';
 import { ServiceAreasMenu } from '@/components/map/ServiceAreasMenu';
 import { DrawControls } from '@/components/map/DrawControls';
 import { MapToolsToolbar } from '@/components/map/MapToolsToolbar';
@@ -39,6 +43,8 @@ export default function TacticalMap() {
   
   useRealtimeDrivers();
   useRealtimeZones();
+  useRealtimeVehicles();
+  useRealtimeDeliveries();
   
   const [serviceAreasOpen, setServiceAreasOpen] = useState(false);
   const [isDrawing, setIsDrawing] = useState(false);
@@ -49,6 +55,8 @@ export default function TacticalMap() {
   const [legendOpen, setLegendOpen] = useState(false);
   const [isMeasuring, setIsMeasuring] = useState(false);
   const [optimizeDialogOpen, setOptimizeDialogOpen] = useState(false);
+  const [selectedDrawerType, setSelectedDrawerType] = useState<'driver' | 'vehicle' | 'batch' | null>(null);
+  const [selectedDrawerId, setSelectedDrawerId] = useState<string | null>(null);
   
   const mapInstanceRef = useRef<L.Map | null>(null);
   const drawingLayerRef = useRef<L.FeatureGroup | null>(null);
@@ -159,20 +167,36 @@ export default function TacticalMap() {
     }
   }, []);
 
+  const handleEntityClick = (type: 'driver' | 'vehicle' | 'batch', id: string) => {
+    setSelectedDrawerType(type);
+    setSelectedDrawerId(id);
+  };
+
+  const handleCloseDrawer = () => {
+    setSelectedDrawerType(null);
+    setSelectedDrawerId(null);
+  };
+
   return (
     <div className="flex flex-col h-screen overflow-hidden">
-      {/* Top Toolbar */}
-          <MapToolbar />
-          
-          {/* ARIA Live Region for Alerts */}
-          <div 
-            role="status" 
-            aria-live="polite" 
-            aria-atomic="true"
-            className="sr-only"
-          >
-            {/* Alert messages will be announced here */}
-          </div>
+      {/* Operational Context Bar */}
+      <OperationalContextBar
+        onOptimizeClick={() => setOptimizeDialogOpen(true)}
+        onCreateBatchClick={() => {
+          // TODO: Implement create batch dialog
+          console.log('Create batch clicked');
+        }}
+      />
+      
+      {/* ARIA Live Region for Alerts */}
+      <div 
+        role="status" 
+        aria-live="polite" 
+        aria-atomic="true"
+        className="sr-only"
+      >
+        {/* Alert messages will be announced here */}
+      </div>
       
       <div className="flex flex-1 overflow-hidden">
         {/* Map Area */}
@@ -291,7 +315,10 @@ export default function TacticalMap() {
         </div>
         
         {/* Right Command Sidebar */}
-        <CommandSidebar mapInstance={mapInstanceRef.current} />
+        <CommandSidebar 
+          mapInstance={mapInstanceRef.current}
+          onEntityClick={handleEntityClick}
+        />
       </div>
       
       {/* Route Optimization Dialog */}
@@ -301,11 +328,25 @@ export default function TacticalMap() {
         batches={batches}
       />
       
-      {/* Bottom Insight Bar */}
-      <InsightBar />
+      {/* Mission Control Panel */}
+      <MissionControlPanel />
       
-      {/* Detail Drawer */}
-      <PanelDrawer />
+      {/* Entity Drawers */}
+      <DriverDrawer
+        isOpen={selectedDrawerType === 'driver'}
+        driverId={selectedDrawerId}
+        onClose={handleCloseDrawer}
+      />
+      <VehicleDrawer
+        isOpen={selectedDrawerType === 'vehicle'}
+        vehicleId={selectedDrawerId}
+        onClose={handleCloseDrawer}
+      />
+      <BatchDrawer
+        isOpen={selectedDrawerType === 'batch'}
+        batchId={selectedDrawerId}
+        onClose={handleCloseDrawer}
+      />
     </div>
   );
 }
