@@ -196,11 +196,10 @@
     cursor: not-allowed !important;
   }
 
-}
   :global(.leaflet-control-zoom a:last-child) {
     border-bottom: none !important;
   }
-
+  
   /* Map Marker Animations */
   @keyframes marker-pulse {
     0%, 100% {

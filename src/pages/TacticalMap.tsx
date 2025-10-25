@@ -19,9 +19,12 @@ import { DrawControls } from '@/components/map/DrawControls';
 import { MapToolsToolbar } from '@/components/map/MapToolsToolbar';
 import { SearchPanel } from '@/components/map/SearchPanel';
 import { LayersPanel } from '@/components/map/LayersPanel';
+import { DeliveriesLayer } from '@/components/map/layers/DeliveriesLayer';
+import { RouteOptimizationDialog } from '@/components/map/RouteOptimizationDialog';
 import type { ServiceZone } from '@/types/zones';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { MAP_CONFIG } from '@/lib/mapConfig';
 import L from 'leaflet';
 import 'leaflet-draw';
 
@@ -45,6 +48,7 @@ export default function TacticalMap() {
   const [layersOpen, setLayersOpen] = useState(false);
   const [legendOpen, setLegendOpen] = useState(false);
   const [isMeasuring, setIsMeasuring] = useState(false);
+  const [optimizeDialogOpen, setOptimizeDialogOpen] = useState(false);
   
   const mapInstanceRef = useRef<L.Map | null>(null);
   const drawingLayerRef = useRef<L.FeatureGroup | null>(null);
@@ -158,7 +162,17 @@ export default function TacticalMap() {
   return (
     <div className="flex flex-col h-screen overflow-hidden">
       {/* Top Toolbar */}
-      <MapToolbar />
+          <MapToolbar />
+          
+          {/* ARIA Live Region for Alerts */}
+          <div 
+            role="status" 
+            aria-live="polite" 
+            aria-atomic="true"
+            className="sr-only"
+          >
+            {/* Alert messages will be announced here */}
+          </div>
       
       <div className="flex flex-1 overflow-hidden">
         {/* Map Area */}
@@ -199,6 +213,12 @@ export default function TacticalMap() {
             <LayersPanel
               isOpen={layersOpen}
               onClose={() => setLayersOpen(false)}
+            />
+            
+            {/* DeliveriesLayer */}
+            <DeliveriesLayer
+              map={mapInstanceRef.current}
+              visible={layers.batches}
             />
             
             {isDrawing && (
@@ -271,8 +291,15 @@ export default function TacticalMap() {
         </div>
         
         {/* Right Command Sidebar */}
-        <CommandSidebar />
+        <CommandSidebar mapInstance={mapInstanceRef.current} />
       </div>
+      
+      {/* Route Optimization Dialog */}
+      <RouteOptimizationDialog
+        open={optimizeDialogOpen}
+        onOpenChange={setOptimizeDialogOpen}
+        batches={batches}
+      />
       
       {/* Bottom Insight Bar */}
       <InsightBar />
