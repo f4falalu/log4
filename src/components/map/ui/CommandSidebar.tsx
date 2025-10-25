@@ -15,9 +15,10 @@ import type L from 'leaflet';
 
 interface CommandSidebarProps {
   mapInstance?: L.Map | null;
+  onEntityClick?: (type: 'driver' | 'vehicle' | 'batch', id: string) => void;
 }
 
-export function CommandSidebar({ mapInstance }: CommandSidebarProps) {
+export function CommandSidebar({ mapInstance, onEntityClick }: CommandSidebarProps) {
   const { data: drivers = [] } = useDrivers();
   const { data: vehicles = [] } = useVehicles();
   const { data: batches = [] } = useDeliveryBatches();
