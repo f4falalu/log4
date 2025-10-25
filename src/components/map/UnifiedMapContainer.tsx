@@ -9,6 +9,7 @@ import { WarehousesLayer } from './layers/WarehousesLayer';
 import { DriversLayer } from './layers/DriversLayer';
 import { RoutesLayer } from './layers/RoutesLayer';
 import { BatchesLayer } from './layers/BatchesLayer';
+import { VehiclesLayer } from './layers/VehiclesLayer';
 import { useWorkspace } from '@/contexts/WorkspaceContext';
 import { MAP_DESIGN_SYSTEM, MapMode } from '@/lib/mapDesignSystem';
 import { MAP_CONFIG, TileProvider } from '@/lib/mapConfig';
@@ -36,6 +37,14 @@ export interface UnifiedMapContainerProps {
   // Feature toggles
   showToolbar?: boolean;
   showBottomPanel?: boolean;
+  showVehicles?: boolean;
+  showDrivers?: boolean;
+  showFacilities?: boolean;
+  showWarehouses?: boolean;
+  showRoutes?: boolean;
+  showZones?: boolean;
+  showBatches?: boolean;
+  showAlerts?: boolean;
   
   // Toolbar callbacks
   onDrawToggle?: () => void;
@@ -81,6 +90,14 @@ export function UnifiedMapContainer({
   tileProvider,
   showToolbar = false,
   showBottomPanel = false,
+  showVehicles = true,
+  showDrivers = true,
+  showFacilities = true,
+  showWarehouses = true,
+  showRoutes = true,
+  showZones = true,
+  showBatches = true,
+  showAlerts = true,
   onDrawToggle,
   onServiceAreasClick,
   onSearchClick,
@@ -147,37 +164,53 @@ export function UnifiedMapContainer({
         onReady={handleMapReady}
       />
       
-      {/* Modular Layers - Always Render */}
-      <WarehousesLayer 
-        map={map} 
-        warehouses={warehouses}
-        selectedIds={selectedWarehouseIds}
-        onWarehouseClick={onWarehouseClick}
-      />
-      <DriversLayer 
-        map={map} 
-        drivers={drivers}
-        batches={batches}
-        onDriverClick={onDriverClick}
-      />
-      <FacilitiesLayer 
-        map={map} 
-        facilities={facilities}
-        selectedIds={selectedFacilityIds}
-        onFacilityClick={onFacilityClick}
-      />
-      <RoutesLayer 
-        map={map} 
-        routes={routes}
-        warehouses={warehouses}
-      />
-      <BatchesLayer 
-        map={map} 
-        batches={batches}
-        warehouses={warehouses}
-        selectedBatchId={selectedBatchId}
-        onBatchClick={onBatchClick}
-      />
+      {/* Modular Layers - Conditionally Rendered */}
+      {showWarehouses && (
+        <WarehousesLayer 
+          map={map} 
+          warehouses={warehouses}
+          selectedIds={selectedWarehouseIds}
+          onWarehouseClick={onWarehouseClick}
+        />
+      )}
+      {showDrivers && (
+        <DriversLayer 
+          map={map} 
+          drivers={drivers}
+          batches={batches}
+          onDriverClick={onDriverClick}
+        />
+      )}
+      {showFacilities && (
+        <FacilitiesLayer 
+          map={map} 
+          facilities={facilities}
+          selectedIds={selectedFacilityIds}
+          onFacilityClick={onFacilityClick}
+        />
+      )}
+      {showRoutes && (
+        <RoutesLayer 
+          map={map} 
+          routes={routes}
+          warehouses={warehouses}
+        />
+      )}
+      {showBatches && (
+        <BatchesLayer 
+          map={map} 
+          batches={batches}
+          warehouses={warehouses}
+          selectedBatchId={selectedBatchId}
+          onBatchClick={onBatchClick}
+        />
+      )}
+      {showVehicles && vehicles.length > 0 && (
+        <VehiclesLayer 
+          selectedVehicleId={null}
+          onVehicleClick={onVehicleClick}
+        />
+      )}
       
       {/* Conditional UI Controls */}
       {showToolbar && mode === 'fullscreen' && (

@@ -199,4 +199,43 @@
   :global(.leaflet-control-zoom a:last-child) {
     border-bottom: none !important;
   }
+  
+  /* Map Marker Animations */
+  @keyframes marker-pulse {
+    0%, 100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    50% {
+      transform: scale(1.15);
+      opacity: 0.8;
+    }
+  }
+
+  :global(.marker-highlighted) {
+    animation: marker-pulse 1.5s ease-in-out infinite;
+  }
+
+  /* Sidebar Row Hover Effects */
+  .sidebar-row {
+    transition: all 0.2s ease;
+  }
+
+  .sidebar-row:hover {
+    background: oklch(var(--muted) / 0.5);
+    transform: translateX(4px);
+  }
+
+  /* Layer Toggle Animations */
+  .layer-toggle {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .layer-toggle:hover {
+    transform: scale(1.05);
+  }
+
+  .layer-toggle:active {
+    transform: scale(0.98);
+  }
 }
