@@ -16,6 +16,9 @@ import { InsightBar } from '@/components/map/ui/InsightBar';
 import { PanelDrawer } from '@/components/map/ui/PanelDrawer';
 import { ServiceAreasMenu } from '@/components/map/ServiceAreasMenu';
 import { DrawControls } from '@/components/map/DrawControls';
+import { MapToolsToolbar } from '@/components/map/MapToolsToolbar';
+import { SearchPanel } from '@/components/map/SearchPanel';
+import { LayersPanel } from '@/components/map/LayersPanel';
 import type { ServiceZone } from '@/types/zones';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -38,6 +41,10 @@ export default function TacticalMap() {
   const [isDrawing, setIsDrawing] = useState(false);
   const [visibleZones, setVisibleZones] = useState<Set<string>>(new Set());
   const [editingZone, setEditingZone] = useState<string | null>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [layersOpen, setLayersOpen] = useState(false);
+  const [legendOpen, setLegendOpen] = useState(false);
+  const [isMeasuring, setIsMeasuring] = useState(false);
   
   const mapInstanceRef = useRef<L.Map | null>(null);
   const drawingLayerRef = useRef<L.FeatureGroup | null>(null);
@@ -128,6 +135,26 @@ export default function TacticalMap() {
     toast.success('Location found');
   }, []);
 
+  const handleLocateMe = useCallback(() => {
+    if (!mapInstanceRef.current) return;
+    
+    if ('geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          mapInstanceRef.current?.setView([latitude, longitude], 15);
+          toast.success('Location found');
+        },
+        (error) => {
+          console.error('Geolocation error:', error);
+          toast.error('Could not get your location');
+        }
+      );
+    } else {
+      toast.error('Geolocation is not supported by your browser');
+    }
+  }, []);
+
   return (
     <div className="flex flex-col h-screen overflow-hidden">
       {/* Top Toolbar */}
@@ -146,7 +173,34 @@ export default function TacticalMap() {
             showToolbar={false}
             showBottomPanel={false}
             onMapReady={handleMapCapture}
-          >            
+          >
+            {/* Floating Map Tools Toolbar */}
+            <MapToolsToolbar
+              map={mapInstanceRef.current}
+              onLocateMe={handleLocateMe}
+              onServiceAreasClick={() => setServiceAreasOpen(!serviceAreasOpen)}
+              onSearchClick={() => setSearchOpen(!searchOpen)}
+              onDrawToggle={() => setIsDrawing(!isDrawing)}
+              onLayersClick={() => setLayersOpen(!layersOpen)}
+              onMeasureClick={() => setIsMeasuring(!isMeasuring)}
+              onLegendClick={() => setLegendOpen(!legendOpen)}
+              isDrawing={isDrawing}
+              isMeasuring={isMeasuring}
+            />
+
+            {/* Search Panel */}
+            <SearchPanel
+              isOpen={searchOpen}
+              onClose={() => setSearchOpen(false)}
+              onLocationSelect={handleLocationSelect}
+            />
+
+            {/* Layers Panel */}
+            <LayersPanel
+              isOpen={layersOpen}
+              onClose={() => setLayersOpen(false)}
+            />
+            
             {isDrawing && (
               <DrawControls
                 isVisible={isDrawing}
