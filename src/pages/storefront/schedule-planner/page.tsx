@@ -4,6 +4,8 @@ import { FiltersSidebar } from './components/FiltersSidebar';
 import { ScheduleList } from './components/ScheduleList';
 import { InsightsSidebar } from './components/InsightsSidebar';
 import { CreateScheduleDialog } from './components/CreateScheduleDialog';
+import { ScheduleAssistantDialog } from './components/ScheduleAssistant/ScheduleAssistantDialog';
+import { useRealtimeSchedules } from '@/hooks/useRealtimeSchedules';
 import { OptimizeDialog } from './components/OptimizeDialog';
 import { SendToFleetOpsDialog } from './components/SendToFleetOpsDialog';
 import { ExportDialog } from './components/ExportDialog';
@@ -25,6 +27,10 @@ export default function SchedulePlanner() {
 
   // Dialog States
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [assistantDialogOpen, setAssistantDialogOpen] = useState(false);
+
+  // Real-time updates
+  useRealtimeSchedules();
   const [optimizeDialogOpen, setOptimizeDialogOpen] = useState(false);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [sendToFleetOpsDialogOpen, setSendToFleetOpsDialogOpen] = useState(false);
@@ -156,7 +162,7 @@ export default function SchedulePlanner() {
           onViewModeChange={setViewMode}
           warehouses={warehouses.map(w => ({ id: w.id, name: w.name }))}
           onSearch={() => {}}
-          onCreateNew={() => setCreateDialogOpen(true)}
+          onCreateNew={() => setAssistantDialogOpen(true)}
         />
 
         {/* Schedule List */}
@@ -174,6 +180,11 @@ export default function SchedulePlanner() {
       <InsightsSidebar schedules={schedules} />
 
       {/* Dialogs */}
+      <ScheduleAssistantDialog
+        open={assistantDialogOpen}
+        onOpenChange={setAssistantDialogOpen}
+      />
+
       <CreateScheduleDialog
         open={createDialogOpen}
         onOpenChange={setCreateDialogOpen}

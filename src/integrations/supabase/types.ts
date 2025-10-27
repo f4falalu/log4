@@ -858,6 +858,79 @@ export type Database = {
           },
         ]
       }
+      schedule_batches: {
+        Row: {
+          batch_name: string
+          capacity_used_pct: number | null
+          created_at: string
+          driver_id: string | null
+          estimated_distance: number | null
+          estimated_duration: number | null
+          facility_ids: string[]
+          id: string
+          route_data: Json | null
+          schedule_id: string | null
+          sequence: number
+          status: string
+          updated_at: string
+          vehicle_id: string | null
+        }
+        Insert: {
+          batch_name: string
+          capacity_used_pct?: number | null
+          created_at?: string
+          driver_id?: string | null
+          estimated_distance?: number | null
+          estimated_duration?: number | null
+          facility_ids: string[]
+          id?: string
+          route_data?: Json | null
+          schedule_id?: string | null
+          sequence?: number
+          status?: string
+          updated_at?: string
+          vehicle_id?: string | null
+        }
+        Update: {
+          batch_name?: string
+          capacity_used_pct?: number | null
+          created_at?: string
+          driver_id?: string | null
+          estimated_distance?: number | null
+          estimated_duration?: number | null
+          facility_ids?: string[]
+          id?: string
+          route_data?: Json | null
+          schedule_id?: string | null
+          sequence?: number
+          status?: string
+          updated_at?: string
+          vehicle_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedule_batches_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedule_batches_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_schedules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedule_batches_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       service_zones: {
         Row: {
           color: string | null
@@ -896,6 +969,44 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      upload_validations: {
+        Row: {
+          created_at: string
+          file_name: string
+          id: string
+          parsed_data: Json
+          status: string
+          uploaded_by: string | null
+          validation_errors: Json | null
+        }
+        Insert: {
+          created_at?: string
+          file_name: string
+          id?: string
+          parsed_data: Json
+          status?: string
+          uploaded_by?: string | null
+          validation_errors?: Json | null
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          id?: string
+          parsed_data?: Json
+          status?: string
+          uploaded_by?: string | null
+          validation_errors?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "upload_validations_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
