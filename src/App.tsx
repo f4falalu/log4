@@ -16,6 +16,7 @@ import StorefrontPayloads from "./pages/storefront/payloads/page";
 import StorefrontRequisitions from "./pages/storefront/requisitions/page";
 import SchedulePlanner from "./pages/storefront/schedule-planner/page";
 import FleetManagement from "./pages/fleetops/fleet-management/page";
+import VehicleRegistry from "./pages/fleetops/vehicles/registry/page";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import AuthCallback from "./pages/AuthCallback";
@@ -72,7 +73,7 @@ const App = () => (
                     <Route path="dispatch" element={<DispatchPage />} />
                     <Route path="batches" element={<BatchManagement />} />
                     <Route path="tactical" element={<TacticalMap />} />
-                    <Route path="vehicles" element={<VehicleManagementPage />} />
+                    <Route path="vehicles" element={<VehicleRegistry />} />
                     <Route path="fleet-management" element={<FleetManagement />} />
                     <Route path="reports" element={<ReportsPageWrapper />} />
                   </Route>

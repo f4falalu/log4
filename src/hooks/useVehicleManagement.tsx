@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 export interface VehicleFormData {
-  type: string; // Now supports custom types
+  type: string;
   model: string;
   plate_number: string;
   capacity: number;
@@ -14,6 +14,13 @@ export interface VehicleFormData {
   photo_url?: string;
   thumbnail_url?: string;
   ai_generated?: boolean;
+  category_id?: string;
+  subcategory?: string;
+  has_tiers?: boolean;
+  zone_id?: string;
+  warehouse_id?: string;
+  max_daily_distance?: number;
+  maintenance_frequency_km?: number;
 }
 
 export function useVehicleManagement() {
