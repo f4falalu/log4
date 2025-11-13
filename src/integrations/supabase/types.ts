@@ -20,7 +20,9 @@ export type Database = {
           actual_start_time: string | null
           created_at: string | null
           driver_id: string | null
+          estimated_distance_km: number | null
           estimated_duration: number
+          estimated_duration_min: number | null
           external_route_data: Json | null
           facility_ids: string[]
           id: string
@@ -48,7 +50,9 @@ export type Database = {
           actual_start_time?: string | null
           created_at?: string | null
           driver_id?: string | null
+          estimated_distance_km?: number | null
           estimated_duration: number
+          estimated_duration_min?: number | null
           external_route_data?: Json | null
           facility_ids: string[]
           id?: string
@@ -76,7 +80,9 @@ export type Database = {
           actual_start_time?: string | null
           created_at?: string | null
           driver_id?: string | null
+          estimated_distance_km?: number | null
           estimated_duration?: number
+          estimated_duration_min?: number | null
           external_route_data?: Json | null
           facility_ids?: string[]
           id?: string
@@ -411,6 +417,71 @@ export type Database = {
         }
         Relationships: []
       }
+      fleets: {
+        Row: {
+          created_at: string | null
+          id: string
+          mission: string | null
+          name: string
+          parent_fleet_id: string | null
+          service_area_id: string | null
+          status: string | null
+          vendor_id: string | null
+          zone_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          mission?: string | null
+          name: string
+          parent_fleet_id?: string | null
+          service_area_id?: string | null
+          status?: string | null
+          vendor_id?: string | null
+          zone_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          mission?: string | null
+          name?: string
+          parent_fleet_id?: string | null
+          service_area_id?: string | null
+          status?: string | null
+          vendor_id?: string | null
+          zone_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fleets_parent_fleet_id_fkey"
+            columns: ["parent_fleet_id"]
+            isOneToOne: false
+            referencedRelation: "fleets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleets_service_area_id_fkey"
+            columns: ["service_area_id"]
+            isOneToOne: false
+            referencedRelation: "service_zones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleets_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fleets_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "service_zones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       handoffs: {
         Row: {
           actual_time: string | null
@@ -550,39 +621,128 @@ export type Database = {
         }
         Relationships: []
       }
-      payload_items: {
+      optimization_runs: {
         Row: {
-          batch_id: string
+          algorithm_used: string | null
+          avg_capacity_utilization: number | null
+          capacity_threshold: number | null
+          completed_at: string | null
           created_at: string | null
-          handling_instructions: string | null
+          created_by: string | null
+          error_message: string | null
+          facility_ids: string[]
           id: string
-          name: string
-          quantity: number
-          temperature_required: boolean | null
-          volume_m3: number
-          weight_kg: number
+          optimization_time_ms: number | null
+          priority_weights: Json | null
+          result_batches: Json | null
+          run_name: string | null
+          scheduler_batch_ids: string[] | null
+          status: Database["public"]["Enums"]["optimization_status"] | null
+          time_window_mode: string | null
+          total_batches_created: number | null
+          total_distance_km: number | null
+          total_duration_min: number | null
+          vehicle_constraints: Json | null
+          warehouse_id: string | null
         }
         Insert: {
-          batch_id: string
+          algorithm_used?: string | null
+          avg_capacity_utilization?: number | null
+          capacity_threshold?: number | null
+          completed_at?: string | null
           created_at?: string | null
-          handling_instructions?: string | null
+          created_by?: string | null
+          error_message?: string | null
+          facility_ids: string[]
           id?: string
-          name: string
-          quantity: number
-          temperature_required?: boolean | null
-          volume_m3: number
-          weight_kg: number
+          optimization_time_ms?: number | null
+          priority_weights?: Json | null
+          result_batches?: Json | null
+          run_name?: string | null
+          scheduler_batch_ids?: string[] | null
+          status?: Database["public"]["Enums"]["optimization_status"] | null
+          time_window_mode?: string | null
+          total_batches_created?: number | null
+          total_distance_km?: number | null
+          total_duration_min?: number | null
+          vehicle_constraints?: Json | null
+          warehouse_id?: string | null
         }
         Update: {
-          batch_id?: string
+          algorithm_used?: string | null
+          avg_capacity_utilization?: number | null
+          capacity_threshold?: number | null
+          completed_at?: string | null
           created_at?: string | null
-          handling_instructions?: string | null
+          created_by?: string | null
+          error_message?: string | null
+          facility_ids?: string[]
           id?: string
-          name?: string
-          quantity?: number
-          temperature_required?: boolean | null
-          volume_m3?: number
-          weight_kg?: number
+          optimization_time_ms?: number | null
+          priority_weights?: Json | null
+          result_batches?: Json | null
+          run_name?: string | null
+          scheduler_batch_ids?: string[] | null
+          status?: Database["public"]["Enums"]["optimization_status"] | null
+          time_window_mode?: string | null
+          total_batches_created?: number | null
+          total_distance_km?: number | null
+          total_duration_min?: number | null
+          vehicle_constraints?: Json | null
+          warehouse_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "optimization_runs_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payload_items: {
+        Row: {
+          batch_id: string | null
+          box_type: string | null
+          created_at: string | null
+          custom_height_cm: number | null
+          custom_length_cm: number | null
+          custom_width_cm: number | null
+          facility_id: string | null
+          id: string
+          quantity: number | null
+          status: string | null
+          volume_m3: number | null
+          weight_kg: number | null
+        }
+        Insert: {
+          batch_id?: string | null
+          box_type?: string | null
+          created_at?: string | null
+          custom_height_cm?: number | null
+          custom_length_cm?: number | null
+          custom_width_cm?: number | null
+          facility_id?: string | null
+          id?: string
+          quantity?: number | null
+          status?: string | null
+          volume_m3?: number | null
+          weight_kg?: number | null
+        }
+        Update: {
+          batch_id?: string | null
+          box_type?: string | null
+          created_at?: string | null
+          custom_height_cm?: number | null
+          custom_length_cm?: number | null
+          custom_width_cm?: number | null
+          facility_id?: string | null
+          id?: string
+          quantity?: number | null
+          status?: string | null
+          volume_m3?: number | null
+          weight_kg?: number | null
         }
         Relationships: [
           {
@@ -590,6 +750,13 @@ export type Database = {
             columns: ["batch_id"]
             isOneToOne: false
             referencedRelation: "delivery_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payload_items_facility_id_fkey"
+            columns: ["facility_id"]
+            isOneToOne: false
+            referencedRelation: "facilities"
             referencedColumns: ["id"]
           },
         ]
@@ -858,6 +1025,270 @@ export type Database = {
           },
         ]
       }
+      schedule_templates: {
+        Row: {
+          active: boolean | null
+          auto_schedule: boolean | null
+          created_at: string | null
+          created_by: string | null
+          default_driver_id: string | null
+          default_vehicle_id: string | null
+          description: string | null
+          facility_ids: string[]
+          id: string
+          last_used_at: string | null
+          name: string
+          priority: string | null
+          recurrence_days: number[] | null
+          recurrence_type: string | null
+          time_window: string | null
+          updated_at: string | null
+          usage_count: number | null
+          warehouse_id: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          auto_schedule?: boolean | null
+          created_at?: string | null
+          created_by?: string | null
+          default_driver_id?: string | null
+          default_vehicle_id?: string | null
+          description?: string | null
+          facility_ids?: string[]
+          id?: string
+          last_used_at?: string | null
+          name: string
+          priority?: string | null
+          recurrence_days?: number[] | null
+          recurrence_type?: string | null
+          time_window?: string | null
+          updated_at?: string | null
+          usage_count?: number | null
+          warehouse_id?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          auto_schedule?: boolean | null
+          created_at?: string | null
+          created_by?: string | null
+          default_driver_id?: string | null
+          default_vehicle_id?: string | null
+          description?: string | null
+          facility_ids?: string[]
+          id?: string
+          last_used_at?: string | null
+          name?: string
+          priority?: string | null
+          recurrence_days?: number[] | null
+          recurrence_type?: string | null
+          time_window?: string | null
+          updated_at?: string | null
+          usage_count?: number | null
+          warehouse_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedule_templates_default_driver_id_fkey"
+            columns: ["default_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedule_templates_default_vehicle_id_fkey"
+            columns: ["default_vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedule_templates_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scheduler_batches: {
+        Row: {
+          batch_code: string | null
+          capacity_utilization_pct: number | null
+          created_at: string | null
+          created_by: string | null
+          driver_id: string | null
+          estimated_duration_min: number | null
+          facility_ids: string[]
+          id: string
+          name: string | null
+          notes: string | null
+          optimized_route: Json | null
+          planned_date: string
+          priority: string | null
+          published_at: string | null
+          published_batch_id: string | null
+          scheduled_at: string | null
+          scheduling_mode: Database["public"]["Enums"]["scheduling_mode"] | null
+          status: Database["public"]["Enums"]["scheduler_batch_status"] | null
+          tags: string[] | null
+          time_window: string | null
+          total_consignments: number | null
+          total_distance_km: number | null
+          total_volume_m3: number | null
+          total_weight_kg: number | null
+          updated_at: string | null
+          vehicle_id: string | null
+          warehouse_id: string | null
+          zone: string | null
+        }
+        Insert: {
+          batch_code?: string | null
+          capacity_utilization_pct?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          driver_id?: string | null
+          estimated_duration_min?: number | null
+          facility_ids?: string[]
+          id?: string
+          name?: string | null
+          notes?: string | null
+          optimized_route?: Json | null
+          planned_date: string
+          priority?: string | null
+          published_at?: string | null
+          published_batch_id?: string | null
+          scheduled_at?: string | null
+          scheduling_mode?:
+            | Database["public"]["Enums"]["scheduling_mode"]
+            | null
+          status?: Database["public"]["Enums"]["scheduler_batch_status"] | null
+          tags?: string[] | null
+          time_window?: string | null
+          total_consignments?: number | null
+          total_distance_km?: number | null
+          total_volume_m3?: number | null
+          total_weight_kg?: number | null
+          updated_at?: string | null
+          vehicle_id?: string | null
+          warehouse_id?: string | null
+          zone?: string | null
+        }
+        Update: {
+          batch_code?: string | null
+          capacity_utilization_pct?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          driver_id?: string | null
+          estimated_duration_min?: number | null
+          facility_ids?: string[]
+          id?: string
+          name?: string | null
+          notes?: string | null
+          optimized_route?: Json | null
+          planned_date?: string
+          priority?: string | null
+          published_at?: string | null
+          published_batch_id?: string | null
+          scheduled_at?: string | null
+          scheduling_mode?:
+            | Database["public"]["Enums"]["scheduling_mode"]
+            | null
+          status?: Database["public"]["Enums"]["scheduler_batch_status"] | null
+          tags?: string[] | null
+          time_window?: string | null
+          total_consignments?: number | null
+          total_distance_km?: number | null
+          total_volume_m3?: number | null
+          total_weight_kg?: number | null
+          updated_at?: string | null
+          vehicle_id?: string | null
+          warehouse_id?: string | null
+          zone?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scheduler_batches_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scheduler_batches_published_batch_id_fkey"
+            columns: ["published_batch_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scheduler_batches_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scheduler_batches_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scheduler_settings: {
+        Row: {
+          auto_cluster_enabled: boolean | null
+          created_at: string | null
+          default_capacity_threshold: number | null
+          default_time_window: string | null
+          default_view: string | null
+          default_warehouse_id: string | null
+          id: string
+          notify_on_optimization_complete: boolean | null
+          notify_on_publish: boolean | null
+          show_zones: boolean | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          auto_cluster_enabled?: boolean | null
+          created_at?: string | null
+          default_capacity_threshold?: number | null
+          default_time_window?: string | null
+          default_view?: string | null
+          default_warehouse_id?: string | null
+          id?: string
+          notify_on_optimization_complete?: boolean | null
+          notify_on_publish?: boolean | null
+          show_zones?: boolean | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          auto_cluster_enabled?: boolean | null
+          created_at?: string | null
+          default_capacity_threshold?: number | null
+          default_time_window?: string | null
+          default_view?: string | null
+          default_warehouse_id?: string | null
+          id?: string
+          notify_on_optimization_complete?: boolean | null
+          notify_on_publish?: boolean | null
+          show_zones?: boolean | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scheduler_settings_default_warehouse_id_fkey"
+            columns: ["default_warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       service_zones: {
         Row: {
           color: string | null
@@ -1061,11 +1492,15 @@ export type Database = {
       }
       vehicles: {
         Row: {
+          ai_capacity_image_url: string | null
           ai_generated: boolean | null
           avg_speed: number
           capacity: number
+          capacity_volume_m3: number | null
+          capacity_weight_kg: number | null
           created_at: string | null
           current_driver_id: string | null
+          fleet_id: string | null
           fuel_efficiency: number
           fuel_type: Database["public"]["Enums"]["fuel_type"]
           id: string
@@ -1080,11 +1515,15 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          ai_capacity_image_url?: string | null
           ai_generated?: boolean | null
           avg_speed?: number
           capacity: number
+          capacity_volume_m3?: number | null
+          capacity_weight_kg?: number | null
           created_at?: string | null
           current_driver_id?: string | null
+          fleet_id?: string | null
           fuel_efficiency: number
           fuel_type: Database["public"]["Enums"]["fuel_type"]
           id?: string
@@ -1099,11 +1538,15 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          ai_capacity_image_url?: string | null
           ai_generated?: boolean | null
           avg_speed?: number
           capacity?: number
+          capacity_volume_m3?: number | null
+          capacity_weight_kg?: number | null
           created_at?: string | null
           current_driver_id?: string | null
+          fleet_id?: string | null
           fuel_efficiency?: number
           fuel_type?: Database["public"]["Enums"]["fuel_type"]
           id?: string
@@ -1125,7 +1568,44 @@ export type Database = {
             referencedRelation: "drivers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "vehicles_fleet_id_fkey"
+            columns: ["fleet_id"]
+            isOneToOne: false
+            referencedRelation: "fleets"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      vendors: {
+        Row: {
+          address: string | null
+          contact_name: string | null
+          contact_phone: string | null
+          created_at: string | null
+          email: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          address?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          address?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
       }
       warehouses: {
         Row: {
@@ -1219,7 +1699,21 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      scheduler_overview_stats: {
+        Row: {
+          active_warehouses: number | null
+          assigned_drivers: number | null
+          assigned_vehicles: number | null
+          avg_capacity: number | null
+          cancelled_count: number | null
+          published_count: number | null
+          ready_count: number | null
+          scheduled_count: number | null
+          total_consignments: number | null
+          total_distance: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       get_driver_vehicles: {
@@ -1247,7 +1741,6 @@ export type Database = {
         }
         Returns: boolean
       }
-      setup_test_admin: { Args: never; Returns: undefined }
     }
     Enums: {
       app_role:
@@ -1273,6 +1766,14 @@ export type Database = {
         | "other"
       fuel_type: "diesel" | "petrol" | "electric"
       license_type: "standard" | "commercial"
+      optimization_status: "pending" | "running" | "completed" | "failed"
+      scheduler_batch_status:
+        | "draft"
+        | "ready"
+        | "scheduled"
+        | "published"
+        | "cancelled"
+      scheduling_mode: "manual" | "ai_optimized" | "uploaded" | "template"
       vehicle_status: "available" | "in-use" | "maintenance"
       vehicle_type: "truck" | "van" | "pickup" | "car"
       warehouse_type: "central" | "zonal" | "regional"
@@ -1429,6 +1930,15 @@ export const Constants = {
       ],
       fuel_type: ["diesel", "petrol", "electric"],
       license_type: ["standard", "commercial"],
+      optimization_status: ["pending", "running", "completed", "failed"],
+      scheduler_batch_status: [
+        "draft",
+        "ready",
+        "scheduled",
+        "published",
+        "cancelled",
+      ],
+      scheduling_mode: ["manual", "ai_optimized", "uploaded", "template"],
       vehicle_status: ["available", "in-use", "maintenance"],
       vehicle_type: ["truck", "van", "pickup", "car"],
       warehouse_type: ["central", "zonal", "regional"],

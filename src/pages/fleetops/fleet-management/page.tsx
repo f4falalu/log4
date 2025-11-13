@@ -151,6 +151,22 @@ export default function FleetManagementPage() {
     vehicles: false
   });
 
+  // Form state - MUST be before any conditional returns
+  const [fleetFormData, setFleetFormData] = useState({
+    name: '',
+    vendorId: '',
+    mission: '',
+    status: 'active'
+  });
+
+  const [vendorFormData, setVendorFormData] = useState({
+    name: '',
+    contactName: '',
+    contactPhone: '',
+    email: '',
+    address: ''
+  });
+
   // Derived state
   const isLoading = fleetsLoading || vendorsLoading || vehiclesLoading;
   const hasError = fleetsError || vendorsError || vehiclesError;
@@ -182,8 +198,8 @@ export default function FleetManagementPage() {
             <CardDescription>There was an error loading the fleet management data. Please try again later.</CardDescription>
           </CardHeader>
           <CardFooter>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => window.location.reload()}
               className="border-destructive/20 text-destructive hover:bg-destructive/10"
             >
@@ -194,21 +210,6 @@ export default function FleetManagementPage() {
       </div>
     );
   }
-
-  const [fleetFormData, setFleetFormData] = useState({
-    name: '',
-    vendorId: '',
-    mission: '',
-    status: 'active'
-  });
-
-  const [vendorFormData, setVendorFormData] = useState({
-    name: '',
-    contactName: '',
-    contactPhone: '',
-    email: '',
-    address: ''
-  });
 
   const resetFleetForm = () => {
     setFleetFormData({

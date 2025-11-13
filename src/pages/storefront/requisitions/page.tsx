@@ -27,7 +27,9 @@ import {
 } from '@/components/ui/select';
 import { useRequisitions, useUpdateRequisitionStatus, useDeleteRequisition } from '@/hooks/useRequisitions';
 import { Requisition, RequisitionStatus } from '@/types/requisitions';
+import { RequisitionTypeDialog } from './RequisitionTypeDialog';
 import { CreateRequisitionDialog } from './CreateRequisitionDialog';
+import { UploadRequisitionDialog } from './UploadRequisitionDialog';
 import { RequisitionDetailsDialog } from './RequisitionDetailsDialog';
 import { format } from 'date-fns';
 import {
@@ -45,7 +47,9 @@ import { Label } from '@/components/ui/label';
 
 export default function RequisitionsPage() {
   const [statusFilter, setStatusFilter] = useState<RequisitionStatus | 'all'>('all');
+  const [typeDialogOpen, setTypeDialogOpen] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [selectedRequisition, setSelectedRequisition] = useState<Requisition | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -133,7 +137,7 @@ export default function RequisitionsPage() {
             Manage delivery requisitions and approval workflow
           </p>
         </div>
-        <Button onClick={() => setCreateDialogOpen(true)}>
+        <Button onClick={() => setTypeDialogOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
           New Requisition
         </Button>
@@ -258,9 +262,21 @@ export default function RequisitionsPage() {
         </CardContent>
       </Card>
 
+      <RequisitionTypeDialog
+        open={typeDialogOpen}
+        onOpenChange={setTypeDialogOpen}
+        onSelectManual={() => setCreateDialogOpen(true)}
+        onSelectUpload={() => setUploadDialogOpen(true)}
+      />
+
       <CreateRequisitionDialog
         open={createDialogOpen}
         onOpenChange={setCreateDialogOpen}
+      />
+
+      <UploadRequisitionDialog
+        open={uploadDialogOpen}
+        onOpenChange={setUploadDialogOpen}
       />
 
       {selectedRequisition && (

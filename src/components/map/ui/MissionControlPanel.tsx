@@ -20,14 +20,14 @@ export function MissionControlPanel() {
   return (
     <div className="border-t border-border bg-background flex flex-col">
       {/* Header with Mode Toggle */}
-      <div className="h-12 border-b border-border flex items-center justify-between px-4">
-        <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
+      <div className="h-14 border-b border-border flex items-center justify-between px-6">
+        <div className="flex items-center gap-2 bg-muted rounded-lg p-1.5">
           <Button
             variant={panelMode === 'analytics' ? 'default' : 'ghost'}
             size="sm"
             onClick={() => setPanelMode('analytics')}
             className={cn(
-              'h-8 px-3 transition-all',
+              'h-9 px-4 transition-all',
               panelMode === 'analytics' && 'shadow-sm'
             )}
           >
@@ -38,7 +38,7 @@ export function MissionControlPanel() {
             size="sm"
             onClick={() => setPanelMode('tools')}
             className={cn(
-              'h-8 px-3 transition-all',
+              'h-9 px-4 transition-all',
               panelMode === 'tools' && 'shadow-sm'
             )}
           >
@@ -70,14 +70,14 @@ export function MissionControlPanel() {
       <div
         className={cn(
           'transition-all duration-300 ease-in-out overflow-hidden',
-          isPanelExpanded ? 'h-[400px]' : 'h-[220px]'
+          isPanelExpanded ? 'h-[480px]' : 'h-[280px]'
         )}
       >
         {panelMode === 'analytics' ? <AnalyticsPanel /> : <MapToolsPanel />}
       </div>
 
       {/* Timeline Scrubber (Always Visible) */}
-      <div className="border-t border-border p-3">
+      <div className="border-t border-border px-6 py-4">
         <TimelineScrubber
           mode={playbackMode}
           currentTime={playbackTime}

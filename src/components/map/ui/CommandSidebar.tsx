@@ -89,43 +89,43 @@ export function CommandSidebar({ mapInstance, onEntityClick }: CommandSidebarPro
   }, [selectedIndex, filteredDrivers]);
 
   return (
-    <div className="w-[420px] bg-card border-l border-border flex flex-col">
+    <div className="w-[520px] bg-card border-l border-border flex flex-col">
       <Tabs defaultValue="drivers" className="flex-1 flex flex-col">
-        <div className="border-b border-border px-4 pt-4 pb-2">
-          <TabsList className="w-full grid grid-cols-4">
-            <TabsTrigger value="drivers" className="gap-1.5">
+        <div className="border-b border-border px-6 pt-4 pb-3">
+          <TabsList className="w-full grid grid-cols-4 gap-1">
+            <TabsTrigger value="drivers" className="gap-2">
               <Users className="h-4 w-4" />
-              <span className="hidden lg:inline">Drivers</span>
+              <span className="inline">Drivers</span>
             </TabsTrigger>
-            <TabsTrigger value="vehicles" className="gap-1.5">
+            <TabsTrigger value="vehicles" className="gap-2">
               <Truck className="h-4 w-4" />
-              <span className="hidden lg:inline">Vehicles</span>
+              <span className="inline">Vehicles</span>
             </TabsTrigger>
-            <TabsTrigger value="batches" className="gap-1.5">
+            <TabsTrigger value="batches" className="gap-2">
               <Package className="h-4 w-4" />
-              <span className="hidden lg:inline">Batches</span>
+              <span className="inline">Batches</span>
             </TabsTrigger>
-            <TabsTrigger value="alerts" className="gap-1.5">
+            <TabsTrigger value="alerts" className="gap-2">
               <AlertTriangle className="h-4 w-4" />
-              <span className="hidden lg:inline">Alerts</span>
+              <span className="inline">Alerts</span>
             </TabsTrigger>
           </TabsList>
         </div>
 
         {/* Search & Filters */}
-        <div className="p-4 border-b space-y-2">
+        <div className="px-6 py-4 border-b space-y-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="h-9 pl-9"
+              className="h-10 pl-9"
             />
           </div>
-          
+
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="h-9 text-sm">
+            <SelectTrigger className="h-10 text-sm">
               <SelectValue placeholder="All Status" />
             </SelectTrigger>
             <SelectContent>
@@ -162,7 +162,7 @@ export function CommandSidebar({ mapInstance, onEntityClick }: CommandSidebarPro
                       transform: `translateY(${virtualItem.start}px)`,
                     }}
                     className={cn(
-                      'px-4 py-3 flex items-center justify-between sidebar-row',
+                      'px-6 py-3.5 flex items-center justify-between sidebar-row',
                       'border-b border-border/50 text-left',
                       selectedIndex === virtualItem.index && 'ring-2 ring-primary ring-inset'
                     )}
@@ -196,7 +196,7 @@ export function CommandSidebar({ mapInstance, onEntityClick }: CommandSidebarPro
                   key={vehicle.id}
                   onClick={() => openDrawer('vehicle', vehicle.id)}
                   className={cn(
-                    'w-full px-4 py-3 flex items-center justify-between sidebar-row',
+                    'w-full px-6 py-3.5 flex items-center justify-between sidebar-row',
                     'border-b border-border/50 text-left'
                   )}
                 >
@@ -228,7 +228,7 @@ export function CommandSidebar({ mapInstance, onEntityClick }: CommandSidebarPro
                   key={batch.id}
                   onClick={() => openDrawer('batch', batch.id)}
                   className={cn(
-                    'w-full px-4 py-3 flex items-center justify-between sidebar-row',
+                    'w-full px-6 py-3.5 flex items-center justify-between sidebar-row',
                     'border-b border-border/50 text-left'
                   )}
                 >
@@ -253,7 +253,7 @@ export function CommandSidebar({ mapInstance, onEntityClick }: CommandSidebarPro
           </TabsContent>
         </ScrollArea>
 
-        <div className="border-t border-border p-4 flex gap-2">
+        <div className="border-t border-border px-6 py-4 flex gap-2">
           <Button variant="outline" size="sm" className="flex-1">
             <Download className="h-4 w-4 mr-1.5" />
             Export

@@ -238,4 +238,17 @@
   .layer-toggle:active {
     transform: scale(0.98);
   }
+
+  /* Two-level sidebar layout fix: offset secondary sidebar on desktop */
+  @media (min-width: 768px) {
+    /* Target the wrapper around the secondary sidebar */
+    .sidebar-offset-wrapper .group.peer > div.fixed {
+      left: 4rem !important; /* 64px offset for primary sidebar */
+    }
+
+    /* Also target the spacer div to maintain layout */
+    .sidebar-offset-wrapper .group.peer > div:first-child {
+      margin-left: 4rem;
+    }
+  }
 }

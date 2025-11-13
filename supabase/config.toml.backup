@@ -1,0 +1,37 @@
+project_id = "fgkjhpytntgmbuxegntr"
+
+[functions.calculate-payload]
+verify_jwt = true
+
+[functions.check-geofencing]
+verify_jwt = true
+
+[functions.confirm-handoff]
+verify_jwt = true
+
+[functions.create-handoff]
+verify_jwt = true
+
+[functions.create-service-zone]
+verify_jwt = true
+
+[functions.generate-vehicle-image]
+verify_jwt = true
+
+[functions.optimize-route]
+verify_jwt = true
+
+[functions.process-alerts]
+verify_jwt = true
+
+[functions.send-notification]
+verify_jwt = true
+
+[functions.update-driver-location]
+verify_jwt = true
+
+[functions.update-service-zone]
+verify_jwt = true
+
+[functions.update-stop-status]
+verify_jwt = true

@@ -7,6 +7,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { MapStateProvider } from "./contexts/MapStateContext";
 import { WorkspaceProvider, useWorkspace } from "./contexts/WorkspaceContext";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
+import { CommandPalette } from "./components/layout/CommandPalette";
 import { FleetOpsLayout } from "./pages/fleetops/layout";
 import { StorefrontLayout } from "./pages/storefront/layout";
 import FleetOpsHome from "./pages/fleetops/page";
@@ -14,7 +15,9 @@ import StorefrontHome from "./pages/storefront/page";
 import StorefrontFacilities from "./pages/storefront/facilities/page";
 import StorefrontPayloads from "./pages/storefront/payloads/page";
 import StorefrontRequisitions from "./pages/storefront/requisitions/page";
+import StorefrontZones from "./pages/storefront/zones/page";
 import SchedulePlanner from "./pages/storefront/schedule-planner/page";
+import SchedulerPage from "./pages/storefront/scheduler/page";
 import FleetManagement from "./pages/fleetops/fleet-management/page";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -30,7 +33,20 @@ import VehicleManagementPage from "./pages/VehicleManagementPage";
 import ReportsPageWrapper from "./pages/ReportsPageWrapper";
 import BatchManagement from "./pages/BatchManagement";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 3, // Retry failed queries 3 times
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
+      staleTime: 30000, // Data is fresh for 30 seconds
+      refetchOnWindowFocus: true,
+      refetchOnReconnect: true,
+    },
+    mutations: {
+      retry: 1, // Retry failed mutations once
+    },
+  },
+});
 
 function WorkspaceThemeApplier() {
   const { workspace } = useWorkspace();
@@ -55,6 +71,7 @@ const App = () => (
           <WorkspaceProvider>
             <TooltipProvider>
               <WorkspaceThemeApplier />
+              <CommandPalette />
               <Toaster />
               <MapStateProvider>
                 <Routes>
@@ -88,10 +105,12 @@ const App = () => (
                     </ProtectedRoute>
                   }>
                     <Route index element={<StorefrontHome />} />
+                    <Route path="zones" element={<StorefrontZones />} />
                     <Route path="facilities" element={<StorefrontFacilities />} />
                     <Route path="requisitions" element={<StorefrontRequisitions />} />
                     <Route path="payloads" element={<StorefrontPayloads />} />
                     <Route path="schedule-planner" element={<SchedulePlanner />} />
+                    <Route path="scheduler" element={<SchedulerPage />} />
                   </Route>
 
                   {/* Legacy routes - redirect to workspace structure */}

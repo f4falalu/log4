@@ -10,7 +10,6 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Plus, Package, Truck, Calculator, Trash2, AlertTriangle, Send, Wand2 } from 'lucide-react';
 import { toast } from 'sonner';
-import Layout from '@/components/layout/Layout';
 import { useVehicles } from '@/hooks/useVehicles';
 import { useFacilities } from '@/hooks/useFacilities';
 import { useCreatePayloadItem, useDeletePayloadItem } from '@/hooks/usePayloadItems';
@@ -176,10 +175,9 @@ export default function PayloadPlannerPage() {
   const utilizationStatus = getUtilizationStatus(payloadUtilization);
 
   return (
-    <Layout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold">Payload Planner</h1>
             <p className="text-muted-foreground">Plan and optimize vehicle payload assignments</p>
@@ -472,16 +470,15 @@ export default function PayloadPlannerPage() {
           </div>
         </div>
 
-        {/* Finalize Dialog */}
-        {selectedVehicle && (
-          <FinalizePayloadDialog
-            open={isFinalizeDialogOpen}
-            onClose={() => setIsFinalizeDialogOpen(false)}
-            vehicleId={selectedVehicle.id}
-            vehicleName={`${selectedVehicle.model} (${selectedVehicle.plateNumber})`}
-          />
-        )}
-      </div>
-    </Layout>
+      {/* Finalize Dialog */}
+      {selectedVehicle && (
+        <FinalizePayloadDialog
+          open={isFinalizeDialogOpen}
+          onClose={() => setIsFinalizeDialogOpen(false)}
+          vehicleId={selectedVehicle.id}
+          vehicleName={`${selectedVehicle.model} (${selectedVehicle.plateNumber})`}
+        />
+      )}
+    </div>
   );
 }

@@ -1,14 +1,96 @@
+// Facility Types
+export type FacilityType = 'hospital' | 'clinic' | 'health_center' | 'pharmacy' | 'lab' | 'other';
+export type IPName = 'smoh' | 'ace-2' | 'crs';
+export type FundingSource = 'unfpa' | 'pepfar--usaid' | 'global-fund';
+export type Programme = 'Family Planning' | 'DRF' | 'HIV/AIDS' | 'Malaria';
+export type LevelOfCare = 'Tertiary' | 'Secondary' | 'Primary';
+export type ServiceZone = 'Central' | 'Gaya' | 'Danbatta' | 'Gwarzo' | 'Rano';
+
 export interface Facility {
   id: string;
+  // Basic Info (legacy fields)
   name: string;
   address: string;
   lat: number;
   lng: number;
-  type: string;
+  type?: FacilityType;
   phone?: string;
   contactPerson?: string;
   capacity?: number;
   operatingHours?: string;
+
+  // New Data Points (19 total)
+  warehouse_code: string; // Format: PSM/KAN/##/### (1)
+  state: string; // Default: 'kano' (2)
+  ip_name?: IPName; // (3)
+  funding_source?: FundingSource; // (4)
+  programme?: Programme; // (5)
+  pcr_service: boolean; // (6)
+  cd4_service: boolean; // (7)
+  type_of_service?: string; // (8) - can be multiple, comma-separated
+  service_zone?: ServiceZone; // (10)
+  level_of_care?: LevelOfCare; // (11)
+  lga?: string; // (12)
+  ward?: string; // (13)
+  // address is (14)
+  contact_name_pharmacy?: string; // (15)
+  designation?: string; // (16)
+  phone_pharmacy?: string; // (17)
+  email?: string; // (18)
+  // lat/lng are (19)
+  storage_capacity?: number; // Additional field
+
+  // Metadata
+  created_at?: string;
+  updated_at?: string;
+  created_by?: string;
+  updated_by?: string;
+  deleted_at?: string | null;
+  deleted_by?: string | null;
+}
+
+export interface FacilityService {
+  id: string;
+  facility_id: string;
+  service_name: string;
+  availability: boolean;
+  notes?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface FacilityDelivery {
+  id: string;
+  facility_id: string;
+  batch_id?: string;
+  delivery_date: string;
+  items_delivered: number;
+  driver_id?: string;
+  status: 'pending' | 'in_transit' | 'delivered' | 'failed';
+  notes?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface FacilityStock {
+  id: string;
+  facility_id: string;
+  product_id?: string;
+  product_name: string;
+  quantity: number;
+  unit?: string;
+  last_updated: string;
+  updated_by?: string;
+  created_at?: string;
+}
+
+export interface FacilityAuditLog {
+  id: string;
+  facility_id?: string;
+  user_id?: string;
+  action: 'created' | 'updated' | 'deleted' | 'restored';
+  changes?: Record<string, any>;
+  timestamp: string;
 }
 
 export interface Warehouse {
@@ -168,15 +250,35 @@ export interface RouteOptimization {
 }
 
 export interface CSVFacility {
+  // Legacy fields
   name: string;
   address: string;
   latitude: string;
   longitude: string;
-  type: string;
+  type?: string;
   phone?: string;
   contactPerson?: string;
   capacity?: string;
   operatingHours?: string;
+
+  // New 19 data point fields
+  warehouse_code?: string;
+  state?: string;
+  ip_name?: string;
+  funding_source?: string;
+  programme?: string;
+  pcr_service?: string; // "Yes" or "No" in CSV
+  cd4_service?: string; // "Yes" or "No" in CSV
+  type_of_service?: string;
+  service_zone?: string;
+  level_of_care?: string;
+  lga?: string;
+  ward?: string;
+  contact_name_pharmacy?: string;
+  designation?: string;
+  phone_pharmacy?: string;
+  email?: string;
+  storage_capacity?: string;
 }
 
 // Auth & IAM Types

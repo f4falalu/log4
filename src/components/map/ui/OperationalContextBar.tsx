@@ -48,9 +48,9 @@ export function OperationalContextBar({
   ];
 
   return (
-    <div className="h-[72px] bg-background border-b border-border flex items-center justify-between px-6 gap-6">
+    <div className="h-20 bg-background border-b border-border flex items-center justify-between px-6 gap-8">
       {/* Left: Mode Selector & Filters */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-4">
         {/* Mode Selector */}
         <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
           {modes.map((m) => (
@@ -105,49 +105,49 @@ export function OperationalContextBar({
       </div>
 
       {/* Center: Mission Stats */}
-      <div className="flex items-center gap-6 text-sm">
-        <div className="flex items-center gap-2">
-          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10">
-            <Truck className="h-4 w-4 text-primary" />
+      <div className="flex items-center gap-8 text-sm">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10">
+            <Truck className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <div className="font-semibold">{stats?.activeVehicles || 0}</div>
+            <div className="font-semibold text-base">{stats?.activeVehicles || 0}</div>
             <div className="text-xs text-muted-foreground">Active</div>
           </div>
         </div>
 
-        <div className="h-8 w-px bg-border" />
+        <div className="h-10 w-px bg-border" />
 
-        <div className="flex items-center gap-2">
-          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-500/10">
-            <Package className="h-4 w-4 text-blue-500" />
+        <div className="flex items-center gap-3">
+          <div className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-500/10">
+            <Package className="h-5 w-5 text-blue-500" />
           </div>
           <div>
-            <div className="font-semibold">{stats?.inProgressDeliveries || 0}</div>
+            <div className="font-semibold text-base">{stats?.inProgressDeliveries || 0}</div>
             <div className="text-xs text-muted-foreground">In Progress</div>
           </div>
         </div>
 
-        <div className="h-8 w-px bg-border" />
+        <div className="h-10 w-px bg-border" />
 
-        <div className="flex items-center gap-2">
-          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-green-500/10">
-            <CheckCircle className="h-4 w-4 text-green-500" />
+        <div className="flex items-center gap-3">
+          <div className="flex items-center justify-center w-10 h-10 rounded-full bg-green-500/10">
+            <CheckCircle className="h-5 w-5 text-green-500" />
           </div>
           <div>
-            <div className="font-semibold">{stats?.completedDeliveries || 0}</div>
+            <div className="font-semibold text-base">{stats?.completedDeliveries || 0}</div>
             <div className="text-xs text-muted-foreground">Completed</div>
           </div>
         </div>
 
-        <div className="h-8 w-px bg-border" />
+        <div className="h-10 w-px bg-border" />
 
-        <div className="flex items-center gap-2">
-          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-orange-500/10">
-            <AlertTriangle className="h-4 w-4 text-orange-500" />
+        <div className="flex items-center gap-3">
+          <div className="flex items-center justify-center w-10 h-10 rounded-full bg-orange-500/10">
+            <AlertTriangle className="h-5 w-5 text-orange-500" />
           </div>
           <div>
-            <div className="font-semibold">{stats?.activeAlerts || 0}</div>
+            <div className="font-semibold text-base">{stats?.activeAlerts || 0}</div>
             <div className="text-xs text-muted-foreground">Alerts</div>
           </div>
         </div>

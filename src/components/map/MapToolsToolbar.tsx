@@ -83,7 +83,7 @@ export function MapToolsToolbar({
 
   return (
     <TooltipProvider delayDuration={150}>
-      <div className="absolute top-24 left-4 z-[1000] flex flex-col gap-2 bg-background/95 backdrop-blur rounded-lg shadow-lg border p-2">
+      <div className="absolute top-24 left-4 z-[1000] flex flex-col gap-3 bg-background/95 backdrop-blur rounded-lg shadow-lg border p-3">
         {/* Navigation Group */}
         <Tooltip>
           <TooltipTrigger asChild>
@@ -115,7 +115,7 @@ export function MapToolsToolbar({
           <TooltipContent side="right">Search</TooltipContent>
         </Tooltip>
 
-        <Separator className="my-1" />
+        <Separator className="my-2" />
 
         {/* Layer Controls Group */}
         <Tooltip>
@@ -163,7 +163,7 @@ export function MapToolsToolbar({
           <TooltipContent side="right">Legend</TooltipContent>
         </Tooltip>
 
-        <Separator className="my-1" />
+        <Separator className="my-2" />
 
         {/* Tools Group */}
         <Tooltip>
@@ -202,7 +202,7 @@ export function MapToolsToolbar({
           <TooltipContent side="right">Measure Distance</TooltipContent>
         </Tooltip>
 
-        <Separator className="my-1" />
+        <Separator className="my-2" />
 
         {/* View Controls Group */}
         <Tooltip>
