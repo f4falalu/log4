@@ -14,7 +14,7 @@ interface Step4ReviewProps {
 
 export function Step4Review({ onComplete }: Step4ReviewProps) {
   const { draft, setStep, reset } = useVehicleWizard();
-  const { createVehicle, isCreating } = useVehicleManagement();
+  const { createVehicleAsync, isCreating } = useVehicleManagement();
   const { mutateAsync: createTiers } = useCreateVehicleTiers();
   const { data: categories } = useVehicleCategories();
 
@@ -41,22 +41,29 @@ export function Step4Review({ onComplete }: Step4ReviewProps) {
         maintenance_frequency_km: draft.maintenance_frequency_km,
       };
 
-      // Create vehicle first
-      await new Promise<void>((resolve, reject) => {
-        createVehicle(vehicleData, {
-          onSuccess: async (data: any) => {
-            // Get the created vehicle ID (we'll need to update the hook to return it)
-            // For now, we'll create tiers separately
-            toast.success('Vehicle created successfully!');
-            reset();
-            onComplete();
-            resolve();
-          },
-          onError: reject
-        });
-      });
+      // Create vehicle and get the ID
+      const vehicle = await createVehicleAsync(vehicleData);
+      
+      // Create tiers for the vehicle
+      if (draft.tiers && draft.tiers.length > 0 && vehicle.id) {
+        const tierData = draft.tiers.map((tier, index) => ({
+          vehicle_id: vehicle.id,
+          tier_name: tier.name,
+          tier_position: index + 1,
+          max_weight_kg: tier.capacity_kg,
+          max_volume_m3: (tier.capacity_kg / 100), // Rough estimate
+          weight_ratio: tier.ratio,
+        }));
+
+        await createTiers(tierData);
+      }
+
+      toast.success('Vehicle created successfully with tier configuration!');
+      reset();
+      onComplete();
     } catch (error) {
       console.error('Error creating vehicle:', error);
+      toast.error('Failed to create vehicle');
     }
   };
 
