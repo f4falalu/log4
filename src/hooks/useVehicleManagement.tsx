@@ -28,11 +28,14 @@ export function useVehicleManagement() {
 
   const createVehicle = useMutation({
     mutationFn: async (data: VehicleFormData) => {
-      const { error } = await supabase
+      const { data: vehicle, error } = await supabase
         .from('vehicles')
-        .insert(data);
+        .insert(data)
+        .select()
+        .single();
       
       if (error) throw error;
+      return vehicle;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vehicles'] });
@@ -87,6 +90,7 @@ export function useVehicleManagement() {
 
   return {
     createVehicle: createVehicle.mutate,
+    createVehicleAsync: createVehicle.mutateAsync,
     updateVehicle: updateVehicle.mutate,
     deleteVehicle: deleteVehicle.mutate,
     isCreating: createVehicle.isPending,

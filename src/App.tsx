@@ -74,6 +74,11 @@ const App = () => (
                     <Route path="batches" element={<BatchManagement />} />
                     <Route path="tactical" element={<TacticalMap />} />
                     <Route path="vehicles" element={<VehicleRegistry />} />
+                    <Route path="vehicles/:id" element={
+                      React.createElement(
+                        React.lazy(() => import('./pages/fleetops/vehicles/[id]/page'))
+                      )
+                    } />
                     <Route path="fleet-management" element={<FleetManagement />} />
                     <Route path="reports" element={<ReportsPageWrapper />} />
                   </Route>
