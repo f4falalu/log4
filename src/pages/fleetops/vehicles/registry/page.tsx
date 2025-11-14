@@ -125,7 +125,7 @@ export default function VehicleRegistry() {
                 {vehicles.map((vehicle) => (
                   <div
                     key={vehicle.id}
-                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 cursor-pointer"
+                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
                     onClick={() => navigate(`/fleetops/vehicles/${vehicle.id}`)}
                   >
                     <div className="flex items-center gap-4">
