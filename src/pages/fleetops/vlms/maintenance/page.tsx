@@ -1,0 +1,111 @@
+'use client';
+
+import { useState } from 'react';
+import { useMaintenanceRecords } from '@/hooks/vlms/useMaintenance';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Plus, Calendar, Loader2 } from 'lucide-react';
+
+export default function MaintenancePage() {
+  const { data: records, isLoading } = useMaintenanceRecords();
+
+  const getStatusBadge = (status: string) => {
+    const variants: Record<string, any> = {
+      scheduled: 'default',
+      in_progress: 'secondary',
+      completed: 'outline',
+      cancelled: 'destructive',
+    };
+    return <Badge variant={variants[status] || 'default'}>{status}</Badge>;
+  };
+
+  const getPriorityBadge = (priority: string) => {
+    const variants: Record<string, any> = {
+      low: 'outline',
+      normal: 'default',
+      high: 'secondary',
+      critical: 'destructive',
+    };
+    return <Badge variant={variants[priority] || 'default'}>{priority}</Badge>;
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Maintenance Management</h1>
+          <p className="text-muted-foreground">Track vehicle maintenance and service records</p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline">
+            <Calendar className="h-4 w-4 mr-2" />
+            Calendar View
+          </Button>
+          <Button>
+            <Plus className="h-4 w-4 mr-2" />
+            Schedule Maintenance
+          </Button>
+        </div>
+      </div>
+
+      <Card>
+        {isLoading ? (
+          <div className="flex items-center justify-center p-12">
+            <Loader2 className="h-8 w-8 animate-spin" />
+          </div>
+        ) : records && records.length > 0 ? (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Record ID</TableHead>
+                <TableHead>Vehicle</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Priority</TableHead>
+                <TableHead>Scheduled Date</TableHead>
+                <TableHead>Cost</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {records.map((record) => (
+                <TableRow key={record.id}>
+                  <TableCell className="font-medium">{record.record_id}</TableCell>
+                  <TableCell>
+                    {record.vehicle?.make} {record.vehicle?.model}
+                    <div className="text-sm text-muted-foreground">
+                      {record.vehicle?.license_plate}
+                    </div>
+                  </TableCell>
+                  <TableCell className="capitalize">
+                    {record.maintenance_type?.replace('_', ' ')}
+                  </TableCell>
+                  <TableCell>{getStatusBadge(record.status)}</TableCell>
+                  <TableCell>{getPriorityBadge(record.priority)}</TableCell>
+                  <TableCell>
+                    {record.scheduled_date
+                      ? new Date(record.scheduled_date).toLocaleDateString()
+                      : 'Not scheduled'}
+                  </TableCell>
+                  <TableCell>${record.total_cost?.toLocaleString() || '0'}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        ) : (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">No maintenance records found</p>
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+}
