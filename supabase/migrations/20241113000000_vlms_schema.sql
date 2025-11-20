@@ -663,31 +663,23 @@ USING (auth.role() = 'authenticated');
 CREATE POLICY "Admins and fleet managers can create vehicles"
 ON vlms_vehicles FOR INSERT
 WITH CHECK (
-  EXISTS (
-    SELECT 1 FROM profiles
-    WHERE profiles.id = auth.uid()
-    AND profiles.role IN ('admin', 'fleet_manager', 'storefront_manager')
-  )
+  public.has_role(auth.uid(), 'system_admin'::app_role) OR
+  public.has_role(auth.uid(), 'warehouse_officer'::app_role) OR
+  public.has_role(auth.uid(), 'zonal_manager'::app_role)
 );
 
 CREATE POLICY "Admins and fleet managers can update vehicles"
 ON vlms_vehicles FOR UPDATE
 USING (
-  EXISTS (
-    SELECT 1 FROM profiles
-    WHERE profiles.id = auth.uid()
-    AND profiles.role IN ('admin', 'fleet_manager', 'storefront_manager')
-  )
+  public.has_role(auth.uid(), 'system_admin'::app_role) OR
+  public.has_role(auth.uid(), 'warehouse_officer'::app_role) OR
+  public.has_role(auth.uid(), 'zonal_manager'::app_role)
 );
 
 CREATE POLICY "Admins can delete vehicles"
 ON vlms_vehicles FOR DELETE
 USING (
-  EXISTS (
-    SELECT 1 FROM profiles
-    WHERE profiles.id = auth.uid()
-    AND profiles.role = 'admin'
-  )
+  public.has_role(auth.uid(), 'system_admin'::app_role)
 );
 
 -- Policies for vlms_maintenance_records
@@ -698,11 +690,9 @@ USING (auth.role() = 'authenticated');
 CREATE POLICY "Admins and fleet managers can manage maintenance records"
 ON vlms_maintenance_records FOR ALL
 USING (
-  EXISTS (
-    SELECT 1 FROM profiles
-    WHERE profiles.id = auth.uid()
-    AND profiles.role IN ('admin', 'fleet_manager', 'storefront_manager')
-  )
+  public.has_role(auth.uid(), 'system_admin'::app_role) OR
+  public.has_role(auth.uid(), 'warehouse_officer'::app_role) OR
+  public.has_role(auth.uid(), 'zonal_manager'::app_role)
 );
 
 -- Policies for vlms_fuel_logs
@@ -717,11 +707,9 @@ WITH CHECK (auth.role() = 'authenticated');
 CREATE POLICY "Admins and fleet managers can manage fuel logs"
 ON vlms_fuel_logs FOR ALL
 USING (
-  EXISTS (
-    SELECT 1 FROM profiles
-    WHERE profiles.id = auth.uid()
-    AND profiles.role IN ('admin', 'fleet_manager', 'storefront_manager')
-  )
+  public.has_role(auth.uid(), 'system_admin'::app_role) OR
+  public.has_role(auth.uid(), 'warehouse_officer'::app_role) OR
+  public.has_role(auth.uid(), 'zonal_manager'::app_role)
 );
 
 -- Policies for vlms_assignments
@@ -732,11 +720,9 @@ USING (auth.role() = 'authenticated');
 CREATE POLICY "Admins and fleet managers can manage assignments"
 ON vlms_assignments FOR ALL
 USING (
-  EXISTS (
-    SELECT 1 FROM profiles
-    WHERE profiles.id = auth.uid()
-    AND profiles.role IN ('admin', 'fleet_manager', 'storefront_manager')
-  )
+  public.has_role(auth.uid(), 'system_admin'::app_role) OR
+  public.has_role(auth.uid(), 'warehouse_officer'::app_role) OR
+  public.has_role(auth.uid(), 'zonal_manager'::app_role)
 );
 
 -- Policies for vlms_incidents
@@ -751,11 +737,9 @@ WITH CHECK (auth.role() = 'authenticated');
 CREATE POLICY "Admins and fleet managers can manage incidents"
 ON vlms_incidents FOR ALL
 USING (
-  EXISTS (
-    SELECT 1 FROM profiles
-    WHERE profiles.id = auth.uid()
-    AND profiles.role IN ('admin', 'fleet_manager', 'storefront_manager')
-  )
+  public.has_role(auth.uid(), 'system_admin'::app_role) OR
+  public.has_role(auth.uid(), 'warehouse_officer'::app_role) OR
+  public.has_role(auth.uid(), 'zonal_manager'::app_role)
 );
 
 -- Policies for vlms_inspections
@@ -766,11 +750,9 @@ USING (auth.role() = 'authenticated');
 CREATE POLICY "Admins and fleet managers can manage inspections"
 ON vlms_inspections FOR ALL
 USING (
-  EXISTS (
-    SELECT 1 FROM profiles
-    WHERE profiles.id = auth.uid()
-    AND profiles.role IN ('admin', 'fleet_manager', 'storefront_manager')
-  )
+  public.has_role(auth.uid(), 'system_admin'::app_role) OR
+  public.has_role(auth.uid(), 'warehouse_officer'::app_role) OR
+  public.has_role(auth.uid(), 'zonal_manager'::app_role)
 );
 
 -- Policies for vlms_disposal_records
@@ -781,11 +763,7 @@ USING (auth.role() = 'authenticated');
 CREATE POLICY "Admins can manage disposal records"
 ON vlms_disposal_records FOR ALL
 USING (
-  EXISTS (
-    SELECT 1 FROM profiles
-    WHERE profiles.id = auth.uid()
-    AND profiles.role = 'admin'
-  )
+  public.has_role(auth.uid(), 'system_admin'::app_role)
 );
 
 -- =====================================================
