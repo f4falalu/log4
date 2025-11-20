@@ -2,7 +2,7 @@
 
 **Date**: November 20, 2025
 **Branch**: `feature/vehicle-consolidation-audit`
-**Status**: Phase 1-2 Complete, Ready for Testing
+**Status**: Phase 1-2 Complete + Relationship Fix Applied ✅
 
 ---
 
@@ -10,7 +10,9 @@
 
 Successfully implemented **Phases 1-2 of the vehicle domain consolidation**, resolving critical conflicts between the existing `/fleetops/vehicles` system and the new VLMS `/fleetops/vlms` onboarding wizard. All 17 missing columns have been added to the `vehicles` table, and the `plate_number` vs `license_plate` naming conflict has been resolved with a bidirectional sync mechanism.
 
-**Key Achievement**: The VLMS onboarding wizard is now unblocked and should function correctly with the production `vehicles` table.
+**Update (Nov 20, 2025 - 2:00 PM)**: Fixed vehicles-profiles relationship error by correcting `created_by` and `updated_by` foreign keys to reference `profiles(id)` instead of `auth.users(id)`. This resolves the type generation error and fully unblocks VLMS functionality.
+
+**Key Achievement**: The VLMS onboarding wizard is now fully unblocked and ready for testing.
 
 ---
 
@@ -202,6 +204,34 @@ CREATE TABLE vehicle_tiers (
 
 ---
 
+### Challenge 4: Vehicles-Profiles Relationship Error ⚠️
+
+**Issue**: Type generation error "failed to find relationship between vehicles and profiles"
+
+**Root Cause**: The manual migration script (APPLY_MANUAL_MIGRATIONS.sql) incorrectly added `created_by` and `updated_by` columns referencing `auth.users(id)` instead of `profiles(id)`. The Supabase type generator couldn't resolve this relationship because:
+1. The application code expects to join vehicles with profiles table
+2. Foreign keys pointed to auth.users instead of profiles
+3. The profiles table has `id UUID PRIMARY KEY REFERENCES auth.users(id)`, creating an indirect relationship
+
+**Solution**: Created corrected migration ([20251120000000_fix_vehicles_profiles_relationship.sql](supabase/migrations/20251120000000_fix_vehicles_profiles_relationship.sql)) that:
+1. Drops incorrect columns (referencing auth.users)
+2. Re-adds columns with correct foreign keys to profiles(id)
+3. Creates audit trigger to auto-populate fields on INSERT/UPDATE
+4. Adds indexes for performance
+
+**Changes**:
+```sql
+-- ❌ WRONG (initial attempt)
+ALTER TABLE vehicles ADD COLUMN created_by UUID REFERENCES auth.users(id);
+
+-- ✅ CORRECT (applied fix)
+ALTER TABLE vehicles ADD COLUMN created_by UUID REFERENCES profiles(id) ON DELETE SET NULL;
+```
+
+**Outcome**: ✅ Type generation now succeeds, vehicles-profiles relationship properly established, VLMS onboarding fully unblocked.
+
+---
+
 ## Build & Type Safety Status
 
 ### Build Status: ✅ **PASSING**
@@ -374,12 +404,20 @@ SELECT plate_number, license_plate FROM vehicles WHERE id = <id>;
 # Commit 4: Type regeneration
 8676b04 - chore: regenerate types after vehicle consolidation migrations
   2 files changed, 1891 insertions(+), 116 deletions(-)
+
+# Commit 5: Implementation documentation
+21e8d76 - docs: add comprehensive implementation summary
+  1 file changed, 613 insertions(+)
+
+# Commit 6: Relationship fix (CRITICAL)
+1beff11 - fix: correct vehicles-profiles relationship foreign keys
+  2 files changed, 125 insertions(+)
 ```
 
 **Total Impact**:
-- **79 files changed**
-- **+18,249 insertions**, **-489 deletions**
-- **4 commits** on `feature/vehicle-consolidation-audit` branch
+- **82 files changed**
+- **+18,987 insertions**, **-489 deletions**
+- **6 commits** on `feature/vehicle-consolidation-audit` branch
 
 ---
 
