@@ -788,7 +788,7 @@ GROUP BY v.id;
 CREATE OR REPLACE VIEW vlms_upcoming_maintenance AS
 SELECT
   m.*,
-  v.vehicle_id,
+  v.vehicle_id as vehicle_display_id,
   v.make,
   v.model,
   v.license_plate,
@@ -803,7 +803,7 @@ ORDER BY m.scheduled_date ASC;
 CREATE OR REPLACE VIEW vlms_overdue_maintenance AS
 SELECT
   m.*,
-  v.vehicle_id,
+  v.vehicle_id as vehicle_display_id,
   v.make,
   v.model,
   v.license_plate,
@@ -818,7 +818,7 @@ ORDER BY m.scheduled_date ASC;
 CREATE OR REPLACE VIEW vlms_active_assignments AS
 SELECT
   a.*,
-  v.vehicle_id,
+  v.vehicle_id as vehicle_display_id,
   v.make,
   v.model,
   v.license_plate,
