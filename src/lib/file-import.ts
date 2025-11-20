@@ -4,10 +4,17 @@ import { CSVFacilityData, csvFacilitySchema } from './facility-validation';
 
 export type FileFormat = 'csv' | 'xlsx' | 'xls';
 
+export interface ColumnMappingDiagnostic {
+  originalHeader: string;
+  mappedTo: string | null;
+  isRecognized: boolean;
+}
+
 export interface ParsedFile {
   headers: string[];
   rows: any[];
   format: FileFormat;
+  columnMappings?: ColumnMappingDiagnostic[];
 }
 
 export interface ValidationResult {
@@ -16,57 +23,74 @@ export interface ValidationResult {
   message: string;
   severity: 'error' | 'warning';
   value?: any;
+  confidence?: 'exact' | 'fuzzy' | 'none'; // For DB matching results
+}
+
+/**
+ * Skip configuration for optional fields
+ * If a field is marked as skipped, validation will not flag it as missing
+ */
+export interface SkipConfig {
+  ward?: boolean;
+  service_zone?: boolean;
+  level_of_care?: boolean;
+  facility_type?: boolean;
+  warehouse_code?: boolean;
 }
 
 /**
  * Column name mapping - maps common variations to expected field names
  */
 const COLUMN_MAPPINGS: Record<string, string[]> = {
-  'name': ['name', 'facility name', 'facility_name', 'facilityname', 'health facility name', 'health facility'],
+  'name': ['name', 'facility name', 'facility_name', 'facilityname', 'health facility name', 'health facility', 'facility', 'site name'],
   'address': [
     'address', 'street address', 'address line 1', 'facility address', 'location', 'street',
     'full address', 'site address', 'facility location', 'physical address', 'geo address',
-    'complete address', 'address_line_1'
+    'complete address', 'address_line_1', 'addr', 'address1', 'street_address'
   ],
   'latitude': [
     'latitude', 'lat', 'latitude coordinate', 'lat coordinate', 'latitude (decimal)',
     'gps lat', 'y coordinate', 'gps latitude', 'lat.', 'geo_lat', 'latitude_decimal',
-    'decimal latitude', 'lat (decimal)'
+    'decimal latitude', 'lat (decimal)', 'latitud', 'y', 'y coord', 'y_coordinate',
+    'gps_lat', 'gps_latitude', 'lat_decimal', 'decimal_latitude', 'latitude_dd', 'lat_dd'
   ],
   'longitude': [
     'longitude', 'lon', 'long', 'lng', 'longitude coordinate', 'lon coordinate', 'long coordinate',
     'longitude (decimal)', 'gps lon', 'x coordinate', 'gps longitude', 'lon.', 'lng.',
-    'geo_lng', 'longitude_decimal', 'decimal longitude', 'lon (decimal)', 'long (decimal)'
+    'geo_lng', 'longitude_decimal', 'decimal longitude', 'lon (decimal)', 'long (decimal)',
+    'longitud', 'x', 'x coord', 'x_coordinate', 'gps_lon', 'gps_lng', 'gps_longitude',
+    'lon_decimal', 'lng_decimal', 'decimal_longitude', 'longitude_dd', 'lon_dd', 'lng_dd', 'long.'
   ],
   'geo_coordinates': [
     'geo-coordinates', 'geo coordinates', 'geocoordinates', 'coordinates', 'coordinate',
     'geo-coordinates (longitude/latitude)', 'geo coordinates (longitude/latitude)',
     'geo-coordinates (latitude/longitude)', 'geo coordinates (latitude/longitude)',
     'lat/long', 'lat/lon', 'latitude/longitude', 'long/lat', 'lon/lat', 'longitude/latitude',
-    'gps coordinates', 'gps', 'location coordinates'
+    'gps coordinates', 'gps', 'location coordinates', 'coords', 'geo_coords', 'geo-coords',
+    'latlong', 'latlng', 'longlat', 'lnglat', 'lat_long', 'lat_lng', 'long_lat', 'lng_lat'
   ],
-  'lga': ['lga', 'local government area', 'local govt area', 'lga name'],
-  'ward': ['ward', 'ward name'],
-  'service_zone': ['service_zone', 'service zone', 'zone', 'service area'],
-  'level_of_care': ['level_of_care', 'level of care', 'care level', 'loc'],
-  'warehouse_code': ['warehouse_code', 'warehouse code', 'code', 'facility code'],
-  'state': ['state', 'state name'],
-  'ip_name': ['ip_name', 'ip name', 'implementing partner', 'partner'],
-  'funding_source': ['funding_source', 'funding source', 'funder', 'funding'],
-  'programme': ['programme', 'program', 'programme name'],
-  'pcr_service': ['pcr_service', 'pcr service', 'pcr'],
-  'cd4_service': ['cd4_service', 'cd4 service', 'cd4'],
-  'type_of_service': ['type_of_service', 'type of service', 'service type'],
-  'contact_name_pharmacy': ['contact_name_pharmacy', 'contact name pharmacy', 'pharmacy contact', 'contact name'],
-  'designation': ['designation', 'position', 'title'],
-  'phone_pharmacy': ['phone_pharmacy', 'phone pharmacy', 'pharmacy phone', 'contact phone'],
-  'email': ['email', 'email address', 'contact email'],
-  'storage_capacity': ['storage_capacity', 'storage capacity', 'capacity'],
-  'type': ['type', 'facility type'],
-  'phone': ['phone', 'phone number', 'contact number'],
-  'contactPerson': ['contactPerson', 'contact person', 'contact_person'],
-  'capacity': ['capacity', 'bed capacity'],
-  'operatingHours': ['operatingHours', 'operating hours', 'operating_hours', 'hours'],
+  'lga': ['lga', 'local government area', 'local govt area', 'lga name', 'l.g.a', 'l g a', 'local govt', 'lg area', 'local_govt_area', 'local_government', 'local government area (lga)'],
+  'ward': ['ward', 'ward name', 'ward_name', 'political ward', 'ward / locality', 'ward/locality', 'locality/ward', 'locality', 'ward locality', 'locality / ward'],
+  'service_zone': ['service_zone', 'service zone', 'zone', 'service area', 'service_area', 'delivery zone', 'servicezone'],
+  'level_of_care': ['level_of_care', 'level of care', 'care level', 'loc', 'levelofcare', 'level_care', 'facility level'],
+  'warehouse_code': ['warehouse_code', 'warehouse code', 'code', 'facility code', 'warehouse_id', 'facility_code', 'site code', 'site_code', 'wh_code'],
+  'state': ['state', 'state name', 'state_name', 'province'],
+  'ip_name': ['ip_name', 'ip name', 'implementing partner', 'partner', 'ip', 'implementing_partner', 'partner_name'],
+  'funding_source': ['funding_source', 'funding source', 'funder', 'funding', 'funding_agency', 'donor'],
+  'programme': ['programme', 'program', 'programme name', 'program_name', 'programme_name'],
+  'pcr_service': ['pcr_service', 'pcr service', 'pcr', 'pcr_test', 'pcr test'],
+  'cd4_service': ['cd4_service', 'cd4 service', 'cd4', 'cd4_test', 'cd4 test'],
+  'type_of_service': ['type_of_service', 'type of service', 'service type', 'service_type', 'typeofservice'],
+  'contact_name_pharmacy': ['contact_name_pharmacy', 'contact name pharmacy', 'pharmacy contact', 'contact name', 'pharmacy_contact_name', 'pharm_contact'],
+  'designation': ['designation', 'position', 'title', 'job title', 'job_title', 'role'],
+  'phone_pharmacy': ['phone_pharmacy', 'phone pharmacy', 'pharmacy phone', 'contact phone', 'pharmacy_phone', 'pharm_phone', 'pharmacy_tel'],
+  'email': ['email', 'email address', 'contact email', 'email_address', 'e-mail', 'mail'],
+  'storage_capacity': ['storage_capacity', 'storage capacity', 'capacity', 'storage_cap', 'storage'],
+  'type': ['type', 'facility type', 'facility_type', 'facilitytype', 'category'],
+  'phone': ['phone', 'phone number', 'contact number', 'telephone', 'tel', 'phone_number', 'contact_number', 'mobile'],
+  'contactPerson': ['contactPerson', 'contact person', 'contact_person', 'contact', 'focal person', 'focal_person'],
+  'capacity': ['capacity', 'bed capacity', 'bed_capacity', 'total capacity', 'total_capacity'],
+  'operatingHours': ['operatingHours', 'operating hours', 'operating_hours', 'hours', 'operation hours', 'working hours', 'working_hours'],
 };
 
 /**
@@ -81,8 +105,12 @@ function parseGeoCoordinates(value: string, columnName?: string): { latitude?: n
     return {};
   }
 
-  // Remove extra whitespace and normalize separators
-  const cleaned = value.trim().replace(/\s+/g, ' ');
+  // Remove enclosing brackets, parentheses, and extra whitespace
+  const cleaned = value
+    .trim()
+    .replace(/^[\[\(]+/, '')  // Remove leading brackets/parens
+    .replace(/[\]\)]+$/, '')  // Remove trailing brackets/parens
+    .replace(/\s+/g, ' ');     // Normalize whitespace
 
   // Try to extract numbers (supports space, comma, semicolon, pipe separators)
   const numbers = cleaned.split(/[\s,;|]+/)
@@ -92,7 +120,9 @@ function parseGeoCoordinates(value: string, columnName?: string): { latitude?: n
     .filter(n => !isNaN(n));
 
   if (numbers.length < 2) {
-    console.warn('[CSV Import] parseGeoCoordinates: Not enough numbers found in value:', value);
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('[CSV Import] parseGeoCoordinates: Not enough numbers found in value:', value);
+    }
     return {};
   }
 
@@ -175,9 +205,10 @@ function parseGeoCoordinates(value: string, columnName?: string): { latitude?: n
 /**
  * Normalize column names to match expected field names
  */
-function normalizeColumnNames(row: any): any {
+function normalizeColumnNames(row: any, generateDiagnostics: boolean = false): { normalized: any; diagnostics?: ColumnMappingDiagnostic[] } {
   const normalized: any = {};
   const columnMappingMetadata: Record<string, string> = {}; // Track which original column mapped to each field
+  const diagnostics: ColumnMappingDiagnostic[] = [];
 
   // Log original columns for debugging (only log first row to avoid spam)
   if (process.env.NODE_ENV === 'development') {
@@ -193,6 +224,9 @@ function normalizeColumnNames(row: any): any {
     return acc;
   }, {} as Record<string, string>);
 
+  // Track which original columns were mapped
+  const mappedOriginalColumns = new Set<string>();
+
   // Map each field using the column mappings
   for (const [targetField, variations] of Object.entries(COLUMN_MAPPINGS)) {
     // Find the first matching variation in the row
@@ -203,8 +237,26 @@ function normalizeColumnNames(row: any): any {
         normalized[targetField] = row[originalKey];
         // Track which original column name was used for this mapping
         columnMappingMetadata[targetField] = originalKey;
+        mappedOriginalColumns.add(originalKey);
         break;
       }
+    }
+  }
+
+  // Generate diagnostics if requested
+  if (generateDiagnostics) {
+    const originalHeaders = Object.keys(row);
+    for (const header of originalHeaders) {
+      const isMapped = mappedOriginalColumns.has(header);
+      const mappedTo = isMapped
+        ? Object.entries(columnMappingMetadata).find(([_, orig]) => orig === header)?.[0] || null
+        : null;
+
+      diagnostics.push({
+        originalHeader: header,
+        mappedTo,
+        isRecognized: isMapped,
+      });
     }
   }
 
@@ -276,7 +328,7 @@ function normalizeColumnNames(row: any): any {
     }
   }
 
-  return normalized;
+  return { normalized, diagnostics: generateDiagnostics ? diagnostics : undefined };
 }
 
 /**
@@ -307,12 +359,20 @@ function parseCSVFile(file: File): Promise<ParsedFile> {
       skipEmptyLines: true,
       complete: (results) => {
         const headers = results.meta.fields || [];
-        // Normalize column names in all rows
-        const rows = (results.data as any[]).map(row => normalizeColumnNames(row));
+        // Normalize column names in all rows, generating diagnostics from first row only
+        let columnMappings: ColumnMappingDiagnostic[] | undefined;
+        const rows = (results.data as any[]).map((row, index) => {
+          const { normalized, diagnostics } = normalizeColumnNames(row, index === 0);
+          if (index === 0 && diagnostics) {
+            columnMappings = diagnostics;
+          }
+          return normalized;
+        });
         resolve({
           headers,
           rows,
           format: 'csv',
+          columnMappings,
         });
       },
       error: (error) => {
@@ -355,22 +415,28 @@ function parseExcelFile(file: File): Promise<ParsedFile> {
         // First row is headers
         const headers = (jsonData[0] as any[]).map(h => String(h || '').trim());
 
-        // Remaining rows are data
-        const rows = jsonData.slice(1).map((row: any) => {
+        // Remaining rows are data, generate diagnostics from first row only
+        let columnMappings: ColumnMappingDiagnostic[] | undefined;
+        const rows = jsonData.slice(1).map((row: any, index) => {
           const obj: any = {};
-          headers.forEach((header, index) => {
+          headers.forEach((header, idx) => {
             if (header) {
-              obj[header] = row[index] !== undefined ? String(row[index]).trim() : '';
+              obj[header] = row[idx] !== undefined ? String(row[idx]).trim() : '';
             }
           });
           // Normalize column names for consistent field access
-          return normalizeColumnNames(obj);
+          const { normalized, diagnostics } = normalizeColumnNames(obj, index === 0);
+          if (index === 0 && diagnostics) {
+            columnMappings = diagnostics;
+          }
+          return normalized;
         });
 
         resolve({
           headers: headers.filter(h => h), // Remove empty headers
           rows: rows.filter(row => Object.values(row).some(v => v)), // Remove empty rows
           format: file.name.endsWith('.xlsx') ? 'xlsx' : 'xls',
+          columnMappings,
         });
       } catch (error: any) {
         reject(new Error(`Failed to parse Excel file: ${error.message}`));
@@ -408,11 +474,23 @@ export async function parseFile(file: File): Promise<ParsedFile> {
 
 /**
  * Validate a single row of facility data
+ * @param row - The facility row data
+ * @param rowIndex - Zero-based index of the row
+ * @param existingWarehouseCodes - Set of existing warehouse codes to check for duplicates
+ * @param skipConfig - Configuration for which optional fields to skip validation
+ * @param dbMatchResults - Results from DB matching for validation
  */
 export function validateFacilityRow(
   row: any,
   rowIndex: number,
-  existingWarehouseCodes: Set<string> = new Set()
+  existingWarehouseCodes: Set<string> = new Set(),
+  skipConfig: SkipConfig = {},
+  dbMatchResults?: {
+    lga?: { id: string | null; confidence: 'exact' | 'fuzzy' | 'none' };
+    zone?: { id: string | null; confidence: 'exact' | 'fuzzy' | 'none' };
+    facilityType?: { id: string | null; confidence: 'exact' | 'fuzzy' | 'none' };
+    levelOfCare?: { id: string | null; confidence: 'exact' | 'fuzzy' | 'none' };
+  }
 ): ValidationResult[] {
   const issues: ValidationResult[] = [];
 
@@ -508,35 +586,143 @@ export function validateFacilityRow(
     }
   }
 
-  // Warnings for missing recommended fields
+  // LGA is now REQUIRED (not just recommended)
   if (!row.lga || String(row.lga).trim() === '') {
     issues.push({
       row: rowIndex + 1,
       field: 'lga',
-      message: 'LGA is recommended',
-      severity: 'warning',
+      message: 'LGA is required',
+      severity: 'error',
       value: row.lga,
     });
+  } else if (dbMatchResults?.lga) {
+    // Validate LGA against database
+    if (dbMatchResults.lga.confidence === 'none') {
+      issues.push({
+        row: rowIndex + 1,
+        field: 'lga',
+        message: `LGA "${row.lga}" not found in database. Contact admin to add this LGA.`,
+        severity: 'error',
+        value: row.lga,
+        confidence: 'none',
+      });
+    } else if (dbMatchResults.lga.confidence === 'fuzzy') {
+      issues.push({
+        row: rowIndex + 1,
+        field: 'lga',
+        message: `LGA "${row.lga}" fuzzy-matched in database. Please verify it's correct.`,
+        severity: 'warning',
+        value: row.lga,
+        confidence: 'fuzzy',
+      });
+    }
   }
 
-  if (!row.service_zone || String(row.service_zone).trim() === '') {
-    issues.push({
-      row: rowIndex + 1,
-      field: 'service_zone',
-      message: 'Service Zone is recommended for route optimization',
-      severity: 'warning',
-      value: row.service_zone,
-    });
+  // Service Zone validation (optional, respects skip config)
+  if (!skipConfig.service_zone) {
+    if (!row.service_zone || String(row.service_zone).trim() === '') {
+      issues.push({
+        row: rowIndex + 1,
+        field: 'service_zone',
+        message: 'Service Zone is recommended for route optimization',
+        severity: 'warning',
+        value: row.service_zone,
+      });
+    } else if (dbMatchResults?.zone) {
+      // Validate zone against database
+      if (dbMatchResults.zone.confidence === 'none') {
+        issues.push({
+          row: rowIndex + 1,
+          field: 'service_zone',
+          message: `Service Zone "${row.service_zone}" not found in database. Please correct or select from available zones.`,
+          severity: 'warning',
+          value: row.service_zone,
+          confidence: 'none',
+        });
+      } else if (dbMatchResults.zone.confidence === 'fuzzy') {
+        issues.push({
+          row: rowIndex + 1,
+          field: 'service_zone',
+          message: `Service Zone "${row.service_zone}" fuzzy-matched in database. Please verify it's correct.`,
+          severity: 'warning',
+          value: row.service_zone,
+          confidence: 'fuzzy',
+        });
+      }
+    }
   }
 
-  if (!row.level_of_care || String(row.level_of_care).trim() === '') {
-    issues.push({
-      row: rowIndex + 1,
-      field: 'level_of_care',
-      message: 'Level of Care is recommended',
-      severity: 'warning',
-      value: row.level_of_care,
-    });
+  // Level of Care validation (optional, respects skip config)
+  if (!skipConfig.level_of_care) {
+    if (!row.level_of_care || String(row.level_of_care).trim() === '') {
+      issues.push({
+        row: rowIndex + 1,
+        field: 'level_of_care',
+        message: 'Level of Care is recommended',
+        severity: 'warning',
+        value: row.level_of_care,
+      });
+    } else if (dbMatchResults?.levelOfCare) {
+      // Validate level of care against database
+      if (dbMatchResults.levelOfCare.confidence === 'none') {
+        issues.push({
+          row: rowIndex + 1,
+          field: 'level_of_care',
+          message: `Level of Care "${row.level_of_care}" not found in database. Please select: Primary, Secondary, or Tertiary.`,
+          severity: 'warning',
+          value: row.level_of_care,
+          confidence: 'none',
+        });
+      } else if (dbMatchResults.levelOfCare.confidence === 'fuzzy') {
+        issues.push({
+          row: rowIndex + 1,
+          field: 'level_of_care',
+          message: `Level of Care "${row.level_of_care}" fuzzy-matched in database. Please verify it's correct.`,
+          severity: 'warning',
+          value: row.level_of_care,
+          confidence: 'fuzzy',
+        });
+      }
+    }
+  }
+
+  // Facility Type validation (optional, respects skip config)
+  if (!skipConfig.facility_type) {
+    if (row.type && String(row.type).trim() !== '' && dbMatchResults?.facilityType) {
+      // Validate facility type against database
+      if (dbMatchResults.facilityType.confidence === 'none') {
+        issues.push({
+          row: rowIndex + 1,
+          field: 'type',
+          message: `Facility Type "${row.type}" not found in database. Please select from available types.`,
+          severity: 'warning',
+          value: row.type,
+          confidence: 'none',
+        });
+      } else if (dbMatchResults.facilityType.confidence === 'fuzzy') {
+        issues.push({
+          row: rowIndex + 1,
+          field: 'type',
+          message: `Facility Type "${row.type}" fuzzy-matched in database. Please verify it's correct.`,
+          severity: 'warning',
+          value: row.type,
+          confidence: 'fuzzy',
+        });
+      }
+    }
+  }
+
+  // Ward validation (optional, respects skip config)
+  if (!skipConfig.ward) {
+    if (!row.ward || String(row.ward).trim() === '') {
+      issues.push({
+        row: rowIndex + 1,
+        field: 'ward',
+        message: 'Ward is recommended',
+        severity: 'warning',
+        value: row.ward,
+      });
+    }
   }
 
   return issues;
@@ -544,10 +730,24 @@ export function validateFacilityRow(
 
 /**
  * Validate all rows in parsed file
+ * @param parsedData - The parsed file data
+ * @param existingWarehouseCodes - Set of existing warehouse codes from database
+ * @param skipConfig - Skip configuration for optional fields
+ * @param normalizedRows - Optional normalized row data with DB match results
  */
 export function validateParsedData(
   parsedData: ParsedFile,
-  existingWarehouseCodes: Set<string> = new Set()
+  existingWarehouseCodes: Set<string> = new Set(),
+  skipConfig: SkipConfig = {},
+  normalizedRows?: Array<{
+    normalized: Record<string, any>;
+    dbMatches: {
+      lga?: { id: string | null; confidence: 'exact' | 'fuzzy' | 'none' };
+      zone?: { id: string | null; confidence: 'exact' | 'fuzzy' | 'none' };
+      facilityType?: { id: string | null; confidence: 'exact' | 'fuzzy' | 'none' };
+      levelOfCare?: { id: string | null; confidence: 'exact' | 'fuzzy' | 'none' };
+    };
+  }>
 ): ValidationResult[] {
   const allIssues: ValidationResult[] = [];
   const codesInFile = new Set<string>();
@@ -555,7 +755,12 @@ export function validateParsedData(
   parsedData.rows.forEach((row, index) => {
     // Check for duplicates within the file itself
     const combined = new Set([...existingWarehouseCodes, ...codesInFile]);
-    const issues = validateFacilityRow(row, index, combined);
+
+    // Get DB match results for this row if available
+    const dbMatchResults = normalizedRows?.[index]?.dbMatches;
+
+    // Validate row
+    const issues = validateFacilityRow(row, index, combined, skipConfig, dbMatchResults);
 
     // Track warehouse codes in this file
     if (row.warehouse_code && String(row.warehouse_code).trim() !== '') {
@@ -581,5 +786,66 @@ export function getValidationSummary(issues: ValidationResult[]) {
     warnings: warnings.length,
     hasBlockingErrors: errors.length > 0,
     affectedRows: new Set(issues.map(i => i.row)).size,
+  };
+}
+
+/**
+ * Apply manual column mappings to parsed data
+ * @param parsedData - The parsed file data
+ * @param manualMappings - Map of expected field names to CSV column headers
+ * @returns Updated parsed data with columns renamed according to manual mappings
+ */
+export function applyManualMappings(
+  parsedData: ParsedFile,
+  manualMappings: Record<string, string>
+): ParsedFile {
+  // Create reverse mapping: CSV header -> expected field name
+  const reverseMapping: Record<string, string> = {};
+  for (const [expectedField, csvHeader] of Object.entries(manualMappings)) {
+    if (csvHeader) {
+      reverseMapping[csvHeader] = expectedField;
+    }
+  }
+
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[CSV Import] Applying manual mappings:', manualMappings);
+    console.log('[CSV Import] Reverse mapping:', reverseMapping);
+  }
+
+  // Apply mappings to all rows
+  const mappedRows = parsedData.rows.map((row) => {
+    const mappedRow: any = {};
+
+    // For each field in the original row
+    for (const [originalKey, value] of Object.entries(row)) {
+      // If this field has a manual mapping, use the expected field name
+      if (reverseMapping[originalKey]) {
+        const expectedField = reverseMapping[originalKey];
+        mappedRow[expectedField] = value;
+
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`[CSV Import] Mapped: ${originalKey} -> ${expectedField}`);
+        }
+      } else {
+        // Otherwise, keep the original key (lowercase normalized)
+        const normalizedKey = originalKey.toLowerCase().trim().replace(/\s+/g, '_');
+        mappedRow[normalizedKey] = value;
+      }
+    }
+
+    return mappedRow;
+  });
+
+  // Update column mappings diagnostics to reflect manual mappings
+  const updatedDiagnostics: ColumnMappingDiagnostic[] = parsedData.headers.map((header) => ({
+    originalHeader: header,
+    mappedTo: reverseMapping[header] || null,
+    isRecognized: !!reverseMapping[header],
+  }));
+
+  return {
+    ...parsedData,
+    rows: mappedRows,
+    columnMappings: updatedDiagnostics,
   };
 }

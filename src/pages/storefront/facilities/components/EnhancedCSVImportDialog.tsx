@@ -33,16 +33,25 @@ import {
   parseFile,
   validateParsedData,
   getValidationSummary,
+  applyManualMappings,
   type ParsedFile,
-  type ValidationResult
+  type ValidationResult,
+  type SkipConfig,
 } from '@/lib/file-import';
+import { ColumnMapper, type ColumnMapping, type ColumnMapperResult } from './ColumnMapper';
+import { cleanFacilityRows, type DBTables, type NormalizedRow } from '@/lib/data-cleaners';
+import { useFacilityTypes } from '@/hooks/useFacilityTypes';
+import { useLevelsOfCare } from '@/hooks/useLevelsOfCare';
+import { useOperationalZones } from '@/hooks/useOperationalZones';
+import { useLGAs } from '@/hooks/useLGAs';
+import { generateWarehouseCode } from '@/lib/warehouse-code-generator';
 
 interface EnhancedCSVImportDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-type ImportStep = 'upload' | 'preview' | 'importing' | 'complete';
+type ImportStep = 'upload' | 'mapping' | 'preview' | 'importing' | 'complete';
 
 interface ImportResult {
   total: number;
@@ -55,12 +64,22 @@ export function EnhancedCSVImportDialog({ open, onOpenChange }: EnhancedCSVImpor
   const [step, setStep] = useState<ImportStep>('upload');
   const [file, setFile] = useState<File | null>(null);
   const [parsedData, setParsedData] = useState<ParsedFile | null>(null);
+  const [columnMappings, setColumnMappings] = useState<ColumnMapping>({});
+  const [skipConfig, setSkipConfig] = useState<SkipConfig>({});
+  const [autoGenerateWarehouseCode, setAutoGenerateWarehouseCode] = useState(false);
+  const [normalizedRows, setNormalizedRows] = useState<NormalizedRow[]>([]);
   const [validationIssues, setValidationIssues] = useState<ValidationResult[]>([]);
   const [editedRows, setEditedRows] = useState<Record<number, any>>({});
   const [importProgress, setImportProgress] = useState(0);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
 
   const createFacility = useCreateFacility();
+
+  // Fetch DB reference data for normalization and validation
+  const { data: facilityTypes = [] } = useFacilityTypes();
+  const { data: levelsOfCare = [] } = useLevelsOfCare();
+  const { data: zones = [] } = useOperationalZones();
+  const { data: lgas = [] } = useLGAs();
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target?.files?.[0];
@@ -73,18 +92,86 @@ export function EnhancedCSVImportDialog({ open, onOpenChange }: EnhancedCSVImpor
       const parsed = await parseFile(selectedFile);
       setParsedData(parsed);
 
-      // Validate data
-      const issues = validateParsedData(parsed);
-      setValidationIssues(issues);
+      // Extract auto-detected mappings from column diagnostics
+      const autoMappings: ColumnMapping = {};
+      if (parsed.columnMappings) {
+        parsed.columnMappings.forEach((diag) => {
+          if (diag.isRecognized && diag.mappedTo) {
+            autoMappings[diag.mappedTo] = diag.originalHeader;
+          }
+        });
+      }
+      setColumnMappings(autoMappings);
 
       toast.dismiss();
       toast.success(`File parsed: ${parsed.rows.length} rows found`);
-      setStep('preview');
+
+      // ALWAYS show mapping step (per requirement)
+      // This allows users to review and confirm auto-detected mappings
+      const requiredFields = ['name', 'address', 'latitude', 'longitude', 'lga'];
+      const missingRequired = requiredFields.filter(field => !autoMappings[field]);
+
+      if (missingRequired.length > 0) {
+        toast.info(`Please map ${missingRequired.length} required fields`);
+      } else {
+        toast.success('All required fields auto-detected. Please review mappings.');
+      }
+
+      // Always go to mapping step
+      setStep('mapping');
     } catch (error: any) {
       toast.dismiss();
       toast.error(`Failed to parse file: ${error.message}`);
       setFile(null);
     }
+  };
+
+  const handleMappingsConfirmed = (result: ColumnMapperResult) => {
+    if (!parsedData) return;
+
+    const { mappings, skipConfig: newSkipConfig, autoGenerateWarehouseCode: autoGenerate } = result;
+
+    setColumnMappings(mappings);
+    setSkipConfig(newSkipConfig);
+    setAutoGenerateWarehouseCode(autoGenerate);
+
+    // Apply manual mappings to the data
+    const mappedData = applyManualMappings(parsedData, mappings);
+    setParsedData(mappedData);
+
+    toast.loading('Cleaning and validating data...');
+
+    // Build DB tables for normalization
+    const dbTables: DBTables = {
+      zones,
+      lgas,
+      facilityTypes,
+      levelsOfCare,
+    };
+
+    // Clean and normalize all rows with DB matching
+    const cleaned = cleanFacilityRows(mappedData.rows, dbTables);
+    setNormalizedRows(cleaned);
+
+    // Apply normalized values back to parsed data for preview
+    const normalizedParsedData = {
+      ...mappedData,
+      rows: cleaned.map((nr) => nr.normalized),
+    };
+    setParsedData(normalizedParsedData);
+
+    // Validate with skip config and DB match results
+    const issues = validateParsedData(
+      normalizedParsedData,
+      new Set(), // Will fetch existing warehouse codes later
+      newSkipConfig,
+      cleaned
+    );
+    setValidationIssues(issues);
+
+    toast.dismiss();
+    toast.success('Data cleaned and validated');
+    setStep('preview');
   };
 
   const handleCellEdit = (rowIndex: number, field: string, value: any) => {
@@ -130,6 +217,27 @@ export function EnhancedCSVImportDialog({ open, onOpenChange }: EnhancedCSVImpor
     for (let i = 0; i < parsedData.rows.length; i++) {
       try {
         const row = getMergedRow(i);
+
+        // Handle warehouse code auto-generation
+        if (autoGenerateWarehouseCode || !row.warehouse_code) {
+          row.warehouse_code = await generateWarehouseCode(row.service_zone);
+        }
+
+        // Get normalized DB IDs from cleaned data
+        const normalizedRow = normalizedRows[i];
+        if (normalizedRow?.dbMatches) {
+          // Use DB IDs for foreign key relationships
+          if (normalizedRow.dbMatches.zone?.id) {
+            row.zone_id = normalizedRow.dbMatches.zone.id;
+          }
+          if (normalizedRow.dbMatches.facilityType?.id) {
+            row.facility_type_id = normalizedRow.dbMatches.facilityType.id;
+          }
+          if (normalizedRow.dbMatches.levelOfCare?.id) {
+            row.level_of_care_id = normalizedRow.dbMatches.levelOfCare.id;
+          }
+        }
+
         const facilityData = transformCsvToFacility(row);
         await createFacility.mutateAsync(facilityData);
         result.success++;
@@ -159,6 +267,10 @@ export function EnhancedCSVImportDialog({ open, onOpenChange }: EnhancedCSVImpor
     setStep('upload');
     setFile(null);
     setParsedData(null);
+    setColumnMappings({});
+    setSkipConfig({});
+    setAutoGenerateWarehouseCode(false);
+    setNormalizedRows([]);
     setValidationIssues([]);
     setEditedRows({});
     setImportProgress(0);
@@ -185,16 +297,20 @@ export function EnhancedCSVImportDialog({ open, onOpenChange }: EnhancedCSVImpor
 
         {/* Step Indicator */}
         <div className="flex items-center justify-center gap-2 py-4">
-          <StepIndicator active={step === 'upload'} completed={['preview', 'importing', 'complete'].includes(step)}>
+          <StepIndicator active={step === 'upload'} completed={['mapping', 'preview', 'importing', 'complete'].includes(step)}>
             1. Upload
           </StepIndicator>
           <ArrowRight className="h-4 w-4 text-muted-foreground" />
+          <StepIndicator active={step === 'mapping'} completed={['preview', 'importing', 'complete'].includes(step)}>
+            2. Map Columns
+          </StepIndicator>
+          <ArrowRight className="h-4 w-4 text-muted-foreground" />
           <StepIndicator active={step === 'preview'} completed={['importing', 'complete'].includes(step)}>
-            2. Preview & Validate
+            3. Preview
           </StepIndicator>
           <ArrowRight className="h-4 w-4 text-muted-foreground" />
           <StepIndicator active={step === 'importing'} completed={step === 'complete'}>
-            3. Import
+            4. Import
           </StepIndicator>
         </div>
 
@@ -231,38 +347,118 @@ export function EnhancedCSVImportDialog({ open, onOpenChange }: EnhancedCSVImpor
             </div>
           )}
 
-          {/* Step 2: Preview & Validate */}
+          {/* Step 2: Map Columns */}
+          {step === 'mapping' && parsedData && (
+            <ColumnMapper
+              csvHeaders={parsedData.headers}
+              autoDetectedMappings={columnMappings}
+              sampleRow={parsedData.rows[0]}
+              onMappingsConfirmed={handleMappingsConfirmed}
+              onBack={() => setStep('upload')}
+            />
+          )}
+
+          {/* Step 3: Preview & Validate */}
           {step === 'preview' && parsedData && (
             <div className="space-y-4">
-              {/* Validation Summary */}
-              {validationSummary && (
-                <Alert variant={validationSummary.hasBlockingErrors ? 'destructive' : 'default'}>
-                  {validationSummary.hasBlockingErrors ? (
-                    <AlertCircle className="h-4 w-4" />
-                  ) : (
-                    <CheckCircle className="h-4 w-4" />
-                  )}
-                  <AlertTitle>
-                    {validationSummary.hasBlockingErrors ? 'Validation Errors Found' : 'Validation Complete'}
-                  </AlertTitle>
+              {/* Column Mapping Diagnostics */}
+              {parsedData.columnMappings && parsedData.columnMappings.length > 0 && (
+                <Alert>
+                  <Eye className="h-4 w-4" />
+                  <AlertTitle>Column Mapping Results</AlertTitle>
                   <AlertDescription>
-                    <div className="flex gap-4 mt-2">
-                      <Badge variant="outline">{parsedData.rows.length} rows</Badge>
-                      {validationSummary.errors > 0 && (
-                        <Badge variant="destructive">{validationSummary.errors} errors</Badge>
-                      )}
-                      {validationSummary.warnings > 0 && (
-                        <Badge variant="secondary">{validationSummary.warnings} warnings</Badge>
+                    <div className="mt-2 space-y-2">
+                      <div className="flex flex-wrap gap-2">
+                        {parsedData.columnMappings
+                          .filter(m => m.isRecognized)
+                          .map((mapping, idx) => (
+                            <Badge key={idx} variant="outline" className="text-xs bg-green-50 border-green-200">
+                              <CheckCircle className="h-3 w-3 mr-1 text-green-600" />
+                              {mapping.originalHeader} → {mapping.mappedTo}
+                            </Badge>
+                          ))}
+                      </div>
+                      {parsedData.columnMappings.some(m => !m.isRecognized) && (
+                        <div className="mt-2">
+                          <p className="text-sm font-medium text-amber-600">Unrecognized columns:</p>
+                          <div className="flex flex-wrap gap-2 mt-1">
+                            {parsedData.columnMappings
+                              .filter(m => !m.isRecognized)
+                              .map((mapping, idx) => (
+                                <Badge key={idx} variant="secondary" className="text-xs bg-amber-50 border-amber-200">
+                                  <AlertTriangle className="h-3 w-3 mr-1 text-amber-600" />
+                                  {mapping.originalHeader}
+                                </Badge>
+                              ))}
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            These columns will be ignored during import.
+                          </p>
+                        </div>
                       )}
                     </div>
-                    {validationSummary.hasBlockingErrors && (
-                      <p className="text-sm mt-2">
-                        Please fix errors before importing. You can edit values in the table below.
-                      </p>
-                    )}
                   </AlertDescription>
                 </Alert>
               )}
+
+              {/* Validation Summary */}
+              {validationSummary && (() => {
+                const errorRate = parsedData && parsedData.rows.length > 0
+                  ? (validationSummary.errors / parsedData.rows.length) * 100
+                  : 0;
+                const highErrorRate = errorRate > 20;
+
+                return (
+                  <Alert variant={validationSummary.hasBlockingErrors || highErrorRate ? 'destructive' : 'default'}>
+                    {validationSummary.hasBlockingErrors || highErrorRate ? (
+                      <AlertCircle className="h-4 w-4" />
+                    ) : (
+                      <CheckCircle className="h-4 w-4" />
+                    )}
+                    <AlertTitle>
+                      {validationSummary.hasBlockingErrors || highErrorRate ? 'Validation Issues Detected' : 'Validation Complete'}
+                    </AlertTitle>
+                    <AlertDescription>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        <Badge variant="outline" className="font-medium">
+                          {parsedData.rows.length} rows
+                        </Badge>
+                        {validationSummary.errors > 0 && (
+                          <Badge variant="destructive" className="font-medium">
+                            {validationSummary.errors} errors (block import)
+                          </Badge>
+                        )}
+                        {validationSummary.warnings > 0 && (
+                          <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 font-medium">
+                            {validationSummary.warnings} warnings (allowed)
+                          </Badge>
+                        )}
+                        {errorRate > 0 && (
+                          <Badge variant={highErrorRate ? 'destructive' : 'outline'} className="font-medium">
+                            {errorRate.toFixed(1)}% error rate
+                          </Badge>
+                        )}
+                      </div>
+                      {highErrorRate && (
+                        <p className="text-sm mt-2 font-medium">
+                          ⚠️ High error rate detected ({errorRate.toFixed(1)}%). Please review and fix critical issues before importing.
+                          Import is disabled when error rate exceeds 20%.
+                        </p>
+                      )}
+                      {validationSummary.hasBlockingErrors && !highErrorRate && (
+                        <p className="text-sm mt-2">
+                          Please fix all errors before importing. You can edit values in the table below or go back to adjust column mappings.
+                        </p>
+                      )}
+                      {!validationSummary.hasBlockingErrors && validationSummary.warnings > 0 && (
+                        <p className="text-sm mt-2 text-muted-foreground">
+                          Warnings won't block import, but it's recommended to review them for data quality.
+                        </p>
+                      )}
+                    </AlertDescription>
+                  </Alert>
+                );
+              })()}
 
               {/* Data Preview Table */}
               <ScrollArea className="h-[400px] border rounded-lg">
@@ -356,6 +552,11 @@ export function EnhancedCSVImportDialog({ open, onOpenChange }: EnhancedCSVImpor
                             <span className="font-medium">Row {issue.row}</span>
                             <span className="text-muted-foreground"> ({issue.field}): </span>
                             <span>{issue.message}</span>
+                            {issue.value !== undefined && issue.value !== null && issue.value !== '' && (
+                              <span className="block text-xs text-muted-foreground mt-0.5 font-mono bg-muted px-1.5 py-0.5 rounded">
+                                Value: "{String(issue.value)}"
+                              </span>
+                            )}
                           </div>
                         </div>
                       ))}
@@ -366,7 +567,7 @@ export function EnhancedCSVImportDialog({ open, onOpenChange }: EnhancedCSVImpor
             </div>
           )}
 
-          {/* Step 3: Importing */}
+          {/* Step 4: Importing */}
           {step === 'importing' && (
             <div className="space-y-4 py-8">
               <div className="text-center">
@@ -383,7 +584,7 @@ export function EnhancedCSVImportDialog({ open, onOpenChange }: EnhancedCSVImpor
             </div>
           )}
 
-          {/* Step 4: Complete */}
+          {/* Step 5: Complete */}
           {step === 'complete' && importResult && (
             <div className="space-y-4">
               <div className="flex items-center justify-center gap-3 p-6 border rounded-lg bg-muted/50">
@@ -433,21 +634,29 @@ export function EnhancedCSVImportDialog({ open, onOpenChange }: EnhancedCSVImpor
             </Button>
           )}
 
-          {step === 'preview' && (
-            <>
-              <Button variant="outline" onClick={() => setStep('upload')}>
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back
-              </Button>
-              <Button
-                onClick={handleImport}
-                disabled={validationSummary?.hasBlockingErrors}
-              >
-                <FileUp className="h-4 w-4 mr-2" />
-                Import {parsedData?.rows.length} Facilities
-              </Button>
-            </>
-          )}
+          {step === 'preview' && (() => {
+            const errorRate = parsedData && parsedData.rows.length > 0 && validationSummary
+              ? (validationSummary.errors / parsedData.rows.length) * 100
+              : 0;
+            const highErrorRate = errorRate > 20;
+            const importDisabled = validationSummary?.hasBlockingErrors || highErrorRate;
+
+            return (
+              <>
+                <Button variant="outline" onClick={() => setStep('mapping')}>
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back to Mapping
+                </Button>
+                <Button
+                  onClick={handleImport}
+                  disabled={importDisabled}
+                >
+                  <FileUp className="h-4 w-4 mr-2" />
+                  Import {parsedData?.rows.length} Facilities
+                </Button>
+              </>
+            );
+          })()}
 
           {step === 'complete' && (
             <Button onClick={handleClose}>

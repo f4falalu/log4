@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Facility } from '@/types';
@@ -29,8 +29,14 @@ import {
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useCreateFacility, useUpdateFacility } from '@/hooks/useFacilities';
+import { useFacilityTypes } from '@/hooks/useFacilityTypes';
+import { useLevelsOfCare } from '@/hooks/useLevelsOfCare';
+import { useOperationalZones } from '@/hooks/useOperationalZones';
+import { useLGAs } from '@/hooks/useLGAs';
+import { useStates, useLGAsByState, useFindAdminUnitByPoint } from '@/hooks/useAdminUnits';
 import { facilityFormSchema, FacilityFormData } from '@/lib/facility-validation';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { DEFAULT_COUNTRY_ID } from '@/lib/constants';
 
 interface FacilityFormDialogProps {
   facility?: Facility;
@@ -47,6 +53,29 @@ export function FacilityFormDialog({
   const createMutation = useCreateFacility();
   const updateMutation = useUpdateFacility();
 
+  // Fetch DB reference data for dropdowns
+  const { data: facilityTypes = [], isLoading: loadingTypes } = useFacilityTypes();
+  const { data: levelsOfCare = [], isLoading: loadingLevels } = useLevelsOfCare();
+  const { data: zones = [], isLoading: loadingZones } = useOperationalZones();
+  const { data: lgas = [], isLoading: loadingLGAs } = useLGAs();
+
+  // New admin_units model - cascading State → LGA selection
+  const [selectedStateId, setSelectedStateId] = useState<string | null>(null);
+  const { data: states = [], isLoading: loadingStates } = useStates();
+  const { data: lgasByState = [], isLoading: loadingLGAsByState } = useLGAsByState(selectedStateId);
+
+  // Get lat/lng from form for reverse geocoding
+  const formLat = form.watch('lat');
+  const formLng = form.watch('lng');
+
+  // Reverse geocoding: Auto-fill LGA based on lat/lng
+  const { data: adminUnitByPoint } = useFindAdminUnitByPoint(
+    formLat || null,
+    formLng || null,
+    6, // LGA level
+    DEFAULT_COUNTRY_ID
+  );
+
   const form = useForm<FacilityFormData>({
     resolver: zodResolver(facilityFormSchema),
     defaultValues: {
@@ -59,6 +88,17 @@ export function FacilityFormDialog({
       cd4_service: false,
     },
   });
+
+  // Auto-fill LGA when reverse geocoding finds a match
+  useEffect(() => {
+    if (adminUnitByPoint && !isEdit) {
+      form.setValue('lga', adminUnitByPoint.name);
+      // Also set the state if available from parent
+      if (adminUnitByPoint.parent_id) {
+        setSelectedStateId(adminUnitByPoint.parent_id);
+      }
+    }
+  }, [adminUnitByPoint, isEdit, form]);
 
   useEffect(() => {
     if (facility && open) {
@@ -171,19 +211,18 @@ export function FacilityFormDialog({
                       render={({ field}) => (
                         <FormItem>
                           <FormLabel>Facility Type</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
+                          <Select onValueChange={field.onChange} value={field.value} disabled={loadingTypes}>
                             <FormControl>
                               <SelectTrigger>
-                                <SelectValue placeholder="Select type" />
+                                <SelectValue placeholder={loadingTypes ? "Loading..." : "Select type"} />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="hospital">Hospital</SelectItem>
-                              <SelectItem value="clinic">Clinic</SelectItem>
-                              <SelectItem value="health_center">Health Center</SelectItem>
-                              <SelectItem value="pharmacy">Pharmacy</SelectItem>
-                              <SelectItem value="lab">Laboratory</SelectItem>
-                              <SelectItem value="other">Other</SelectItem>
+                              {facilityTypes.map((type) => (
+                                <SelectItem key={type.id} value={type.name}>
+                                  {type.name}
+                                </SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -197,16 +236,23 @@ export function FacilityFormDialog({
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Level of Care</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
+                          <Select onValueChange={field.onChange} value={field.value} disabled={loadingLevels}>
                             <FormControl>
                               <SelectTrigger>
-                                <SelectValue placeholder="Select level" />
+                                <SelectValue placeholder={loadingLevels ? "Loading..." : "Select level"} />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="Primary">Primary</SelectItem>
-                              <SelectItem value="Secondary">Secondary</SelectItem>
-                              <SelectItem value="Tertiary">Tertiary</SelectItem>
+                              {levelsOfCare.map((level) => (
+                                <SelectItem key={level.id} value={level.name}>
+                                  {level.name}
+                                  {level.description && (
+                                    <span className="text-xs text-muted-foreground ml-2">
+                                      ({level.description.substring(0, 30)}...)
+                                    </span>
+                                  )}
+                                </SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -236,16 +282,69 @@ export function FacilityFormDialog({
                   />
 
                   <div className="grid grid-cols-3 gap-4">
+                    {/* State Dropdown (NEW - Cascading Selection) */}
+                    <FormItem>
+                      <FormLabel>State</FormLabel>
+                      <Select
+                        value={selectedStateId || undefined}
+                        onValueChange={(value) => {
+                          setSelectedStateId(value);
+                          // Clear LGA when state changes
+                          form.setValue('lga', '');
+                        }}
+                        disabled={loadingStates}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={loadingStates ? "Loading..." : "Select State"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {states.map((state) => (
+                            <SelectItem key={state.id} value={state.id}>
+                              {state.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        {adminUnitByPoint && "Auto-detected from coordinates"}
+                      </p>
+                    </FormItem>
+
+                    {/* LGA Dropdown (UPDATED - Cascading from State) */}
                     <FormField
                       control={form.control}
                       name="lga"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>LGA</FormLabel>
-                          <FormControl>
-                            <Input placeholder="e.g., Ajingi" {...field} value={field.value || ''} />
-                          </FormControl>
+                          <FormLabel>LGA *</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            value={field.value}
+                            disabled={selectedStateId ? loadingLGAsByState : loadingLGAs}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder={
+                                  selectedStateId
+                                    ? (loadingLGAsByState ? "Loading..." : "Select LGA")
+                                    : "Select State first"
+                                } />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {(selectedStateId ? lgasByState : lgas).map((lga) => (
+                                <SelectItem key={lga.id} value={lga.name}>
+                                  {lga.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                           <FormMessage />
+                          {adminUnitByPoint && (
+                            <p className="text-xs text-green-600">
+                              ✓ Auto-filled from coordinates
+                            </p>
+                          )}
                         </FormItem>
                       )}
                     />
@@ -270,18 +369,23 @@ export function FacilityFormDialog({
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Service Zone</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
+                          <Select onValueChange={field.onChange} value={field.value} disabled={loadingZones}>
                             <FormControl>
                               <SelectTrigger>
-                                <SelectValue placeholder="Select zone" />
+                                <SelectValue placeholder={loadingZones ? "Loading..." : "Select zone"} />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="Central">Central</SelectItem>
-                              <SelectItem value="Gaya">Gaya</SelectItem>
-                              <SelectItem value="Danbatta">Danbatta</SelectItem>
-                              <SelectItem value="Gwarzo">Gwarzo</SelectItem>
-                              <SelectItem value="Rano">Rano</SelectItem>
+                              {zones.map((zone) => (
+                                <SelectItem key={zone.id} value={zone.name}>
+                                  {zone.name}
+                                  {zone.code && (
+                                    <span className="text-xs text-muted-foreground ml-2">
+                                      ({zone.code})
+                                    </span>
+                                  )}
+                                </SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                           <FormMessage />

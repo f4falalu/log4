@@ -32,6 +32,14 @@ import FacilityManagerPage from "./pages/FacilityManagerPage";
 import VehicleManagementPage from "./pages/VehicleManagementPage";
 import ReportsPageWrapper from "./pages/ReportsPageWrapper";
 import BatchManagement from "./pages/BatchManagement";
+import VLMSDashboard from "./pages/fleetops/vlms/page";
+import VLMSVehicles from "./pages/fleetops/vlms/vehicles/page";
+import VLMSVehicleDetail from "./pages/fleetops/vlms/vehicles/[id]/page";
+import VehicleOnboardPage from "./pages/fleetops/vlms/vehicles/onboard/page";
+import VLMSMaintenance from "./pages/fleetops/vlms/maintenance/page";
+import VLMSFuel from "./pages/fleetops/vlms/fuel/page";
+import VLMSAssignments from "./pages/fleetops/vlms/assignments/page";
+import VLMSIncidents from "./pages/fleetops/vlms/incidents/page";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -96,6 +104,16 @@ const App = () => (
                       </ErrorBoundary>
                     } />
                     <Route path="reports" element={<ReportsPageWrapper />} />
+
+                    {/* VLMS Routes */}
+                    <Route path="vlms" element={<VLMSDashboard />} />
+                    <Route path="vlms/vehicles" element={<VLMSVehicles />} />
+                    <Route path="vlms/vehicles/onboard" element={<VehicleOnboardPage />} />
+                    <Route path="vlms/vehicles/:id" element={<VLMSVehicleDetail />} />
+                    <Route path="vlms/maintenance" element={<VLMSMaintenance />} />
+                    <Route path="vlms/fuel" element={<VLMSFuel />} />
+                    <Route path="vlms/assignments" element={<VLMSAssignments />} />
+                    <Route path="vlms/incidents" element={<VLMSIncidents />} />
                   </Route>
 
                   {/* Storefront Workspace */}

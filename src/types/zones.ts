@@ -118,3 +118,10 @@ export interface CreateLGAInput {
 export interface UpdateLGAInput extends Partial<CreateLGAInput> {
   id: string;
 }
+
+export interface ZoneFilterOptions {
+  zone_type?: string[];
+  is_active?: boolean;
+  search?: string;
+  tags?: string[];
+}

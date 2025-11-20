@@ -5,12 +5,15 @@ import { AlertTriangle, RefreshCw } from 'lucide-react';
 
 interface Props {
   children: ReactNode;
+  fallback?: ReactNode;
+  onError?: (error: Error, errorInfo: ErrorInfo) => void;
 }
 
 interface State {
   hasError: boolean;
   error: Error | null;
   errorInfo: ErrorInfo | null;
+  componentStack: string;
 }
 
 class ErrorBoundary extends Component<Props, State> {
@@ -18,29 +21,54 @@ class ErrorBoundary extends Component<Props, State> {
     hasError: false,
     error: null,
     errorInfo: null,
+    componentStack: '',
   };
 
-  public static getDerivedStateFromError(error: Error): State {
+  public static getDerivedStateFromError(error: Error): Partial<State> {
     return { 
       hasError: true, 
       error,
-      errorInfo: null 
     };
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
+    // Log error to error reporting service
+    this.logErrorToService(error, errorInfo);
+    
+    // Update state with error details
     this.setState({
       error,
       errorInfo,
+      componentStack: errorInfo.componentStack || '',
     });
+
+    // Call custom error handler if provided
+    if (this.props.onError) {
+      this.props.onError(error, errorInfo);
+    }
+  }
+
+  private logErrorToService(error: Error, errorInfo: ErrorInfo) {
+    // In a real app, you would send this to an error reporting service
+    console.error('ErrorBoundary caught an error:', error, errorInfo);
+    
+    // Example: Send to error reporting service
+    // errorService.logError({
+    //   error,
+    //   errorInfo,
+    //   componentStack: errorInfo.componentStack,
+    //   timestamp: new Date().toISOString(),
+    //   url: window.location.href,
+    //   user: currentUser, // You would get this from your auth context
+    // });
   }
 
   private handleReset = () => {
     this.setState({ 
       hasError: false, 
       error: null, 
-      errorInfo: null 
+      errorInfo: null,
+      componentStack: '',
     });
   };
 
@@ -48,53 +76,90 @@ class ErrorBoundary extends Component<Props, State> {
     window.location.reload();
   };
 
+  private handleCopyError = () => {
+    const { error, errorInfo } = this.state;
+    const errorDetails = `Error: ${error?.toString()}\n\nComponent Stack:\n${errorInfo?.componentStack}`;
+    
+    navigator.clipboard.writeText(errorDetails).then(
+      () => alert('Error details copied to clipboard'),
+      () => console.error('Failed to copy error details')
+    );
+  };
+
   public render() {
-    if (this.state.hasError) {
+    const { hasError, error, errorInfo, componentStack } = this.state;
+    const { children, fallback } = this.props;
+
+    if (hasError) {
+      // Use custom fallback UI if provided
+      if (fallback) {
+        if (typeof fallback === 'function') {
+          const FallbackComponent = fallback as (
+            props: { error: Error | null; errorInfo: ErrorInfo | null; resetError: () => void }
+          ) => ReactNode;
+          return <FallbackComponent error={error} errorInfo={errorInfo} resetError={this.handleReset} />;
+        }
+        return fallback;
+      }
+
+      // Default error UI
       return (
-        <div className="min-h-screen bg-gradient-light flex items-center justify-center p-4">
-          <Card className="max-w-lg w-full">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2 text-destructive">
-                <AlertTriangle className="w-5 h-5" />
-                <span>Something went wrong</span>
-              </CardTitle>
-              <CardDescription>
-                The application encountered an unexpected error
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {this.state.error && (
-                <div className="p-3 bg-destructive/10 rounded-md">
-                  <p className="text-sm font-mono text-destructive">
-                    {this.state.error.message}
-                  </p>
+        <div className="flex items-center justify-center min-h-screen bg-gray-50 p-4">
+          <Card className="w-full max-w-2xl">
+            <CardHeader className="border-b">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-red-100 rounded-full">
+                  <AlertTriangle className="h-6 w-6 text-red-600" />
                 </div>
-              )}
-              
-              {this.state.errorInfo?.componentStack && (
-                <div className="p-3 bg-muted/30 rounded-md">
-                  <p className="text-xs font-semibold mb-1">Component Stack:</p>
-                  <pre className="text-xs overflow-auto max-h-32">
-                    {this.state.errorInfo.componentStack}
+                <div>
+                  <CardTitle>Something went wrong</CardTitle>
+                  <CardDescription>
+                    An unexpected error occurred. Our team has been notified.
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-4">
+              <div className="space-y-2">
+                <h3 className="font-medium">Error Details</h3>
+                <div className="p-3 bg-gray-50 rounded-md text-sm font-mono text-red-600 overflow-x-auto">
+                  {error?.toString() || 'Unknown error'}
+                </div>
+              </div>
+
+              {process.env.NODE_ENV === 'development' && componentStack && (
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <h3 className="font-medium">Component Stack</h3>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={this.handleCopyError}
+                      className="text-xs"
+                    >
+                      Copy Details
+                    </Button>
+                  </div>
+                  <pre className="p-3 bg-gray-50 rounded-md text-xs text-gray-600 overflow-x-auto">
+                    {componentStack}
                   </pre>
                 </div>
               )}
-              
-              <div className="flex space-x-2">
+
+              <div className="flex justify-end gap-3 pt-4">
                 <Button 
-                  onClick={this.handleReset} 
-                  variant="outline"
-                  className="flex items-center space-x-2"
+                  variant="outline" 
+                  onClick={this.handleReset}
+                  className="flex items-center gap-2"
                 >
-                  <RefreshCw className="w-4 h-4" />
-                  <span>Try Again</span>
+                  <RefreshCw className="h-4 w-4" />
+                  Try Again
                 </Button>
                 <Button 
                   onClick={this.handleReload}
-                  className="flex items-center space-x-2"
+                  className="bg-blue-600 hover:bg-blue-700"
                 >
-                  <RefreshCw className="w-4 h-4" />
-                  <span>Reload Page</span>
+                  Reload Page
                 </Button>
               </div>
             </CardContent>
@@ -103,7 +168,7 @@ class ErrorBoundary extends Component<Props, State> {
       );
     }
 
-    return this.props.children;
+    return children;
   }
 }
 
