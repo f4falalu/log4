@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "13.0.5"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       admin_units: {
@@ -1992,6 +2017,8 @@ export type Database = {
       }
       vehicles: {
         Row: {
+          acquisition_date: string | null
+          acquisition_type: string | null
           ai_capacity_image_url: string | null
           ai_generated: boolean | null
           avg_speed: number
@@ -2001,28 +2028,61 @@ export type Database = {
           capacity_volume_m3: number | null
           capacity_weight_kg: number | null
           category_id: string | null
+          color: string | null
           created_at: string | null
+          created_by: string | null
+          current_book_value: number | null
           current_driver_id: string | null
+          current_location_id: string | null
+          current_mileage: number | null
+          depreciation_rate: number | null
+          documents: Json | null
+          engine_capacity: number | null
           fleet_id: string | null
           fuel_efficiency: number
           fuel_type: Database["public"]["Enums"]["fuel_type"]
           height_cm: number | null
           id: string
+          insurance_expiry: string | null
+          insurance_policy_number: string | null
+          insurance_provider: string | null
+          last_inspection_date: string | null
+          last_service_date: string | null
           length_cm: number | null
+          license_plate: string | null
+          make: string | null
           max_weight: number
           model: string
+          next_inspection_date: string | null
+          next_service_date: string | null
+          notes: string | null
           photo_uploaded_at: string | null
           photo_url: string | null
+          photos: Json | null
           plate_number: string
+          purchase_price: number | null
+          registration_expiry: string | null
+          seating_capacity: number | null
           status: Database["public"]["Enums"]["vehicle_status"]
+          tags: string[] | null
           thumbnail_url: string | null
           tiered_config: Json | null
+          total_maintenance_cost: number | null
+          transmission: string | null
           type: string
           updated_at: string | null
+          updated_by: string | null
+          vehicle_id: string | null
           vehicle_type_id: string | null
+          vendor_name: string | null
+          vin: string | null
+          warranty_expiry: string | null
           width_cm: number | null
+          year: number | null
         }
         Insert: {
+          acquisition_date?: string | null
+          acquisition_type?: string | null
           ai_capacity_image_url?: string | null
           ai_generated?: boolean | null
           avg_speed?: number
@@ -2032,28 +2092,61 @@ export type Database = {
           capacity_volume_m3?: number | null
           capacity_weight_kg?: number | null
           category_id?: string | null
+          color?: string | null
           created_at?: string | null
+          created_by?: string | null
+          current_book_value?: number | null
           current_driver_id?: string | null
+          current_location_id?: string | null
+          current_mileage?: number | null
+          depreciation_rate?: number | null
+          documents?: Json | null
+          engine_capacity?: number | null
           fleet_id?: string | null
           fuel_efficiency: number
           fuel_type: Database["public"]["Enums"]["fuel_type"]
           height_cm?: number | null
           id?: string
+          insurance_expiry?: string | null
+          insurance_policy_number?: string | null
+          insurance_provider?: string | null
+          last_inspection_date?: string | null
+          last_service_date?: string | null
           length_cm?: number | null
+          license_plate?: string | null
+          make?: string | null
           max_weight: number
           model: string
+          next_inspection_date?: string | null
+          next_service_date?: string | null
+          notes?: string | null
           photo_uploaded_at?: string | null
           photo_url?: string | null
+          photos?: Json | null
           plate_number: string
+          purchase_price?: number | null
+          registration_expiry?: string | null
+          seating_capacity?: number | null
           status?: Database["public"]["Enums"]["vehicle_status"]
+          tags?: string[] | null
           thumbnail_url?: string | null
           tiered_config?: Json | null
+          total_maintenance_cost?: number | null
+          transmission?: string | null
           type: string
           updated_at?: string | null
+          updated_by?: string | null
+          vehicle_id?: string | null
           vehicle_type_id?: string | null
+          vendor_name?: string | null
+          vin?: string | null
+          warranty_expiry?: string | null
           width_cm?: number | null
+          year?: number | null
         }
         Update: {
+          acquisition_date?: string | null
+          acquisition_type?: string | null
           ai_capacity_image_url?: string | null
           ai_generated?: boolean | null
           avg_speed?: number
@@ -2063,26 +2156,57 @@ export type Database = {
           capacity_volume_m3?: number | null
           capacity_weight_kg?: number | null
           category_id?: string | null
+          color?: string | null
           created_at?: string | null
+          created_by?: string | null
+          current_book_value?: number | null
           current_driver_id?: string | null
+          current_location_id?: string | null
+          current_mileage?: number | null
+          depreciation_rate?: number | null
+          documents?: Json | null
+          engine_capacity?: number | null
           fleet_id?: string | null
           fuel_efficiency?: number
           fuel_type?: Database["public"]["Enums"]["fuel_type"]
           height_cm?: number | null
           id?: string
+          insurance_expiry?: string | null
+          insurance_policy_number?: string | null
+          insurance_provider?: string | null
+          last_inspection_date?: string | null
+          last_service_date?: string | null
           length_cm?: number | null
+          license_plate?: string | null
+          make?: string | null
           max_weight?: number
           model?: string
+          next_inspection_date?: string | null
+          next_service_date?: string | null
+          notes?: string | null
           photo_uploaded_at?: string | null
           photo_url?: string | null
+          photos?: Json | null
           plate_number?: string
+          purchase_price?: number | null
+          registration_expiry?: string | null
+          seating_capacity?: number | null
           status?: Database["public"]["Enums"]["vehicle_status"]
+          tags?: string[] | null
           thumbnail_url?: string | null
           tiered_config?: Json | null
+          total_maintenance_cost?: number | null
+          transmission?: string | null
           type?: string
           updated_at?: string | null
+          updated_by?: string | null
+          vehicle_id?: string | null
           vehicle_type_id?: string | null
+          vendor_name?: string | null
+          vin?: string | null
+          warranty_expiry?: string | null
           width_cm?: number | null
+          year?: number | null
         }
         Relationships: [
           {
@@ -2097,6 +2221,13 @@ export type Database = {
             columns: ["current_driver_id"]
             isOneToOne: false
             referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicles_current_location_id_fkey"
+            columns: ["current_location_id"]
+            isOneToOne: false
+            referencedRelation: "facilities"
             referencedColumns: ["id"]
           },
           {
@@ -2144,6 +2275,958 @@ export type Database = {
           name?: string
         }
         Relationships: []
+      }
+      vlms_assignments: {
+        Row: {
+          actual_return_date: string | null
+          assigned_location_id: string | null
+          assigned_to_id: string | null
+          assignment_id: string
+          assignment_letter_url: string | null
+          assignment_type: string
+          authorization_number: string | null
+          authorized_by_id: string | null
+          condition_end: string | null
+          condition_start: string | null
+          created_at: string | null
+          created_by: string | null
+          end_date: string | null
+          fuel_level_end: number | null
+          fuel_level_start: number | null
+          id: string
+          notes: string | null
+          odometer_end: number | null
+          odometer_start: number | null
+          photos_end: Json | null
+          photos_start: Json | null
+          project_name: string | null
+          purpose: string
+          return_checklist_url: string | null
+          start_date: string
+          status: string
+          updated_at: string | null
+          vehicle_id: string
+        }
+        Insert: {
+          actual_return_date?: string | null
+          assigned_location_id?: string | null
+          assigned_to_id?: string | null
+          assignment_id: string
+          assignment_letter_url?: string | null
+          assignment_type: string
+          authorization_number?: string | null
+          authorized_by_id?: string | null
+          condition_end?: string | null
+          condition_start?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          end_date?: string | null
+          fuel_level_end?: number | null
+          fuel_level_start?: number | null
+          id?: string
+          notes?: string | null
+          odometer_end?: number | null
+          odometer_start?: number | null
+          photos_end?: Json | null
+          photos_start?: Json | null
+          project_name?: string | null
+          purpose: string
+          return_checklist_url?: string | null
+          start_date: string
+          status?: string
+          updated_at?: string | null
+          vehicle_id: string
+        }
+        Update: {
+          actual_return_date?: string | null
+          assigned_location_id?: string | null
+          assigned_to_id?: string | null
+          assignment_id?: string
+          assignment_letter_url?: string | null
+          assignment_type?: string
+          authorization_number?: string | null
+          authorized_by_id?: string | null
+          condition_end?: string | null
+          condition_start?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          end_date?: string | null
+          fuel_level_end?: number | null
+          fuel_level_start?: number | null
+          id?: string
+          notes?: string | null
+          odometer_end?: number | null
+          odometer_start?: number | null
+          photos_end?: Json | null
+          photos_start?: Json | null
+          project_name?: string | null
+          purpose?: string
+          return_checklist_url?: string | null
+          start_date?: string
+          status?: string
+          updated_at?: string | null
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vlms_assignments_assigned_location_id_fkey"
+            columns: ["assigned_location_id"]
+            isOneToOne: false
+            referencedRelation: "facilities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vlms_assignments_assigned_to_id_fkey"
+            columns: ["assigned_to_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vlms_assignments_authorized_by_id_fkey"
+            columns: ["authorized_by_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vlms_assignments_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vlms_assignments_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vlms_available_vehicles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vlms_assignments_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vlms_vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vlms_disposal_records: {
+        Row: {
+          authorized_by_id: string | null
+          bill_of_sale_url: string | null
+          buyer_address: string | null
+          buyer_contact: string | null
+          buyer_name: string | null
+          created_at: string | null
+          created_by: string | null
+          disposal_authorization_number: string | null
+          disposal_date: string
+          disposal_id: string
+          disposal_method: string
+          disposal_reason: string
+          disposal_value: number | null
+          final_book_value: number | null
+          final_condition: string | null
+          final_mileage: number | null
+          final_photos: Json | null
+          gain_loss: number | null
+          id: string
+          notes: string | null
+          release_documents: Json | null
+          total_lifecycle_cost: number | null
+          vehicle_id: string
+        }
+        Insert: {
+          authorized_by_id?: string | null
+          bill_of_sale_url?: string | null
+          buyer_address?: string | null
+          buyer_contact?: string | null
+          buyer_name?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          disposal_authorization_number?: string | null
+          disposal_date: string
+          disposal_id: string
+          disposal_method: string
+          disposal_reason: string
+          disposal_value?: number | null
+          final_book_value?: number | null
+          final_condition?: string | null
+          final_mileage?: number | null
+          final_photos?: Json | null
+          gain_loss?: number | null
+          id?: string
+          notes?: string | null
+          release_documents?: Json | null
+          total_lifecycle_cost?: number | null
+          vehicle_id: string
+        }
+        Update: {
+          authorized_by_id?: string | null
+          bill_of_sale_url?: string | null
+          buyer_address?: string | null
+          buyer_contact?: string | null
+          buyer_name?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          disposal_authorization_number?: string | null
+          disposal_date?: string
+          disposal_id?: string
+          disposal_method?: string
+          disposal_reason?: string
+          disposal_value?: number | null
+          final_book_value?: number | null
+          final_condition?: string | null
+          final_mileage?: number | null
+          final_photos?: Json | null
+          gain_loss?: number | null
+          id?: string
+          notes?: string | null
+          release_documents?: Json | null
+          total_lifecycle_cost?: number | null
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vlms_disposal_records_authorized_by_id_fkey"
+            columns: ["authorized_by_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vlms_disposal_records_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vlms_disposal_records_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vlms_available_vehicles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vlms_disposal_records_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vlms_vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vlms_fuel_logs: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          driver_id: string | null
+          driver_name: string | null
+          fuel_card_number: string | null
+          fuel_efficiency: number | null
+          fuel_type: string
+          id: string
+          latitude: number | null
+          longitude: number | null
+          notes: string | null
+          odometer_reading: number
+          payment_method: string | null
+          quantity: number
+          receipt_number: string | null
+          receipt_url: string | null
+          station_location: string | null
+          station_name: string | null
+          total_cost: number | null
+          transaction_date: string
+          transaction_number: string | null
+          trip_distance: number | null
+          unit_price: number
+          vehicle_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          driver_id?: string | null
+          driver_name?: string | null
+          fuel_card_number?: string | null
+          fuel_efficiency?: number | null
+          fuel_type: string
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          notes?: string | null
+          odometer_reading: number
+          payment_method?: string | null
+          quantity: number
+          receipt_number?: string | null
+          receipt_url?: string | null
+          station_location?: string | null
+          station_name?: string | null
+          total_cost?: number | null
+          transaction_date?: string
+          transaction_number?: string | null
+          trip_distance?: number | null
+          unit_price: number
+          vehicle_id: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          driver_id?: string | null
+          driver_name?: string | null
+          fuel_card_number?: string | null
+          fuel_efficiency?: number | null
+          fuel_type?: string
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          notes?: string | null
+          odometer_reading?: number
+          payment_method?: string | null
+          quantity?: number
+          receipt_number?: string | null
+          receipt_url?: string | null
+          station_location?: string | null
+          station_name?: string | null
+          total_cost?: number | null
+          transaction_date?: string
+          transaction_number?: string | null
+          trip_distance?: number | null
+          unit_price?: number
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vlms_fuel_logs_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vlms_fuel_logs_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vlms_fuel_logs_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vlms_available_vehicles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vlms_fuel_logs_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vlms_vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vlms_incidents: {
+        Row: {
+          action_taken: string | null
+          actual_repair_cost: number | null
+          cause: string | null
+          claim_status: string | null
+          created_at: string | null
+          created_by: string | null
+          damages_description: string | null
+          deductible_amount: number | null
+          description: string
+          driver_id: string | null
+          driver_name: string
+          estimated_repair_cost: number | null
+          id: string
+          incident_date: string
+          incident_id: string
+          incident_type: string
+          insurance_claim_number: string | null
+          insurance_documents: Json | null
+          insurance_payout: number | null
+          latitude: number | null
+          location: string
+          longitude: number | null
+          odometer_reading: number | null
+          other_parties: string | null
+          passengers: string | null
+          photos: Json | null
+          police_report_number: string | null
+          police_report_url: string | null
+          police_station: string | null
+          preventive_measures: string | null
+          resolved_date: string | null
+          responsible_party: string | null
+          severity: string
+          status: string
+          updated_at: string | null
+          vehicle_condition_before: string | null
+          vehicle_id: string
+          witness_statements: Json | null
+        }
+        Insert: {
+          action_taken?: string | null
+          actual_repair_cost?: number | null
+          cause?: string | null
+          claim_status?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          damages_description?: string | null
+          deductible_amount?: number | null
+          description: string
+          driver_id?: string | null
+          driver_name: string
+          estimated_repair_cost?: number | null
+          id?: string
+          incident_date: string
+          incident_id: string
+          incident_type: string
+          insurance_claim_number?: string | null
+          insurance_documents?: Json | null
+          insurance_payout?: number | null
+          latitude?: number | null
+          location: string
+          longitude?: number | null
+          odometer_reading?: number | null
+          other_parties?: string | null
+          passengers?: string | null
+          photos?: Json | null
+          police_report_number?: string | null
+          police_report_url?: string | null
+          police_station?: string | null
+          preventive_measures?: string | null
+          resolved_date?: string | null
+          responsible_party?: string | null
+          severity: string
+          status?: string
+          updated_at?: string | null
+          vehicle_condition_before?: string | null
+          vehicle_id: string
+          witness_statements?: Json | null
+        }
+        Update: {
+          action_taken?: string | null
+          actual_repair_cost?: number | null
+          cause?: string | null
+          claim_status?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          damages_description?: string | null
+          deductible_amount?: number | null
+          description?: string
+          driver_id?: string | null
+          driver_name?: string
+          estimated_repair_cost?: number | null
+          id?: string
+          incident_date?: string
+          incident_id?: string
+          incident_type?: string
+          insurance_claim_number?: string | null
+          insurance_documents?: Json | null
+          insurance_payout?: number | null
+          latitude?: number | null
+          location?: string
+          longitude?: number | null
+          odometer_reading?: number | null
+          other_parties?: string | null
+          passengers?: string | null
+          photos?: Json | null
+          police_report_number?: string | null
+          police_report_url?: string | null
+          police_station?: string | null
+          preventive_measures?: string | null
+          resolved_date?: string | null
+          responsible_party?: string | null
+          severity?: string
+          status?: string
+          updated_at?: string | null
+          vehicle_condition_before?: string | null
+          vehicle_id?: string
+          witness_statements?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vlms_incidents_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vlms_incidents_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vlms_incidents_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vlms_available_vehicles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vlms_incidents_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vlms_vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vlms_inspections: {
+        Row: {
+          brakes: Json | null
+          certificate_expiry_date: string | null
+          certificate_issued_date: string | null
+          certificate_number: string | null
+          checklist: Json
+          compliance_notes: string | null
+          created_at: string | null
+          created_by: string | null
+          defects_found: string[] | null
+          electrical_system: Json | null
+          engine_mechanical: Json | null
+          exterior_condition: Json | null
+          fluid_levels: Json | null
+          id: string
+          inspection_date: string
+          inspection_id: string
+          inspection_report_url: string | null
+          inspection_type: string
+          inspector_certification: string | null
+          inspector_id: string | null
+          inspector_name: string
+          interior_condition: Json | null
+          lights_signals: Json | null
+          meets_safety_standards: boolean
+          next_inspection_date: string | null
+          notes: string | null
+          odometer_reading: number | null
+          overall_status: string
+          photos: Json | null
+          priority_repairs: string[] | null
+          recommendations: string | null
+          reinspection_date: string | null
+          reinspection_required: boolean | null
+          roadworthy: boolean
+          safety_equipment: Json | null
+          tires: Json | null
+          vehicle_id: string
+        }
+        Insert: {
+          brakes?: Json | null
+          certificate_expiry_date?: string | null
+          certificate_issued_date?: string | null
+          certificate_number?: string | null
+          checklist: Json
+          compliance_notes?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          defects_found?: string[] | null
+          electrical_system?: Json | null
+          engine_mechanical?: Json | null
+          exterior_condition?: Json | null
+          fluid_levels?: Json | null
+          id?: string
+          inspection_date: string
+          inspection_id: string
+          inspection_report_url?: string | null
+          inspection_type: string
+          inspector_certification?: string | null
+          inspector_id?: string | null
+          inspector_name: string
+          interior_condition?: Json | null
+          lights_signals?: Json | null
+          meets_safety_standards: boolean
+          next_inspection_date?: string | null
+          notes?: string | null
+          odometer_reading?: number | null
+          overall_status: string
+          photos?: Json | null
+          priority_repairs?: string[] | null
+          recommendations?: string | null
+          reinspection_date?: string | null
+          reinspection_required?: boolean | null
+          roadworthy: boolean
+          safety_equipment?: Json | null
+          tires?: Json | null
+          vehicle_id: string
+        }
+        Update: {
+          brakes?: Json | null
+          certificate_expiry_date?: string | null
+          certificate_issued_date?: string | null
+          certificate_number?: string | null
+          checklist?: Json
+          compliance_notes?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          defects_found?: string[] | null
+          electrical_system?: Json | null
+          engine_mechanical?: Json | null
+          exterior_condition?: Json | null
+          fluid_levels?: Json | null
+          id?: string
+          inspection_date?: string
+          inspection_id?: string
+          inspection_report_url?: string | null
+          inspection_type?: string
+          inspector_certification?: string | null
+          inspector_id?: string | null
+          inspector_name?: string
+          interior_condition?: Json | null
+          lights_signals?: Json | null
+          meets_safety_standards?: boolean
+          next_inspection_date?: string | null
+          notes?: string | null
+          odometer_reading?: number | null
+          overall_status?: string
+          photos?: Json | null
+          priority_repairs?: string[] | null
+          recommendations?: string | null
+          reinspection_date?: string | null
+          reinspection_required?: boolean | null
+          roadworthy?: boolean
+          safety_equipment?: Json | null
+          tires?: Json | null
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vlms_inspections_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vlms_inspections_inspector_id_fkey"
+            columns: ["inspector_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vlms_inspections_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vlms_available_vehicles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vlms_inspections_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vlms_vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vlms_maintenance_records: {
+        Row: {
+          actual_date: string | null
+          category: string | null
+          completed_by: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string
+          id: string
+          invoices: Json | null
+          issues_found: string | null
+          labor_cost: number | null
+          labor_hours: number | null
+          maintenance_type: string
+          mileage_at_service: number | null
+          next_service_date: string | null
+          next_service_mileage: number | null
+          parts_cost: number | null
+          parts_replaced: Json | null
+          photos: Json | null
+          priority: string | null
+          recommendations: string | null
+          record_id: string
+          scheduled_date: string | null
+          service_location: string | null
+          service_provider: string | null
+          status: string
+          technician_name: string | null
+          total_cost: number | null
+          updated_at: string | null
+          vehicle_id: string
+          warranty_until: string | null
+          work_order_number: string | null
+        }
+        Insert: {
+          actual_date?: string | null
+          category?: string | null
+          completed_by?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description: string
+          id?: string
+          invoices?: Json | null
+          issues_found?: string | null
+          labor_cost?: number | null
+          labor_hours?: number | null
+          maintenance_type: string
+          mileage_at_service?: number | null
+          next_service_date?: string | null
+          next_service_mileage?: number | null
+          parts_cost?: number | null
+          parts_replaced?: Json | null
+          photos?: Json | null
+          priority?: string | null
+          recommendations?: string | null
+          record_id: string
+          scheduled_date?: string | null
+          service_location?: string | null
+          service_provider?: string | null
+          status?: string
+          technician_name?: string | null
+          total_cost?: number | null
+          updated_at?: string | null
+          vehicle_id: string
+          warranty_until?: string | null
+          work_order_number?: string | null
+        }
+        Update: {
+          actual_date?: string | null
+          category?: string | null
+          completed_by?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string
+          id?: string
+          invoices?: Json | null
+          issues_found?: string | null
+          labor_cost?: number | null
+          labor_hours?: number | null
+          maintenance_type?: string
+          mileage_at_service?: number | null
+          next_service_date?: string | null
+          next_service_mileage?: number | null
+          parts_cost?: number | null
+          parts_replaced?: Json | null
+          photos?: Json | null
+          priority?: string | null
+          recommendations?: string | null
+          record_id?: string
+          scheduled_date?: string | null
+          service_location?: string | null
+          service_provider?: string | null
+          status?: string
+          technician_name?: string | null
+          total_cost?: number | null
+          updated_at?: string | null
+          vehicle_id?: string
+          warranty_until?: string | null
+          work_order_number?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vlms_maintenance_records_completed_by_fkey"
+            columns: ["completed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vlms_maintenance_records_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vlms_maintenance_records_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vlms_available_vehicles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vlms_maintenance_records_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vlms_vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vlms_vehicles: {
+        Row: {
+          acquisition_date: string
+          acquisition_type: string
+          cargo_capacity: number | null
+          color: string | null
+          created_at: string | null
+          created_by: string | null
+          current_assignment_type: string | null
+          current_book_value: number | null
+          current_driver_id: string | null
+          current_location_id: string | null
+          current_mileage: number | null
+          depreciation_rate: number | null
+          documents: Json | null
+          engine_capacity: number | null
+          fuel_type: string
+          id: string
+          insurance_expiry: string | null
+          insurance_policy_number: string | null
+          insurance_provider: string | null
+          last_inspection_date: string | null
+          last_service_date: string | null
+          license_plate: string
+          make: string
+          model: string
+          next_inspection_date: string | null
+          next_service_date: string | null
+          notes: string | null
+          photos: Json | null
+          purchase_price: number | null
+          registration_expiry: string | null
+          seating_capacity: number | null
+          status: string
+          tags: string[] | null
+          total_maintenance_cost: number | null
+          transmission: string | null
+          updated_at: string | null
+          updated_by: string | null
+          vehicle_id: string
+          vehicle_type: string
+          vendor_name: string | null
+          vin: string | null
+          warranty_expiry: string | null
+          year: number
+        }
+        Insert: {
+          acquisition_date: string
+          acquisition_type: string
+          cargo_capacity?: number | null
+          color?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          current_assignment_type?: string | null
+          current_book_value?: number | null
+          current_driver_id?: string | null
+          current_location_id?: string | null
+          current_mileage?: number | null
+          depreciation_rate?: number | null
+          documents?: Json | null
+          engine_capacity?: number | null
+          fuel_type: string
+          id?: string
+          insurance_expiry?: string | null
+          insurance_policy_number?: string | null
+          insurance_provider?: string | null
+          last_inspection_date?: string | null
+          last_service_date?: string | null
+          license_plate: string
+          make: string
+          model: string
+          next_inspection_date?: string | null
+          next_service_date?: string | null
+          notes?: string | null
+          photos?: Json | null
+          purchase_price?: number | null
+          registration_expiry?: string | null
+          seating_capacity?: number | null
+          status?: string
+          tags?: string[] | null
+          total_maintenance_cost?: number | null
+          transmission?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          vehicle_id: string
+          vehicle_type: string
+          vendor_name?: string | null
+          vin?: string | null
+          warranty_expiry?: string | null
+          year: number
+        }
+        Update: {
+          acquisition_date?: string
+          acquisition_type?: string
+          cargo_capacity?: number | null
+          color?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          current_assignment_type?: string | null
+          current_book_value?: number | null
+          current_driver_id?: string | null
+          current_location_id?: string | null
+          current_mileage?: number | null
+          depreciation_rate?: number | null
+          documents?: Json | null
+          engine_capacity?: number | null
+          fuel_type?: string
+          id?: string
+          insurance_expiry?: string | null
+          insurance_policy_number?: string | null
+          insurance_provider?: string | null
+          last_inspection_date?: string | null
+          last_service_date?: string | null
+          license_plate?: string
+          make?: string
+          model?: string
+          next_inspection_date?: string | null
+          next_service_date?: string | null
+          notes?: string | null
+          photos?: Json | null
+          purchase_price?: number | null
+          registration_expiry?: string | null
+          seating_capacity?: number | null
+          status?: string
+          tags?: string[] | null
+          total_maintenance_cost?: number | null
+          transmission?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          vehicle_id?: string
+          vehicle_type?: string
+          vendor_name?: string | null
+          vin?: string | null
+          warranty_expiry?: string | null
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vlms_vehicles_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vlms_vehicles_current_driver_id_fkey"
+            columns: ["current_driver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vlms_vehicles_current_location_id_fkey"
+            columns: ["current_location_id"]
+            isOneToOne: false
+            referencedRelation: "facilities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vlms_vehicles_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       warehouses: {
         Row: {
@@ -2478,6 +3561,308 @@ export type Database = {
           },
         ]
       }
+      vlms_active_assignments: {
+        Row: {
+          actual_return_date: string | null
+          assigned_location_id: string | null
+          assigned_location_name: string | null
+          assigned_to_id: string | null
+          assigned_to_name: string | null
+          assignment_id: string | null
+          assignment_letter_url: string | null
+          assignment_type: string | null
+          authorization_number: string | null
+          authorized_by_id: string | null
+          condition_end: string | null
+          condition_start: string | null
+          created_at: string | null
+          created_by: string | null
+          end_date: string | null
+          fuel_level_end: number | null
+          fuel_level_start: number | null
+          id: string | null
+          license_plate: string | null
+          make: string | null
+          model: string | null
+          notes: string | null
+          odometer_end: number | null
+          odometer_start: number | null
+          photos_end: Json | null
+          photos_start: Json | null
+          project_name: string | null
+          purpose: string | null
+          return_checklist_url: string | null
+          start_date: string | null
+          status: string | null
+          updated_at: string | null
+          vehicle_display_id: string | null
+          vehicle_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vlms_assignments_assigned_location_id_fkey"
+            columns: ["assigned_location_id"]
+            isOneToOne: false
+            referencedRelation: "facilities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vlms_assignments_assigned_to_id_fkey"
+            columns: ["assigned_to_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vlms_assignments_authorized_by_id_fkey"
+            columns: ["authorized_by_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vlms_assignments_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vlms_assignments_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vlms_available_vehicles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vlms_assignments_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vlms_vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vlms_available_vehicles: {
+        Row: {
+          acquisition_date: string | null
+          acquisition_type: string | null
+          assignment_count: number | null
+          cargo_capacity: number | null
+          color: string | null
+          created_at: string | null
+          created_by: string | null
+          current_assignment_type: string | null
+          current_book_value: number | null
+          current_driver_id: string | null
+          current_location_id: string | null
+          current_mileage: number | null
+          depreciation_rate: number | null
+          documents: Json | null
+          engine_capacity: number | null
+          fuel_type: string | null
+          id: string | null
+          incident_count: number | null
+          insurance_expiry: string | null
+          insurance_policy_number: string | null
+          insurance_provider: string | null
+          last_inspection_date: string | null
+          last_service_date: string | null
+          license_plate: string | null
+          maintenance_count: number | null
+          make: string | null
+          model: string | null
+          next_inspection_date: string | null
+          next_service_date: string | null
+          notes: string | null
+          photos: Json | null
+          purchase_price: number | null
+          registration_expiry: string | null
+          seating_capacity: number | null
+          status: string | null
+          tags: string[] | null
+          total_maintenance_cost: number | null
+          transmission: string | null
+          updated_at: string | null
+          updated_by: string | null
+          vehicle_id: string | null
+          vehicle_type: string | null
+          vendor_name: string | null
+          vin: string | null
+          warranty_expiry: string | null
+          year: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vlms_vehicles_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vlms_vehicles_current_driver_id_fkey"
+            columns: ["current_driver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vlms_vehicles_current_location_id_fkey"
+            columns: ["current_location_id"]
+            isOneToOne: false
+            referencedRelation: "facilities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vlms_vehicles_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vlms_overdue_maintenance: {
+        Row: {
+          actual_date: string | null
+          category: string | null
+          completed_by: string | null
+          created_at: string | null
+          created_by: string | null
+          days_overdue: number | null
+          description: string | null
+          id: string | null
+          invoices: Json | null
+          issues_found: string | null
+          labor_cost: number | null
+          labor_hours: number | null
+          license_plate: string | null
+          maintenance_type: string | null
+          make: string | null
+          mileage_at_service: number | null
+          model: string | null
+          next_service_date: string | null
+          next_service_mileage: number | null
+          parts_cost: number | null
+          parts_replaced: Json | null
+          photos: Json | null
+          priority: string | null
+          recommendations: string | null
+          record_id: string | null
+          scheduled_date: string | null
+          service_location: string | null
+          service_provider: string | null
+          status: string | null
+          technician_name: string | null
+          total_cost: number | null
+          updated_at: string | null
+          vehicle_display_id: string | null
+          vehicle_id: string | null
+          warranty_until: string | null
+          work_order_number: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vlms_maintenance_records_completed_by_fkey"
+            columns: ["completed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vlms_maintenance_records_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vlms_maintenance_records_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vlms_available_vehicles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vlms_maintenance_records_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vlms_vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vlms_upcoming_maintenance: {
+        Row: {
+          actual_date: string | null
+          category: string | null
+          completed_by: string | null
+          created_at: string | null
+          created_by: string | null
+          current_mileage: number | null
+          description: string | null
+          id: string | null
+          invoices: Json | null
+          issues_found: string | null
+          labor_cost: number | null
+          labor_hours: number | null
+          license_plate: string | null
+          maintenance_type: string | null
+          make: string | null
+          mileage_at_service: number | null
+          model: string | null
+          next_service_date: string | null
+          next_service_mileage: number | null
+          parts_cost: number | null
+          parts_replaced: Json | null
+          photos: Json | null
+          priority: string | null
+          recommendations: string | null
+          record_id: string | null
+          scheduled_date: string | null
+          service_location: string | null
+          service_provider: string | null
+          status: string | null
+          technician_name: string | null
+          total_cost: number | null
+          updated_at: string | null
+          vehicle_display_id: string | null
+          vehicle_id: string | null
+          warranty_until: string | null
+          work_order_number: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vlms_maintenance_records_completed_by_fkey"
+            columns: ["completed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vlms_maintenance_records_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vlms_maintenance_records_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vlms_available_vehicles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vlms_maintenance_records_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vlms_vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vlms_vehicles_with_taxonomy: {
         Row: {
           ai_capacity_image_url: string | null
@@ -2664,6 +4049,14 @@ export type Database = {
           }
       calculate_cargo_volume: {
         Args: { height_cm: number; length_cm: number; width_cm: number }
+        Returns: number
+      }
+      calculate_vehicle_fuel_efficiency: {
+        Args: {
+          p_end_date?: string
+          p_start_date?: string
+          p_vehicle_id: string
+        }
         Returns: number
       }
       disablelongtransactions: { Args: never; Returns: string }
@@ -2970,6 +4363,10 @@ export type Database = {
         | { Args: { "": string }; Returns: string }
       st_asgml:
         | {
+            Args: { geom: unknown; maxdecimaldigits?: number; options?: number }
+            Returns: string
+          }
+        | {
             Args: {
               geom: unknown
               id?: string
@@ -2978,10 +4375,6 @@ export type Database = {
               options?: number
               version: number
             }
-            Returns: string
-          }
-        | {
-            Args: { geom: unknown; maxdecimaldigits?: number; options?: number }
             Returns: string
           }
         | {
@@ -3192,11 +4585,11 @@ export type Database = {
         Returns: unknown
       }
       st_generatepoints:
+        | { Args: { area: unknown; npoints: number }; Returns: unknown }
         | {
             Args: { area: unknown; npoints: number; seed: number }
             Returns: unknown
           }
-        | { Args: { area: unknown; npoints: number }; Returns: unknown }
       st_geogfromtext: { Args: { "": string }; Returns: unknown }
       st_geographyfromtext: { Args: { "": string }; Returns: unknown }
       st_geohash:
@@ -3673,6 +5066,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       app_role: [
