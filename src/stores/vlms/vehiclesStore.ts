@@ -75,7 +75,7 @@ export const useVehiclesStore = create<VehiclesState>()(
               `
               *,
               current_location:facilities!vehicles_current_location_id_fkey(id, name),
-              current_driver:profiles!vehicles_current_driver_id_fkey(id, full_name, phone)
+              current_driver:drivers!vehicles_current_driver_id_fkey(id, name, phone)
             `
             )
             .order('created_at', { ascending: false });
@@ -148,7 +148,7 @@ export const useVehiclesStore = create<VehiclesState>()(
               `
               *,
               current_location:facilities!vehicles_current_location_id_fkey(id, name),
-              current_driver:profiles!vehicles_current_driver_id_fkey(id, full_name, phone)
+              current_driver:drivers!vehicles_current_driver_id_fkey(id, name, phone)
             `
             )
             .eq('id', id)
