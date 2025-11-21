@@ -64,18 +64,7 @@ export function FacilityFormDialog({
   const { data: states = [], isLoading: loadingStates } = useStates();
   const { data: lgasByState = [], isLoading: loadingLGAsByState } = useLGAsByState(selectedStateId);
 
-  // Get lat/lng from form for reverse geocoding
-  const formLat = form.watch('lat');
-  const formLng = form.watch('lng');
-
-  // Reverse geocoding: Auto-fill LGA based on lat/lng
-  const { data: adminUnitByPoint } = useFindAdminUnitByPoint(
-    formLat || null,
-    formLng || null,
-    6, // LGA level
-    DEFAULT_COUNTRY_ID
-  );
-
+  // Initialize form BEFORE using it
   const form = useForm<FacilityFormData>({
     resolver: zodResolver(facilityFormSchema),
     defaultValues: {
@@ -88,6 +77,18 @@ export function FacilityFormDialog({
       cd4_service: false,
     },
   });
+
+  // Get lat/lng from form for reverse geocoding
+  const formLat = form.watch('lat');
+  const formLng = form.watch('lng');
+
+  // Reverse geocoding: Auto-fill LGA based on lat/lng
+  const { data: adminUnitByPoint } = useFindAdminUnitByPoint(
+    formLat || null,
+    formLng || null,
+    6, // LGA level
+    DEFAULT_COUNTRY_ID
+  );
 
   // Auto-fill LGA when reverse geocoding finds a match
   useEffect(() => {
