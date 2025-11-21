@@ -326,6 +326,15 @@ export const useVehicleOnboardState = create<OnboardingState & OnboardingActions
           width_cm: capacityConfig.dimensions?.width_cm,
           height_cm: capacityConfig.dimensions?.height_cm,
           tiered_config: capacityConfig.tiered_config,
+
+          // Required fields for vehicles table
+          type: selectedType?.type_code || selectedCategory?.category_code || 'van',
+          plate_number: registrationData.license_plate, // Sync with license_plate
+          capacity: capacityConfig.capacity_m3 || 10, // Default 10 m³
+          max_weight: capacityConfig.capacity_kg || 1000, // Default 1000 kg
+          fuel_type: 'diesel', // Default fuel type
+          fuel_efficiency: 10.0, // Default L/100km
+          status: 'available', // Default status
         };
 
         return formData;
