@@ -13,7 +13,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { useVehicleCategories, useVehicleTypesByCategory } from '@/hooks/useVehicleCategories';
+import { useVehicleCategories } from '@/hooks/useVehicleCategories';
+import { useVehicleTypesByCategory } from '@/hooks/useVehicleTypes';
 import type { VehicleCategory, VehicleType } from '@/types/vlms-onboarding';
 
 interface CategoryTypeSelectorProps {

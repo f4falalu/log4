@@ -91,13 +91,9 @@ export default function VehiclesPage() {
           <p className="text-muted-foreground">Manage your fleet vehicles</p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={() => navigate('/fleetops/vlms/vehicles/configure')}>
+          <Button onClick={() => navigate('/fleetops/vlms/vehicles/onboard')}>
             <Plus className="h-4 w-4 mr-2" />
-            Configure Vehicle
-          </Button>
-          <Button variant="outline" onClick={() => setIsCreateDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Quick Add
+            Add Vehicle
           </Button>
         </div>
       </div>

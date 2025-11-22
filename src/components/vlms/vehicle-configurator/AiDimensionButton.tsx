@@ -6,7 +6,7 @@
 import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Upload, Sparkles, Loader2 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
 interface AiDimensionButtonProps {
@@ -22,7 +22,6 @@ export function AiDimensionButton({
 }: AiDimensionButtonProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { toast } = useToast();
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -30,20 +29,16 @@ export function AiDimensionButton({
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      toast({
-        title: 'Invalid file type',
+      toast.error('Invalid file type', {
         description: 'Please upload an image file (JPG, PNG, etc.)',
-        variant: 'destructive',
       });
       return;
     }
 
     // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      toast({
-        title: 'File too large',
+      toast.error('File too large', {
         description: 'Please upload an image smaller than 5MB',
-        variant: 'destructive',
       });
       return;
     }
@@ -86,27 +81,16 @@ export function AiDimensionButton({
 
         onAnalysisComplete(analysis);
 
-        toast({
-          title: 'AI Analysis Complete',
-          description: (
-            <div className="space-y-1">
-              <p>Volume: {analysis.volume_m3.toFixed(2)} m³</p>
-              <p>Payload: {analysis.max_payload_kg} kg</p>
-              <p className="text-xs text-muted-foreground">
-                Confidence: {Math.round(analysis.confidence * 100)}%
-              </p>
-            </div>
-          ),
+        toast.success('AI Analysis Complete', {
+          description: `Volume: ${analysis.volume_m3.toFixed(2)} m³, Payload: ${analysis.max_payload_kg} kg (Confidence: ${Math.round(analysis.confidence * 100)}%)`,
         });
       } else {
         throw new Error('No analysis data returned');
       }
     } catch (error) {
       console.error('AI analysis error:', error);
-      toast({
-        title: 'AI Analysis Failed',
+      toast.error('AI Analysis Failed', {
         description: error instanceof Error ? error.message : 'Unable to analyze vehicle image. Please enter dimensions manually.',
-        variant: 'destructive',
       });
     } finally {
       onProcessingChange(false);
