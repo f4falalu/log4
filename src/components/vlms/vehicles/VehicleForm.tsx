@@ -46,7 +46,7 @@ export function VehicleForm({ vehicle, onSubmit, onCancel, isSubmitting }: Vehic
           year: vehicle.year,
           vin: vehicle.vin || '',
           license_plate: vehicle.license_plate,
-          vehicle_type: vehicle.vehicle_type as any,
+          vehicle_type: vehicle.type as any,
           fuel_type: vehicle.fuel_type as any,
           transmission: vehicle.transmission as any,
           engine_capacity: vehicle.engine_capacity || undefined,

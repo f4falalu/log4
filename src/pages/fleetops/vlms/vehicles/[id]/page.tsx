@@ -171,7 +171,7 @@ export default function VehicleDetailPage() {
 
                   <div className="text-muted-foreground">Type</div>
                   <div className="font-medium capitalize">
-                    {vehicle.vehicle_type.replace('_', ' ')}
+                    {vehicle.type?.replace('_', ' ') || '-'}
                   </div>
 
                   <div className="text-muted-foreground">Fuel Type</div>

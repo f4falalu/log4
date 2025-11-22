@@ -162,7 +162,7 @@ export default function VehiclesPage() {
                       </TableCell>
                       <TableCell>{vehicle.license_plate}</TableCell>
                       <TableCell className="capitalize">
-                        {vehicle.vehicle_type.replace('_', ' ')}
+                        {vehicle.type?.replace('_', ' ') || '-'}
                       </TableCell>
                       <TableCell>{getStatusBadge(vehicle.status)}</TableCell>
                       <TableCell>
