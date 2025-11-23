@@ -45,7 +45,7 @@ export function VehicleConfiguratorDialog({
 
         // Payload
         gross_weight_kg: formData.gross_weight_kg,
-        capacity_kg: formData.capacity_kg || 1000,
+        capacity_kg: formData.capacity_kg,
 
         // Tier configuration
         tiered_config: formData.tiered_config,
@@ -56,19 +56,20 @@ export function VehicleConfiguratorDialog({
 
         // Specifications (from user input)
         make: formData.model_name?.split(' ')[0] || 'Unknown',
-        year: formData.year || new Date().getFullYear(),
-        fuel_type: formData.fuel_type || 'diesel',
+        vehicle_type: formData.model_name || 'truck', // Legacy VARCHAR field (required)
+        year: formData.year, // Validated in isValid()
+        fuel_type: formData.fuel_type, // Validated in isValid()
         transmission: formData.transmission,
         axles: formData.axles,
         number_of_wheels: formData.number_of_wheels,
 
         // Acquisition (from user input)
-        acquisition_date: formData.acquisition_date || new Date().toISOString(),
-        acquisition_type: formData.acquisition_type || 'purchase',
-        vendor: formData.vendor,
+        acquisition_date: formData.acquisition_date, // Validated in isValid()
+        acquisition_type: formData.acquisition_type, // Validated in isValid()
+        vendor_name: formData.vendor,
 
         // Insurance & Registration (from user input)
-        license_plate: formData.license_plate || `TEMP-${Date.now()}`,
+        license_plate: formData.license_plate, // Validated in isValid()
         registration_expiry: formData.registration_expiry,
         insurance_expiry: formData.insurance_expiry,
 

@@ -253,7 +253,7 @@ export function VehicleConfigurator({ onSave, onCancel }: VehicleConfiguratorPro
 
             <TabsContent value="interior" className="mt-4">
               <p className="text-sm text-muted-foreground">
-                Interior specifications coming soon...
+                Configure interior dimensions and seating in the right panel →
               </p>
             </TabsContent>
           </Tabs>
@@ -386,16 +386,6 @@ export function VehicleConfigurator({ onSave, onCancel }: VehicleConfiguratorPro
                 </div>
 
                 <Separator />
-
-                {/* Option Section */}
-                <div>
-                  <h3 className="text-xs font-semibold text-muted-foreground mb-3 tracking-wider">
-                    OPTION
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    Optional features and upgrades coming soon...
-                  </p>
-                </div>
 
                 {/* Expandable Tier Builder */}
                 {calculatedVolume && (

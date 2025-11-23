@@ -413,6 +413,8 @@ export const useVehicleConfiguratorStore = create<VehicleConfiguratorState>()(
           licensePlate,
           year,
           fuelType,
+          dateAcquired,
+          acquisitionMode,
         } = state;
 
         // Category is required
@@ -424,11 +426,13 @@ export const useVehicleConfiguratorStore = create<VehicleConfiguratorState>()(
 
         if (!hasDimensions && !hasManualCapacity) return false;
 
-        // Required database fields
+        // Required database fields (matching NOT NULL constraints)
         if (!modelName || modelName.trim() === '') return false;
         if (!licensePlate || licensePlate.trim() === '') return false;
         if (!year) return false;
         if (!fuelType || fuelType.trim() === '') return false;
+        if (!dateAcquired || dateAcquired.trim() === '') return false;
+        if (!acquisitionMode || acquisitionMode.trim() === '') return false;
 
         return true;
       },
