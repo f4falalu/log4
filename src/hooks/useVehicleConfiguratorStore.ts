@@ -329,15 +329,35 @@ export const useVehicleConfiguratorStore = create<VehicleConfiguratorState>()(
           selectedCategory,
           selectedType,
           modelName,
+          vehicleName,
+          variant,
           dimensions,
           payload,
           tiers,
+          fuelType,
+          transmission,
+          year,
+          axles,
+          numberOfWheels,
+          dateAcquired,
+          acquisitionMode,
+          vendor,
+          licensePlate,
+          registrationExpiry,
+          insuranceExpiry,
+          interiorDimensions,
+          numberOfSeats,
         } = state;
 
         return {
+          // Category & Type
           category_id: selectedCategory?.id,
           vehicle_type_id: selectedType?.id,
           model_name: modelName || selectedType?.name,
+
+          // Basic Information
+          vehicle_name: vehicleName,
+          variant: variant,
 
           // Dimensions
           length_cm: dimensions.length_cm,
@@ -346,7 +366,31 @@ export const useVehicleConfiguratorStore = create<VehicleConfiguratorState>()(
           capacity_m3: dimensions.volume_m3,
 
           // Payload
+          gross_weight_kg: payload.gross_weight_kg,
           capacity_kg: payload.max_payload_kg,
+
+          // Specifications
+          fuel_type: fuelType,
+          transmission: transmission,
+          year: year,
+          axles: axles,
+          number_of_wheels: numberOfWheels,
+
+          // Acquisition
+          acquisition_date: dateAcquired,
+          acquisition_type: acquisitionMode,
+          vendor: vendor,
+
+          // Insurance & Registration
+          license_plate: licensePlate,
+          registration_expiry: registrationExpiry,
+          insurance_expiry: insuranceExpiry,
+
+          // Interior
+          interior_length_cm: interiorDimensions.length_cm,
+          interior_width_cm: interiorDimensions.width_cm,
+          interior_height_cm: interiorDimensions.height_cm,
+          seating_capacity: numberOfSeats,
 
           // Tier configuration (JSONB)
           tiered_config: tiers.map(tier => ({
@@ -361,16 +405,32 @@ export const useVehicleConfiguratorStore = create<VehicleConfiguratorState>()(
 
       isValid: () => {
         const state = get();
-        const { selectedCategory, dimensions, payload } = state;
+        const {
+          selectedCategory,
+          dimensions,
+          payload,
+          modelName,
+          licensePlate,
+          year,
+          fuelType,
+        } = state;
 
-        // Basic validation
+        // Category is required
         if (!selectedCategory) return false;
 
         // Either dimensions or manual capacity required
         const hasDimensions = dimensions.length_cm && dimensions.width_cm && dimensions.height_cm;
         const hasManualCapacity = dimensions.volume_m3 && payload.max_payload_kg;
 
-        return hasDimensions || hasManualCapacity;
+        if (!hasDimensions && !hasManualCapacity) return false;
+
+        // Required database fields
+        if (!modelName || modelName.trim() === '') return false;
+        if (!licensePlate || licensePlate.trim() === '') return false;
+        if (!year) return false;
+        if (!fuelType || fuelType.trim() === '') return false;
+
+        return true;
       },
     }),
     { name: 'vehicle-configurator' }

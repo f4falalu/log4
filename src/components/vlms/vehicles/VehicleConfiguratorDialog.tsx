@@ -44,20 +44,42 @@ export function VehicleConfiguratorDialog({
         capacity_m3: formData.capacity_m3,
 
         // Payload
+        gross_weight_kg: formData.gross_weight_kg,
         capacity_kg: formData.capacity_kg || 1000,
 
         // Tier configuration
         tiered_config: formData.tiered_config,
 
-        // Required fields (will be enhanced in future with full registration form)
-        license_plate: `TEMP-${Date.now()}`, // Temporary - will be replaced with actual registration
-        vehicle_id: `VEH-${Date.now()}`,
+        // Basic Information (from user input)
+        vehicle_id: formData.vehicle_name ? formData.vehicle_name.toUpperCase().replace(/\s+/g, '-') : `VEH-${Date.now()}`,
+        variant: formData.variant,
+
+        // Specifications (from user input)
         make: formData.model_name?.split(' ')[0] || 'Unknown',
-        year: new Date().getFullYear(),
-        fuel_type: 'diesel',
+        year: formData.year || new Date().getFullYear(),
+        fuel_type: formData.fuel_type || 'diesel',
+        transmission: formData.transmission,
+        axles: formData.axles,
+        number_of_wheels: formData.number_of_wheels,
+
+        // Acquisition (from user input)
+        acquisition_date: formData.acquisition_date || new Date().toISOString(),
+        acquisition_type: formData.acquisition_type || 'purchase',
+        vendor: formData.vendor,
+
+        // Insurance & Registration (from user input)
+        license_plate: formData.license_plate || `TEMP-${Date.now()}`,
+        registration_expiry: formData.registration_expiry,
+        insurance_expiry: formData.insurance_expiry,
+
+        // Interior (from user input)
+        interior_length_cm: formData.interior_length_cm,
+        interior_width_cm: formData.interior_width_cm,
+        interior_height_cm: formData.interior_height_cm,
+        seating_capacity: formData.seating_capacity,
+
+        // Status
         status: 'available',
-        acquisition_date: new Date().toISOString(),
-        acquisition_type: 'purchase',
       };
 
       const result = await createVehicle(vehicleData);

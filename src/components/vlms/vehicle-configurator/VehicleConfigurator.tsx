@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useVehicleConfiguratorStore } from '@/hooks/useVehicleConfiguratorStore';
+import { CategoryTypeSelector } from './CategoryTypeSelector';
 import { VehicleCarousel } from './VehicleCarousel';
 import { VehicleVisualizer } from './VehicleVisualizer';
 import { AiDimensionButton } from './AiDimensionButton';
@@ -147,6 +148,16 @@ export function VehicleConfigurator({ onSave, onCancel }: VehicleConfiguratorPro
       <div className="flex-1 grid lg:grid-cols-[1fr_400px] gap-0">
         {/* LEFT PANEL - Vehicle Visualizer */}
         <div className="flex flex-col p-6 space-y-4 border-r overflow-hidden">
+          {/* Category, Type & Model Selection */}
+          <CategoryTypeSelector
+            selectedCategory={selectedCategory}
+            selectedType={selectedType}
+            modelName={modelName}
+            onCategoryChange={setCategory}
+            onTypeChange={setVehicleType}
+            onModelNameChange={setModelName}
+          />
+
           {/* Category Header - Tesla/Arrival Style */}
           {selectedCategory && (
             <div className="mb-2">
