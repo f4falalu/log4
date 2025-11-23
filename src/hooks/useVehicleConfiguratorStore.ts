@@ -39,6 +39,10 @@ export interface VehicleConfiguratorState {
   selectedType: VehicleType | null;
   modelName: string;
 
+  // Basic Information
+  vehicleName: string;
+  variant: string;
+
   // Dimensions & Payload
   dimensions: {
     length_cm?: number;
@@ -50,6 +54,31 @@ export interface VehicleConfiguratorState {
     gross_weight_kg?: number;
     max_payload_kg?: number;
   };
+
+  // Specifications
+  fuelType: string;
+  transmission: string;
+  year?: number;
+  axles?: number;
+  numberOfWheels?: number;
+
+  // Acquisition
+  dateAcquired: string;
+  acquisitionMode: string;
+  vendor: string;
+
+  // Insurance & Registration
+  licensePlate: string;
+  registrationExpiry: string;
+  insuranceExpiry: string;
+
+  // Interior
+  interiorDimensions: {
+    length_cm?: number;
+    width_cm?: number;
+    height_cm?: number;
+  };
+  numberOfSeats?: number;
 
   // Tier & Slot Configuration
   tiers: TierConfig[];
@@ -66,9 +95,28 @@ export interface VehicleConfiguratorState {
   setCategory: (category: VehicleCategory | null) => void;
   setVehicleType: (type: VehicleType | null) => void;
   setModelName: (name: string) => void;
+  setVehicleName: (name: string) => void;
+  setVariant: (variant: string) => void;
 
   updateDimensions: (dimensions: Partial<VehicleConfiguratorState['dimensions']>) => void;
   updatePayload: (payload: Partial<VehicleConfiguratorState['payload']>) => void;
+
+  setFuelType: (fuelType: string) => void;
+  setTransmission: (transmission: string) => void;
+  setYear: (year: number | undefined) => void;
+  setAxles: (axles: number | undefined) => void;
+  setNumberOfWheels: (wheels: number | undefined) => void;
+
+  setDateAcquired: (date: string) => void;
+  setAcquisitionMode: (mode: string) => void;
+  setVendor: (vendor: string) => void;
+
+  setLicensePlate: (plate: string) => void;
+  setRegistrationExpiry: (date: string) => void;
+  setInsuranceExpiry: (date: string) => void;
+
+  updateInteriorDimensions: (dimensions: Partial<VehicleConfiguratorState['interiorDimensions']>) => void;
+  setNumberOfSeats: (seats: number | undefined) => void;
 
   updateTierSlots: (tierIndex: number, newSlotCount: number) => void;
   setTiers: (tiers: TierConfig[]) => void;
@@ -91,8 +139,23 @@ const initialState = {
   selectedCategory: null,
   selectedType: null,
   modelName: '',
+  vehicleName: '',
+  variant: '',
   dimensions: {},
   payload: {},
+  fuelType: '',
+  transmission: '',
+  year: undefined,
+  axles: undefined,
+  numberOfWheels: undefined,
+  dateAcquired: '',
+  acquisitionMode: '',
+  vendor: '',
+  licensePlate: '',
+  registrationExpiry: '',
+  insuranceExpiry: '',
+  interiorDimensions: {},
+  numberOfSeats: undefined,
   tiers: createDefaultTierConfig(3, 1000, 10), // Default: 3 tiers, 1000kg, 10m³
   aiAnalysis: null,
   isAiProcessing: false,
@@ -138,6 +201,8 @@ export const useVehicleConfiguratorStore = create<VehicleConfiguratorState>()(
       },
 
       setModelName: (name) => set({ modelName: name, isDirty: true }),
+      setVehicleName: (name) => set({ vehicleName: name, isDirty: true }),
+      setVariant: (variant) => set({ variant, isDirty: true }),
 
       updateDimensions: (newDimensions) => {
         const state = get();
@@ -162,6 +227,29 @@ export const useVehicleConfiguratorStore = create<VehicleConfiguratorState>()(
           isDirty: true,
         });
       },
+
+      setFuelType: (fuelType) => set({ fuelType, isDirty: true }),
+      setTransmission: (transmission) => set({ transmission, isDirty: true }),
+      setYear: (year) => set({ year, isDirty: true }),
+      setAxles: (axles) => set({ axles, isDirty: true }),
+      setNumberOfWheels: (wheels) => set({ numberOfWheels: wheels, isDirty: true }),
+
+      setDateAcquired: (date) => set({ dateAcquired: date, isDirty: true }),
+      setAcquisitionMode: (mode) => set({ acquisitionMode: mode, isDirty: true }),
+      setVendor: (vendor) => set({ vendor, isDirty: true }),
+
+      setLicensePlate: (plate) => set({ licensePlate: plate, isDirty: true }),
+      setRegistrationExpiry: (date) => set({ registrationExpiry: date, isDirty: true }),
+      setInsuranceExpiry: (date) => set({ insuranceExpiry: date, isDirty: true }),
+
+      updateInteriorDimensions: (newDimensions) => {
+        const state = get();
+        set({
+          interiorDimensions: { ...state.interiorDimensions, ...newDimensions },
+          isDirty: true,
+        });
+      },
+      setNumberOfSeats: (seats) => set({ numberOfSeats: seats, isDirty: true }),
 
       updateTierSlots: (tierIndex, newSlotCount) => {
         const state = get();

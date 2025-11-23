@@ -66,7 +66,7 @@ export function VehicleVisualizer({
   if (!categoryCode) {
     return (
       <div className={cn(
-        'flex flex-col items-center justify-center h-full min-h-[400px] bg-muted/20 rounded-lg border-2 border-dashed',
+        'flex flex-col items-center justify-center h-full bg-muted/20 rounded-lg border-2 border-dashed',
         className
       )}>
         <Truck className="w-24 h-24 text-muted-foreground/30 mb-4" />
@@ -76,9 +76,9 @@ export function VehicleVisualizer({
   }
 
   return (
-    <div className={cn('relative h-full min-h-[400px] bg-white rounded-lg p-6', className)}>
+    <div className={cn('relative h-full bg-white rounded-lg p-4 flex flex-col', className)}>
       {/* Vehicle Silhouette */}
-      <div className="relative w-full h-[300px] flex items-center justify-center">
+      <div className="relative w-full flex-1 flex items-center justify-center min-h-0">
         {isLoading ? (
           <div className="flex items-center justify-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -117,16 +117,16 @@ export function VehicleVisualizer({
 
       {/* Dimensional Annotations */}
       {dimensionText && (
-        <div className="mt-6 space-y-2 animate-in fade-in duration-300">
-          <div className="flex items-center justify-between text-sm">
+        <div className="mt-3 space-y-1.5 animate-in fade-in duration-300 flex-shrink-0">
+          <div className="flex items-center justify-between text-xs">
             <span className="text-muted-foreground">Cargo Dimensions</span>
             <span className="font-medium">{dimensionText}</span>
           </div>
 
           {volumeText && (
-            <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center justify-between text-xs">
               <span className="text-muted-foreground">Cargo Volume</span>
-              <span className="font-semibold text-lg text-primary">{volumeText}</span>
+              <span className="font-semibold text-base text-primary">{volumeText}</span>
             </div>
           )}
         </div>

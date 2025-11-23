@@ -1,6 +1,7 @@
 /**
  * Category & Type Selector Component
- * Combined category and vehicle type selection for the configurator
+ * Compact horizontal bar for category, type, and model selection
+ * Tesla/Arrival-inspired configurator style
  */
 
 import React, { useEffect } from 'react';
@@ -51,10 +52,10 @@ export function CategoryTypeSelector({
   }, [selectedCategory, selectedType, vehicleTypes, onTypeChange]);
 
   return (
-    <div className="space-y-6">
+    <div className="grid grid-cols-3 gap-3">
       {/* Category Selection */}
-      <div className="space-y-2">
-        <Label htmlFor="category">Vehicle Category</Label>
+      <div className="space-y-1">
+        <Label htmlFor="category" className="text-xs text-muted-foreground">Category</Label>
         <Select
           value={selectedCategory?.id || ''}
           onValueChange={(value) => {
@@ -62,19 +63,19 @@ export function CategoryTypeSelector({
             onCategoryChange(category || null);
           }}
         >
-          <SelectTrigger id="category">
-            <SelectValue placeholder="Select vehicle category..." />
+          <SelectTrigger id="category" className="h-9">
+            <SelectValue placeholder="Select..." />
           </SelectTrigger>
           <SelectContent>
             {categoriesLoading ? (
               <SelectItem value="loading" disabled>
-                Loading categories...
+                Loading...
               </SelectItem>
             ) : categories && categories.length > 0 ? (
               <>
                 {/* Group by source */}
                 <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
-                  EU Standard Categories
+                  EU Standard
                 </div>
                 {categories
                   .filter(c => c.source === 'eu')
@@ -84,7 +85,7 @@ export function CategoryTypeSelector({
                         <span className="font-mono text-xs bg-primary/10 px-1.5 py-0.5 rounded">
                           {category.code}
                         </span>
-                        <span>{category.display_name || category.name}</span>
+                        <span className="text-sm">{category.display_name || category.name}</span>
                       </div>
                     </SelectItem>
                   ))}
@@ -100,95 +101,78 @@ export function CategoryTypeSelector({
                         <span className="font-mono text-xs bg-orange-100 px-1.5 py-0.5 rounded">
                           BIKO
                         </span>
-                        <span>{category.display_name || category.name}</span>
+                        <span className="text-sm">{category.display_name || category.name}</span>
                       </div>
                     </SelectItem>
                   ))}
               </>
             ) : (
               <SelectItem value="none" disabled>
-                No categories available
+                No categories
               </SelectItem>
             )}
           </SelectContent>
         </Select>
-
-        {selectedCategory?.description && (
-          <p className="text-xs text-muted-foreground mt-1">
-            {selectedCategory.description}
-          </p>
-        )}
       </div>
 
       {/* Vehicle Type Selection */}
-      {selectedCategory && (
-        <div className="space-y-2">
-          <Label htmlFor="vehicle-type">Vehicle Type</Label>
-          <Select
-            value={selectedType?.id || ''}
-            onValueChange={(value) => {
-              const type = vehicleTypes?.find(t => t.id === value);
-              onTypeChange(type || null);
-            }}
-            disabled={!selectedCategory}
-          >
-            <SelectTrigger id="vehicle-type">
-              <SelectValue placeholder="Select vehicle type..." />
-            </SelectTrigger>
-            <SelectContent>
-              {typesLoading ? (
-                <SelectItem value="loading" disabled>
-                  Loading types...
+      <div className="space-y-1">
+        <Label htmlFor="vehicle-type" className="text-xs text-muted-foreground">Type</Label>
+        <Select
+          value={selectedType?.id || ''}
+          onValueChange={(value) => {
+            const type = vehicleTypes?.find(t => t.id === value);
+            onTypeChange(type || null);
+          }}
+          disabled={!selectedCategory}
+        >
+          <SelectTrigger id="vehicle-type" className="h-9">
+            <SelectValue placeholder="Select..." />
+          </SelectTrigger>
+          <SelectContent>
+            {typesLoading ? (
+              <SelectItem value="loading" disabled>
+                Loading...
+              </SelectItem>
+            ) : vehicleTypes && vehicleTypes.length > 0 ? (
+              vehicleTypes.map((type) => (
+                <SelectItem key={type.id} value={type.id}>
+                  <div className="flex flex-col">
+                    <span className="text-sm">{type.name}</span>
+                    {(type.default_capacity_m3 || type.default_capacity_kg) && (
+                      <span className="text-xs text-muted-foreground">
+                        {type.default_capacity_m3 && `${type.default_capacity_m3} m³`}
+                        {type.default_capacity_m3 && type.default_capacity_kg && ' • '}
+                        {type.default_capacity_kg && `${type.default_capacity_kg} kg`}
+                      </span>
+                    )}
+                  </div>
                 </SelectItem>
-              ) : vehicleTypes && vehicleTypes.length > 0 ? (
-                vehicleTypes.map((type) => (
-                  <SelectItem key={type.id} value={type.id}>
-                    <div className="flex flex-col">
-                      <span>{type.name}</span>
-                      {(type.default_capacity_m3 || type.default_capacity_kg) && (
-                        <span className="text-xs text-muted-foreground">
-                          {type.default_capacity_m3 && `${type.default_capacity_m3} m³`}
-                          {type.default_capacity_m3 && type.default_capacity_kg && ' • '}
-                          {type.default_capacity_kg && `${type.default_capacity_kg} kg`}
-                        </span>
-                      )}
-                    </div>
-                  </SelectItem>
-                ))
-              ) : (
-                <SelectItem value="none" disabled>
-                  No types available for this category
-                </SelectItem>
-              )}
-            </SelectContent>
-          </Select>
-
-          {selectedType?.description && (
-            <p className="text-xs text-muted-foreground mt-1">
-              {selectedType.description}
-            </p>
-          )}
-        </div>
-      )}
+              ))
+            ) : (
+              <SelectItem value="none" disabled>
+                No types
+              </SelectItem>
+            )}
+          </SelectContent>
+        </Select>
+      </div>
 
       {/* Model Name Input */}
-      {selectedCategory && (
-        <div className="space-y-2">
-          <Label htmlFor="model-name">
-            Vehicle Model <span className="text-muted-foreground text-xs">(Optional)</span>
-          </Label>
-          <Input
-            id="model-name"
-            type="text"
-            placeholder="e.g., Toyota Hiace, Mazda E2000..."
-            value={modelName}
-            onChange={(e) => onModelNameChange(e.target.value)}
-          />
-          <p className="text-xs text-muted-foreground">
-            Enter the specific make and model for this vehicle
-          </p>
-        </div>
-      )}
+      <div className="space-y-1">
+        <Label htmlFor="model-name" className="text-xs text-muted-foreground">
+          Model <span className="text-muted-foreground">(Optional)</span>
+        </Label>
+        <Input
+          id="model-name"
+          type="text"
+          placeholder="e.g., Toyota Hiace..."
+          value={modelName}
+          onChange={(e) => onModelNameChange(e.target.value)}
+          disabled={!selectedCategory}
+          className="h-9"
+        />
+      </div>
     </div>
   );
 }

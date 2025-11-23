@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useVehicles, useCreateVehicle, useDeleteVehicle } from '@/hooks/vlms/useVehicles';
 import { useVehiclesStore } from '@/stores/vlms/vehiclesStore';
 import { VehicleForm } from '@/components/vlms/vehicles/VehicleForm';
+import { VehicleConfiguratorDialog } from '@/components/vlms/vehicles/VehicleConfiguratorDialog';
 import { VehicleFilters } from '@/components/vlms/vehicles/VehicleFilters';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,6 +37,7 @@ import { toast } from 'sonner';
 export default function VehiclesPage() {
   const navigate = useNavigate();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isConfiguratorOpen, setIsConfiguratorOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
   const filters = useVehiclesStore((state) => state.filters);
@@ -91,12 +93,18 @@ export default function VehiclesPage() {
           <p className="text-muted-foreground">Manage your fleet vehicles</p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={() => navigate('/fleetops/vlms/vehicles/onboard')}>
+          <Button onClick={() => setIsConfiguratorOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Add Vehicle
           </Button>
         </div>
       </div>
+
+      {/* Vehicle Configurator Dialog */}
+      <VehicleConfiguratorDialog
+        open={isConfiguratorOpen}
+        onOpenChange={setIsConfiguratorOpen}
+      />
 
       {/* Main Content */}
       <div className="grid grid-cols-12 gap-6">

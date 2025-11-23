@@ -12,12 +12,14 @@ import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useVehicleConfiguratorStore } from '@/hooks/useVehicleConfiguratorStore';
-import { CategoryTypeSelector } from './CategoryTypeSelector';
+import { VehicleCarousel } from './VehicleCarousel';
 import { VehicleVisualizer } from './VehicleVisualizer';
 import { AiDimensionButton } from './AiDimensionButton';
 import { TierSlotBuilder } from './TierSlotBuilder';
+import { useVehicleCategories } from '@/hooks/useVehicleCategories';
+import { getDefaultConfig } from '@/lib/vlms/defaultVehicleConfigs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle, CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react';
+import { AlertCircle, CheckCircle2, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, ArrowLeft, Sparkles, Eye } from 'lucide-react';
 import { formatVolume, formatWeight } from '@/lib/vlms/capacityCalculations';
 import {
   Collapsible,
@@ -35,17 +37,47 @@ export function VehicleConfigurator({ onSave, onCancel }: VehicleConfiguratorPro
     selectedCategory,
     selectedType,
     modelName,
+    vehicleName,
+    variant,
     dimensions,
     payload,
     tiers,
+    fuelType,
+    transmission,
+    year,
+    axles,
+    numberOfWheels,
+    dateAcquired,
+    acquisitionMode,
+    vendor,
+    licensePlate,
+    registrationExpiry,
+    insuranceExpiry,
+    interiorDimensions,
+    numberOfSeats,
     isAiProcessing,
     errors,
     isDirty,
     setCategory,
     setVehicleType,
     setModelName,
+    setVehicleName,
+    setVariant,
     updateDimensions,
     updatePayload,
+    setFuelType,
+    setTransmission,
+    setYear,
+    setAxles,
+    setNumberOfWheels,
+    setDateAcquired,
+    setAcquisitionMode,
+    setVendor,
+    setLicensePlate,
+    setRegistrationExpiry,
+    setInsuranceExpiry,
+    updateInteriorDimensions,
+    setNumberOfSeats,
     updateTierSlots,
     applyAiSuggestions,
     setAiProcessing,
@@ -56,6 +88,31 @@ export function VehicleConfigurator({ onSave, onCancel }: VehicleConfiguratorPro
 
   const [isSaving, setIsSaving] = React.useState(false);
   const [isTierBuilderOpen, setIsTierBuilderOpen] = React.useState(false);
+  const [activeTab, setActiveTab] = React.useState('configurator');
+
+  // Fetch vehicle categories for carousel
+  const { data: categories } = useVehicleCategories();
+
+  // Auto-populate defaults when category changes
+  React.useEffect(() => {
+    if (selectedCategory) {
+      const defaultConfig = getDefaultConfig(selectedCategory.code);
+      if (defaultConfig) {
+        // Only populate if fields are empty
+        if (!dimensions.length_cm && !dimensions.width_cm && !dimensions.height_cm) {
+          updateDimensions(defaultConfig.dimensions);
+        }
+        if (!payload.gross_weight_kg && !payload.max_payload_kg) {
+          updatePayload(defaultConfig.payload);
+        }
+        if (tiers.length === 0 && defaultConfig.tiers.length > 0) {
+          defaultConfig.tiers.forEach((tier) => {
+            updateTierSlots(tier.tier_level, tier.slots);
+          });
+        }
+      }
+    }
+  }, [selectedCategory?.code]); // Only depend on category code change
 
   const handleSave = async () => {
     clearAllErrors();
@@ -85,34 +142,69 @@ export function VehicleConfigurator({ onSave, onCancel }: VehicleConfiguratorPro
   const calculatedVolume = dimensions.volume_m3;
 
   return (
-    <div className="h-full flex flex-col bg-background">
+    <div className="max-h-[calc(90vh-80px)] flex flex-col bg-background">
       {/* Main Content Grid - INVERTED: Visual Left, Form Right */}
       <div className="flex-1 grid lg:grid-cols-[1fr_400px] gap-0">
         {/* LEFT PANEL - Vehicle Visualizer */}
-        <div className="flex flex-col p-6 space-y-4 border-r">
-          {/* Category & Type Selection - Top of Left Panel */}
-          <div className="space-y-4">
-            <CategoryTypeSelector
-              selectedCategory={selectedCategory}
-              selectedType={selectedType}
-              modelName={modelName}
-              onCategoryChange={setCategory}
-              onTypeChange={setVehicleType}
-              onModelNameChange={setModelName}
-            />
-          </div>
+        <div className="flex flex-col p-6 space-y-4 border-r overflow-hidden">
+          {/* Category Header - Tesla/Arrival Style */}
+          {selectedCategory && (
+            <div className="mb-2">
+              <div className="flex items-center gap-3">
+                <h2 className="text-2xl font-semibold tracking-tight">
+                  {selectedCategory.display_name || selectedCategory.name}
+                </h2>
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-sm font-mono font-medium bg-primary/10 text-primary">
+                  {selectedCategory.code}
+                </span>
+              </div>
+              {modelName && (
+                <p className="text-sm text-muted-foreground mt-1">{modelName}</p>
+              )}
+            </div>
+          )}
 
-          {/* Large Vehicle Visualizer - Center */}
-          <div className="flex-1 flex items-center justify-center min-h-[500px]">
+          {/* Vehicle Visualizer with Embedded Carousel Navigation */}
+          <div className="relative h-[400px] flex items-center justify-center mb-6">
             <VehicleVisualizer
               categoryCode={selectedCategory?.code || null}
               dimensions={dimensions}
               className="w-full h-full"
             />
+
+            {/* Carousel Navigation Arrows Overlaid on Image */}
+            {categories && categories.length > 0 && (
+              <>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 z-10 h-12 w-12 bg-background/80 backdrop-blur-sm shadow-lg hover:bg-background"
+                  onClick={() => {
+                    const currentIndex = categories.findIndex(c => c.id === selectedCategory?.id);
+                    const prevIndex = currentIndex > 0 ? currentIndex - 1 : categories.length - 1;
+                    setCategory(categories[prevIndex]);
+                  }}
+                >
+                  <ChevronLeft className="h-6 w-6" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 z-10 h-12 w-12 bg-background/80 backdrop-blur-sm shadow-lg hover:bg-background"
+                  onClick={() => {
+                    const currentIndex = categories.findIndex(c => c.id === selectedCategory?.id);
+                    const nextIndex = currentIndex < categories.length - 1 ? currentIndex + 1 : 0;
+                    setCategory(categories[nextIndex]);
+                  }}
+                >
+                  <ChevronRight className="h-6 w-6" />
+                </Button>
+              </>
+            )}
           </div>
 
           {/* Tabs at Bottom - CONFIGURATOR | SPECS | INTERIOR */}
-          <Tabs defaultValue="configurator" className="w-full">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="configurator">CONFIGURATOR</TabsTrigger>
               <TabsTrigger value="specs">SPECS</TabsTrigger>
@@ -158,95 +250,107 @@ export function VehicleConfigurator({ onSave, onCancel }: VehicleConfiguratorPro
 
         {/* RIGHT PANEL - Configuration Sidebar */}
         <div className="flex flex-col bg-muted/10 overflow-y-auto">
-          <div className="p-6 space-y-6">
-            {/* Size Variant Badge */}
-            {selectedCategory && (
+          <div className="p-6 space-y-4">
+            {/* Preview Button */}
+            {selectedCategory && activeTab !== 'preview' && (
               <div className="flex justify-end">
-                <Badge variant="default" className="text-sm px-4 py-1">
-                  SIZE VARIANT
-                </Badge>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setActiveTab('preview')}
+                  disabled={!isValid()}
+                  className="gap-2"
+                >
+                  <Eye className="w-4 h-4" />
+                  Preview
+                </Button>
               </div>
             )}
 
-            {/* Expanded Configuration Section */}
-            {selectedCategory && (
+            {/* Dynamic Content Based on Active Tab */}
+            {selectedCategory && activeTab === 'configurator' && (
               <>
                 <div>
-                  <h3 className="text-xs font-semibold text-muted-foreground mb-4 tracking-wider">
-                    EXPANDED CONFIGURATION
+                  <h3 className="text-xs font-semibold text-muted-foreground mb-3 tracking-wider">
+                    DIMENSIONS & PAYLOAD
                   </h3>
 
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     {/* Height & Length */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="height">Height (cm)</Label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <Label htmlFor="height" className="text-xs text-muted-foreground">Height (cm)</Label>
                         <Input
                           id="height"
                           type="number"
                           placeholder="180"
                           value={dimensions.height_cm || ''}
                           onChange={(e) => updateDimensions({ height_cm: parseInt(e.target.value) || undefined })}
+                          className="h-9"
                         />
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="length">Length (cm)</Label>
+                      <div className="space-y-1">
+                        <Label htmlFor="length" className="text-xs text-muted-foreground">Length (cm)</Label>
                         <Input
                           id="length"
                           type="number"
                           placeholder="400"
                           value={dimensions.length_cm || ''}
                           onChange={(e) => updateDimensions({ length_cm: parseInt(e.target.value) || undefined })}
+                          className="h-9"
                         />
                       </div>
                     </div>
 
                     {/* Width */}
-                    <div className="space-y-2">
-                      <Label htmlFor="width">Width (cm)</Label>
+                    <div className="space-y-1">
+                      <Label htmlFor="width" className="text-xs text-muted-foreground">Width (cm)</Label>
                       <Input
                         id="width"
                         type="number"
                         placeholder="200"
                         value={dimensions.width_cm || ''}
                         onChange={(e) => updateDimensions({ width_cm: parseInt(e.target.value) || undefined })}
+                        className="h-9"
                       />
                     </div>
 
                     {/* Cargo Volume - Read-only Calculated */}
-                    <div className="space-y-2">
-                      <Label>Cargo Volume</Label>
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">Cargo Volume</Label>
                       <Input
                         readOnly
                         value={calculatedVolume ? `${calculatedVolume.toFixed(2)} m³` : ''}
                         placeholder="Auto-calculated"
-                        className="bg-muted"
+                        className="bg-muted h-9"
                       />
                     </div>
 
-                    <Separator />
+                    <Separator className="my-2" />
 
                     {/* Gross Vehicle Weight */}
-                    <div className="space-y-2">
-                      <Label htmlFor="gross-weight">Gross Vehicle Weight (kg)</Label>
+                    <div className="space-y-1">
+                      <Label htmlFor="gross-weight" className="text-xs text-muted-foreground">Gross Vehicle Weight (kg)</Label>
                       <Input
                         id="gross-weight"
                         type="number"
                         placeholder="5500"
                         value={payload.gross_weight_kg || ''}
                         onChange={(e) => updatePayload({ gross_weight_kg: parseFloat(e.target.value) || undefined })}
+                        className="h-9"
                       />
                     </div>
 
                     {/* Max Payload */}
-                    <div className="space-y-2">
-                      <Label htmlFor="max-payload">Max Payload (kg)</Label>
+                    <div className="space-y-1">
+                      <Label htmlFor="max-payload" className="text-xs text-muted-foreground">Max Payload (kg)</Label>
                       <Input
                         id="max-payload"
                         type="number"
                         placeholder="2100"
                         value={payload.max_payload_kg || ''}
                         onChange={(e) => updatePayload({ max_payload_kg: parseFloat(e.target.value) || undefined })}
+                        className="h-9"
                       />
                     </div>
                   </div>
@@ -254,11 +358,15 @@ export function VehicleConfigurator({ onSave, onCancel }: VehicleConfiguratorPro
 
                 <Separator />
 
-                {/* AI-Assisted Image Upload */}
-                <div>
-                  <h3 className="text-xs font-semibold text-muted-foreground mb-3 tracking-wider">
-                    AI-ASSISTED IMAGE UPLOAD (OPTIONAL)
-                  </h3>
+                {/* AI-Assisted Image Upload - Enhanced Visual */}
+                <div className="p-4 bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                    <h3 className="text-sm font-semibold text-purple-900 dark:text-purple-100">
+                      AI-Assisted Dimensions
+                    </h3>
+                    <Badge variant="secondary" className="text-xs">Optional</Badge>
+                  </div>
                   <AiDimensionButton
                     onAnalysisComplete={applyAiSuggestions}
                     isProcessing={isAiProcessing}
@@ -305,6 +413,515 @@ export function VehicleConfigurator({ onSave, onCancel }: VehicleConfiguratorPro
                   </>
                 )}
               </>
+            )}
+
+            {/* SPECS TAB CONTENT */}
+            {selectedCategory && activeTab === 'specs' && (
+              <div className="space-y-6">
+                {/* Basic Information */}
+                <div>
+                  <h3 className="text-xs font-semibold text-muted-foreground mb-3 tracking-wider">
+                    BASIC INFORMATION
+                  </h3>
+                  <div className="space-y-3">
+                    <div className="space-y-1">
+                      <Label htmlFor="vehicle-name" className="text-xs text-muted-foreground">Vehicle Name</Label>
+                      <Input
+                        id="vehicle-name"
+                        value={vehicleName}
+                        onChange={(e) => setVehicleName(e.target.value)}
+                        placeholder="e.g., Fleet Truck 01"
+                        className="h-9"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="model-name" className="text-xs text-muted-foreground">Model Name (Optional)</Label>
+                      <Input
+                        id="model-name"
+                        value={modelName}
+                        onChange={(e) => setModelName(e.target.value)}
+                        placeholder="e.g., Toyota Hiace"
+                        className="h-9"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="variant" className="text-xs text-muted-foreground">Variant (Optional)</Label>
+                      <Input
+                        id="variant"
+                        value={variant}
+                        onChange={(e) => setVariant(e.target.value)}
+                        placeholder="e.g., LWB High Roof"
+                        className="h-9"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Specifications */}
+                <div>
+                  <h3 className="text-xs font-semibold text-muted-foreground mb-3 tracking-wider">
+                    SPECIFICATIONS
+                  </h3>
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">Fuel Type</Label>
+                        <Input
+                          value={fuelType}
+                          onChange={(e) => setFuelType(e.target.value)}
+                          placeholder="Diesel"
+                          className="h-9"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">Transmission</Label>
+                        <Input
+                          value={transmission}
+                          onChange={(e) => setTransmission(e.target.value)}
+                          placeholder="Manual"
+                          className="h-9"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">Year</Label>
+                        <Input
+                          type="number"
+                          value={year || ''}
+                          onChange={(e) => setYear(e.target.value ? parseInt(e.target.value) : undefined)}
+                          placeholder="2024"
+                          className="h-9"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">Axles</Label>
+                        <Input
+                          type="number"
+                          value={axles || ''}
+                          onChange={(e) => setAxles(e.target.value ? parseInt(e.target.value) : undefined)}
+                          placeholder="2"
+                          className="h-9"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">Number of Wheels</Label>
+                      <Input
+                        type="number"
+                        value={numberOfWheels || ''}
+                        onChange={(e) => setNumberOfWheels(e.target.value ? parseInt(e.target.value) : undefined)}
+                        placeholder="4"
+                        className="h-9"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Acquisition */}
+                <div>
+                  <h3 className="text-xs font-semibold text-muted-foreground mb-3 tracking-wider">
+                    ACQUISITION
+                  </h3>
+                  <div className="space-y-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">Date Acquired</Label>
+                      <Input
+                        type="date"
+                        value={dateAcquired}
+                        onChange={(e) => setDateAcquired(e.target.value)}
+                        className="h-9"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">Acquisition Mode</Label>
+                      <Input
+                        value={acquisitionMode}
+                        onChange={(e) => setAcquisitionMode(e.target.value)}
+                        placeholder="Purchase / Lease / Rent"
+                        className="h-9"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">Vendor</Label>
+                      <Input
+                        value={vendor}
+                        onChange={(e) => setVendor(e.target.value)}
+                        placeholder="Vendor Name"
+                        className="h-9"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Insurance & Registration */}
+                <div>
+                  <h3 className="text-xs font-semibold text-muted-foreground mb-3 tracking-wider">
+                    INSURANCE & REGISTRATION
+                  </h3>
+                  <div className="space-y-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">License Plate</Label>
+                      <Input
+                        value={licensePlate}
+                        onChange={(e) => setLicensePlate(e.target.value)}
+                        placeholder="ABC-1234"
+                        className="h-9"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">Registration Expiry</Label>
+                      <Input
+                        type="date"
+                        value={registrationExpiry}
+                        onChange={(e) => setRegistrationExpiry(e.target.value)}
+                        className="h-9"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">Insurance Expiry</Label>
+                      <Input
+                        type="date"
+                        value={insuranceExpiry}
+                        onChange={(e) => setInsuranceExpiry(e.target.value)}
+                        className="h-9"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* INTERIOR TAB CONTENT */}
+            {selectedCategory && activeTab === 'interior' && (
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-xs font-semibold text-muted-foreground mb-3 tracking-wider">
+                    INTERIOR DIMENSIONS
+                  </h3>
+                  <div className="space-y-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">Length (cm)</Label>
+                      <Input
+                        type="number"
+                        value={interiorDimensions.length_cm || ''}
+                        onChange={(e) => updateInteriorDimensions({ length_cm: parseInt(e.target.value) || undefined })}
+                        placeholder="300"
+                        className="h-9"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">Width (cm)</Label>
+                      <Input
+                        type="number"
+                        value={interiorDimensions.width_cm || ''}
+                        onChange={(e) => updateInteriorDimensions({ width_cm: parseInt(e.target.value) || undefined })}
+                        placeholder="180"
+                        className="h-9"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">Height (cm)</Label>
+                      <Input
+                        type="number"
+                        value={interiorDimensions.height_cm || ''}
+                        onChange={(e) => updateInteriorDimensions({ height_cm: parseInt(e.target.value) || undefined })}
+                        placeholder="190"
+                        className="h-9"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div>
+                  <h3 className="text-xs font-semibold text-muted-foreground mb-3 tracking-wider">
+                    SEATING
+                  </h3>
+                  <div className="space-y-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">Number of Seats</Label>
+                      <Input
+                        type="number"
+                        value={numberOfSeats || ''}
+                        onChange={(e) => setNumberOfSeats(e.target.value ? parseInt(e.target.value) : undefined)}
+                        placeholder="2"
+                        className="h-9"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* PREVIEW CONTENT */}
+            {selectedCategory && activeTab === 'preview' && (
+              <div className="space-y-6">
+                {/* Vehicle Visual */}
+                <div className="flex justify-center p-6 bg-muted/20 rounded-lg">
+                  <img
+                    src={`/assets/vehicles/silhouettes/${selectedCategory.code}.webp`}
+                    alt={selectedCategory.display_name || selectedCategory.name}
+                    className="max-h-[200px] object-contain"
+                  />
+                </div>
+
+                {/* Category Info */}
+                <div>
+                  <h3 className="text-xs font-semibold text-muted-foreground mb-3 tracking-wider">
+                    CATEGORY
+                  </h3>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-sm bg-primary/10 px-2 py-1 rounded">
+                      {selectedCategory.code}
+                    </span>
+                    <span className="text-sm">{selectedCategory.display_name || selectedCategory.name}</span>
+                  </div>
+                  {modelName && (
+                    <p className="text-sm text-muted-foreground mt-2">Model: {modelName}</p>
+                  )}
+                </div>
+
+                <Separator />
+
+                {/* Dimensions */}
+                <div>
+                  <h3 className="text-xs font-semibold text-muted-foreground mb-3 tracking-wider">
+                    DIMENSIONS
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-muted-foreground">Length:</span>
+                      <span className="ml-2 font-medium">{dimensions.length_cm || '-'} cm</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Width:</span>
+                      <span className="ml-2 font-medium">{dimensions.width_cm || '-'} cm</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Height:</span>
+                      <span className="ml-2 font-medium">{dimensions.height_cm || '-'} cm</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Cargo Volume:</span>
+                      <span className="ml-2 font-medium">
+                        {calculatedVolume ? formatVolume(calculatedVolume) : '-'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Payload */}
+                <div>
+                  <h3 className="text-xs font-semibold text-muted-foreground mb-3 tracking-wider">
+                    PAYLOAD CAPACITY
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-muted-foreground">Gross Vehicle Weight:</span>
+                      <span className="ml-2 font-medium">
+                        {payload.gross_weight_kg ? formatWeight(payload.gross_weight_kg) : '-'}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Max Payload:</span>
+                      <span className="ml-2 font-medium">
+                        {payload.max_payload_kg ? formatWeight(payload.max_payload_kg) : '-'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {tiers.length > 0 && (
+                  <>
+                    <Separator />
+                    <div>
+                      <h3 className="text-xs font-semibold text-muted-foreground mb-3 tracking-wider">
+                        CAPACITY TIERS
+                      </h3>
+                      <div className="space-y-2 text-sm">
+                        {tiers.map((tier, index) => (
+                          <div key={index} className="flex justify-between">
+                            <span className="text-muted-foreground">Tier {tier.tier_level}:</span>
+                            <span className="font-medium">{tier.slots} slots</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* Basic Information */}
+                {(vehicleName || variant) && (
+                  <>
+                    <Separator />
+                    <div>
+                      <h3 className="text-xs font-semibold text-muted-foreground mb-3 tracking-wider">
+                        BASIC INFORMATION
+                      </h3>
+                      <div className="space-y-2 text-sm">
+                        {vehicleName && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Vehicle Name:</span>
+                            <span className="font-medium">{vehicleName}</span>
+                          </div>
+                        )}
+                        {variant && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Variant:</span>
+                            <span className="font-medium">{variant}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* Specifications */}
+                {(fuelType || transmission || year || axles || numberOfWheels) && (
+                  <>
+                    <Separator />
+                    <div>
+                      <h3 className="text-xs font-semibold text-muted-foreground mb-3 tracking-wider">
+                        SPECIFICATIONS
+                      </h3>
+                      <div className="space-y-2 text-sm">
+                        {fuelType && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Fuel Type:</span>
+                            <span className="font-medium">{fuelType}</span>
+                          </div>
+                        )}
+                        {transmission && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Transmission:</span>
+                            <span className="font-medium">{transmission}</span>
+                          </div>
+                        )}
+                        {year && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Year:</span>
+                            <span className="font-medium">{year}</span>
+                          </div>
+                        )}
+                        {axles && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Axles:</span>
+                            <span className="font-medium">{axles}</span>
+                          </div>
+                        )}
+                        {numberOfWheels && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Number of Wheels:</span>
+                            <span className="font-medium">{numberOfWheels}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* Acquisition */}
+                {(dateAcquired || acquisitionMode || vendor) && (
+                  <>
+                    <Separator />
+                    <div>
+                      <h3 className="text-xs font-semibold text-muted-foreground mb-3 tracking-wider">
+                        ACQUISITION
+                      </h3>
+                      <div className="space-y-2 text-sm">
+                        {dateAcquired && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Date Acquired:</span>
+                            <span className="font-medium">{dateAcquired}</span>
+                          </div>
+                        )}
+                        {acquisitionMode && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Acquisition Mode:</span>
+                            <span className="font-medium">{acquisitionMode}</span>
+                          </div>
+                        )}
+                        {vendor && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Vendor:</span>
+                            <span className="font-medium">{vendor}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* Insurance & Registration */}
+                {(licensePlate || registrationExpiry || insuranceExpiry) && (
+                  <>
+                    <Separator />
+                    <div>
+                      <h3 className="text-xs font-semibold text-muted-foreground mb-3 tracking-wider">
+                        INSURANCE & REGISTRATION
+                      </h3>
+                      <div className="space-y-2 text-sm">
+                        {licensePlate && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">License Plate:</span>
+                            <span className="font-medium">{licensePlate}</span>
+                          </div>
+                        )}
+                        {registrationExpiry && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Registration Expiry:</span>
+                            <span className="font-medium">{registrationExpiry}</span>
+                          </div>
+                        )}
+                        {insuranceExpiry && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Insurance Expiry:</span>
+                            <span className="font-medium">{insuranceExpiry}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* Interior */}
+                {(interiorDimensions.length_cm || interiorDimensions.width_cm || interiorDimensions.height_cm || numberOfSeats) && (
+                  <>
+                    <Separator />
+                    <div>
+                      <h3 className="text-xs font-semibold text-muted-foreground mb-3 tracking-wider">
+                        INTERIOR
+                      </h3>
+                      <div className="space-y-2 text-sm">
+                        {(interiorDimensions.length_cm || interiorDimensions.width_cm || interiorDimensions.height_cm) && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Interior Dimensions:</span>
+                            <span className="font-medium">
+                              {interiorDimensions.length_cm || '-'} × {interiorDimensions.width_cm || '-'} × {interiorDimensions.height_cm || '-'} cm
+                            </span>
+                          </div>
+                        )}
+                        {numberOfSeats && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Number of Seats:</span>
+                            <span className="font-medium">{numberOfSeats}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
             )}
           </div>
 

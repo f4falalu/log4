@@ -15,55 +15,50 @@ export interface VehicleSilhouetteInfo {
 export const VEHICLE_SILHOUETTES: Record<string, VehicleSilhouetteInfo> = {
   // EU Categories
   L1: {
-    path: '/assets/vehicles/silhouettes/moped.svg',
+    path: '/assets/vehicles/silhouettes/L1.webp',
     fallbackIcon: 'bike',
   },
   L2: {
-    path: '/assets/vehicles/silhouettes/motorcycle.svg',
+    path: '/assets/vehicles/silhouettes/L2.webp',
     fallbackIcon: 'bike',
   },
   M1: {
-    path: '/assets/vehicles/silhouettes/passenger-car.svg',
+    path: '/assets/vehicles/silhouettes/M1.webp',
     fallbackIcon: 'car',
   },
   M2: {
-    path: '/assets/vehicles/silhouettes/minibus.svg',
+    path: '/assets/vehicles/silhouettes/M2.webp',
     fallbackIcon: 'bus',
   },
   N1: {
-    path: '/assets/vehicles/silhouettes/van.svg',
+    path: '/assets/vehicles/silhouettes/N1.webp',
     fallbackIcon: 'truck',
-    cargoHighlightPath: '/assets/vehicles/silhouettes/van-cargo.svg',
   },
   N2: {
-    path: '/assets/vehicles/silhouettes/medium-truck.svg',
+    path: '/assets/vehicles/silhouettes/N2.webp',
     fallbackIcon: 'truck',
-    cargoHighlightPath: '/assets/vehicles/silhouettes/medium-truck-cargo.svg',
   },
   N3: {
-    path: '/assets/vehicles/silhouettes/heavy-truck.svg',
+    path: '/assets/vehicles/silhouettes/N3.webp',
     fallbackIcon: 'truck',
-    cargoHighlightPath: '/assets/vehicles/silhouettes/heavy-truck-cargo.svg',
   },
 
   // BIKO Shortcuts
   BIKO_MINIVAN: {
-    path: '/assets/vehicles/silhouettes/minivan.svg',
+    path: '/assets/vehicles/silhouettes/BIKO_MINIVAN.webp',
     fallbackIcon: 'van',
-    cargoHighlightPath: '/assets/vehicles/silhouettes/minivan-cargo.svg',
   },
   BIKO_KEKE: {
-    path: '/assets/vehicles/silhouettes/keke.svg',
+    path: '/assets/vehicles/silhouettes/BIKO_KEKE.webp',
     fallbackIcon: 'bike',
   },
   BIKO_MOPED: {
-    path: '/assets/vehicles/silhouettes/delivery-moped.svg',
+    path: '/assets/vehicles/silhouettes/BIKO_MOPED.webp',
     fallbackIcon: 'bike',
   },
   BIKO_COLDCHAIN: {
-    path: '/assets/vehicles/silhouettes/refrigerated-van.svg',
+    path: '/assets/vehicles/silhouettes/BIKO_COLDCHAIN.webp',
     fallbackIcon: 'snowflake',
-    cargoHighlightPath: '/assets/vehicles/silhouettes/refrigerated-van-cargo.svg',
   },
 };
 
@@ -74,7 +69,7 @@ export function getVehicleSilhouette(
   categoryCode: string | null | undefined
 ): VehicleSilhouetteInfo {
   const defaultSilhouette: VehicleSilhouetteInfo = {
-    path: '/assets/vehicles/silhouettes/generic-truck.svg',
+    path: '/assets/vehicles/silhouettes/N1.webp',
     fallbackIcon: 'truck',
   };
 
@@ -107,17 +102,17 @@ export function getCargoAreaDimensions(categoryCode: string): {
   const defaults = { offsetPercent: 40, widthPercent: 50 };
 
   const dimensions: Record<string, typeof defaults> = {
-    L1: { offsetPercent: 0, widthPercent: 30 }, // Moped cargo basket
-    L2: { offsetPercent: 0, widthPercent: 30 }, // Motorcycle cargo
+    L1: { offsetPercent: 0, widthPercent: 0 }, // Moped - cargo visible in image
+    L2: { offsetPercent: 0, widthPercent: 0 }, // Motorcycle - cargo visible in image
     M1: { offsetPercent: 0, widthPercent: 0 }, // No cargo area
     M2: { offsetPercent: 0, widthPercent: 0 }, // Passenger only
-    N1: { offsetPercent: 45, widthPercent: 55 }, // Van cargo
-    N2: { offsetPercent: 40, widthPercent: 60 }, // Medium truck
-    N3: { offsetPercent: 35, widthPercent: 65 }, // Heavy truck
-    BIKO_MINIVAN: { offsetPercent: 50, widthPercent: 50 },
-    BIKO_KEKE: { offsetPercent: 60, widthPercent: 40 },
-    BIKO_MOPED: { offsetPercent: 0, widthPercent: 25 },
-    BIKO_COLDCHAIN: { offsetPercent: 45, widthPercent: 55 },
+    N1: { offsetPercent: 0, widthPercent: 0 }, // Box truck - cargo visible in image
+    N2: { offsetPercent: 0, widthPercent: 0 }, // Medium truck - cargo visible in image
+    N3: { offsetPercent: 0, widthPercent: 0 }, // Heavy truck - cargo visible in image
+    BIKO_MINIVAN: { offsetPercent: 0, widthPercent: 0 }, // Passenger vehicle
+    BIKO_KEKE: { offsetPercent: 0, widthPercent: 0 }, // Tricycle - cargo visible in image
+    BIKO_MOPED: { offsetPercent: 0, widthPercent: 0 }, // Moped - cargo visible in image
+    BIKO_COLDCHAIN: { offsetPercent: 0, widthPercent: 0 }, // Box truck - cargo visible in image
   };
 
   return dimensions[categoryCode] || defaults;

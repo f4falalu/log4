@@ -1,97 +1,49 @@
 /**
- * VLMS Vehicle Onboarding Page
+ * VLMS Vehicle Onboarding Route - DEPRECATED
  * Route: /fleetops/vlms/vehicles/onboard
- * Now uses single-screen configurator instead of multi-step wizard
+ *
+ * This route is deprecated. Vehicle configuration is now done via modal dialog.
+ * Redirecting to vehicles list page.
  */
 
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { VehicleConfigurator } from '@/components/vlms/vehicle-configurator/VehicleConfigurator';
-import { useVehiclesStore } from '@/stores/vlms/vehiclesStore';
-import { toast } from 'sonner';
-import { ArrowLeft } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export default function VehicleOnboardPage() {
   const navigate = useNavigate();
-  const { createVehicle } = useVehiclesStore();
 
-  const handleSave = async (formData: any) => {
-    try {
-      // Transform configurator data to match vehicle creation payload
-      const vehicleData = {
-        // Category & Type
-        category_id: formData.category_id,
-        vehicle_type_id: formData.vehicle_type_id,
-        model: formData.model_name || 'Unknown',
+  useEffect(() => {
+    // Auto-redirect after 3 seconds
+    const timer = setTimeout(() => {
+      navigate('/fleetops/vlms/vehicles');
+    }, 3000);
 
-        // Dimensions
-        length_cm: formData.length_cm,
-        width_cm: formData.width_cm,
-        height_cm: formData.height_cm,
-        capacity_m3: formData.capacity_m3,
-
-        // Payload
-        capacity_kg: formData.capacity_kg || 1000,
-
-        // Tier configuration
-        tiered_config: formData.tiered_config,
-
-        // Required fields (will be enhanced in future with full registration form)
-        license_plate: `TEMP-${Date.now()}`, // Temporary - will be replaced with actual registration
-        vehicle_id: `VEH-${Date.now()}`,
-        make: formData.model_name?.split(' ')[0] || 'Unknown',
-        year: new Date().getFullYear(),
-        fuel_type: 'diesel',
-        status: 'available',
-        acquisition_date: new Date().toISOString(),
-        acquisition_type: 'purchase',
-      };
-
-      const result = await createVehicle(vehicleData);
-
-      if (result) {
-        toast.success('Vehicle Created', {
-          description: 'Vehicle configuration saved successfully',
-        });
-
-        // Redirect to vehicle detail page
-        navigate(`/fleetops/vlms/vehicles/${result.id}`);
-      }
-    } catch (error) {
-      console.error('Failed to create vehicle:', error);
-      toast.error('Creation Failed', {
-        description: error instanceof Error ? error.message : 'Failed to create vehicle',
-      });
-      throw error;
-    }
-  };
-
-  const handleCancel = () => {
-    navigate('/fleetops/vlms/vehicles');
-  };
+    return () => clearTimeout(timer);
+  }, [navigate]);
 
   return (
-    <div className="h-screen flex flex-col">
-      {/* Header */}
-      <header className="border-b bg-background px-6 py-4">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={handleCancel}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Vehicles
+    <div className="h-screen flex items-center justify-center bg-muted/20 p-6">
+      <div className="max-w-md w-full space-y-4">
+        <Alert variant="default">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Route Deprecated</AlertTitle>
+          <AlertDescription>
+            This route is no longer used. Vehicle configuration is now accessed via modal dialog
+            from the vehicles list page.
+          </AlertDescription>
+        </Alert>
+
+        <div className="flex flex-col gap-2">
+          <Button onClick={() => navigate('/fleetops/vlms/vehicles')} className="w-full">
+            Go to Vehicles List
           </Button>
-
-          <div>
-            <h1 className="text-2xl font-bold">Vehicle Onboarding</h1>
-            <p className="text-sm text-muted-foreground">
-              Configure your vehicle capacity and specifications
-            </p>
-          </div>
+          <p className="text-sm text-muted-foreground text-center">
+            Redirecting automatically in 3 seconds...
+          </p>
         </div>
-      </header>
-
-      {/* Configurator */}
-      <div className="flex-1 overflow-hidden">
-        <VehicleConfigurator onSave={handleSave} onCancel={handleCancel} />
       </div>
     </div>
   );
