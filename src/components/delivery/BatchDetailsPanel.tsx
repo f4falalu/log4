@@ -293,7 +293,7 @@ const BatchDetailsPanel = ({ batch, onClose }: BatchDetailsPanelProps) => {
                             
                             {/* Stop */}
                             <div className={`flex items-start gap-3 ${isCurrent ? 'bg-primary/10 -mx-2 px-2 py-2 rounded' : ''}`}>
-                              <div className={`font-bold ${isCompleted ? 'text-green-600' : isCurrent ? 'text-primary' : 'text-muted-foreground'}`}>
+                              <div className={`font-bold ${isCompleted ? 'text-success' : isCurrent ? 'text-primary' : 'text-muted-foreground'}`}>
                                 {isCompleted ? '✓' : isCurrent ? '→' : '○'}
                               </div>
                               <div className="flex-1">
@@ -319,7 +319,7 @@ const BatchDetailsPanel = ({ batch, onClose }: BatchDetailsPanelProps) => {
                       
                       {/* Return to Warehouse */}
                       <div className="flex items-start gap-3">
-                        <div className={`font-bold ${batch.status === 'completed' ? 'text-green-600' : 'text-muted-foreground'}`}>
+                        <div className={`font-bold ${batch.status === 'completed' ? 'text-success' : 'text-muted-foreground'}`}>
                           {batch.status === 'completed' ? '✓' : '🏁'}
                         </div>
                         <div className="flex-1">

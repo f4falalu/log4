@@ -153,7 +153,7 @@ export default function VLMSPage() {
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex items-start gap-3">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600 font-semibold">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-info/10 text-info font-semibold">
               1
             </div>
             <div>
@@ -165,7 +165,7 @@ export default function VLMSPage() {
           </div>
 
           <div className="flex items-start gap-3">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600 font-semibold">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-info/10 text-info font-semibold">
               2
             </div>
             <div>
@@ -177,7 +177,7 @@ export default function VLMSPage() {
           </div>
 
           <div className="flex items-start gap-3">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600 font-semibold">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-info/10 text-info font-semibold">
               3
             </div>
             <div>

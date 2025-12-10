@@ -104,12 +104,12 @@ class ErrorBoundary extends Component<Props, State> {
 
       // Default error UI
       return (
-        <div className="flex items-center justify-center min-h-screen bg-gray-50 p-4">
+        <div className="flex items-center justify-center min-h-screen bg-muted/20 p-4">
           <Card className="w-full max-w-2xl">
             <CardHeader className="border-b">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-red-100 rounded-full">
-                  <AlertTriangle className="h-6 w-6 text-red-600" />
+                <div className="p-2 bg-destructive/10 rounded-full">
+                  <AlertTriangle className="h-6 w-6 text-destructive" />
                 </div>
                 <div>
                   <CardTitle>Something went wrong</CardTitle>
@@ -122,7 +122,7 @@ class ErrorBoundary extends Component<Props, State> {
             <CardContent className="pt-6 space-y-4">
               <div className="space-y-2">
                 <h3 className="font-medium">Error Details</h3>
-                <div className="p-3 bg-gray-50 rounded-md text-sm font-mono text-red-600 overflow-x-auto">
+                <div className="p-3 bg-muted/50 rounded-md text-sm font-mono text-destructive overflow-x-auto">
                   {error?.toString() || 'Unknown error'}
                 </div>
               </div>
@@ -140,7 +140,7 @@ class ErrorBoundary extends Component<Props, State> {
                       Copy Details
                     </Button>
                   </div>
-                  <pre className="p-3 bg-gray-50 rounded-md text-xs text-gray-600 overflow-x-auto">
+                  <pre className="p-3 bg-muted/50 rounded-md text-xs text-muted-foreground overflow-x-auto">
                     {componentStack}
                   </pre>
                 </div>
@@ -155,9 +155,8 @@ class ErrorBoundary extends Component<Props, State> {
                   <RefreshCw className="h-4 w-4" />
                   Try Again
                 </Button>
-                <Button 
+                <Button
                   onClick={this.handleReload}
-                  className="bg-blue-600 hover:bg-blue-700"
                 >
                   Reload Page
                 </Button>

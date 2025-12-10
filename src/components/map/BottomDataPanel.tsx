@@ -57,13 +57,13 @@ export function BottomDataPanel({
   const getStatusColor = (status: Driver['status']) => {
     switch (status) {
       case 'available':
-        return 'bg-green-500';
+        return 'bg-success';
       case 'busy':
-        return 'bg-yellow-500';
+        return 'bg-warning';
       case 'offline':
-        return 'bg-gray-500';
+        return 'bg-muted';
       default:
-        return 'bg-gray-500';
+        return 'bg-muted';
     }
   };
 

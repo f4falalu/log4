@@ -56,10 +56,10 @@ export function DriverDetailView({ driver }: DriverDetailViewProps) {
                   ID: {driver.id.slice(0, 11)}
                 </Badge>
                 {driver.licenseVerified && (
-                  <CheckCircle2 className="h-4 w-4 text-green-500" />
+                  <CheckCircle2 className="h-4 w-4 text-success" />
                 )}
                 {!driver.onboardingCompleted && (
-                  <XCircle className="h-4 w-4 text-orange-500" />
+                  <XCircle className="h-4 w-4 text-warning" />
                 )}
               </div>
             </div>

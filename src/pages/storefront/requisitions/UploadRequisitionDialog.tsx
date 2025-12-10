@@ -221,14 +221,14 @@ export function UploadRequisitionDialog({ open, onOpenChange }: UploadRequisitio
                 )}
 
                 {parseErrors.length > 0 && (
-                  <div className="rounded-lg border border-red-200 bg-red-50 dark:bg-red-900/10 dark:border-red-900 p-4">
+                  <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4" role="alert">
                     <div className="flex items-start gap-2">
-                      <XCircle className="h-5 w-5 text-red-600 dark:text-red-500 flex-shrink-0 mt-0.5" />
+                      <XCircle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
                       <div className="flex-1">
-                        <h4 className="text-sm font-semibold text-red-800 dark:text-red-500 mb-1">
+                        <h4 className="text-sm font-semibold text-destructive mb-1">
                           Parsing Errors
                         </h4>
-                        <ul className="text-sm text-red-700 dark:text-red-600 space-y-1">
+                        <ul className="text-sm text-destructive space-y-1">
                           {parseErrors.map((error, idx) => (
                             <li key={idx}>• {error}</li>
                           ))}

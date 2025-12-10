@@ -152,7 +152,7 @@ export function DriverDocumentsPanel({
 
       if (isBefore(expiryDate, thirtyDaysFromNow)) {
         return (
-          <Badge variant="outline" className="gap-1 border-orange-500 text-orange-600">
+          <Badge variant="outline" className="gap-1 border-warning text-warning">
             <AlertTriangle className="h-3 w-3" />
             Expiring Soon
           </Badge>
@@ -164,7 +164,7 @@ export function DriverDocumentsPanel({
     switch (doc.status) {
       case 'approved':
         return (
-          <Badge variant="default" className="gap-1 bg-green-500">
+          <Badge variant="success" className="gap-1">
             <CheckCircle className="h-3 w-3" />
             Approved
           </Badge>
@@ -274,7 +274,7 @@ export function DriverDocumentsPanel({
                               <span className="font-medium">Expires:</span>
                               <span className={cn(
                                 isBefore(new Date(doc.expiryDate), new Date()) && 'text-destructive font-semibold',
-                                isBefore(new Date(doc.expiryDate), addDays(new Date(), 30)) && 'text-orange-600 font-semibold'
+                                isBefore(new Date(doc.expiryDate), addDays(new Date(), 30)) && 'text-warning font-semibold'
                               )}>
                                 {format(new Date(doc.expiryDate), 'MMM dd, yyyy')}
                               </span>
@@ -310,7 +310,7 @@ export function DriverDocumentsPanel({
                               size="sm"
                               variant="default"
                               onClick={() => handleApprove(doc.id)}
-                              className="gap-2 bg-green-500 hover:bg-green-600"
+                              className="gap-2 bg-success hover:bg-success/90"
                             >
                               <CheckCircle className="h-4 w-4" />
                               Approve

@@ -289,13 +289,13 @@ const SchedulingForm = ({ facilities, deliveries, onDeliveryCreate }: Scheduling
                     </SelectItem>
                     <SelectItem value="high">
                       <div className="flex items-center space-x-2">
-                        <AlertTriangle className="w-4 h-4 text-orange-600" />
+                        <AlertTriangle className="w-4 h-4 text-warning" />
                         <span>High Priority</span>
                       </div>
                     </SelectItem>
                     <SelectItem value="urgent">
                       <div className="flex items-center space-x-2">
-                        <AlertTriangle className="w-4 h-4 text-red-600" />
+                        <AlertTriangle className="w-4 h-4 text-destructive" />
                         <span>Urgent</span>
                       </div>
                     </SelectItem>
