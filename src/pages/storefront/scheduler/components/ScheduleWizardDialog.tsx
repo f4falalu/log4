@@ -163,17 +163,17 @@ export function ScheduleWizardDialog({
                   key={step.number}
                   className={`flex items-center gap-2 ${
                     currentStep >= step.number
-                      ? 'text-blue-600 font-medium'
-                      : 'text-gray-400'
+                      ? 'text-primary font-medium'
+                      : 'text-muted-foreground'
                   }`}
                 >
                   <div
                     className={`flex h-6 w-6 items-center justify-center rounded-full text-xs ${
                       currentStep > step.number
-                        ? 'bg-green-500 text-white'
+                        ? 'bg-success text-success-foreground'
                         : currentStep === step.number
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-gray-200'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted'
                     }`}
                   >
                     {currentStep > step.number ? (

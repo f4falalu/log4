@@ -160,15 +160,15 @@ export function SchedulerListView({
                       {formatCapacity(batch.capacity_utilization_pct)}
                     </span>
                   </div>
-                  <div className="mt-1 h-2 w-full rounded-full bg-gray-200">
+                  <div className="mt-1 h-2 w-full rounded-full bg-muted">
                     <div
                       className={cn(
                         'h-2 rounded-full transition-all',
                         batch.capacity_utilization_pct >= 90
-                          ? 'bg-orange-500'
+                          ? 'bg-warning'
                           : batch.capacity_utilization_pct >= 50
-                          ? 'bg-green-500'
-                          : 'bg-yellow-500'
+                          ? 'bg-success'
+                          : 'bg-warning/50'
                       )}
                       style={{
                         width: `${Math.min(batch.capacity_utilization_pct, 100)}%`,

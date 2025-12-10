@@ -61,20 +61,20 @@ export function WizardStep2ModeSelection() {
               key={mode.id}
               className={`cursor-pointer p-6 transition-all hover:shadow-md ${
                 isSelected
-                  ? 'border-2 border-blue-500 bg-blue-50'
-                  : 'border border-gray-200'
+                  ? 'border-2 border-primary bg-primary/10'
+                  : 'border border-border'
               }`}
               onClick={() => setSchedulingMode(mode.id)}
             >
               <div className="flex flex-col">
                 <div
                   className={`mb-4 flex h-12 w-12 items-center justify-center rounded-full ${
-                    isSelected ? 'bg-blue-500' : 'bg-gray-100'
+                    isSelected ? 'bg-primary' : 'bg-muted'
                   }`}
                 >
                   <Icon
                     className={`h-6 w-6 ${
-                      isSelected ? 'text-white' : 'text-gray-600'
+                      isSelected ? 'text-primary-foreground' : 'text-muted-foreground'
                     }`}
                   />
                 </div>
