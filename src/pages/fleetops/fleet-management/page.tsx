@@ -10,15 +10,25 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '@/components/ui/select';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogFooter, 
-  DialogHeader, 
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
   DialogTitle,
-  DialogTrigger 
+  DialogTrigger
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { 
   Table, 
   TableBody, 
@@ -145,6 +155,8 @@ export default function FleetManagementPage() {
   const [editingFleet, setEditingFleet] = useState<any>(null);
   const [editingVendor, setEditingVendor] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [deleteFleetId, setDeleteFleetId] = useState<string | null>(null);
+  const [deleteVendorId, setDeleteVendorId] = useState<string | null>(null);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     fleets: true,
     vendors: false,
@@ -313,14 +325,36 @@ export default function FleetManagementPage() {
     setIsVendorDialogOpen(true);
   };
 
+  const handleConfirmDeleteFleet = async () => {
+    if (!deleteFleetId) return;
+
+    try {
+      await deleteFleetMutation.mutateAsync(deleteFleetId);
+      setDeleteFleetId(null);
+    } catch (error) {
+      // Error is handled by the mutation's onError callback
+    }
+  };
+
+  const handleConfirmDeleteVendor = async () => {
+    if (!deleteVendorId) return;
+
+    try {
+      await deleteVendorMutation.mutateAsync(deleteVendorId);
+      setDeleteVendorId(null);
+    } catch (error) {
+      // Error is handled by the mutation's onError callback
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active': return 'bg-green-100 text-green-800 border-green-200';
-      case 'inactive': return 'bg-gray-100 text-gray-800 border-gray-200';
-      case 'available': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'in-use': return 'bg-orange-100 text-orange-800 border-orange-200';
-      case 'maintenance': return 'bg-red-100 text-red-800 border-red-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'active': return 'bg-success/10 text-success border-success/20';
+      case 'inactive': return 'bg-muted text-muted-foreground border-border';
+      case 'available': return 'bg-primary/10 text-primary border-primary/20';
+      case 'in-use': return 'bg-warning/10 text-warning border-warning/20';
+      case 'maintenance': return 'bg-destructive/10 text-destructive border-destructive/20';
+      default: return 'bg-muted text-muted-foreground border-border';
     }
   };
 
@@ -493,9 +527,9 @@ export default function FleetManagementPage() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => toast.info('Delete functionality coming soon')}
+                              onClick={() => setDeleteFleetId(fleet.id)}
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>
                           </div>
                         </TableCell>
@@ -665,9 +699,9 @@ export default function FleetManagementPage() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => toast.info('Delete functionality coming soon')}
+                              onClick={() => setDeleteVendorId(vendor.id)}
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>
                           </div>
                         </TableCell>
@@ -698,6 +732,48 @@ export default function FleetManagementPage() {
             />
           </TabsContent>
         </Tabs>
+
+      {/* Delete Fleet Confirmation Dialog */}
+      <AlertDialog open={!!deleteFleetId} onOpenChange={(open) => !open && setDeleteFleetId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Fleet</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this fleet? This action cannot be undone. All vehicles in this fleet will need to be reassigned.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDeleteFleet}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete Fleet
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Vendor Confirmation Dialog */}
+      <AlertDialog open={!!deleteVendorId} onOpenChange={(open) => !open && setDeleteVendorId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Vendor</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this vendor? This action cannot be undone. All fleets associated with this vendor will need to be reassigned.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDeleteVendor}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete Vendor
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

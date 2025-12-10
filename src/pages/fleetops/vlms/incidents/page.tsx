@@ -1,15 +1,18 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useIncidentsStore } from '@/stores/vlms/incidentsStore';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Plus, Loader2, AlertTriangle } from 'lucide-react';
+import { EmptyState } from '@/components/ui/empty-state';
+import { ReportIncidentDialog } from './ReportIncidentDialog';
 
 export default function IncidentsPage() {
   const { incidents, isLoading, fetchIncidents } = useIncidentsStore();
+  const [reportDialogOpen, setReportDialogOpen] = useState(false);
 
   useEffect(() => {
     fetchIncidents();
@@ -42,7 +45,7 @@ export default function IncidentsPage() {
           <h1 className="text-3xl font-bold">Incident Management</h1>
           <p className="text-muted-foreground">Track and manage vehicle incidents</p>
         </div>
-        <Button>
+        <Button onClick={() => setReportDialogOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
           Report Incident
         </Button>
@@ -94,12 +97,19 @@ export default function IncidentsPage() {
             </TableBody>
           </Table>
         ) : (
-          <div className="text-center py-12">
-            <AlertTriangle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">No incidents reported</p>
-          </div>
+          <EmptyState
+            icon={AlertTriangle}
+            title="No incidents reported"
+            description="No incidents on record. All vehicles are operating without reported issues."
+            variant="dashed"
+          />
         )}
       </Card>
+
+      <ReportIncidentDialog
+        open={reportDialogOpen}
+        onOpenChange={setReportDialogOpen}
+      />
     </div>
   );
 }

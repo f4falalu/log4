@@ -9,43 +9,43 @@ export default function StorefrontHome() {
       description: 'Manage delivery destinations and facility details',
       icon: Warehouse,
       href: '/storefront/facilities',
-      color: 'bg-blue-500'
+      color: 'bg-primary'
     },
     {
       title: 'Requisitions',
       description: 'Create and manage delivery requisitions',
       icon: ClipboardList,
       href: '/storefront/requisitions',
-      color: 'bg-green-500'
+      color: 'bg-success'
     },
     {
       title: 'Payload Planning',
       description: 'Plan vehicle loads and optimize capacity',
       icon: Package,
       href: '/storefront/payloads',
-      color: 'bg-purple-500'
+      color: 'bg-accent'
     },
     {
       title: 'Scheduler',
       description: 'Plan and organize delivery batches for dispatch',
       icon: CalendarClock,
       href: '/storefront/scheduler',
-      color: 'bg-teal-500'
+      color: 'bg-info'
     },
     {
       title: 'Delivery Schedule Planner',
       description: 'Plan and optimize multi-day delivery schedules',
       icon: Calendar,
       href: '/storefront/schedule-planner',
-      color: 'bg-orange-500'
+      color: 'bg-warning'
     }
   ];
 
   return (
     <div className="container mx-auto p-6">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Storefront Operations</h1>
-        <p className="text-muted-foreground">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold">Storefront Operations</h1>
+        <p className="text-muted-foreground mt-2">
           Manage warehouses, facilities, and delivery requisitions
         </p>
       </div>

@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Edit, Loader2, Car, FileText, Image as ImageIcon } from 'lucide-react';
+import { ArrowLeft, Edit, Loader2, Car, FileText, Image as ImageIcon, Package } from 'lucide-react';
+import { VehicleCapacityTab } from '@/components/vlms/vehicles/VehicleCapacityTab';
 
 export default function VehicleDetailPage() {
   const params = useParams();
@@ -50,7 +51,7 @@ export default function VehicleDetailPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => router.back()}>
+          <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
           </Button>
@@ -62,7 +63,8 @@ export default function VehicleDetailPage() {
               {getStatusBadge(vehicle.status)}
             </div>
             <p className="text-muted-foreground">
-              {vehicle.vehicle_id} • {vehicle.license_plate}
+              {vehicle.license_plate}
+              {vehicle.year && ` • ${vehicle.year}`}
             </p>
           </div>
         </div>
@@ -134,6 +136,10 @@ export default function VehicleDetailPage() {
             <Car className="h-4 w-4 mr-2" />
             Overview
           </TabsTrigger>
+          <TabsTrigger value="capacity">
+            <Package className="h-4 w-4 mr-2" />
+            Capacity
+          </TabsTrigger>
           <TabsTrigger value="documents">
             <FileText className="h-4 w-4 mr-2" />
             Documents
@@ -171,7 +177,7 @@ export default function VehicleDetailPage() {
 
                   <div className="text-muted-foreground">Type</div>
                   <div className="font-medium capitalize">
-                    {vehicle.type?.replace('_', ' ') || '-'}
+                    {vehicle.type ? vehicle.type.replace(/_/g, ' ') : '-'}
                   </div>
 
                   <div className="text-muted-foreground">Fuel Type</div>
@@ -205,7 +211,7 @@ export default function VehicleDetailPage() {
 
                   <div className="text-muted-foreground">Cargo Capacity</div>
                   <div className="font-medium">
-                    {vehicle.cargo_capacity ? `${vehicle.cargo_capacity} m³` : 'N/A'}
+                    {vehicle.capacity_kg ? `${vehicle.capacity_kg} kg` : 'N/A'}
                   </div>
                 </div>
               </CardContent>
@@ -220,12 +226,16 @@ export default function VehicleDetailPage() {
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <div className="text-muted-foreground">Acquisition Date</div>
                   <div className="font-medium">
-                    {new Date(vehicle.acquisition_date).toLocaleDateString()}
+                    {vehicle.acquisition_date || vehicle.date_acquired
+                      ? new Date(vehicle.acquisition_date || vehicle.date_acquired).toLocaleDateString()
+                      : 'N/A'}
                   </div>
 
                   <div className="text-muted-foreground">Acquisition Type</div>
                   <div className="font-medium capitalize">
-                    {vehicle.acquisition_type.replace('_', ' ')}
+                    {vehicle.acquisition_type || vehicle.acquisition_mode
+                      ? (vehicle.acquisition_type || vehicle.acquisition_mode).replace(/_/g, ' ')
+                      : 'N/A'}
                   </div>
 
                   <div className="text-muted-foreground">Purchase Price</div>
@@ -281,6 +291,11 @@ export default function VehicleDetailPage() {
               </CardContent>
             </Card>
           )}
+        </TabsContent>
+
+        {/* Capacity Tab */}
+        <TabsContent value="capacity">
+          <VehicleCapacityTab vehicle={vehicle} />
         </TabsContent>
 
         {/* Documents Tab */}

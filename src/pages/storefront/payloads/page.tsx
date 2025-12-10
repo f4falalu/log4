@@ -141,33 +141,17 @@ export default function PayloadPlannerPage() {
     toast.success('Payload item removed');
   };
 
-  const handleCreateDispatch = () => {
-    if (!selectedVehicle) {
-      toast.error('Please select a vehicle');
-      return;
-    }
-
-    if (payloadItems.length === 0) {
-      toast.error('Please add at least one payload item');
-      return;
-    }
-
-    // TODO: Implement dispatch creation logic
-    toast.success('Dispatch created successfully', {
-      description: `${payloadItems.length} items assigned to ${selectedVehicle.model}`
-    });
-  };
 
   const getUtilizationColor = (utilization: number) => {
-    if (utilization <= 70) return 'bg-green-500';
-    if (utilization <= 90) return 'bg-yellow-500';
-    return 'bg-red-500';
+    if (utilization <= 70) return 'bg-success';
+    if (utilization <= 90) return 'bg-warning';
+    return 'bg-destructive';
   };
 
   const getUtilizationStatus = (utilization: number) => {
-    if (utilization <= 70) return { label: 'Optimal', color: 'text-green-600' };
-    if (utilization <= 90) return { label: 'Near Capacity', color: 'text-yellow-600' };
-    return { label: 'Overloaded', color: 'text-red-600' };
+    if (utilization <= 70) return { label: 'Optimal', color: 'text-success' };
+    if (utilization <= 90) return { label: 'Near Capacity', color: 'text-warning' };
+    return { label: 'Overloaded', color: 'text-destructive' };
   };
 
   const totalWeight = payloadItems.reduce((sum, item) => sum + (item.weightKg * item.quantity), 0);

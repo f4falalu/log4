@@ -1,27 +1,30 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useFuelLogsStore } from '@/stores/vlms/fuelLogsStore';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Loader2 } from 'lucide-react';
+import { Plus, Loader2, Fuel } from 'lucide-react';
+import { EmptyState } from '@/components/ui/empty-state';
+import { LogFuelPurchaseDialog } from './LogFuelPurchaseDialog';
 
 export default function FuelLogsPage() {
   const { logs, isLoading, fetchLogs } = useFuelLogsStore();
+  const [logDialogOpen, setLogDialogOpen] = useState(false);
 
   useEffect(() => {
     fetchLogs();
   }, [fetchLogs]);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-8">
+      <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold">Fuel Management</h1>
-          <p className="text-muted-foreground">Track fuel consumption and efficiency</p>
+          <p className="text-muted-foreground mt-2">Track fuel consumption and efficiency</p>
         </div>
-        <Button>
+        <Button onClick={() => setLogDialogOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
           Log Fuel Purchase
         </Button>
@@ -71,11 +74,19 @@ export default function FuelLogsPage() {
             </TableBody>
           </Table>
         ) : (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">No fuel logs found</p>
-          </div>
+          <EmptyState
+            icon={Fuel}
+            title="No fuel logs found"
+            description="Start tracking fuel consumption by logging your first fuel purchase."
+            variant="dashed"
+          />
         )}
       </Card>
+
+      <LogFuelPurchaseDialog
+        open={logDialogOpen}
+        onOpenChange={setLogDialogOpen}
+      />
     </div>
   );
 }

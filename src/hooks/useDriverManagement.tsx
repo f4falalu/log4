@@ -3,13 +3,45 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 export interface DriverFormData {
+  // Basic Information
   name: string;
   phone: string;
+  email?: string;
+  middle_name?: string;
+  date_of_birth?: string;
+
+  // License & Credentials
   license_type: 'standard' | 'commercial';
+  license_number?: string;
+  license_state?: string;
   license_expiry?: string;
+
+  // Employment Details
+  employer?: string;
+  position?: string;
+  employment_type?: string;
+  group_name?: string;
+  start_date?: string;
+  preferred_services?: string;
+  federal_id?: string;
+
+  // Shift & Hours
   shift_start: string;
   shift_end: string;
   max_hours: number;
+
+  // Address & Contact
+  address_line1?: string;
+  address_line2?: string;
+  city?: string;
+  state_province?: string;
+  country?: string;
+  postal_code?: string;
+  emergency_contact_name?: string;
+  emergency_contact_phone?: string;
+
+  // Profile & Documents
+  profile_photo_url?: string;
 }
 
 export function useDriverManagement() {
@@ -17,11 +49,14 @@ export function useDriverManagement() {
 
   const createDriver = useMutation({
     mutationFn: async (data: DriverFormData) => {
-      const { error } = await supabase
+      const { data: driver, error } = await supabase
         .from('drivers')
-        .insert(data);
-      
+        .insert(data)
+        .select()
+        .single();
+
       if (error) throw error;
+      return driver;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['drivers'] });
@@ -75,7 +110,7 @@ export function useDriverManagement() {
   });
 
   return {
-    createDriver: createDriver.mutate,
+    createDriver,
     updateDriver: updateDriver.mutate,
     deleteDriver: deleteDriver.mutate,
     isCreating: createDriver.isPending,

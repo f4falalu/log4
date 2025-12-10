@@ -1,5 +1,5 @@
 import { Outlet, useLocation } from 'react-router-dom';
-import { Home, Building2, Package, ShoppingCart, Calendar, CalendarClock, Layers } from 'lucide-react';
+import { Home, Building2, Package, ShoppingCart, Calendar, CalendarClock, Layers, MapPin } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { SecondarySidebar, NavigationGroup } from '@/components/layout/SecondarySidebar';
 import { useMemo } from 'react';
@@ -43,6 +43,11 @@ const navigationGroups: NavigationGroup[] = [
         label: 'Zones',
         href: '/storefront/zones',
         icon: Layers
+      },
+      {
+        label: 'LGAs',
+        href: '/storefront/lgas',
+        icon: MapPin
       },
       {
         label: 'Facilities',

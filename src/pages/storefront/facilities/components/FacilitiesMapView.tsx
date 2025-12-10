@@ -242,26 +242,26 @@ export function FacilitiesMapView({
       </MapContainer>
 
       {/* Legend */}
-      <div className="absolute bottom-4 right-4 bg-white p-3 rounded-lg shadow-lg border z-[1000]">
+      <div className="absolute bottom-4 right-4 bg-white p-3 rounded-lg shadow-lg border z-floating">
         <div className="text-xs font-semibold mb-2">Level of Care</div>
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-red-600"></div>
+            <div className="w-3 h-3 rounded-full bg-destructive"></div>
             <span className="text-xs">Tertiary</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-orange-600"></div>
+            <div className="w-3 h-3 rounded-full bg-warning"></div>
             <span className="text-xs">Secondary</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-green-600"></div>
+            <div className="w-3 h-3 rounded-full bg-success"></div>
             <span className="text-xs">Primary</span>
           </div>
         </div>
       </div>
 
       {/* Facility count badge */}
-      <div className="absolute top-4 left-4 bg-white px-3 py-2 rounded-lg shadow-lg border z-[1000]">
+      <div className="absolute top-4 left-4 bg-white px-3 py-2 rounded-lg shadow-lg border z-floating">
         <div className="text-xs text-muted-foreground">Facilities</div>
         <div className="text-lg font-semibold">{facilities.length}</div>
       </div>

@@ -13,18 +13,20 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { VehicleFilters as VehicleFiltersType } from '@/types/vlms';
 import { useFacilities } from '@/hooks/useFacilities';
-import { X } from 'lucide-react';
+import { X, ChevronLeft } from 'lucide-react';
 
 interface VehicleFiltersProps {
   filters: VehicleFiltersType;
   onFiltersChange: (filters: Partial<VehicleFiltersType>) => void;
   onClearFilters: () => void;
+  onCollapse?: () => void;
 }
 
 export function VehicleFilters({
   filters,
   onFiltersChange,
   onClearFilters,
+  onCollapse,
 }: VehicleFiltersProps) {
   const { data: facilities } = useFacilities();
 
@@ -32,9 +34,22 @@ export function VehicleFilters({
     Object.keys(filters).length > 0 && Object.values(filters).some((v) => v);
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Filters</CardTitle>
+    <Card className="h-full">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+        <div className="flex items-center gap-2">
+          <CardTitle>Filters</CardTitle>
+          {onCollapse && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onCollapse}
+              className="h-7 w-7"
+              title="Collapse sidebar"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
         {hasActiveFilters && (
           <Button variant="ghost" size="sm" onClick={onClearFilters}>
             <X className="h-4 w-4 mr-2" />

@@ -146,7 +146,7 @@ export function ColumnMapper({
         : `${matchType} not in DB`;
 
       return (
-        <Badge variant="outline" className="text-xs bg-red-50 border-red-200 text-red-700">
+        <Badge variant="destructive" className="text-xs">
           <AlertCircle className="h-3 w-3 mr-1" />
           {message}
         </Badge>
@@ -155,7 +155,7 @@ export function ColumnMapper({
 
     if (match.isExact) {
       return (
-        <Badge variant="outline" className="text-xs bg-green-50 border-green-200 text-green-700">
+        <Badge variant="default" className="text-xs bg-success/10 border-success text-success">
           <CheckCircle className="h-3 w-3 mr-1" />
           Exact match
         </Badge>
@@ -163,7 +163,7 @@ export function ColumnMapper({
     }
 
     return (
-      <Badge variant="outline" className="text-xs bg-yellow-50 border-yellow-200 text-yellow-700">
+      <Badge variant="secondary" className="text-xs bg-warning/10 border-warning text-warning">
         <AlertTriangle className="h-3 w-3 mr-1" />
         Fuzzy match ({Math.round(match.score * 100)}%)
       </Badge>
@@ -187,9 +187,9 @@ export function ColumnMapper({
         <div className="flex items-center justify-between">
           <Label htmlFor={`map-${field.key}`} className="flex items-center gap-2">
             {isMapped ? (
-              <CheckCircle className="h-4 w-4 text-green-600" />
+              <CheckCircle className="h-4 w-4 text-success" />
             ) : (
-              <AlertCircle className="h-4 w-4 text-amber-600" />
+              <AlertCircle className="h-4 w-4 text-warning" />
             )}
             <span className="font-medium">{field.label}</span>
             {field.required && <span className="text-destructive text-xs">*</span>}
@@ -210,7 +210,7 @@ export function ColumnMapper({
 
         {/* Warehouse code auto-generate override */}
         {isWarehouseCode && autoGenerateWarehouseCode && (
-          <div className="flex items-center gap-2 p-2 bg-blue-50 border border-blue-200 rounded text-xs text-blue-700">
+          <div className="flex items-center gap-2 p-2 bg-primary/10 border border-primary/20 rounded text-xs text-primary">
             <Info className="h-3 w-3" />
             <span>Auto-generate enabled. CSV column will be ignored.</span>
           </div>

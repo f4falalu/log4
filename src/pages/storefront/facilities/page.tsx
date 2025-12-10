@@ -32,6 +32,7 @@ import { exportFacilitiesToCSV, generateExportFilename, downloadCSVTemplate } fr
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useFacilitiesRealtime } from '@/hooks/useFacilitiesRealtime';
+import { PaginationControls } from '@/components/ui/pagination-controls';
 
 export default function StorefrontFacilities() {
   // Enable realtime updates
@@ -178,16 +179,16 @@ export default function StorefrontFacilities() {
   };
 
   return (
-    <div className="flex flex-col h-full p-6 space-y-4">
+    <div className="flex flex-col h-full p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-2">
         <div>
           <h1 className="text-2xl font-semibold">Facilities Management</h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-sm text-muted-foreground mt-2">
             {total} total facilities
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm">
@@ -234,7 +235,7 @@ export default function StorefrontFacilities() {
       </div>
 
       {/* Search and Filters Bar */}
-      <div className="flex items-center gap-2 flex-wrap">
+      <div className="flex items-center gap-3 flex-wrap">
         {/* View Mode Toggle */}
         <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'table' | 'map')}>
           <TabsList>
@@ -460,34 +461,14 @@ export default function StorefrontFacilities() {
           />
 
           {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                Showing {page * pageSize + 1} to {Math.min((page + 1) * pageSize, total)} of {total}
-              </p>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage(p => Math.max(0, p - 1))}
-                  disabled={page === 0}
-                >
-                  Previous
-                </Button>
-                <span className="text-sm">
-                  Page {page + 1} of {totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
-                  disabled={page >= totalPages - 1}
-                >
-                  Next
-                </Button>
-              </div>
-            </div>
-          )}
+          <PaginationControls
+            currentPage={page}
+            totalPages={totalPages}
+            pageSize={pageSize}
+            totalItems={total}
+            onPageChange={setPage}
+            isLoading={isLoading}
+          />
         </>
       )}
 

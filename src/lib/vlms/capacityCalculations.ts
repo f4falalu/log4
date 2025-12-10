@@ -185,6 +185,7 @@ export function createDefaultTierConfig(
         max_volume_m3: totalVolumeM3,
         weight_pct: 100,
         volume_pct: 100,
+        slot_count: 3,
       },
     ];
   }
@@ -199,6 +200,7 @@ export function createDefaultTierConfig(
         max_volume_m3: Math.round(totalVolumeM3 * 0.3 * 100) / 100,
         weight_pct: 30,
         volume_pct: 30,
+        slot_count: 3,
       },
       {
         tier_name: 'Middle',
@@ -207,6 +209,7 @@ export function createDefaultTierConfig(
         max_volume_m3: Math.round(totalVolumeM3 * 0.4 * 100) / 100,
         weight_pct: 40,
         volume_pct: 40,
+        slot_count: 4,
       },
       {
         tier_name: 'Upper',
@@ -215,6 +218,7 @@ export function createDefaultTierConfig(
         max_volume_m3: Math.round(totalVolumeM3 * 0.3 * 100) / 100,
         weight_pct: 30,
         volume_pct: 30,
+        slot_count: 3,
       },
     ];
   }
@@ -231,6 +235,7 @@ export function createDefaultTierConfig(
     max_volume_m3: volumePerTier,
     weight_pct: pctPerTier,
     volume_pct: pctPerTier,
+    slot_count: 3,
   }));
 }
 

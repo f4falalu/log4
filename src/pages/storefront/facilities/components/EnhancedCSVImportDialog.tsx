@@ -372,21 +372,21 @@ export function EnhancedCSVImportDialog({ open, onOpenChange }: EnhancedCSVImpor
                         {parsedData.columnMappings
                           .filter(m => m.isRecognized)
                           .map((mapping, idx) => (
-                            <Badge key={idx} variant="outline" className="text-xs bg-green-50 border-green-200">
-                              <CheckCircle className="h-3 w-3 mr-1 text-green-600" />
+                            <Badge key={idx} variant="outline" className="text-xs bg-success/10 border-success/20 text-success">
+                              <CheckCircle className="h-3 w-3 mr-1" />
                               {mapping.originalHeader} → {mapping.mappedTo}
                             </Badge>
                           ))}
                       </div>
                       {parsedData.columnMappings.some(m => !m.isRecognized) && (
                         <div className="mt-2">
-                          <p className="text-sm font-medium text-amber-600">Unrecognized columns:</p>
+                          <p className="text-sm font-medium text-warning">Unrecognized columns:</p>
                           <div className="flex flex-wrap gap-2 mt-1">
                             {parsedData.columnMappings
                               .filter(m => !m.isRecognized)
                               .map((mapping, idx) => (
-                                <Badge key={idx} variant="secondary" className="text-xs bg-amber-50 border-amber-200">
-                                  <AlertTriangle className="h-3 w-3 mr-1 text-amber-600" />
+                                <Badge key={idx} variant="secondary" className="text-xs bg-warning/10 border-warning/20 text-warning">
+                                  <AlertTriangle className="h-3 w-3 mr-1" />
                                   {mapping.originalHeader}
                                 </Badge>
                               ))}
@@ -429,7 +429,7 @@ export function EnhancedCSVImportDialog({ open, onOpenChange }: EnhancedCSVImpor
                           </Badge>
                         )}
                         {validationSummary.warnings > 0 && (
-                          <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 font-medium">
+                          <Badge variant="secondary" className="bg-warning/10 text-warning font-medium border-warning/20">
                             {validationSummary.warnings} warnings (allowed)
                           </Badge>
                         )}
@@ -546,7 +546,7 @@ export function EnhancedCSVImportDialog({ open, onOpenChange }: EnhancedCSVImpor
                           {issue.severity === 'error' ? (
                             <AlertCircle className="h-4 w-4 text-destructive mt-0.5" />
                           ) : (
-                            <AlertTriangle className="h-4 w-4 text-yellow-600 mt-0.5" />
+                            <AlertTriangle className="h-4 w-4 text-warning mt-0.5" />
                           )}
                           <div className="flex-1">
                             <span className="font-medium">Row {issue.row}</span>
@@ -588,11 +588,11 @@ export function EnhancedCSVImportDialog({ open, onOpenChange }: EnhancedCSVImpor
           {step === 'complete' && importResult && (
             <div className="space-y-4">
               <div className="flex items-center justify-center gap-3 p-6 border rounded-lg bg-muted/50">
-                <CheckCircle className="h-12 w-12 text-green-600" />
+                <CheckCircle className="h-12 w-12 text-success" />
                 <div>
                   <h3 className="text-lg font-semibold">Import Complete</h3>
                   <div className="flex items-center gap-2 mt-2">
-                    <Badge variant="default" className="bg-green-600">
+                    <Badge variant="default" className="bg-success text-success-foreground">
                       {importResult.success} succeeded
                     </Badge>
                     {importResult.failed > 0 && (
@@ -675,7 +675,7 @@ function StepIndicator({ active, completed, children }: { active: boolean; compl
     <div className={`
       flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium
       ${active ? 'bg-primary text-primary-foreground' : ''}
-      ${completed ? 'bg-green-600 text-white' : ''}
+      ${completed ? 'bg-success text-success-foreground' : ''}
       ${!active && !completed ? 'bg-muted text-muted-foreground' : ''}
     `}>
       {completed && <CheckCircle className="h-4 w-4" />}

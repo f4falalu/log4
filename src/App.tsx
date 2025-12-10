@@ -16,6 +16,7 @@ import StorefrontFacilities from "./pages/storefront/facilities/page";
 import StorefrontPayloads from "./pages/storefront/payloads/page";
 import StorefrontRequisitions from "./pages/storefront/requisitions/page";
 import StorefrontZones from "./pages/storefront/zones/page";
+import StorefrontLGAs from "./pages/storefront/lgas/page";
 import SchedulePlanner from "./pages/storefront/schedule-planner/page";
 import SchedulerPage from "./pages/storefront/scheduler/page";
 import FleetManagement from "./pages/fleetops/fleet-management/page";
@@ -124,6 +125,7 @@ const App = () => (
                   }>
                     <Route index element={<StorefrontHome />} />
                     <Route path="zones" element={<StorefrontZones />} />
+                    <Route path="lgas" element={<StorefrontLGAs />} />
                     <Route path="facilities" element={<StorefrontFacilities />} />
                     <Route path="requisitions" element={<StorefrontRequisitions />} />
                     <Route path="payloads" element={<StorefrontPayloads />} />

@@ -51,17 +51,32 @@ export function MapToolsPanel() {
                         )}
                       </div>
                       <div className="flex items-center gap-1">
-                        <Button size="icon" variant="ghost" className="h-8 w-8">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8"
+                          aria-label={zone.is_active ? "Hide zone" : "Show zone"}
+                        >
                           {zone.is_active ? (
                             <Eye className="h-3.5 w-3.5" />
                           ) : (
                             <EyeOff className="h-3.5 w-3.5" />
                           )}
                         </Button>
-                        <Button size="icon" variant="ghost" className="h-8 w-8">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8"
+                          aria-label="Edit zone"
+                        >
                           <Pencil className="h-3.5 w-3.5" />
                         </Button>
-                        <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8 text-destructive"
+                          aria-label="Delete zone"
+                        >
                           <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                       </div>

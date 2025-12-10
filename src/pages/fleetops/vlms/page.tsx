@@ -2,6 +2,8 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Car, Wrench, Fuel, Users, AlertTriangle, ClipboardCheck, ArrowRight } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { getStatusColors } from '@/lib/designTokens';
 
 export default function VLMSPage() {
   const navigate = useNavigate();
@@ -12,55 +14,49 @@ export default function VLMSPage() {
       description: 'Manage your fleet vehicles, specifications, and documentation',
       icon: Car,
       href: '/fleetops/vlms/vehicles',
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50',
+      semanticColor: 'active', // Blue/primary for active management
     },
     {
       title: 'Maintenance Tracking',
       description: 'Schedule and track vehicle maintenance, repairs, and services',
       icon: Wrench,
       href: '/fleetops/vlms/maintenance',
-      color: 'text-orange-600',
-      bgColor: 'bg-orange-50',
+      semanticColor: 'warning', // Orange/warning for maintenance
     },
     {
       title: 'Fuel Management',
       description: 'Log fuel purchases and track consumption efficiency',
       icon: Fuel,
       href: '/fleetops/vlms/fuel',
-      color: 'text-green-600',
-      bgColor: 'bg-green-50',
+      semanticColor: 'success', // Green/success for fuel efficiency
     },
     {
       title: 'Vehicle Assignments',
       description: 'Assign vehicles to drivers and track assignments',
       icon: Users,
       href: '/fleetops/vlms/assignments',
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-50',
+      semanticColor: 'info', // Blue/info for informational tracking
     },
     {
       title: 'Incident Reports',
       description: 'Report and manage vehicle accidents, damage, and incidents',
       icon: AlertTriangle,
       href: '/fleetops/vlms/incidents',
-      color: 'text-red-600',
-      bgColor: 'bg-red-50',
+      semanticColor: 'error', // Red/error for incidents
     },
     {
       title: 'Inspections',
       description: 'Conduct and track vehicle safety inspections',
       icon: ClipboardCheck,
       href: '/fleetops/vlms/inspections',
-      color: 'text-indigo-600',
-      bgColor: 'bg-indigo-50',
+      semanticColor: 'in_progress', // Purple/in-progress for ongoing checks
     },
   ];
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
+      <div className="mb-6">
         <h1 className="text-3xl font-bold">Vehicle Lifecycle Management System</h1>
         <p className="text-muted-foreground mt-2">
           Comprehensive fleet management solution for tracking vehicles from acquisition to disposal
@@ -68,9 +64,9 @@ export default function VLMSPage() {
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card>
-          <CardHeader className="pb-3">
+          <CardHeader className="pb-4">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Total Vehicles
             </CardTitle>
@@ -82,7 +78,7 @@ export default function VLMSPage() {
         </Card>
 
         <Card>
-          <CardHeader className="pb-3">
+          <CardHeader className="pb-4">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Available
             </CardTitle>
@@ -94,7 +90,7 @@ export default function VLMSPage() {
         </Card>
 
         <Card>
-          <CardHeader className="pb-3">
+          <CardHeader className="pb-4">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               In Maintenance
             </CardTitle>
@@ -106,7 +102,7 @@ export default function VLMSPage() {
         </Card>
 
         <Card>
-          <CardHeader className="pb-3">
+          <CardHeader className="pb-4">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Active Assignments
             </CardTitle>
@@ -119,9 +115,10 @@ export default function VLMSPage() {
       </div>
 
       {/* Module Cards */}
-      <div className="grid grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {modules.map((module) => {
           const Icon = module.icon;
+          const colors = getStatusColors(module.semanticColor as any);
           return (
             <Card
               key={module.href}
@@ -130,8 +127,8 @@ export default function VLMSPage() {
             >
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <div className={`p-3 rounded-lg ${module.bgColor}`}>
-                    <Icon className={`h-6 w-6 ${module.color}`} />
+                  <div className={cn('p-3 rounded-lg', colors.bg)}>
+                    <Icon className={cn('h-6 w-6', colors.text)} />
                   </div>
                   <ArrowRight className="h-5 w-5 text-muted-foreground" />
                 </div>

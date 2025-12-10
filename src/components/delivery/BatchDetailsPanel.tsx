@@ -58,7 +58,7 @@ const BatchDetailsPanel = ({ batch, onClose }: BatchDetailsPanelProps) => {
             <Badge variant={getPriorityColor(batch.priority)}>{batch.priority.toUpperCase()}</Badge>
           </CardDescription>
         </div>
-        <Button variant="ghost" size="icon" onClick={onClose}>
+        <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close panel">
           <X className="h-4 w-4" />
         </Button>
       </CardHeader>

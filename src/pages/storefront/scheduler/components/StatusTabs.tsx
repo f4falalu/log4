@@ -34,32 +34,32 @@ const STATUS_CONFIG: Record<
   draft: {
     label: 'Draft',
     icon: FileEdit,
-    color: 'text-gray-600',
-    bgColor: 'bg-gray-100 hover:bg-gray-200',
+    color: 'text-muted-foreground',
+    bgColor: 'bg-muted hover:bg-muted/80',
   },
   ready: {
     label: 'Ready',
     icon: CheckCircle,
-    color: 'text-blue-600',
-    bgColor: 'bg-blue-50 hover:bg-blue-100',
+    color: 'text-primary',
+    bgColor: 'bg-primary/10 hover:bg-primary/20',
   },
   scheduled: {
     label: 'Scheduled',
     icon: Calendar,
-    color: 'text-indigo-600',
-    bgColor: 'bg-indigo-50 hover:bg-indigo-100',
+    color: 'text-info',
+    bgColor: 'bg-info/10 hover:bg-info/20',
   },
   published: {
     label: 'Published',
     icon: Send,
-    color: 'text-green-600',
-    bgColor: 'bg-green-50 hover:bg-green-100',
+    color: 'text-success',
+    bgColor: 'bg-success/10 hover:bg-success/20',
   },
   cancelled: {
     label: 'Cancelled',
     icon: XCircle,
-    color: 'text-red-600',
-    bgColor: 'bg-red-50 hover:bg-red-100',
+    color: 'text-destructive',
+    bgColor: 'bg-destructive/10 hover:bg-destructive/20',
   },
 };
 

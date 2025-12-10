@@ -12,21 +12,19 @@ import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useVehicleConfiguratorStore } from '@/hooks/useVehicleConfiguratorStore';
-import { CategoryTypeSelector } from './CategoryTypeSelector';
 import { VehicleCarousel } from './VehicleCarousel';
 import { VehicleVisualizer } from './VehicleVisualizer';
 import { AiDimensionButton } from './AiDimensionButton';
 import { TierSlotBuilder } from './TierSlotBuilder';
+import { TierCountSelector } from './TierCountSelector';
 import { useVehicleCategories } from '@/hooks/useVehicleCategories';
 import { getDefaultConfig } from '@/lib/vlms/defaultVehicleConfigs';
+import { getVehicleClassConstraints } from '@/lib/vlms/vehicleClassConstraints';
+import { validateTierConfig, computeTotalSlots } from '@/lib/vlms/tierValidation';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle, CheckCircle2, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, ArrowLeft, Sparkles, Eye } from 'lucide-react';
+import { AlertCircle, CheckCircle2, ChevronLeft, ChevronRight, ArrowLeft, Sparkles, Eye } from 'lucide-react';
 import { formatVolume, formatWeight } from '@/lib/vlms/capacityCalculations';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
+import type { TierConfig } from '@/types/vlms-onboarding';
 
 interface VehicleConfiguratorProps {
   onSave?: (formData: any) => Promise<void>;
@@ -36,7 +34,6 @@ interface VehicleConfiguratorProps {
 export function VehicleConfigurator({ onSave, onCancel }: VehicleConfiguratorProps) {
   const {
     selectedCategory,
-    selectedType,
     modelName,
     vehicleName,
     variant,
@@ -60,7 +57,6 @@ export function VehicleConfigurator({ onSave, onCancel }: VehicleConfiguratorPro
     errors,
     isDirty,
     setCategory,
-    setVehicleType,
     setModelName,
     setVehicleName,
     setVariant,
@@ -80,6 +76,7 @@ export function VehicleConfigurator({ onSave, onCancel }: VehicleConfiguratorPro
     updateInteriorDimensions,
     setNumberOfSeats,
     updateTierSlots,
+    setTiers,
     applyAiSuggestions,
     setAiProcessing,
     clearAllErrors,
@@ -88,15 +85,37 @@ export function VehicleConfigurator({ onSave, onCancel }: VehicleConfiguratorPro
   } = useVehicleConfiguratorStore();
 
   const [isSaving, setIsSaving] = React.useState(false);
-  const [isTierBuilderOpen, setIsTierBuilderOpen] = React.useState(false);
   const [activeTab, setActiveTab] = React.useState('configurator');
+  const [tierValidationError, setTierValidationError] = React.useState<string | null>(null);
 
   // Fetch vehicle categories for carousel
   const { data: categories } = useVehicleCategories();
 
+  // Get vehicle class constraints
+  const vehicleConstraints = React.useMemo(() => {
+    return selectedCategory ? getVehicleClassConstraints(selectedCategory.code) : null;
+  }, [selectedCategory?.code]);
+
+  // Handler for tier count changes
+  const handleTierCountChange = (count: number, tierPreset: TierConfig[]) => {
+    // Calculate weight and volume per tier
+    const totalWeight = payload.max_payload_kg || 0;
+    const totalVolume = calculatedVolume || 0;
+
+    const tiersWithCapacity = tierPreset.map((tier) => ({
+      ...tier,
+      max_weight_kg: totalWeight > 0 ? Math.round(totalWeight / count) : undefined,
+      max_volume_m3: totalVolume > 0 ? Math.round((totalVolume / count) * 100) / 100 : undefined,
+      weight_pct: Math.round(100 / count),
+      volume_pct: Math.round(100 / count),
+    }));
+
+    setTiers(tiersWithCapacity);
+  };
+
   // Auto-populate defaults when category changes
   React.useEffect(() => {
-    if (selectedCategory) {
+    if (selectedCategory && vehicleConstraints) {
       const defaultConfig = getDefaultConfig(selectedCategory.code);
       if (defaultConfig) {
         // Only populate if fields are empty
@@ -106,17 +125,54 @@ export function VehicleConfigurator({ onSave, onCancel }: VehicleConfiguratorPro
         if (!payload.gross_weight_kg && !payload.max_payload_kg) {
           updatePayload(defaultConfig.payload);
         }
-        if (tiers.length === 0 && defaultConfig.tiers.length > 0) {
-          defaultConfig.tiers.forEach((tier) => {
-            updateTierSlots(tier.tier_level, tier.slots);
-          });
-        }
+      }
+
+      // Initialize tiers based on vehicle class constraints
+      if (tiers.length === 0) {
+        const defaultTierCount = vehicleConstraints.defaultTiers;
+        const tierPresets: Record<number, TierConfig[]> = {
+          1: [{ tier_name: 'Rear Cargo', tier_order: 1, slot_count: 3 }],
+          2: [
+            { tier_name: 'Lower', tier_order: 1, slot_count: 4 },
+            { tier_name: 'Upper', tier_order: 2, slot_count: 3 },
+          ],
+          3: [
+            { tier_name: 'Lower', tier_order: 1, slot_count: 4 },
+            { tier_name: 'Middle', tier_order: 2, slot_count: 4 },
+            { tier_name: 'Upper', tier_order: 3, slot_count: 3 },
+          ],
+          4: [
+            { tier_name: 'Lower', tier_order: 1, slot_count: 4 },
+            { tier_name: 'Middle', tier_order: 2, slot_count: 4 },
+            { tier_name: 'Upper', tier_order: 3, slot_count: 3 },
+            { tier_name: 'Top', tier_order: 4, slot_count: 2 },
+          ],
+        };
+
+        const preset = tierPresets[defaultTierCount] || tierPresets[2];
+        handleTierCountChange(defaultTierCount, preset);
       }
     }
   }, [selectedCategory?.code]); // Only depend on category code change
 
   const handleSave = async () => {
     clearAllErrors();
+    setTierValidationError(null);
+
+    // Validate tier configuration
+    if (selectedCategory && tiers.length > 0) {
+      const tierValidation = validateTierConfig(
+        tiers,
+        payload.max_payload_kg,
+        calculatedVolume,
+        selectedCategory.code
+      );
+
+      if (!tierValidation.is_valid) {
+        setTierValidationError(tierValidation.validation_message);
+        return;
+      }
+    }
 
     if (!isValid()) {
       return;
@@ -127,6 +183,7 @@ export function VehicleConfigurator({ onSave, onCancel }: VehicleConfiguratorPro
     try {
       const formData = getFormData();
 
+      // Don't send total_slots - it's auto-computed by PostgreSQL as a GENERATED column
       if (onSave) {
         await onSave(formData);
       }
@@ -143,21 +200,11 @@ export function VehicleConfigurator({ onSave, onCancel }: VehicleConfiguratorPro
   const calculatedVolume = dimensions.volume_m3;
 
   return (
-    <div className="max-h-[calc(90vh-80px)] flex flex-col bg-background">
+    <div className="h-[calc(90vh-140px)] flex flex-col bg-background">
       {/* Main Content Grid - INVERTED: Visual Left, Form Right */}
-      <div className="flex-1 grid lg:grid-cols-[1fr_400px] gap-0">
+      <div className="h-full grid lg:grid-cols-[1fr_400px] gap-6">
         {/* LEFT PANEL - Vehicle Visualizer */}
-        <div className="flex flex-col p-6 space-y-4 border-r overflow-hidden">
-          {/* Category, Type & Model Selection */}
-          <CategoryTypeSelector
-            selectedCategory={selectedCategory}
-            selectedType={selectedType}
-            modelName={modelName}
-            onCategoryChange={setCategory}
-            onTypeChange={setVehicleType}
-            onModelNameChange={setModelName}
-          />
-
+        <div className="flex flex-col p-8 space-y-6 border-r overflow-hidden">
           {/* Category Header - Tesla/Arrival Style */}
           {selectedCategory && (
             <div className="mb-2">
@@ -261,7 +308,7 @@ export function VehicleConfigurator({ onSave, onCancel }: VehicleConfiguratorPro
 
         {/* RIGHT PANEL - Configuration Sidebar */}
         <div className="flex flex-col bg-muted/10 overflow-y-auto">
-          <div className="p-6 space-y-4">
+          <div className="p-6 space-y-6">
             {/* Preview Button */}
             {selectedCategory && activeTab !== 'preview' && (
               <div className="flex justify-end">
@@ -286,10 +333,10 @@ export function VehicleConfigurator({ onSave, onCancel }: VehicleConfiguratorPro
                     DIMENSIONS & PAYLOAD
                   </h3>
 
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     {/* Height & Length */}
                     <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1">
+                      <div className="space-y-2">
                         <Label htmlFor="height" className="text-xs text-muted-foreground">Height (cm)</Label>
                         <Input
                           id="height"
@@ -300,7 +347,7 @@ export function VehicleConfigurator({ onSave, onCancel }: VehicleConfiguratorPro
                           className="h-9"
                         />
                       </div>
-                      <div className="space-y-1">
+                      <div className="space-y-2">
                         <Label htmlFor="length" className="text-xs text-muted-foreground">Length (cm)</Label>
                         <Input
                           id="length"
@@ -314,7 +361,7 @@ export function VehicleConfigurator({ onSave, onCancel }: VehicleConfiguratorPro
                     </div>
 
                     {/* Width */}
-                    <div className="space-y-1">
+                    <div className="space-y-2">
                       <Label htmlFor="width" className="text-xs text-muted-foreground">Width (cm)</Label>
                       <Input
                         id="width"
@@ -367,7 +414,7 @@ export function VehicleConfigurator({ onSave, onCancel }: VehicleConfiguratorPro
                   </div>
                 </div>
 
-                <Separator />
+                <Separator className="my-6" />
 
                 {/* AI-Assisted Image Upload - Enhanced Visual */}
                 <div className="p-4 bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20 rounded-lg border border-purple-200 dark:border-purple-800">
@@ -385,34 +432,139 @@ export function VehicleConfigurator({ onSave, onCancel }: VehicleConfiguratorPro
                   />
                 </div>
 
-                <Separator />
+                <Separator className="my-6" />
 
-                {/* Expandable Tier Builder */}
-                {calculatedVolume && (
-                  <>
-                    <Separator />
-                    <Collapsible open={isTierBuilderOpen} onOpenChange={setIsTierBuilderOpen}>
-                      <CollapsibleTrigger asChild>
-                        <Button variant="outline" className="w-full justify-between">
-                          <span>Vehicle Capacity Payload</span>
-                          {isTierBuilderOpen ? (
-                            <ChevronUp className="h-4 w-4" />
-                          ) : (
-                            <ChevronDown className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent className="mt-4">
-                        <TierSlotBuilder
-                          tiers={tiers}
-                          onUpdateSlots={updateTierSlots}
-                          totalCapacityKg={payload.max_payload_kg}
-                          totalVolumeM3={calculatedVolume}
-                        />
-                      </CollapsibleContent>
-                    </Collapsible>
-                  </>
+                {/* Tier Builder - Always Visible */}
+                {calculatedVolume && vehicleConstraints && (
+                  <div>
+                    <h3 className="text-xs font-semibold text-muted-foreground mb-3 tracking-wider">
+                      VEHICLE CAPACITY PAYLOAD
+                    </h3>
+
+                    {/* Tier Validation Error Alert */}
+                    {tierValidationError && (
+                      <Alert variant="destructive" className="mb-4">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>{tierValidationError}</AlertDescription>
+                      </Alert>
+                    )}
+
+                    <div className="w-[360px] min-h-[420px] max-h-[540px] p-4 rounded-xl border bg-card overflow-y-auto">
+                      {/* Tier Count Selector */}
+                      <TierCountSelector
+                        currentCount={tiers.length}
+                        maxAllowed={vehicleConstraints.maxTiers}
+                        minAllowed={vehicleConstraints.minTiers}
+                        onChange={handleTierCountChange}
+                        categoryCode={selectedCategory?.code}
+                      />
+
+                      <Separator className="my-4" />
+
+                      {/* Tier Slot Builder */}
+                      <TierSlotBuilder
+                        tiers={tiers}
+                        onUpdateSlots={updateTierSlots}
+                        totalCapacityKg={payload.max_payload_kg}
+                        totalVolumeM3={calculatedVolume}
+                      />
+
+                      {/* Total Slots Display */}
+                      <div className="mt-4 pt-4 border-t">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">Total Slots:</span>
+                          <span className="font-semibold">{computeTotalSlots(tiers)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 )}
+
+                <Separator className="my-6" />
+
+                {/* Required Vehicle Information */}
+                <div>
+                  <h3 className="text-xs font-semibold text-muted-foreground mb-3 tracking-wider">
+                    REQUIRED INFORMATION
+                  </h3>
+                  <div className="space-y-3">
+                    <div className="space-y-1">
+                      <Label htmlFor="model-name-required" className="text-xs text-muted-foreground">
+                        Model Name <span className="text-destructive">*</span>
+                      </Label>
+                      <Input
+                        id="model-name-required"
+                        value={modelName}
+                        onChange={(e) => setModelName(e.target.value)}
+                        placeholder="e.g., Toyota Hiace"
+                        className="h-9"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="license-plate" className="text-xs text-muted-foreground">
+                        License Plate <span className="text-destructive">*</span>
+                      </Label>
+                      <Input
+                        id="license-plate"
+                        value={licensePlate}
+                        onChange={(e) => setLicensePlate(e.target.value)}
+                        placeholder="ABC-1234"
+                        className="h-9"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <Label htmlFor="year" className="text-xs text-muted-foreground">
+                          Year <span className="text-destructive">*</span>
+                        </Label>
+                        <Input
+                          id="year"
+                          type="number"
+                          value={year || ''}
+                          onChange={(e) => setYear(e.target.value ? parseInt(e.target.value) : undefined)}
+                          placeholder="2024"
+                          className="h-9"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label htmlFor="fuel-type" className="text-xs text-muted-foreground">
+                          Fuel Type <span className="text-destructive">*</span>
+                        </Label>
+                        <Input
+                          id="fuel-type"
+                          value={fuelType}
+                          onChange={(e) => setFuelType(e.target.value)}
+                          placeholder="Diesel"
+                          className="h-9"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="date-acquired" className="text-xs text-muted-foreground">
+                        Date Acquired <span className="text-destructive">*</span>
+                      </Label>
+                      <Input
+                        id="date-acquired"
+                        type="date"
+                        value={dateAcquired}
+                        onChange={(e) => setDateAcquired(e.target.value)}
+                        className="h-9"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="acquisition-mode" className="text-xs text-muted-foreground">
+                        Acquisition Mode <span className="text-destructive">*</span>
+                      </Label>
+                      <Input
+                        id="acquisition-mode"
+                        value={acquisitionMode}
+                        onChange={(e) => setAcquisitionMode(e.target.value)}
+                        placeholder="Purchase / Lease / Rent"
+                        className="h-9"
+                      />
+                    </div>
+                  </div>
+                </div>
               </>
             )}
 
@@ -458,7 +610,7 @@ export function VehicleConfigurator({ onSave, onCancel }: VehicleConfiguratorPro
                   </div>
                 </div>
 
-                <Separator />
+                <Separator className="my-6" />
 
                 {/* Specifications */}
                 <div>
@@ -466,37 +618,16 @@ export function VehicleConfigurator({ onSave, onCancel }: VehicleConfiguratorPro
                     SPECIFICATIONS
                   </h3>
                   <div className="space-y-3">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">Fuel Type</Label>
-                        <Input
-                          value={fuelType}
-                          onChange={(e) => setFuelType(e.target.value)}
-                          placeholder="Diesel"
-                          className="h-9"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">Transmission</Label>
-                        <Input
-                          value={transmission}
-                          onChange={(e) => setTransmission(e.target.value)}
-                          placeholder="Manual"
-                          className="h-9"
-                        />
-                      </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">Transmission</Label>
+                      <Input
+                        value={transmission}
+                        onChange={(e) => setTransmission(e.target.value)}
+                        placeholder="Manual"
+                        className="h-9"
+                      />
                     </div>
                     <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">Year</Label>
-                        <Input
-                          type="number"
-                          value={year || ''}
-                          onChange={(e) => setYear(e.target.value ? parseInt(e.target.value) : undefined)}
-                          placeholder="2024"
-                          className="h-9"
-                        />
-                      </div>
                       <div className="space-y-1">
                         <Label className="text-xs text-muted-foreground">Axles</Label>
                         <Input
@@ -507,21 +638,21 @@ export function VehicleConfigurator({ onSave, onCancel }: VehicleConfiguratorPro
                           className="h-9"
                         />
                       </div>
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs text-muted-foreground">Number of Wheels</Label>
-                      <Input
-                        type="number"
-                        value={numberOfWheels || ''}
-                        onChange={(e) => setNumberOfWheels(e.target.value ? parseInt(e.target.value) : undefined)}
-                        placeholder="4"
-                        className="h-9"
-                      />
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">Number of Wheels</Label>
+                        <Input
+                          type="number"
+                          value={numberOfWheels || ''}
+                          onChange={(e) => setNumberOfWheels(e.target.value ? parseInt(e.target.value) : undefined)}
+                          placeholder="4"
+                          className="h-9"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                <Separator />
+                <Separator className="my-6" />
 
                 {/* Acquisition */}
                 <div>
@@ -529,24 +660,6 @@ export function VehicleConfigurator({ onSave, onCancel }: VehicleConfiguratorPro
                     ACQUISITION
                   </h3>
                   <div className="space-y-3">
-                    <div className="space-y-1">
-                      <Label className="text-xs text-muted-foreground">Date Acquired</Label>
-                      <Input
-                        type="date"
-                        value={dateAcquired}
-                        onChange={(e) => setDateAcquired(e.target.value)}
-                        className="h-9"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs text-muted-foreground">Acquisition Mode</Label>
-                      <Input
-                        value={acquisitionMode}
-                        onChange={(e) => setAcquisitionMode(e.target.value)}
-                        placeholder="Purchase / Lease / Rent"
-                        className="h-9"
-                      />
-                    </div>
                     <div className="space-y-1">
                       <Label className="text-xs text-muted-foreground">Vendor</Label>
                       <Input
@@ -559,7 +672,7 @@ export function VehicleConfigurator({ onSave, onCancel }: VehicleConfiguratorPro
                   </div>
                 </div>
 
-                <Separator />
+                <Separator className="my-6" />
 
                 {/* Insurance & Registration */}
                 <div>
@@ -567,15 +680,6 @@ export function VehicleConfigurator({ onSave, onCancel }: VehicleConfiguratorPro
                     INSURANCE & REGISTRATION
                   </h3>
                   <div className="space-y-3">
-                    <div className="space-y-1">
-                      <Label className="text-xs text-muted-foreground">License Plate</Label>
-                      <Input
-                        value={licensePlate}
-                        onChange={(e) => setLicensePlate(e.target.value)}
-                        placeholder="ABC-1234"
-                        className="h-9"
-                      />
-                    </div>
                     <div className="space-y-1">
                       <Label className="text-xs text-muted-foreground">Registration Expiry</Label>
                       <Input
@@ -640,7 +744,7 @@ export function VehicleConfigurator({ onSave, onCancel }: VehicleConfiguratorPro
                   </div>
                 </div>
 
-                <Separator />
+                <Separator className="my-6" />
 
                 <div>
                   <h3 className="text-xs font-semibold text-muted-foreground mb-3 tracking-wider">
@@ -690,7 +794,7 @@ export function VehicleConfigurator({ onSave, onCancel }: VehicleConfiguratorPro
                   )}
                 </div>
 
-                <Separator />
+                <Separator className="my-6" />
 
                 {/* Dimensions */}
                 <div>
@@ -719,7 +823,7 @@ export function VehicleConfigurator({ onSave, onCancel }: VehicleConfiguratorPro
                   </div>
                 </div>
 
-                <Separator />
+                <Separator className="my-6" />
 
                 {/* Payload */}
                 <div>
@@ -744,7 +848,7 @@ export function VehicleConfigurator({ onSave, onCancel }: VehicleConfiguratorPro
 
                 {tiers.length > 0 && (
                   <>
-                    <Separator />
+                    <Separator className="my-6" />
                     <div>
                       <h3 className="text-xs font-semibold text-muted-foreground mb-3 tracking-wider">
                         CAPACITY TIERS
@@ -752,8 +856,8 @@ export function VehicleConfigurator({ onSave, onCancel }: VehicleConfiguratorPro
                       <div className="space-y-2 text-sm">
                         {tiers.map((tier, index) => (
                           <div key={index} className="flex justify-between">
-                            <span className="text-muted-foreground">Tier {tier.tier_level}:</span>
-                            <span className="font-medium">{tier.slots} slots</span>
+                            <span className="text-muted-foreground">{tier.tier_name}:</span>
+                            <span className="font-medium">{tier.slot_count} slots</span>
                           </div>
                         ))}
                       </div>
@@ -764,7 +868,7 @@ export function VehicleConfigurator({ onSave, onCancel }: VehicleConfiguratorPro
                 {/* Basic Information */}
                 {(vehicleName || variant) && (
                   <>
-                    <Separator />
+                    <Separator className="my-6" />
                     <div>
                       <h3 className="text-xs font-semibold text-muted-foreground mb-3 tracking-wider">
                         BASIC INFORMATION
@@ -790,7 +894,7 @@ export function VehicleConfigurator({ onSave, onCancel }: VehicleConfiguratorPro
                 {/* Specifications */}
                 {(fuelType || transmission || year || axles || numberOfWheels) && (
                   <>
-                    <Separator />
+                    <Separator className="my-6" />
                     <div>
                       <h3 className="text-xs font-semibold text-muted-foreground mb-3 tracking-wider">
                         SPECIFICATIONS
@@ -834,7 +938,7 @@ export function VehicleConfigurator({ onSave, onCancel }: VehicleConfiguratorPro
                 {/* Acquisition */}
                 {(dateAcquired || acquisitionMode || vendor) && (
                   <>
-                    <Separator />
+                    <Separator className="my-6" />
                     <div>
                       <h3 className="text-xs font-semibold text-muted-foreground mb-3 tracking-wider">
                         ACQUISITION
@@ -866,7 +970,7 @@ export function VehicleConfigurator({ onSave, onCancel }: VehicleConfiguratorPro
                 {/* Insurance & Registration */}
                 {(licensePlate || registrationExpiry || insuranceExpiry) && (
                   <>
-                    <Separator />
+                    <Separator className="my-6" />
                     <div>
                       <h3 className="text-xs font-semibold text-muted-foreground mb-3 tracking-wider">
                         INSURANCE & REGISTRATION
@@ -898,7 +1002,7 @@ export function VehicleConfigurator({ onSave, onCancel }: VehicleConfiguratorPro
                 {/* Interior */}
                 {(interiorDimensions.length_cm || interiorDimensions.width_cm || interiorDimensions.height_cm || numberOfSeats) && (
                   <>
-                    <Separator />
+                    <Separator className="my-6" />
                     <div>
                       <h3 className="text-xs font-semibold text-muted-foreground mb-3 tracking-wider">
                         INTERIOR

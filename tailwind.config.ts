@@ -31,6 +31,18 @@ export default {
           DEFAULT: "var(--destructive)",
           foreground: "var(--destructive-foreground)",
         },
+        success: {
+          DEFAULT: "var(--success)",
+          foreground: "var(--success-foreground)",
+        },
+        warning: {
+          DEFAULT: "var(--warning)",
+          foreground: "var(--warning-foreground)",
+        },
+        info: {
+          DEFAULT: "var(--info)",
+          foreground: "var(--info-foreground)",
+        },
         muted: {
           DEFAULT: "var(--muted)",
           foreground: "var(--muted-foreground)",
@@ -69,6 +81,14 @@ export default {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+      },
+      zIndex: {
+        base: "0",
+        sticky: "10",
+        floating: "20",
+        dropdown: "30",
+        tooltip: "40",
+        modal: "50",
       },
       boxShadow: {
         "2xs": "var(--shadow-2xs)",
@@ -109,5 +129,20 @@ export default {
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [
+    require("tailwindcss-animate"),
+    // Respect prefers-reduced-motion
+    function ({ addBase }: any) {
+      addBase({
+        '@media (prefers-reduced-motion: reduce)': {
+          '*': {
+            'animation-duration': '0.01ms !important',
+            'animation-iteration-count': '1 !important',
+            'transition-duration': '0.01ms !important',
+            'scroll-behavior': 'auto !important',
+          },
+        },
+      });
+    },
+  ],
 } satisfies Config;

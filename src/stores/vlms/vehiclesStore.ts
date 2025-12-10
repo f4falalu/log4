@@ -13,6 +13,9 @@ import {
   VehicleFormData,
 } from '@/types/vlms';
 import { toast } from 'sonner';
+import { getVehiclesTableName } from '@/lib/featureFlags';
+
+export type ViewMode = 'list' | 'card' | 'table';
 
 interface VehiclesState {
   // State
@@ -21,12 +24,16 @@ interface VehiclesState {
   filters: VehicleFilters;
   isLoading: boolean;
   error: string | null;
+  viewMode: ViewMode;
+  sidebarCollapsed: boolean;
 
   // Actions
   setVehicles: (vehicles: VehicleWithRelations[]) => void;
   setSelectedVehicle: (vehicle: VehicleWithRelations | null) => void;
   setFilters: (filters: Partial<VehicleFilters>) => void;
   clearFilters: () => void;
+  setViewMode: (mode: ViewMode) => void;
+  toggleSidebar: () => void;
 
   // Async Actions
   fetchVehicles: () => Promise<void>;
@@ -49,6 +56,8 @@ export const useVehiclesStore = create<VehiclesState>()(
       filters: {},
       isLoading: false,
       error: null,
+      viewMode: (typeof window !== 'undefined' && localStorage.getItem('vehicleViewMode') as ViewMode) || 'table',
+      sidebarCollapsed: (typeof window !== 'undefined' && localStorage.getItem('vehicleSidebarCollapsed') === 'true') || false,
 
       // Setters
       setVehicles: (vehicles) => set({ vehicles }),
@@ -62,15 +71,32 @@ export const useVehiclesStore = create<VehiclesState>()(
 
       clearFilters: () => set({ filters: {} }),
 
+      setViewMode: (mode) => {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('vehicleViewMode', mode);
+        }
+        set({ viewMode: mode });
+      },
+
+      toggleSidebar: () =>
+        set((state) => {
+          const newCollapsed = !state.sidebarCollapsed;
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('vehicleSidebarCollapsed', String(newCollapsed));
+          }
+          return { sidebarCollapsed: newCollapsed };
+        }),
+
       // Fetch Vehicles with Filters
       fetchVehicles: async () => {
         set({ isLoading: true, error: null });
         try {
           const { filters } = get();
+          const tableName = getVehiclesTableName();
 
           // Build query
           let query = supabase
-            .from('vehicles')
+            .from(tableName)
             .select(
               `
               *,
@@ -142,21 +168,53 @@ export const useVehiclesStore = create<VehiclesState>()(
       fetchVehicleById: async (id: string) => {
         set({ isLoading: true, error: null });
         try {
+          const tableName = getVehiclesTableName();
+          const isUsingView = tableName === 'vehicles_unified_v';
+
+          // Views don't support FK-based joins, so fetch vehicle data separately
           const { data, error } = await supabase
-            .from('vehicles')
-            .select(
-              `
-              *,
-              current_location:facilities!vehicles_current_location_id_fkey(id, name),
-              current_driver:drivers!vehicles_current_driver_id_fkey(id, name, phone)
-            `
-            )
+            .from(tableName)
+            .select('*')
             .eq('id', id)
             .single();
 
           if (error) throw error;
 
-          set({ selectedVehicle: data as VehicleWithRelations, isLoading: false });
+          // If using the base table (not view), fetch relationships separately
+          let vehicleWithRelations = data as VehicleWithRelations;
+
+          if (!isUsingView && data) {
+            // Fetch related data separately
+            if (data.current_location_id) {
+              const { data: location } = await supabase
+                .from('facilities')
+                .select('id, name')
+                .eq('id', data.current_location_id)
+                .single();
+
+              if (location) {
+                vehicleWithRelations.current_location = location;
+              }
+            }
+
+            if (data.current_driver_id) {
+              const { data: driver } = await supabase
+                .from('drivers')
+                .select('id, name, phone')
+                .eq('id', data.current_driver_id)
+                .single();
+
+              if (driver) {
+                vehicleWithRelations.current_driver = {
+                  id: driver.id,
+                  full_name: driver.name,
+                  email: '', // Email not available in drivers table
+                };
+              }
+            }
+          }
+
+          set({ selectedVehicle: vehicleWithRelations, isLoading: false });
         } catch (error: any) {
           set({ error: error.message, isLoading: false });
           toast.error(`Failed to fetch vehicle: ${error.message}`);

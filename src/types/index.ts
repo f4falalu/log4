@@ -125,23 +125,58 @@ export interface Delivery {
 
 export interface Driver {
   id: string;
+  // Basic Information
   name: string;
   phone: string;
+  email?: string;
+  middleName?: string;
+  dateOfBirth?: string;
+
+  // License & Credentials
   licenseType: 'standard' | 'commercial';
+  licenseNumber?: string;
+  licenseState?: string;
+  licenseExpiry?: string;
+  licenseVerified?: boolean;
+
+  // Employment Details
+  employer?: string;
+  position?: string;
+  employmentType?: string;
+  groupName?: string;
+  startDate?: string;
+  preferredServices?: string;
+  federalId?: string;
+
+  // Shift & Hours
+  shiftStart: string;
+  shiftEnd: string;
+  maxHours: number;
+
+  // Address & Contact
+  addressLine1?: string;
+  addressLine2?: string;
+  city?: string;
+  stateProvince?: string;
+  country?: string;
+  postalCode?: string;
+  emergencyContactName?: string;
+  emergencyContactPhone?: string;
+
+  // Profile & Documents
+  profilePhotoUrl?: string;
+  documentsComplete?: boolean;
+
+  // Status & Performance
   status: 'available' | 'busy' | 'offline';
   currentLocation?: {
     lat: number;
     lng: number;
   };
-  shiftStart: string;
-  shiftEnd: string;
-  maxHours: number;
-  licenseExpiry?: string;
   performanceScore?: number;
   totalDeliveries?: number;
   onTimePercentage?: number;
   onboardingCompleted?: boolean;
-  licenseVerified?: boolean;
   locationUpdatedAt?: string;
 }
 

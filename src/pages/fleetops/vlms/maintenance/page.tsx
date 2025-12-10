@@ -13,10 +13,13 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Plus, Calendar, Loader2 } from 'lucide-react';
+import { Plus, Calendar, Loader2, Wrench } from 'lucide-react';
+import { EmptyState } from '@/components/ui/empty-state';
+import { ScheduleMaintenanceDialog } from './ScheduleMaintenanceDialog';
 
 export default function MaintenancePage() {
   const { data: records, isLoading } = useMaintenanceRecords();
+  const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, any> = {
@@ -39,18 +42,18 @@ export default function MaintenancePage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-8">
+      <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold">Maintenance Management</h1>
-          <p className="text-muted-foreground">Track vehicle maintenance and service records</p>
+          <p className="text-muted-foreground mt-2">Track vehicle maintenance and service records</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-3">
           <Button variant="outline">
             <Calendar className="h-4 w-4 mr-2" />
             Calendar View
           </Button>
-          <Button>
+          <Button onClick={() => setScheduleDialogOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Schedule Maintenance
           </Button>
@@ -101,11 +104,19 @@ export default function MaintenancePage() {
             </TableBody>
           </Table>
         ) : (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">No maintenance records found</p>
-          </div>
+          <EmptyState
+            icon={Wrench}
+            title="No maintenance records found"
+            description="Start tracking vehicle maintenance by scheduling your first service."
+            variant="dashed"
+          />
         )}
       </Card>
+
+      <ScheduleMaintenanceDialog
+        open={scheduleDialogOpen}
+        onOpenChange={setScheduleDialogOpen}
+      />
     </div>
   );
 }

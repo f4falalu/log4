@@ -41,7 +41,7 @@ export function VehicleDrawer({ isOpen, vehicleId, onClose }: VehicleDrawerProps
         <SheetHeader className="border-b border-border pb-4 mb-6">
           <div className="flex items-center justify-between">
             <SheetTitle>Vehicle Details</SheetTitle>
-            <Button variant="ghost" size="icon" onClick={onClose}>
+            <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close drawer">
               <X className="h-4 w-4" />
             </Button>
           </div>

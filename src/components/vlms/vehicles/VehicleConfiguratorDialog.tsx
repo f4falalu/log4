@@ -118,9 +118,7 @@ export function VehicleConfiguratorDialog({
             Select category and configure capacity specifications
           </DialogDescription>
         </DialogHeader>
-        <div className="overflow-hidden">
-          <VehicleConfigurator onSave={handleSave} onCancel={handleCancel} />
-        </div>
+        <VehicleConfigurator onSave={handleSave} onCancel={handleCancel} />
       </DialogContent>
     </Dialog>
   );

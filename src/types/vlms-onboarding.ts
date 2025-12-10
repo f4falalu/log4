@@ -64,6 +64,7 @@ export interface TierConfig {
   max_volume_m3?: number;
   weight_pct?: number; // Percentage of total capacity (for defaults)
   volume_pct?: number; // Percentage of total volume (for defaults)
+  slot_count?: number; // Number of cargo slots (1-12)
 }
 
 export interface TierValidationResult {

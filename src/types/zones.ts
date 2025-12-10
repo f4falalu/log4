@@ -52,6 +52,16 @@ export interface LGA {
   metadata: Record<string, any>;
   created_at: string;
   updated_at: string;
+  // Joined data (optional - available when using joins in queries)
+  zones?: {
+    id: string;
+    name: string;
+    code: string;
+  } | null;
+  warehouses?: {
+    id: string;
+    name: string;
+  } | null;
 }
 
 export interface ZoneMetrics {

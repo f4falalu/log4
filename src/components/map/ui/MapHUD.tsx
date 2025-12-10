@@ -35,7 +35,7 @@ export function MapHUD({ map, tileProvider, onTileProviderToggle }: MapHUDProps)
   if (!center) return null;
 
   return (
-    <div className="absolute top-20 left-4 z-[1000] bg-background/95 backdrop-blur-sm border border-border rounded-lg p-3 space-y-1 text-xs font-mono shadow-md">
+    <div className="absolute top-20 left-4 z-floating bg-background/95 backdrop-blur-sm border border-border rounded-lg p-3 space-y-1 text-xs font-mono shadow-md">
       <div className="flex items-center gap-2">
         <span className="text-muted-foreground">Lat:</span>
         <span className="font-semibold">{center.lat.toFixed(6)}</span>

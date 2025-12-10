@@ -3,26 +3,50 @@ import { supabase } from '@/integrations/supabase/client';
 import { LGA, CreateLGAInput, UpdateLGAInput } from '@/types/zones';
 import { toast } from 'sonner';
 
+export interface LGAFilters {
+  zone_id?: string;
+  warehouse_id?: string;
+  state?: string;
+  search?: string;
+}
+
 /**
- * Fetch all LGAs from the database
- * @param zoneId - Optional zone filter (default: returns all LGAs)
- * @param state - Optional state filter (default: returns all LGAs)
+ * Fetch all LGAs from the database with optional filters
  */
-export function useLGAs(zoneId?: string | null, state?: string) {
+export function useLGAs(filters?: LGAFilters) {
   return useQuery({
-    queryKey: ['lgas', { zoneId, state }],
+    queryKey: ['lgas', filters],
     queryFn: async () => {
       let query = supabase
         .from('lgas')
-        .select('*')
+        .select(`
+          *,
+          zones:zone_id (
+            id,
+            name,
+            code
+          ),
+          warehouses:warehouse_id (
+            id,
+            name
+          )
+        `)
         .order('name', { ascending: true });
 
-      if (zoneId) {
-        query = query.eq('zone_id', zoneId);
+      if (filters?.zone_id) {
+        query = query.eq('zone_id', filters.zone_id);
       }
 
-      if (state) {
-        query = query.eq('state', state.toLowerCase());
+      if (filters?.warehouse_id) {
+        query = query.eq('warehouse_id', filters.warehouse_id);
+      }
+
+      if (filters?.state) {
+        query = query.eq('state', filters.state.toLowerCase());
+      }
+
+      if (filters?.search) {
+        query = query.ilike('name', `%${filters.search}%`);
       }
 
       const { data, error } = await query;
@@ -220,6 +244,50 @@ export function useDeleteLGA() {
     onError: (error: Error) => {
       toast.error(`Failed to delete LGA: ${error.message}`);
     },
+  });
+}
+
+/**
+ * Get LGA statistics
+ */
+export function useLGAStats() {
+  return useQuery({
+    queryKey: ['lga-stats'],
+    queryFn: async () => {
+      const { data: lgas, error } = await supabase
+        .from('lgas')
+        .select('id, zone_id, warehouse_id, population');
+
+      if (error) throw error;
+
+      const totalLGAs = lgas?.length || 0;
+      const assignedToZone = lgas?.filter((l) => l.zone_id).length || 0;
+      const assignedToWarehouse = lgas?.filter((l) => l.warehouse_id).length || 0;
+      const totalPopulation = lgas?.reduce((sum, l) => sum + (l.population || 0), 0) || 0;
+
+      // Get facility count by LGA
+      const { data: facilities } = await supabase
+        .from('facilities')
+        .select('lga');
+
+      const facilitiesByLGA = facilities?.reduce((acc, f) => {
+        if (f.lga) {
+          acc[f.lga] = (acc[f.lga] || 0) + 1;
+        }
+        return acc;
+      }, {} as Record<string, number>) || {};
+
+      return {
+        totalLGAs,
+        assignedToZone,
+        assignedToWarehouse,
+        totalPopulation,
+        unassignedToZone: totalLGAs - assignedToZone,
+        unassignedToWarehouse: totalLGAs - assignedToWarehouse,
+        facilitiesByLGA,
+      };
+    },
+    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 }
 

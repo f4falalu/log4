@@ -5,6 +5,7 @@
 
 import type { TierConfig, TierValidationResult, CapacityConfig } from '@/types/vlms-onboarding';
 import { sumTierCapacities, validateTierOrder } from './capacityCalculations';
+import { getVehicleClassConstraints } from './vehicleClassConstraints';
 
 // =====================================================
 // VALIDATION CONSTANTS
@@ -14,18 +15,73 @@ const TOLERANCE_PERCENTAGE = 5; // Allow 5% over-capacity tolerance
 const MIN_TIER_WEIGHT_KG = 10; // Minimum 10kg per tier
 const MIN_TIER_VOLUME_M3 = 0.01; // Minimum 0.01m³ per tier
 const MAX_TIER_COUNT = 10; // Maximum number of tiers
+const MIN_SLOT_COUNT = 1; // Minimum 1 slot per tier
+const MAX_SLOT_COUNT = 12; // Maximum 12 slots per tier
 
 // =====================================================
 // TIER VALIDATION FUNCTIONS
 // =====================================================
 
 /**
- * Validate tier configuration against vehicle capacity
+ * Validate slot count is within acceptable range
+ */
+export function validateSlotCount(count: number): { valid: boolean; message: string } {
+  if (!Number.isInteger(count)) {
+    return { valid: false, message: 'Slot count must be a whole number' };
+  }
+
+  if (count < MIN_SLOT_COUNT) {
+    return { valid: false, message: `Minimum ${MIN_SLOT_COUNT} slot required per tier` };
+  }
+
+  if (count > MAX_SLOT_COUNT) {
+    return { valid: false, message: `Maximum ${MAX_SLOT_COUNT} slots allowed per tier` };
+  }
+
+  return { valid: true, message: 'Valid slot count' };
+}
+
+/**
+ * Validate tier count against vehicle class constraints
+ */
+export function validateTierCountForClass(
+  count: number,
+  vehicleClass: string
+): { valid: boolean; message: string } {
+  const constraints = getVehicleClassConstraints(vehicleClass);
+
+  if (count < constraints.minTiers) {
+    return {
+      valid: false,
+      message: `${vehicleClass} vehicles require at least ${constraints.minTiers} tier${constraints.minTiers > 1 ? 's' : ''}`,
+    };
+  }
+
+  if (count > constraints.maxTiers) {
+    return {
+      valid: false,
+      message: `${vehicleClass} vehicles cannot exceed ${constraints.maxTiers} tier${constraints.maxTiers > 1 ? 's' : ''}`,
+    };
+  }
+
+  return { valid: true, message: 'Valid tier count' };
+}
+
+/**
+ * Compute total slots across all tiers
+ */
+export function computeTotalSlots(tiers: TierConfig[]): number {
+  return tiers.reduce((total, tier) => total + (tier.slot_count || 0), 0);
+}
+
+/**
+ * Validate tier configuration against vehicle capacity and class constraints
  */
 export function validateTierConfig(
   tierConfigs: TierConfig[],
   maxCapacityKg?: number,
-  maxCapacityM3?: number
+  maxCapacityM3?: number,
+  vehicleClass?: string
 ): TierValidationResult {
   // Empty tier config is valid
   if (!tierConfigs || tierConfigs.length === 0) {
@@ -36,13 +92,53 @@ export function validateTierConfig(
     };
   }
 
-  // Validate tier count
+  // Validate tier count against vehicle class if provided
+  if (vehicleClass) {
+    const tierCountValidation = validateTierCountForClass(tierConfigs.length, vehicleClass);
+    if (!tierCountValidation.valid) {
+      return {
+        is_valid: false,
+        total_weight_kg: 0,
+        validation_message: tierCountValidation.message,
+      };
+    }
+  }
+
+  // Validate tier count (general)
   if (tierConfigs.length > MAX_TIER_COUNT) {
     return {
       is_valid: false,
       total_weight_kg: 0,
       validation_message: `Maximum ${MAX_TIER_COUNT} tiers allowed`,
     };
+  }
+
+  // Validate slot counts
+  for (let i = 0; i < tierConfigs.length; i++) {
+    const tier = tierConfigs[i];
+    if (tier.slot_count !== undefined) {
+      const slotValidation = validateSlotCount(tier.slot_count);
+      if (!slotValidation.valid) {
+        return {
+          is_valid: false,
+          total_weight_kg: 0,
+          validation_message: `Tier ${i + 1} (${tier.tier_name}): ${slotValidation.message}`,
+        };
+      }
+    }
+  }
+
+  // Validate total slots against vehicle class constraints
+  if (vehicleClass) {
+    const constraints = getVehicleClassConstraints(vehicleClass);
+    const totalSlots = computeTotalSlots(tierConfigs);
+    if (totalSlots > constraints.totalMaxSlots) {
+      return {
+        is_valid: false,
+        total_weight_kg: 0,
+        validation_message: `Total slots (${totalSlots}) exceeds maximum allowed (${constraints.totalMaxSlots}) for ${vehicleClass} vehicles`,
+      };
+    }
   }
 
   // Validate tier ordering

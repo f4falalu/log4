@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { AlertTriangle, AlertCircle, Info, Clock, Navigation, TrendingUp } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { DeliveryBatch } from '@/types';
 
 interface AlertsPanelProps {
@@ -122,17 +123,17 @@ const AlertsPanel = ({ batches }: AlertsPanelProps) => {
 
   const getAlertColor = (type: Alert['type']) => {
     switch (type) {
-      case 'urgent': return 'border-red-600 bg-red-50 dark:bg-red-950/20';
-      case 'warning': return 'border-amber-600 bg-amber-50 dark:bg-amber-950/20';
-      case 'info': return 'border-blue-600 bg-blue-50 dark:bg-blue-950/20';
+      case 'urgent': return 'border-destructive/50 bg-destructive/10';
+      case 'warning': return 'border-warning/50 bg-warning/10';
+      case 'info': return 'border-info/50 bg-info/10';
     }
   };
 
-  const getBadgeColor = (type: Alert['type']) => {
+  const getBadgeVariant = (type: Alert['type']): 'destructive' | 'warning' | 'info' => {
     switch (type) {
-      case 'urgent': return 'bg-red-600';
-      case 'warning': return 'bg-amber-600';
-      case 'info': return 'bg-blue-600';
+      case 'urgent': return 'destructive';
+      case 'warning': return 'warning';
+      case 'info': return 'info';
     }
   };
 
@@ -150,13 +151,13 @@ const AlertsPanel = ({ batches }: AlertsPanelProps) => {
           </span>
           <div className="flex gap-2">
             {urgentCount > 0 && (
-              <Badge className="bg-red-600">{urgentCount}</Badge>
+              <Badge variant="destructive">{urgentCount}</Badge>
             )}
             {warningCount > 0 && (
-              <Badge className="bg-amber-600">{warningCount}</Badge>
+              <Badge variant="warning">{warningCount}</Badge>
             )}
             {infoCount > 0 && (
-              <Badge className="bg-blue-600">{infoCount}</Badge>
+              <Badge variant="info">{infoCount}</Badge>
             )}
           </div>
         </CardTitle>
@@ -177,13 +178,18 @@ const AlertsPanel = ({ batches }: AlertsPanelProps) => {
                   className={`p-3 rounded-lg border-l-4 ${getAlertColor(alert.type)}`}
                 >
                   <div className="flex items-start gap-3">
-                    <div className={`mt-0.5 ${alert.type === 'urgent' ? 'text-red-600' : alert.type === 'warning' ? 'text-amber-600' : 'text-blue-600'}`}>
+                    <div className={cn(
+                      'mt-0.5',
+                      alert.type === 'urgent' && 'text-destructive',
+                      alert.type === 'warning' && 'text-warning',
+                      alert.type === 'info' && 'text-info'
+                    )}>
                       {alert.icon}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <span className="font-semibold text-sm">{alert.title}</span>
-                        <Badge variant="outline" className={`${getBadgeColor(alert.type)} text-white text-xs`}>
+                        <Badge variant={getBadgeVariant(alert.type)} className="text-xs">
                           {alert.type.toUpperCase()}
                         </Badge>
                       </div>

@@ -392,14 +392,16 @@ export const useVehicleConfiguratorStore = create<VehicleConfiguratorState>()(
           interior_height_cm: interiorDimensions.height_cm,
           seating_capacity: numberOfSeats,
 
-          // Tier configuration (JSONB)
-          tiered_config: tiers.map(tier => ({
-            tier_name: tier.tier_name,
-            tier_order: tier.tier_order,
-            max_weight_kg: tier.max_weight_kg,
-            max_volume_m3: tier.max_volume_m3,
-            slot_count: tier.slot_count,
-          })),
+          // Tier configuration (JSONB) - wrapped in {tiers: []} for database validation
+          tiered_config: tiers.length > 0 ? {
+            tiers: tiers.map(tier => ({
+              tier_name: tier.tier_name,
+              tier_order: tier.tier_order,
+              max_weight_kg: tier.max_weight_kg,
+              max_volume_m3: tier.max_volume_m3,
+              slot_count: tier.slot_count,
+            }))
+          } : null,
         };
       },
 
