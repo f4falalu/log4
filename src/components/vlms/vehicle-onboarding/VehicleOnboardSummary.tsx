@@ -84,7 +84,7 @@ export function VehicleOnboardSummary() {
         {/* Category & Type */}
         <div className="space-y-3">
           <h3 className="font-semibold flex items-center gap-2">
-            <CheckCircle className="h-4 w-4 text-green-600" />
+            <CheckCircle className="h-4 w-4 text-success" />
             Category & Type
           </h3>
 
@@ -110,7 +110,7 @@ export function VehicleOnboardSummary() {
         {/* Capacity Configuration */}
         <div className="space-y-3">
           <h3 className="font-semibold flex items-center gap-2">
-            <CheckCircle className="h-4 w-4 text-green-600" />
+            <CheckCircle className="h-4 w-4 text-success" />
             Capacity Configuration
           </h3>
 
@@ -180,7 +180,7 @@ export function VehicleOnboardSummary() {
         {/* Vehicle Details */}
         <div className="space-y-3">
           <h3 className="font-semibold flex items-center gap-2">
-            <CheckCircle className="h-4 w-4 text-green-600" />
+            <CheckCircle className="h-4 w-4 text-success" />
             Vehicle Details
           </h3>
 

@@ -98,21 +98,21 @@ export function VehicleForm({ vehicle, onSubmit, onCancel, isSubmitting }: Vehic
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="make">
-                    Make <span className="text-red-500">*</span>
+                    Make <span className="text-destructive">*</span>
                   </Label>
                   <Input id="make" {...register('make')} placeholder="Toyota" />
                   {errors.make && (
-                    <p className="text-sm text-red-500">{errors.make.message}</p>
+                    <p className="text-sm text-destructive" role="alert">{errors.make.message}</p>
                   )}
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="model">
-                    Model <span className="text-red-500">*</span>
+                    Model <span className="text-destructive">*</span>
                   </Label>
                   <Input id="model" {...register('model')} placeholder="Hilux" />
                   {errors.model && (
-                    <p className="text-sm text-red-500">{errors.model.message}</p>
+                    <p className="text-sm text-destructive" role="alert">{errors.model.message}</p>
                   )}
                 </div>
               </div>
@@ -120,7 +120,7 @@ export function VehicleForm({ vehicle, onSubmit, onCancel, isSubmitting }: Vehic
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="year">
-                    Year <span className="text-red-500">*</span>
+                    Year <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="year"
@@ -129,13 +129,13 @@ export function VehicleForm({ vehicle, onSubmit, onCancel, isSubmitting }: Vehic
                     placeholder="2023"
                   />
                   {errors.year && (
-                    <p className="text-sm text-red-500">{errors.year.message}</p>
+                    <p className="text-sm text-destructive" role="alert">{errors.year.message}</p>
                   )}
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="license_plate">
-                    License Plate <span className="text-red-500">*</span>
+                    License Plate <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="license_plate"
@@ -143,21 +143,21 @@ export function VehicleForm({ vehicle, onSubmit, onCancel, isSubmitting }: Vehic
                     placeholder="KN-1234-ABC"
                   />
                   {errors.license_plate && (
-                    <p className="text-sm text-red-500">{errors.license_plate.message}</p>
+                    <p className="text-sm text-destructive" role="alert">{errors.license_plate.message}</p>
                   )}
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="vin">VIN (Optional)</Label>
                   <Input id="vin" {...register('vin')} placeholder="17-character VIN" />
-                  {errors.vin && <p className="text-sm text-red-500">{errors.vin.message}</p>}
+                  {errors.vin && <p className="text-sm text-destructive" role="alert">{errors.vin.message}</p>}
                 </div>
               </div>
 
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="vehicle_type">
-                    Vehicle Type <span className="text-red-500">*</span>
+                    Vehicle Type <span className="text-destructive">*</span>
                   </Label>
                   <Select
                     value={watch('vehicle_type')}
@@ -177,13 +177,13 @@ export function VehicleForm({ vehicle, onSubmit, onCancel, isSubmitting }: Vehic
                     </SelectContent>
                   </Select>
                   {errors.vehicle_type && (
-                    <p className="text-sm text-red-500">{errors.vehicle_type.message}</p>
+                    <p className="text-sm text-destructive" role="alert">{errors.vehicle_type.message}</p>
                   )}
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="fuel_type">
-                    Fuel Type <span className="text-red-500">*</span>
+                    Fuel Type <span className="text-destructive">*</span>
                   </Label>
                   <Select
                     value={watch('fuel_type')}
@@ -202,7 +202,7 @@ export function VehicleForm({ vehicle, onSubmit, onCancel, isSubmitting }: Vehic
                     </SelectContent>
                   </Select>
                   {errors.fuel_type && (
-                    <p className="text-sm text-red-500">{errors.fuel_type.message}</p>
+                    <p className="text-sm text-destructive" role="alert">{errors.fuel_type.message}</p>
                   )}
                 </div>
 
@@ -286,7 +286,7 @@ export function VehicleForm({ vehicle, onSubmit, onCancel, isSubmitting }: Vehic
                     placeholder="2.8"
                   />
                   {errors.engine_capacity && (
-                    <p className="text-sm text-red-500">{errors.engine_capacity.message}</p>
+                    <p className="text-sm text-destructive" role="alert">{errors.engine_capacity.message}</p>
                   )}
                 </div>
 
@@ -306,7 +306,7 @@ export function VehicleForm({ vehicle, onSubmit, onCancel, isSubmitting }: Vehic
                     placeholder="5"
                   />
                   {errors.seating_capacity && (
-                    <p className="text-sm text-red-500">{errors.seating_capacity.message}</p>
+                    <p className="text-sm text-destructive" role="alert">{errors.seating_capacity.message}</p>
                   )}
                 </div>
 
@@ -320,7 +320,7 @@ export function VehicleForm({ vehicle, onSubmit, onCancel, isSubmitting }: Vehic
                     placeholder="1.2"
                   />
                   {errors.cargo_capacity && (
-                    <p className="text-sm text-red-500">{errors.cargo_capacity.message}</p>
+                    <p className="text-sm text-destructive" role="alert">{errors.cargo_capacity.message}</p>
                   )}
                 </div>
               </div>
@@ -335,7 +335,7 @@ export function VehicleForm({ vehicle, onSubmit, onCancel, isSubmitting }: Vehic
                   placeholder="15234.5"
                 />
                 {errors.current_mileage && (
-                  <p className="text-sm text-red-500">{errors.current_mileage.message}</p>
+                  <p className="text-sm text-destructive" role="alert">{errors.current_mileage.message}</p>
                 )}
               </div>
 
