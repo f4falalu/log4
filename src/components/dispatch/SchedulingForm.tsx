@@ -125,10 +125,10 @@ const SchedulingForm = ({ facilities, deliveries, onDeliveryCreate }: Scheduling
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'urgent': return 'text-red-600';
-      case 'high': return 'text-orange-600';
-      case 'medium': return 'text-yellow-600';
-      case 'low': return 'text-green-600';
+      case 'urgent': return 'text-destructive';
+      case 'high': return 'text-warning';
+      case 'medium': return 'text-warning';
+      case 'low': return 'text-success';
       default: return 'text-muted-foreground';
     }
   };
@@ -277,13 +277,13 @@ const SchedulingForm = ({ facilities, deliveries, onDeliveryCreate }: Scheduling
                   <SelectContent>
                     <SelectItem value="low">
                       <div className="flex items-center space-x-2">
-                        <Package className="w-4 h-4 text-green-600" />
+                        <Package className="w-4 h-4 text-success" />
                         <span>Low Priority</span>
                       </div>
                     </SelectItem>
                     <SelectItem value="medium">
                       <div className="flex items-center space-x-2">
-                        <Package className="w-4 h-4 text-yellow-600" />
+                        <Package className="w-4 h-4 text-warning" />
                         <span>Medium Priority</span>
                       </div>
                     </SelectItem>

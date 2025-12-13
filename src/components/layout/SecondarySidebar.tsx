@@ -2,6 +2,7 @@ import * as React from 'react';
 import { NavLink } from 'react-router-dom';
 import { ChevronLeft, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { usePrefetch } from '@/hooks/usePrefetch';
 import {
   Sidebar,
   SidebarContent,
@@ -30,6 +31,66 @@ export type NavigationItem = {
   end?: boolean;
   badge?: string | number;
 };
+
+// Route prefetching map
+const routePrefetchMap: Record<string, () => Promise<any>> = {
+  '/fleetops': () => import('@/pages/fleetops/page'),
+  '/fleetops/drivers': () => import('@/pages/DriverManagement'),
+  '/fleetops/dispatch': () => import('@/pages/DispatchPage'),
+  '/fleetops/batches': () => import('@/pages/BatchManagement'),
+  '/fleetops/tactical': () => import('@/pages/TacticalMap'),
+  '/fleetops/vehicles': () => import('@/pages/VehicleManagementPage'),
+  '/fleetops/fleet-management': () => import('@/pages/fleetops/fleet-management/page'),
+  '/fleetops/reports': () => import('@/pages/ReportsPageWrapper'),
+  '/fleetops/vlms': () => import('@/pages/fleetops/vlms/page'),
+  '/storefront': () => import('@/pages/storefront/page'),
+  '/storefront/zones': () => import('@/pages/storefront/zones/page'),
+  '/storefront/lgas': () => import('@/pages/storefront/lgas/page'),
+  '/storefront/facilities': () => import('@/pages/storefront/facilities/page'),
+  '/storefront/requisitions': () => import('@/pages/storefront/requisitions/page'),
+  '/storefront/payloads': () => import('@/pages/storefront/payloads/page'),
+  '/storefront/schedule-planner': () => import('@/pages/storefront/schedule-planner/page'),
+  '/storefront/scheduler': () => import('@/pages/storefront/scheduler/page'),
+};
+
+// Menu item with prefetching
+function SidebarMenuItemWithPrefetch({
+  item,
+  Icon,
+}: {
+  item: NavigationItem;
+  Icon: React.ComponentType<{ className?: string }>;
+}) {
+  const loader = routePrefetchMap[item.href];
+  const { prefetch } = usePrefetch(loader, !!loader);
+
+  return (
+    <SidebarMenuItem>
+      <SidebarMenuButton asChild tooltip={item.label} className="h-9">
+        <NavLink
+          to={item.href}
+          end={item.end}
+          onMouseEnter={prefetch}
+          onFocus={prefetch}
+          className={({ isActive }) =>
+            cn(
+              'px-3 py-2 transition-colors duration-150',
+              isActive && 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
+            )
+          }
+        >
+          <Icon className="h-4 w-4 shrink-0" />
+          <span className="truncate">{item.label}</span>
+          {item.badge && (
+            <span className="ml-auto text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full group-data-[collapsible=icon]:hidden font-medium">
+              {item.badge}
+            </span>
+          )}
+        </NavLink>
+      </SidebarMenuButton>
+    </SidebarMenuItem>
+  );
+}
 
 interface SecondarySidebarProps {
   title: string;
@@ -116,28 +177,11 @@ export function SecondarySidebar({
                 {group.items.map((item) => {
                   const Icon = item.icon;
                   return (
-                    <SidebarMenuItem key={item.href}>
-                      <SidebarMenuButton asChild tooltip={item.label} className="h-9">
-                        <NavLink
-                          to={item.href}
-                          end={item.end}
-                          className={({ isActive }) =>
-                            cn(
-                              'px-3 py-2 transition-colors duration-150',
-                              isActive && 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
-                            )
-                          }
-                        >
-                          <Icon className="h-4 w-4 shrink-0" />
-                          <span className="truncate">{item.label}</span>
-                          {item.badge && (
-                            <span className="ml-auto text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full group-data-[collapsible=icon]:hidden font-medium">
-                              {item.badge}
-                            </span>
-                          )}
-                        </NavLink>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
+                    <SidebarMenuItemWithPrefetch
+                      key={item.href}
+                      item={item}
+                      Icon={Icon}
+                    />
                   );
                 })}
               </SidebarMenu>

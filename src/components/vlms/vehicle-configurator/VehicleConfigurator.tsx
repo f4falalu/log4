@@ -417,10 +417,10 @@ export function VehicleConfigurator({ onSave, onCancel }: VehicleConfiguratorPro
                 <Separator className="my-6" />
 
                 {/* AI-Assisted Image Upload - Enhanced Visual */}
-                <div className="p-4 bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                <div className="p-4 bg-gradient-to-br from-primary/10 to-info/10 rounded-lg border border-primary/20">
                   <div className="flex items-center gap-2 mb-3">
-                    <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                    <h3 className="text-sm font-semibold text-purple-900 dark:text-purple-100">
+                    <Sparkles className="w-4 h-4 text-primary" />
+                    <h3 className="text-sm font-semibold text-primary">
                       AI-Assisted Dimensions
                     </h3>
                     <Badge variant="secondary" className="text-xs">Optional</Badge>
@@ -1047,9 +1047,9 @@ export function VehicleConfigurator({ onSave, onCancel }: VehicleConfiguratorPro
                   </AlertDescription>
                 </Alert>
               ) : (
-                <Alert variant="default" className="bg-green-50 border-green-200">
-                  <CheckCircle2 className="h-4 w-4 text-green-600" />
-                  <AlertDescription className="text-green-900">
+                <Alert variant="success" className="bg-success/10 border-success/20">
+                  <CheckCircle2 className="h-4 w-4 text-success" />
+                  <AlertDescription className="text-success">
                     Ready to save configuration
                   </AlertDescription>
                 </Alert>

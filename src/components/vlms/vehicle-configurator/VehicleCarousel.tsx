@@ -7,6 +7,7 @@
 import React from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { LazyImage } from '@/components/ui/lazy-image';
 import { cn } from '@/lib/utils';
 import type { VehicleCategory } from '@/types/vlms-onboarding';
 
@@ -70,14 +71,13 @@ export function VehicleCarousel({
             >
               {/* Vehicle Silhouette */}
               <div className="flex-1 flex items-center justify-center w-full">
-                <img
+                <LazyImage
                   src={silhouettePath}
                   alt={category.display_name || category.name}
                   className="max-h-[80px] max-w-full object-contain"
-                  onError={(e) => {
-                    // Fallback to placeholder if image fails to load
-                    e.currentTarget.style.display = 'none';
-                  }}
+                  threshold={0.1}
+                  rootMargin="100px"
+                  fallbackSrc="/placeholder-vehicle.svg"
                 />
               </div>
 
@@ -88,7 +88,7 @@ export function VehicleCarousel({
                     {category.code}
                   </span>
                   {category.source === 'biko' && (
-                    <span className="font-mono text-[10px] bg-orange-100 px-1.5 py-0.5 rounded text-orange-700">
+                    <span className="font-mono text-[10px] bg-warning/10 px-1.5 py-0.5 rounded text-warning">
                       BIKO
                     </span>
                   )}

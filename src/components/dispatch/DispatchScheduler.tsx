@@ -8,14 +8,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
+import { FormSection } from '@/components/ui/form-section';
 import { toast } from 'sonner';
-import { 
-  Calendar, 
-  Clock, 
-  AlertTriangle, 
-  Package, 
-  Truck, 
-  User, 
+import {
+  Calendar,
+  Clock,
+  AlertTriangle,
+  Package,
+  Truck,
+  User,
   Route,
   MapPin,
   CheckCircle,
@@ -202,15 +203,17 @@ const DispatchScheduler = ({ facilities, onBatchCreate }: DispatchSchedulerProps
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Facility Selection */}
-            <div className="space-y-4">
-              <Label className="text-base font-medium">Select Facilities for Delivery</Label>
+            <FormSection
+              title="Facility Selection"
+              description="Select facilities for delivery and optimize the route"
+            >
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-60 overflow-y-auto border rounded-lg p-4">
                 {facilities.map((facility) => (
                   <div key={facility.id} className="flex items-center space-x-3 p-2 hover:bg-muted/50 rounded-lg">
                     <Checkbox
                       id={facility.id}
                       checked={selectedFacilities.includes(facility.id)}
-                      onCheckedChange={(checked) => 
+                      onCheckedChange={(checked) =>
                         handleFacilityToggle(facility.id, checked as boolean)
                       }
                     />
@@ -248,13 +251,13 @@ const DispatchScheduler = ({ facilities, onBatchCreate }: DispatchSchedulerProps
                   )}
                 </Button>
               </div>
-            </div>
+            </FormSection>
 
             {/* Route Optimization Results */}
             {optimizedRoute && (
-              <Card className="bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800">
+              <Card className="bg-success/10 border-success/20">
                 <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center space-x-2 text-green-800 dark:text-green-200">
+                  <CardTitle className="flex items-center space-x-2 text-success">
                     <CheckCircle className="w-5 h-5" />
                     <span>Route Optimized</span>
                   </CardTitle>
@@ -282,137 +285,155 @@ const DispatchScheduler = ({ facilities, onBatchCreate }: DispatchSchedulerProps
               </Card>
             )}
 
-            {/* Batch Details */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="batchName">Batch Name (Optional)</Label>
-                <Input
-                  id="batchName"
-                  value={formData.batchName}
-                  onChange={(e) => handleInputChange('batchName', e.target.value)}
-                  placeholder={`Delivery Batch ${format(new Date(), 'MMM d, HH:mm')}`}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Priority *</Label>
-                <Select 
-                  value={formData.priority} 
-                  onValueChange={(value) => handleInputChange('priority', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="low">Low Priority</SelectItem>
-                    <SelectItem value="medium">Medium Priority</SelectItem>
-                    <SelectItem value="high">High Priority</SelectItem>
-                    <SelectItem value="urgent">Urgent</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Date and Time */}
-              <div className="grid grid-cols-2 gap-3">
+            {/* Schedule Details */}
+            <FormSection
+              title="Schedule Details"
+              description="Basic scheduling information and priority"
+            >
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="date">Date *</Label>
+                  <Label htmlFor="batchName">Batch Name (Optional)</Label>
                   <Input
-                    id="date"
-                    type="date"
-                    value={formData.scheduledDate}
-                    onChange={(e) => handleInputChange('scheduledDate', e.target.value)}
-                    min={format(new Date(), 'yyyy-MM-dd')}
+                    id="batchName"
+                    value={formData.batchName}
+                    onChange={(e) => handleInputChange('batchName', e.target.value)}
+                    placeholder={`Delivery Batch ${format(new Date(), 'MMM d, HH:mm')}`}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Priority *</Label>
+                  <Select
+                    value={formData.priority}
+                    onValueChange={(value) => handleInputChange('priority', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="low">Low Priority</SelectItem>
+                      <SelectItem value="medium">Medium Priority</SelectItem>
+                      <SelectItem value="high">High Priority</SelectItem>
+                      <SelectItem value="urgent">Urgent</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="date">Date *</Label>
+                    <Input
+                      id="date"
+                      type="date"
+                      value={formData.scheduledDate}
+                      onChange={(e) => handleInputChange('scheduledDate', e.target.value)}
+                      min={format(new Date(), 'yyyy-MM-dd')}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="time">Time *</Label>
+                    <Input
+                      id="time"
+                      type="time"
+                      value={formData.scheduledTime}
+                      onChange={(e) => handleInputChange('scheduledTime', e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+            </FormSection>
+
+            {/* Delivery Specifications */}
+            <FormSection
+              title="Delivery Specifications"
+              description="Medication details and quantities"
+            >
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="medicationType">Medication Type *</Label>
+                  <Input
+                    id="medicationType"
+                    value={formData.medicationType}
+                    onChange={(e) => handleInputChange('medicationType', e.target.value)}
+                    placeholder="e.g., Insulin, Antibiotics, Vaccines"
                     required
                   />
                 </div>
+
                 <div className="space-y-2">
-                  <Label htmlFor="time">Time *</Label>
+                  <Label htmlFor="totalQuantity">Total Quantity *</Label>
                   <Input
-                    id="time"
-                    type="time"
-                    value={formData.scheduledTime}
-                    onChange={(e) => handleInputChange('scheduledTime', e.target.value)}
+                    id="totalQuantity"
+                    type="number"
+                    value={formData.totalQuantity}
+                    onChange={(e) => handleInputChange('totalQuantity', e.target.value)}
+                    placeholder="Total units to deliver"
+                    min="1"
                     required
                   />
                 </div>
               </div>
+            </FormSection>
 
-              {/* Medication Details */}
-              <div className="space-y-2">
-                <Label htmlFor="medicationType">Medication Type *</Label>
-                <Input
-                  id="medicationType"
-                  value={formData.medicationType}
-                  onChange={(e) => handleInputChange('medicationType', e.target.value)}
-                  placeholder="e.g., Insulin, Antibiotics, Vaccines"
-                  required
-                />
-              </div>
+            {/* Fleet Assignment */}
+            <FormSection
+              title="Fleet Assignment"
+              description="Assign driver and vehicle (optional - auto-assignment available)"
+            >
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label>Assign Driver (Optional)</Label>
+                  <Select
+                    value={formData.driverId}
+                    onValueChange={(value) => handleInputChange('driverId', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Auto-assign driver" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableDrivers.map(driver => (
+                        <SelectItem key={driver.id} value={driver.id}>
+                          <div className="flex items-center gap-2">
+                            <User className="w-4 h-4" />
+                            <span>{driver.name}</span>
+                            <Badge size="xs" variant="outline">
+                              {driver.licenseType}
+                            </Badge>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="totalQuantity">Total Quantity *</Label>
-                <Input
-                  id="totalQuantity"
-                  type="number"
-                  value={formData.totalQuantity}
-                  onChange={(e) => handleInputChange('totalQuantity', e.target.value)}
-                  placeholder="Total units to deliver"
-                  min="1"
-                  required
-                />
+                <div className="space-y-2">
+                  <Label>Assign Vehicle (Optional)</Label>
+                  <Select
+                    value={formData.vehicleId}
+                    onValueChange={(value) => handleInputChange('vehicleId', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Auto-assign vehicle" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableVehicles.map(vehicle => (
+                        <SelectItem key={vehicle.id} value={vehicle.id}>
+                          <div className="flex items-center gap-2">
+                            <span>{getVehicleIcon(vehicle.type)}</span>
+                            <span>{vehicle.model}</span>
+                            <Badge size="xs" variant="secondary">
+                              {vehicle.capacity}m³
+                            </Badge>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-
-              {/* Fleet Assignment */}
-              <div className="space-y-2">
-                <Label>Assign Driver (Optional)</Label>
-                <Select 
-                  value={formData.driverId} 
-                  onValueChange={(value) => handleInputChange('driverId', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Auto-assign driver" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableDrivers.map(driver => (
-                      <SelectItem key={driver.id} value={driver.id}>
-                        <div className="flex items-center gap-2">
-                          <User className="w-4 h-4" />
-                          <span>{driver.name}</span>
-                          <Badge variant="outline" className="text-xs">
-                            {driver.licenseType}
-                          </Badge>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Assign Vehicle (Optional)</Label>
-                <Select 
-                  value={formData.vehicleId} 
-                  onValueChange={(value) => handleInputChange('vehicleId', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Auto-assign vehicle" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableVehicles.map(vehicle => (
-                      <SelectItem key={vehicle.id} value={vehicle.id}>
-                        <div className="flex items-center gap-2">
-                          <span>{getVehicleIcon(vehicle.type)}</span>
-                          <span>{vehicle.model}</span>
-                          <Badge variant="secondary" className="text-xs">
-                            {vehicle.capacity}m³
-                          </Badge>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+            </FormSection>
 
             {/* Notes */}
             <div className="space-y-2">

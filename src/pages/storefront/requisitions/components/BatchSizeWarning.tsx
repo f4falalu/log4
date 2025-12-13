@@ -24,9 +24,9 @@ export function BatchSizeWarning({
   onConfirm,
 }: BatchSizeWarningProps) {
   const getWarningLevel = (count: number) => {
-    if (count >= 100) return { level: 'caution', icon: AlertTriangle, color: 'text-red-600' };
-    if (count >= 50) return { level: 'warning', icon: PackageOpen, color: 'text-yellow-600' };
-    return { level: 'info', icon: PackageOpen, color: 'text-blue-600' };
+    if (count >= 100) return { level: 'caution', icon: AlertTriangle, color: 'text-destructive' };
+    if (count >= 50) return { level: 'warning', icon: PackageOpen, color: 'text-warning' };
+    return { level: 'info', icon: PackageOpen, color: 'text-primary' };
   };
 
   const { level, icon: Icon, color } = getWarningLevel(itemCount);

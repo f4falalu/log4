@@ -83,7 +83,7 @@ export function VehicleOnboardWizard() {
                     'flex items-center gap-2 px-3 py-2 rounded-lg transition-all',
                     'flex-1 text-sm',
                     isActive && 'bg-primary text-primary-foreground font-medium',
-                    isCompleted && 'bg-green-100 text-green-700',
+                    isCompleted && 'bg-success/10 text-success',
                     !isActive && !isCompleted && 'bg-muted text-muted-foreground'
                   )}
                 >

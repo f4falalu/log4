@@ -47,8 +47,8 @@ export function SummaryStrip({ batches }: SummaryStripProps) {
         return (
           <div key={stat.label}>
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-50">
-                <Icon className="h-5 w-5 text-blue-600" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                <Icon className="h-5 w-5 text-primary" />
               </div>
               <div>
                 <p className="text-sm text-gray-500">{stat.label}</p>

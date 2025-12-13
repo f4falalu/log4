@@ -52,7 +52,7 @@ export function WizardStep4Review() {
       <Card className="p-6">
         <div className="space-y-4">
           <div className="flex items-center gap-2">
-            <CheckCircle className="h-5 w-5 text-green-500" />
+            <CheckCircle className="h-5 w-5 text-success" />
             <h4 className="font-semibold">Schedule Summary</h4>
           </div>
 

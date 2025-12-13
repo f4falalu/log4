@@ -30,12 +30,19 @@ export function VehicleConfiguratorDialog({
 
   const handleSave = async (formData: any) => {
     try {
+      console.log('=== VehicleConfiguratorDialog ===');
+      console.log('Raw formData from configurator:', JSON.stringify(formData, null, 2));
+
+      // Ensure all required fields have valid values
+      const currentYear = new Date().getFullYear();
+
       // Transform configurator data to match vehicle creation payload
       const vehicleData = {
         // Category & Type
         category_id: formData.category_id,
         vehicle_type_id: formData.vehicle_type_id,
         model: formData.model_name || 'Unknown',
+        make: formData.model_name?.split(' ')[0] || 'Unknown',
 
         // Dimensions
         length_cm: formData.length_cm,
@@ -50,26 +57,45 @@ export function VehicleConfiguratorDialog({
         // Tier configuration
         tiered_config: formData.tiered_config,
 
-        // Basic Information (from user input)
+        // Basic Information (from user input) - REQUIRED FIELDS
         vehicle_id: formData.vehicle_name ? formData.vehicle_name.toUpperCase().replace(/\s+/g, '-') : `VEH-${Date.now()}`,
         variant: formData.variant,
 
-        // Specifications (from user input)
-        make: formData.model_name?.split(' ')[0] || 'Unknown',
-        vehicle_type: formData.model_name || 'truck', // Legacy VARCHAR field (required)
-        year: formData.year, // Validated in isValid()
-        fuel_type: formData.fuel_type, // Validated in isValid()
-        transmission: formData.transmission,
+        // REQUIRED: vehicle_type must be valid enum value
+        vehicle_type: (formData.vehicle_type && ['sedan', 'suv', 'truck', 'van', 'motorcycle', 'bus', 'other'].includes(formData.vehicle_type))
+          ? formData.vehicle_type
+          : 'truck', // Default to truck
+
+        // REQUIRED: year must be a valid number
+        year: (formData.year && typeof formData.year === 'number')
+          ? formData.year
+          : currentYear,
+
+        // REQUIRED: fuel_type must be valid enum value
+        fuel_type: (formData.fuel_type && ['gasoline', 'diesel', 'electric', 'hybrid', 'cng', 'lpg'].includes(formData.fuel_type))
+          ? formData.fuel_type
+          : 'diesel', // Default to diesel
+
+        // REQUIRED: transmission
+        transmission: (formData.transmission && ['automatic', 'manual', 'cvt', 'dct'].includes(formData.transmission))
+          ? formData.transmission
+          : 'manual', // Default to manual
+
+        // Optional specs
         axles: formData.axles,
         number_of_wheels: formData.number_of_wheels,
 
-        // Acquisition (from user input)
-        acquisition_date: formData.acquisition_date, // Validated in isValid()
-        acquisition_type: formData.acquisition_type, // Validated in isValid()
+        // REQUIRED: Acquisition info
+        acquisition_date: formData.acquisition_date || new Date().toISOString().split('T')[0], // Default to today
+        acquisition_type: (formData.acquisition_type && ['purchase', 'lease', 'donation', 'transfer'].includes(formData.acquisition_type))
+          ? formData.acquisition_type
+          : 'purchase', // Default to purchase
         vendor_name: formData.vendor,
 
-        // Insurance & Registration (from user input)
-        license_plate: formData.license_plate, // Validated in isValid()
+        // REQUIRED: license_plate
+        license_plate: formData.license_plate || `TEMP-${Date.now().toString().slice(-6)}`, // Generate temp plate if missing
+
+        // Optional Insurance & Registration
         registration_expiry: formData.registration_expiry,
         insurance_expiry: formData.insurance_expiry,
 
@@ -80,8 +106,14 @@ export function VehicleConfiguratorDialog({
         seating_capacity: formData.seating_capacity,
 
         // Status
-        status: 'available',
+        status: 'available' as const,
+
+        // Current mileage (required by store)
+        current_mileage: 0,
       };
+
+      console.log('Transformed vehicleData to send:', JSON.stringify(vehicleData, null, 2));
+      console.log('=================================');
 
       const result = await createVehicle(vehicleData);
 

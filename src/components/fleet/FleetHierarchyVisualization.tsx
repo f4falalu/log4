@@ -76,9 +76,9 @@ export function FleetHierarchyVisualization({
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active': return 'bg-green-100 text-green-800 border-green-200';
-      case 'inactive': return 'bg-gray-100 text-gray-800 border-gray-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'active': return 'bg-success/10 text-success border-success/20';
+      case 'inactive': return 'bg-muted/30 text-muted-foreground border-muted/50';
+      default: return 'bg-muted/30 text-muted-foreground border-muted/50';
     }
   };
 

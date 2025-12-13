@@ -156,12 +156,12 @@ export function FacilityDetailDialog({
                   <InfoItem
                     label="PCR Service"
                     value={facility.pcr_service ? 'Yes' : 'No'}
-                    valueClassName={facility.pcr_service ? 'text-green-600' : 'text-muted-foreground'}
+                    valueClassName={facility.pcr_service ? 'text-success' : 'text-muted-foreground'}
                   />
                   <InfoItem
                     label="CD4 Service"
                     value={facility.cd4_service ? 'Yes' : 'No'}
-                    valueClassName={facility.cd4_service ? 'text-green-600' : 'text-muted-foreground'}
+                    valueClassName={facility.cd4_service ? 'text-success' : 'text-muted-foreground'}
                   />
                 </div>
               </div>

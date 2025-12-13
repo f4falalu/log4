@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { format, parseISO } from 'date-fns';
 import { Delivery } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/components/ui/sonner';
+import { useFiltersStore } from '@/stores/filtersStore';
 import { 
   Truck, 
   Calendar, 
@@ -33,32 +34,35 @@ interface DeliveryListProps {
 }
 
 const DeliveryList = ({ deliveries, onDeliveryUpdate }: DeliveryListProps) => {
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [priorityFilter, setPriorityFilter] = useState<string>('all');
-  // Remove the useToast hook declaration
+  // Use persisted filters from store
+  const deliveryStatus = useFiltersStore((state) => state.deliveryStatus);
+  const deliveryPriority = useFiltersStore((state) => state.deliveryPriority);
+  const setDeliveryStatus = useFiltersStore((state) => state.setDeliveryStatus);
+  const setDeliveryPriority = useFiltersStore((state) => state.setDeliveryPriority);
+  const resetFilters = useFiltersStore((state) => state.resetFilters);
 
   const filteredDeliveries = deliveries.filter(delivery => {
-    const statusMatch = statusFilter === 'all' || delivery.status === statusFilter;
-    const priorityMatch = priorityFilter === 'all' || delivery.priority === priorityFilter;
+    const statusMatch = deliveryStatus === 'all' || delivery.status === deliveryStatus;
+    const priorityMatch = deliveryPriority === 'all' || delivery.priority === deliveryPriority;
     return statusMatch && priorityMatch;
   });
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'urgent': return 'bg-red-100 text-red-800 border-red-200';
-      case 'high': return 'bg-orange-100 text-orange-800 border-orange-200';
-      case 'medium': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'low': return 'bg-green-100 text-green-800 border-green-200';
+      case 'urgent': return 'bg-destructive/10 text-destructive border-destructive/20';
+      case 'high': return 'bg-warning/10 text-warning border-warning/20';
+      case 'medium': return 'bg-primary/10 text-primary border-primary/20';
+      case 'low': return 'bg-muted/30 text-muted-foreground border-muted/50';
       default: return 'bg-muted text-muted-foreground';
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'completed': return 'bg-green-100 text-green-800 border-green-200';
-      case 'in-progress': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'cancelled': return 'bg-red-100 text-red-800 border-red-200';
-      default: return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'completed': return 'bg-success/10 text-success border-success/20';
+      case 'in-progress': return 'bg-primary/10 text-primary border-primary/20';
+      case 'cancelled': return 'bg-destructive/10 text-destructive border-destructive/20';
+      default: return 'bg-warning/10 text-warning border-warning/20';
     }
   };
 
@@ -105,7 +109,7 @@ const DeliveryList = ({ deliveries, onDeliveryUpdate }: DeliveryListProps) => {
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">Status Filter</label>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <Select value={deliveryStatus} onValueChange={setDeliveryStatus}>
                 <SelectTrigger className="w-[180px]">
                   <SelectValue />
                 </SelectTrigger>
@@ -121,7 +125,7 @@ const DeliveryList = ({ deliveries, onDeliveryUpdate }: DeliveryListProps) => {
 
             <div className="space-y-2">
               <label className="text-sm font-medium">Priority Filter</label>
-              <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+              <Select value={deliveryPriority} onValueChange={setDeliveryPriority}>
                 <SelectTrigger className="w-[180px]">
                   <SelectValue />
                 </SelectTrigger>
@@ -135,8 +139,16 @@ const DeliveryList = ({ deliveries, onDeliveryUpdate }: DeliveryListProps) => {
               </Select>
             </div>
 
-            <div className="flex items-end">
-              <div className="text-sm text-muted-foreground">
+            <div className="flex items-end gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={resetFilters}
+                disabled={deliveryStatus === 'all' && deliveryPriority === 'all'}
+              >
+                Reset Filters
+              </Button>
+              <div className="text-sm text-muted-foreground self-center">
                 Showing {sortedDeliveries.length} of {deliveries.length} deliveries
               </div>
             </div>

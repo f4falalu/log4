@@ -249,10 +249,10 @@ export function BottomDataPanel({
                     className="flex items-center gap-3 p-2 rounded-lg hover:bg-accent cursor-pointer transition-colors"
                   >
                     <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
-                      place.type === 'warehouse' ? 'bg-purple-500/10' : 'bg-blue-500/10'
+                      place.type === 'warehouse' ? 'bg-primary/10' : 'bg-info/10'
                     }`}>
                       <Icon className={`h-4 w-4 ${
-                        place.type === 'warehouse' ? 'text-purple-500' : 'text-blue-500'
+                        place.type === 'warehouse' ? 'text-primary' : 'text-info'
                       }`} />
                     </div>
 

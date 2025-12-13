@@ -98,7 +98,7 @@ export function WizardStep3Scheduling() {
             {/* Schedule Title */}
             <div className="space-y-2">
               <Label htmlFor="title">
-                Schedule Title <span className="text-red-500">*</span>
+                Schedule Title <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="title"
@@ -111,7 +111,7 @@ export function WizardStep3Scheduling() {
             {/* Warehouse */}
             <div className="space-y-2">
               <Label>
-                Warehouse <span className="text-red-500">*</span>
+                Warehouse <span className="text-destructive">*</span>
               </Label>
               <Select
                 value={warehouseId || ''}
@@ -133,7 +133,7 @@ export function WizardStep3Scheduling() {
             {/* Planned Date */}
             <div className="space-y-2">
               <Label>
-                Planned Date <span className="text-red-500">*</span>
+                Planned Date <span className="text-destructive">*</span>
               </Label>
               <Popover>
                 <PopoverTrigger asChild>
@@ -162,7 +162,7 @@ export function WizardStep3Scheduling() {
             {/* Time Window */}
             <div className="space-y-2">
               <Label>
-                Time Window <span className="text-red-500">*</span>
+                Time Window <span className="text-destructive">*</span>
               </Label>
               <Select
                 value={timeWindow || ''}
@@ -186,7 +186,7 @@ export function WizardStep3Scheduling() {
             <div className="space-y-2">
               <Label>
                 Facilities ({selectedFacilities.length} selected){' '}
-                <span className="text-red-500">*</span>
+                <span className="text-destructive">*</span>
               </Label>
               <Select
                 value=""

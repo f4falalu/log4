@@ -342,7 +342,7 @@ export function FacilityFormDialog({
                           </Select>
                           <FormMessage />
                           {adminUnitByPoint && (
-                            <p className="text-xs text-green-600">
+                            <p className="text-xs text-success">
                               ✓ Auto-filled from coordinates
                             </p>
                           )}

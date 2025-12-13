@@ -362,17 +362,17 @@ export function VehicleForm({ vehicle, onSubmit, onCancel, isSubmitting }: Vehic
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="acquisition_date">
-                    Acquisition Date <span className="text-red-500">*</span>
+                    Acquisition Date <span className="text-destructive">*</span>
                   </Label>
                   <Input id="acquisition_date" type="date" {...register('acquisition_date')} />
                   {errors.acquisition_date && (
-                    <p className="text-sm text-red-500">{errors.acquisition_date.message}</p>
+                    <p className="text-sm text-destructive">{errors.acquisition_date.message}</p>
                   )}
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="acquisition_type">
-                    Acquisition Type <span className="text-red-500">*</span>
+                    Acquisition Type <span className="text-destructive">*</span>
                   </Label>
                   <Select
                     value={watch('acquisition_type')}
@@ -389,7 +389,7 @@ export function VehicleForm({ vehicle, onSubmit, onCancel, isSubmitting }: Vehic
                     </SelectContent>
                   </Select>
                   {errors.acquisition_type && (
-                    <p className="text-sm text-red-500">{errors.acquisition_type.message}</p>
+                    <p className="text-sm text-destructive">{errors.acquisition_type.message}</p>
                   )}
                 </div>
               </div>
@@ -405,7 +405,7 @@ export function VehicleForm({ vehicle, onSubmit, onCancel, isSubmitting }: Vehic
                     placeholder="45000.00"
                   />
                   {errors.purchase_price && (
-                    <p className="text-sm text-red-500">{errors.purchase_price.message}</p>
+                    <p className="text-sm text-destructive">{errors.purchase_price.message}</p>
                   )}
                 </div>
 
@@ -435,7 +435,7 @@ export function VehicleForm({ vehicle, onSubmit, onCancel, isSubmitting }: Vehic
                     placeholder="40000.00"
                   />
                   {errors.current_book_value && (
-                    <p className="text-sm text-red-500">{errors.current_book_value.message}</p>
+                    <p className="text-sm text-destructive">{errors.current_book_value.message}</p>
                   )}
                 </div>
               </div>
@@ -450,7 +450,7 @@ export function VehicleForm({ vehicle, onSubmit, onCancel, isSubmitting }: Vehic
                   placeholder="10.0"
                 />
                 {errors.depreciation_rate && (
-                  <p className="text-sm text-red-500">{errors.depreciation_rate.message}</p>
+                  <p className="text-sm text-destructive">{errors.depreciation_rate.message}</p>
                 )}
               </div>
             </CardContent>

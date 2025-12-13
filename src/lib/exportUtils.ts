@@ -1,8 +1,6 @@
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import * as XLSX from 'xlsx';
-
-export function exportToCSV(data: any[], filename: string) {
+// Lazy load heavy export libraries to reduce initial bundle size
+export async function exportToCSV(data: any[], filename: string) {
+  const XLSX = await import('xlsx');
   const worksheet = XLSX.utils.json_to_sheet(data);
   const csv = XLSX.utils.sheet_to_csv(worksheet);
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -16,19 +14,24 @@ export function exportToCSV(data: any[], filename: string) {
   document.body.removeChild(link);
 }
 
-export function exportToPDF(data: any[], filename: string, title: string) {
+export async function exportToPDF(data: any[], filename: string, title: string) {
+  const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
+    import('jspdf'),
+    import('jspdf-autotable'),
+  ]);
+
   const doc = new jsPDF();
   doc.text(title, 14, 15);
-  
+
   const headers = Object.keys(data[0] || {});
   const rows = data.map(item => headers.map(header => item[header]));
-  
+
   autoTable(doc, {
     head: [headers],
     body: rows,
     startY: 25
   });
-  
+
   doc.save(`${filename}-${new Date().toISOString().split('T')[0]}.pdf`);
 }
 import { DeliveryBatch, Facility, Driver, Vehicle } from '@/types';

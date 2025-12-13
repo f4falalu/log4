@@ -82,7 +82,7 @@ export function CategoryTypeSelector({
                   .map((category) => (
                     <SelectItem key={category.id} value={category.id}>
                       <div className="flex items-center gap-2">
-                        <span className="font-mono text-xs bg-primary/10 px-1.5 py-0.5 rounded">
+                        <span className="font-mono text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded">
                           {category.code}
                         </span>
                         <span className="text-sm">{category.display_name || category.name}</span>
@@ -98,7 +98,7 @@ export function CategoryTypeSelector({
                   .map((category) => (
                     <SelectItem key={category.id} value={category.id}>
                       <div className="flex items-center gap-2">
-                        <span className="font-mono text-xs bg-orange-100 px-1.5 py-0.5 rounded">
+                        <span className="font-mono text-xs bg-warning/10 text-warning px-1.5 py-0.5 rounded">
                           BIKO
                         </span>
                         <span className="text-sm">{category.display_name || category.name}</span>

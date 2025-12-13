@@ -139,7 +139,7 @@ export function BatchDrawer({ isOpen, batchId, onClose }: BatchDrawerProps) {
                         </div>
                       </div>
                       {facility.status === 'delivered' && (
-                        <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
+                        <CheckCircle className="h-4 w-4 text-success flex-shrink-0" />
                       )}
                     </div>
                   ))}

@@ -89,11 +89,11 @@ export function ScheduleCard({
           {schedule.vehicle && (
             <div className="space-y-1">
               <Progress 
-                value={utilizationPercent} 
+                value={utilizationPercent}
                 className={`h-2 ${
-                  utilizationPercent > 90 ? 'bg-red-100' : 
-                  utilizationPercent > 70 ? 'bg-yellow-100' : 
-                  'bg-green-100'
+                  utilizationPercent > 90 ? 'bg-destructive/10' :
+                  utilizationPercent > 70 ? 'bg-warning/10' :
+                  'bg-success/10'
                 }`}
               />
               <p className="text-xs text-muted-foreground text-right">

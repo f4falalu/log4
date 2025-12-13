@@ -41,7 +41,7 @@ export function AnalyticsPanel() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">87%</div>
-            <div className="flex items-center gap-1 mt-2 text-xs text-green-600">
+            <div className="flex items-center gap-1 mt-2 text-xs text-success">
               <TrendingUp className="h-3 w-3" />
               <span>+5% vs yesterday</span>
             </div>
@@ -77,7 +77,7 @@ export function AnalyticsPanel() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">92%</div>
-            <div className="flex items-center gap-1 mt-2 text-xs text-green-600">
+            <div className="flex items-center gap-1 mt-2 text-xs text-success">
               <TrendingUp className="h-3 w-3" />
               <span>Optimized routing</span>
             </div>
@@ -145,7 +145,7 @@ export function AnalyticsPanel() {
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Fuel Efficiency</span>
-                <span className="text-sm font-medium flex items-center gap-1 text-green-600">
+                <span className="text-sm font-medium flex items-center gap-1 text-success">
                   <TrendingUp className="h-3 w-3" />
                   Good
                 </span>

@@ -58,14 +58,14 @@ export function ParsedItemsPreview({ items, warnings, onChange }: ParsedItemsPre
       </div>
 
       {warnings.length > 0 && (
-        <div className="rounded-lg border border-yellow-200 bg-yellow-50 dark:bg-yellow-900/10 dark:border-yellow-900 p-4">
+        <div className="rounded-lg border border-warning/20 bg-warning/10 p-4">
           <div className="flex items-start gap-2">
-            <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-500 flex-shrink-0 mt-0.5" />
+            <AlertTriangle className="h-5 w-5 text-warning flex-shrink-0 mt-0.5" />
             <div className="flex-1">
-              <h4 className="text-sm font-semibold text-yellow-800 dark:text-yellow-500 mb-1">
+              <h4 className="text-sm font-semibold text-warning mb-1">
                 Warnings
               </h4>
-              <ul className="text-sm text-yellow-700 dark:text-yellow-600 space-y-1">
+              <ul className="text-sm text-warning space-y-1">
                 {warnings.slice(0, 5).map((warning, idx) => (
                   <li key={idx}>• {warning}</li>
                 ))}

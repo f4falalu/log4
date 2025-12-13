@@ -263,7 +263,7 @@ export function UploadRequisitionDialog({ open, onOpenChange }: UploadRequisitio
             {step === 'details' && (
               <div className="space-y-4">
                 <div className="flex items-center gap-2 p-3 border rounded-lg bg-muted/50">
-                  <CheckCircle className="h-5 w-5 text-green-600" />
+                  <CheckCircle className="h-5 w-5 text-success" />
                   <span className="text-sm">
                     {parsedItems.length} items ready for requisition
                   </span>

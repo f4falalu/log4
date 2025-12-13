@@ -89,9 +89,9 @@ export function OptimizeDialog({
             </>
           ) : (
             <div className="space-y-4">
-              <Alert className="bg-green-50 border-green-200">
-                <Route className="h-4 w-4 text-green-600" />
-                <AlertDescription className="text-green-900">
+              <Alert variant="success" className="bg-success/10 border-success/20">
+                <Route className="h-4 w-4 text-success" />
+                <AlertDescription className="text-success">
                   Route optimized successfully!
                 </AlertDescription>
               </Alert>

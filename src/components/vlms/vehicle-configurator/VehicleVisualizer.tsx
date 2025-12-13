@@ -96,13 +96,13 @@ export function VehicleVisualizer({
             {/* Cargo area highlight overlay */}
             {cargoArea && cargoArea.widthPercent > 0 && (
               <div
-                className="absolute top-0 bottom-0 bg-orange-400/30 border-2 border-orange-500/50 rounded transition-all duration-300"
+                className="absolute top-0 bottom-0 bg-warning/30 border-2 border-warning/50 rounded transition-all duration-300"
                 style={{
                   left: `${cargoArea.offsetPercent}%`,
                   width: `${cargoArea.widthPercent}%`,
                 }}
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-orange-400/20 to-orange-500/20"></div>
+                <div className="absolute inset-0 bg-gradient-to-r from-warning/20 to-warning/20"></div>
               </div>
             )}
           </div>

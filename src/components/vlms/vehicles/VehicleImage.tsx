@@ -8,6 +8,7 @@ import React from 'react';
 import { Car } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import { LazyImage } from '@/components/ui/lazy-image';
 
 interface VehicleImageProps {
   src?: string | null;
@@ -28,38 +29,38 @@ export function VehicleImage({
   showAiBadge = true,
   loading = 'lazy',
 }: VehicleImageProps) {
-  const [imageError, setImageError] = React.useState(false);
+  // Fallback component for missing/failed images
+  const FallbackComponent = () => (
+    <div
+      className={cn(
+        'flex items-center justify-center bg-muted/30 border border-border',
+        fallbackClassName,
+        className
+      )}
+    >
+      <Car className="h-8 w-8 text-muted-foreground/40" />
+    </div>
+  );
 
-  // Show fallback if no src or image failed to load
-  const showFallback = !src || imageError;
-
-  if (showFallback) {
-    return (
-      <div
-        className={cn(
-          'flex items-center justify-center bg-muted/30 border border-border',
-          fallbackClassName,
-          className
-        )}
-      >
-        <Car className="h-8 w-8 text-muted-foreground/40" />
-      </div>
-    );
+  // No src provided - show fallback immediately
+  if (!src) {
+    return <FallbackComponent />;
   }
 
   return (
     <div className={cn('relative', className)}>
-      <img
+      <LazyImage
         src={src}
         alt={alt}
-        loading={loading}
-        onError={() => setImageError(true)}
         className="w-full h-full object-cover"
+        threshold={0.1}
+        rootMargin="50px"
+        FallbackComponent={FallbackComponent}
       />
       {aiGenerated && showAiBadge && (
         <Badge
           variant="secondary"
-          className="absolute top-2 left-2 text-[10px] px-1.5 py-0.5 bg-primary/90 text-primary-foreground"
+          className="absolute top-2 left-2 text-[10px] px-1.5 py-0.5 bg-primary/90 text-primary-foreground z-10"
         >
           AI
         </Badge>

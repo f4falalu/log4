@@ -96,9 +96,9 @@ export function PayloadVisualizer({
                 {stats.weightUtilization.toFixed(1)}%
               </span>
             </div>
-            <Progress 
-              value={Math.min(stats.weightUtilization, 100)} 
-              className={`h-2 ${stats.isOverweight ? '[&>div]:bg-red-500' : '[&>div]:bg-biko-primary'}`}
+            <Progress
+              value={Math.min(stats.weightUtilization, 100)}
+              className={`h-2 ${stats.isOverweight ? '[&>div]:bg-destructive' : '[&>div]:bg-primary'}`}
             />
           </div>
 
@@ -109,9 +109,9 @@ export function PayloadVisualizer({
                 {stats.volumeUtilization.toFixed(1)}%
               </span>
             </div>
-            <Progress 
-              value={Math.min(stats.volumeUtilization, 100)} 
-              className={`h-2 ${stats.isOvervolume ? '[&>div]:bg-red-500' : '[&>div]:bg-biko-primary'}`}
+            <Progress
+              value={Math.min(stats.volumeUtilization, 100)}
+              className={`h-2 ${stats.isOvervolume ? '[&>div]:bg-destructive' : '[&>div]:bg-primary'}`}
             />
           </div>
         </div>

@@ -222,23 +222,121 @@ export const useVehiclesStore = create<VehiclesState>()(
       },
 
       // Create Vehicle
-      createVehicle: async (data: VehicleFormData) => {
+      createVehicle: async (data: VehicleFormData | any) => {
         set({ isLoading: true, error: null });
         try {
           const { data: user } = await supabase.auth.getUser();
           if (!user.user) throw new Error('Not authenticated');
 
+          console.log('Creating vehicle with data:', data);
+
+          // The deployed DB schema for `vehicles` has evolved over time.
+          // To avoid PostgREST (PGRST204) hard-failing inserts when the client
+          // sends fields that don't exist yet, we whitelist the columns we know
+          // are safe for creation.
+          //
+          // NOTE: When new columns are added to the DB, add them here as well.
+          const allowedInsertColumns = [
+            // Identifiers
+            'id',
+            'vehicle_id',
+            'category_id',
+            'vehicle_type_id',
+            'fleet_id',
+
+            // Legacy core schema
+            'type',
+            'model',
+            'plate_number',
+            'capacity',
+            'max_weight',
+            'fuel_type',
+            'avg_speed',
+            'status',
+            'current_driver_id',
+            'fuel_efficiency',
+
+            // Canonical/VLMS schema
+            'make',
+            'year',
+            'license_plate',
+            'vin',
+            'transmission',
+            'engine_capacity',
+            'color',
+            'seating_capacity',
+            'current_location_id',
+            'current_mileage',
+            'insurance_provider',
+            'insurance_policy_number',
+            'insurance_expiry',
+            'registration_expiry',
+            'acquisition_date',
+            'acquisition_type',
+            'purchase_price',
+            'notes',
+            'tags',
+            'documents',
+            'photos',
+            'photo_url',
+            'thumbnail_url',
+            'photo_uploaded_at',
+            'ai_generated',
+            'tiered_config',
+
+            // Configurator compat fields (may or may not exist depending on DB)
+            'variant',
+            'length_cm',
+            'width_cm',
+            'height_cm',
+            'capacity_m3',
+            'capacity_kg',
+            'gross_weight_kg',
+            'axles',
+            'number_of_wheels',
+          ] as const;
+
+          const insertPayload: Record<string, any> = {};
+          for (const key of allowedInsertColumns) {
+            if (data[key] !== undefined) insertPayload[key] = data[key];
+          }
+
+          // Backward compatibility: our UI uses `vehicle_type` but legacy schema uses `type`
+          if (insertPayload.type === undefined && (data as any).vehicle_type) {
+            insertPayload.type = (data as any).vehicle_type;
+          }
+
+          // Legacy schema requires plate_number - map from license_plate if present
+          if (insertPayload.plate_number === undefined && (data as any).license_plate) {
+            insertPayload.plate_number = (data as any).license_plate;
+          }
+
+          // Defensive: some date columns may be `date`/`timestamptz` in older schemas.
+          // PostgREST will throw (e.g. 22007) if we send empty string.
+          const dateLikeFields = [
+            'acquisition_date',
+            'insurance_expiry',
+            'registration_expiry',
+            'date_acquired',
+          ] as const;
+          for (const f of dateLikeFields) {
+            if (insertPayload[f] === '') delete insertPayload[f];
+          }
+
           const { data: vehicle, error } = await supabase
             .from('vehicles')
             .insert({
-              ...data,
+              ...insertPayload,
               created_by: user.user.id,
               updated_by: user.user.id,
             })
             .select()
             .single();
 
-          if (error) throw error;
+          if (error) {
+            console.error('Supabase error creating vehicle:', error);
+            throw error;
+          }
 
           // Refresh vehicles list
           await get().fetchVehicles();
@@ -248,6 +346,7 @@ export const useVehiclesStore = create<VehiclesState>()(
 
           return vehicle;
         } catch (error: any) {
+          console.error('Failed to create vehicle:', error);
           set({ error: error.message, isLoading: false });
           toast.error(`Failed to create vehicle: ${error.message}`);
           throw error;

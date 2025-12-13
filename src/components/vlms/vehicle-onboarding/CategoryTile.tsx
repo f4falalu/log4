@@ -86,8 +86,8 @@ export function CategoryTile({ category, isSelected, onSelect }: CategoryTilePro
             variant="outline"
             className={cn(
               'text-xs',
-              isEU && 'border-blue-500 text-blue-600',
-              isBIKO && 'border-orange-500 text-orange-600'
+              isEU && 'border-primary text-primary',
+              isBIKO && 'border-warning text-warning'
             )}
           >
             {isEU ? '🇪🇺 EU Standard' : '🚀 BIKO'}

@@ -121,7 +121,7 @@ export function DriverDetailView({ driver }: DriverDetailViewProps) {
 
               {/* License Plate */}
               <div className="flex items-center justify-between">
-                <div className="bg-yellow-400 text-black font-bold px-4 py-2 rounded border-2 border-black">
+                <div className="bg-warning text-warning-foreground font-bold px-4 py-2 rounded border-2 border-foreground">
                   {currentVehicle.plateNumber}
                 </div>
                 <Button variant="outline" size="sm">

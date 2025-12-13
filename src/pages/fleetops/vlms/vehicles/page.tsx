@@ -12,6 +12,7 @@ import { VehicleFilters } from '@/components/vlms/vehicles/VehicleFilters';
 import { VehicleViewToggle } from '@/components/vlms/vehicles/VehicleViewToggle';
 import { VehicleGridView } from '@/components/vlms/vehicles/VehicleGridView';
 import { VehicleListView } from '@/components/vlms/vehicles/VehicleListView';
+import { VirtualTable } from '@/components/ui/virtual-table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -236,77 +237,89 @@ export default function VehiclesPage() {
                     />
                   )}
 
-                  {/* Table View */}
+                  {/* Table View - With Virtual Scrolling */}
                   {viewMode === 'table' && (
                     <Card>
-                      <Table>
-                        <TableHeader>
-                          <TableRow className="hover:bg-transparent border-b border-border">
-                            <TableHead className="py-4 px-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                              Vehicle ID
-                            </TableHead>
-                            <TableHead className="py-4 px-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                              Make / Model
-                            </TableHead>
-                            <TableHead className="py-4 px-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                              License Plate
-                            </TableHead>
-                            <TableHead className="py-4 px-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                              Type
-                            </TableHead>
-                            <TableHead className="py-4 px-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                              Status
-                            </TableHead>
-                            <TableHead className="py-4 px-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                              Location
-                            </TableHead>
-                            <TableHead className="py-4 px-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                              Mileage
-                            </TableHead>
-                            <TableHead className="py-4 px-4 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                              Actions
-                            </TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {paginatedVehicles?.map((vehicle) => (
-                          <TableRow
-                            key={vehicle.id}
-                            className="hover:bg-muted/50 transition-colors cursor-pointer"
-                            onClick={() => handleView(vehicle)}
-                          >
-                            <TableCell className="py-5 px-4 font-medium font-mono text-sm">
-                              {vehicle.vehicle_id}
-                            </TableCell>
-                            <TableCell className="py-5 px-4">
+                      <VirtualTable
+                        data={paginatedVehicles || []}
+                        columns={[
+                          {
+                            key: 'vehicle_id',
+                            header: 'Vehicle ID',
+                            width: 150,
+                            render: (vehicle) => (
+                              <span className="font-medium font-mono text-sm">{vehicle.vehicle_id}</span>
+                            ),
+                          },
+                          {
+                            key: 'make',
+                            header: 'Make / Model',
+                            width: 200,
+                            render: (vehicle) => (
                               <div>
                                 <div className="font-medium text-foreground">
                                   {vehicle.make} {vehicle.model}
                                 </div>
                                 <div className="text-sm text-muted-foreground">{vehicle.year}</div>
                               </div>
-                            </TableCell>
-                            <TableCell className="py-5 px-4">
-                              <div className="font-mono text-sm">{vehicle.license_plate}</div>
-                            </TableCell>
-                            <TableCell className="py-5 px-4 capitalize">
-                              {vehicle.type?.replace('_', ' ') || '-'}
-                            </TableCell>
-                            <TableCell className="py-5 px-4">{getStatusBadge(vehicle.status)}</TableCell>
-                            <TableCell className="py-5 px-4">
-                              {vehicle.current_location?.name || (
+                            ),
+                          },
+                          {
+                            key: 'license_plate',
+                            header: 'License Plate',
+                            width: 150,
+                            render: (vehicle) => (
+                              <span className="font-mono text-sm">{vehicle.license_plate}</span>
+                            ),
+                          },
+                          {
+                            key: 'type',
+                            header: 'Type',
+                            width: 120,
+                            render: (vehicle) => (
+                              <span className="capitalize">{vehicle.type?.replace('_', ' ') || '-'}</span>
+                            ),
+                          },
+                          {
+                            key: 'status',
+                            header: 'Status',
+                            width: 130,
+                            render: (vehicle) => getStatusBadge(vehicle.status),
+                          },
+                          {
+                            key: 'current_location',
+                            header: 'Location',
+                            width: 150,
+                            render: (vehicle) =>
+                              vehicle.current_location?.name || (
                                 <span className="text-muted-foreground text-sm">-</span>
-                              )}
-                            </TableCell>
-                            <TableCell className="py-5 px-4">
+                              ),
+                          },
+                          {
+                            key: 'current_mileage',
+                            header: 'Mileage',
+                            width: 120,
+                            render: (vehicle) => (
                               <span className="text-sm">
                                 {vehicle.current_mileage?.toLocaleString() || '0'} km
                               </span>
-                            </TableCell>
-                            <TableCell className="py-5 px-4 text-right" onClick={(e) => e.stopPropagation()}>
+                            ),
+                          },
+                          {
+                            key: 'actions',
+                            header: 'Actions',
+                            width: 100,
+                            align: 'right',
+                            render: (vehicle) => (
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-9 w-9" aria-label="Vehicle actions">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-9 w-9"
+                                    aria-label="Vehicle actions"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
                                     <MoreVertical className="h-4 w-4" />
                                   </Button>
                                 </DropdownMenuTrigger>
@@ -328,13 +341,15 @@ export default function VehiclesPage() {
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </Card>
-                )}
+                            ),
+                          },
+                        ]}
+                        estimateSize={70}
+                        overscan={5}
+                        onRowClick={(vehicle) => handleView(vehicle)}
+                      />
+                    </Card>
+                  )}
                 </div>
 
                 {/* Pagination Controls */}

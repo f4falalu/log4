@@ -184,7 +184,7 @@ export default function WorkspaceSetupWizard() {
                 {currentStep === 'country' && <Globe className="h-6 w-6 text-primary" />}
                 {currentStep === 'workspace' && <Building2 className="h-6 w-6 text-primary" />}
                 {currentStep === 'boundaries' && <MapPin className="h-6 w-6 text-primary" />}
-                {currentStep === 'complete' && <CheckCircle className="h-6 w-6 text-green-600" />}
+                {currentStep === 'complete' && <CheckCircle className="h-6 w-6 text-success" />}
               </div>
               <div>
                 <CardTitle className="text-2xl">
@@ -242,7 +242,7 @@ export default function WorkspaceSetupWizard() {
               </div>
 
               {selectedCountry && (
-                <Alert className="bg-blue-50 border-blue-200">
+                <Alert variant="info" className="bg-primary/10 border-primary/20">
                   <AlertDescription>
                     <strong>{selectedCountry.name}</strong> selected. You'll be able to import states, LGAs, and wards from OpenStreetMap.
                   </AlertDescription>
@@ -312,7 +312,7 @@ export default function WorkspaceSetupWizard() {
 
               <div className="space-y-3">
                 <div className="flex items-start gap-3 p-4 border rounded-lg">
-                  <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
+                  <CheckCircle className="h-5 w-5 text-success mt-0.5" />
                   <div>
                     <h4 className="font-medium">What will be imported</h4>
                     <ul className="text-sm text-muted-foreground mt-2 space-y-1">
@@ -324,7 +324,7 @@ export default function WorkspaceSetupWizard() {
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3 p-4 border rounded-lg bg-yellow-50 border-yellow-200">
+                <div className="flex items-start gap-3 p-4 border rounded-lg bg-warning/10 border-warning/20">
                   <AlertDescription className="text-sm">
                     <strong>Note:</strong> The import process downloads ~300MB of data and may take 5-10 minutes. You can skip this and import boundaries later from the Location Management page.
                   </AlertDescription>
@@ -336,8 +336,8 @@ export default function WorkspaceSetupWizard() {
           {/* Step 4: Complete */}
           {currentStep === 'complete' && (
             <div className="space-y-4 text-center py-8">
-              <div className="mx-auto h-16 w-16 rounded-full bg-green-100 flex items-center justify-center">
-                <CheckCircle className="h-8 w-8 text-green-600" />
+              <div className="mx-auto h-16 w-16 rounded-full bg-success/10 flex items-center justify-center">
+                <CheckCircle className="h-8 w-8 text-success" />
               </div>
               <div>
                 <h3 className="text-xl font-semibold">You're all set!</h3>
