@@ -181,7 +181,7 @@ export const useVehiclesStore = create<VehiclesState>()(
           if (error) throw error;
 
           // If using the base table (not view), fetch relationships separately
-          let vehicleWithRelations = data as VehicleWithRelations;
+          const vehicleWithRelations = data as VehicleWithRelations;
 
           if (!isUsingView && data) {
             // Fetch related data separately
