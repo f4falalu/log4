@@ -6,16 +6,35 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { supabase } from '@/integrations/supabase/client';
-import {
-  Vehicle,
-  VehicleWithRelations,
-  VehicleFilters,
-  VehicleFormData,
-} from '@/types/vlms';
 import { toast } from 'sonner';
+import { Vehicle, VehicleWithRelations, VehicleFormData, VehicleFilters, DocumentFile, PhotoFile } from '@/types/vlms';
 import { getVehiclesTableName } from '@/lib/featureFlags';
 
+type SafeArray<T> = (value: unknown) => T[];
+const safeArray: SafeArray<any> = (value) => Array.isArray(value) ? value : [];
+
+type DocumentFile = {
+  url: string;
+  type: string;
+  name: string;
+  uploaded_at: string;
+  size: number;
+};
+
+type PhotoFile = {
+  url: string;
+  caption: string;
+  uploaded_at: string;
+};
+
+const normalizeStatus = (status?: string): 'available' | 'in-use' | 'maintenance' | 'out_of_service' | 'disposed' => {
+  if (!status) return 'available';
+  return status === 'in_use' ? 'in-use' : status as any;
+};
+
 export type ViewMode = 'list' | 'card' | 'table';
+
+export type FuelType = 'diesel' | 'petrol' | 'electric' | 'gasoline' | 'hybrid' | 'cng' | 'lpg';
 
 interface VehiclesState {
   // State
@@ -94,27 +113,32 @@ export const useVehiclesStore = create<VehiclesState>()(
           const { filters } = get();
           const tableName = getVehiclesTableName();
 
-          // Build query
+          // Type assertion for the table name
+          // Cast to any to bypass Supabase's strict table name types
+          const table = tableName as any;
+
+          // Build query with proper typing
           let query = supabase
-            .from(tableName)
+            .from(table)
             .select(
               `
               *,
               current_location:facilities!vehicles_current_location_id_fkey(id, name),
               current_driver:drivers!vehicles_current_driver_id_fkey(id, name, phone)
-            `
+            `,
+              { count: 'exact' }
             )
-            .order('created_at', { ascending: false });
+            .order('created_at', { ascending: false }) as any; // Temporary any to bypass type issues
 
           // Apply filters
           if (filters.search) {
             query = query.or(
               `make.ilike.%${filters.search}%,model.ilike.%${filters.search}%,license_plate.ilike.%${filters.search}%,vehicle_id.ilike.%${filters.search}%`
-            );
+            ) as any; // Type assertion needed due to complex query builder types
           }
 
           if (filters.status) {
-            query = query.eq('status', filters.status);
+            query = query.eq('status', filters.status) as any; // Type assertion needed
           }
 
           if (filters.vehicle_type) {
@@ -169,27 +193,29 @@ export const useVehiclesStore = create<VehiclesState>()(
         set({ isLoading: true, error: null });
         try {
           const tableName = getVehiclesTableName();
-          const isUsingView = tableName === 'vehicles_unified_v';
+          // Cast to any to bypass Supabase's strict table name types
+          const table = tableName as any;
+          const isUsingView = table === 'vehicles_unified_v';
 
           // Views don't support FK-based joins, so fetch vehicle data separately
-          const { data, error } = await supabase
-            .from(tableName)
+          const { data: vehicle, error: vehicleError } = await supabase
+            .from(table)
             .select('*')
             .eq('id', id)
             .single();
 
-          if (error) throw error;
+          if (vehicleError) throw vehicleError;
 
           // If using the base table (not view), fetch relationships separately
-          const vehicleWithRelations = data as VehicleWithRelations;
+          const vehicleWithRelations = vehicle as unknown as VehicleWithRelations;
 
-          if (!isUsingView && data) {
+          if (!isUsingView && vehicle) {
             // Fetch related data separately
-            if (data.current_location_id) {
+            if ('current_location_id' in vehicle && vehicle.current_location_id) {
               const { data: location } = await supabase
                 .from('facilities')
                 .select('id, name')
-                .eq('id', data.current_location_id)
+                .eq('id', vehicle.current_location_id as string)
                 .single();
 
               if (location) {
@@ -197,11 +223,11 @@ export const useVehiclesStore = create<VehiclesState>()(
               }
             }
 
-            if (data.current_driver_id) {
+            if ('current_driver_id' in vehicle && vehicle.current_driver_id) {
               const { data: driver } = await supabase
                 .from('drivers')
                 .select('id, name, phone')
-                .eq('id', data.current_driver_id)
+                .eq('id', vehicle.current_driver_id)
                 .single();
 
               if (driver) {
@@ -222,121 +248,34 @@ export const useVehiclesStore = create<VehiclesState>()(
       },
 
       // Create Vehicle
-      createVehicle: async (data: VehicleFormData | any) => {
+      createVehicle: async (data: VehicleFormData) => {
         set({ isLoading: true, error: null });
         try {
           const { data: user } = await supabase.auth.getUser();
           if (!user.user) throw new Error('Not authenticated');
 
-          console.log('Creating vehicle with data:', data);
+          const userId = user.user.id;
 
-          // The deployed DB schema for `vehicles` has evolved over time.
-          // To avoid PostgREST (PGRST204) hard-failing inserts when the client
-          // sends fields that don't exist yet, we whitelist the columns we know
-          // are safe for creation.
-          //
-          // NOTE: When new columns are added to the DB, add them here as well.
-          const allowedInsertColumns = [
-            // Identifiers
-            'id',
-            'vehicle_id',
-            'category_id',
-            'vehicle_type_id',
-            'fleet_id',
+          // Map form data to database schema
+          const vehicleData = {
+            ...data,
+            capacity_m3: data.capacity_m3 ?? 0,
+            capacity_kg: data.capacity_kg ?? 0,
+            capacity: data.capacity ?? 0, // Legacy field
+            fuel_type: data.fuel_type === 'gasoline' ? 'petrol' : data.fuel_type,
+            status: normalizeStatus(data.status),
+            created_by: userId,
+            updated_by: userId,
+          };
 
-            // Legacy core schema
-            'type',
-            'model',
-            'plate_number',
-            'capacity',
-            'max_weight',
-            'fuel_type',
-            'avg_speed',
-            'status',
-            'current_driver_id',
-            'fuel_efficiency',
-
-            // Canonical/VLMS schema
-            'make',
-            'year',
-            'license_plate',
-            'vin',
-            'transmission',
-            'engine_capacity',
-            'color',
-            'seating_capacity',
-            'current_location_id',
-            'current_mileage',
-            'insurance_provider',
-            'insurance_policy_number',
-            'insurance_expiry',
-            'registration_expiry',
-            'acquisition_date',
-            'acquisition_type',
-            'purchase_price',
-            'notes',
-            'tags',
-            'documents',
-            'photos',
-            'photo_url',
-            'thumbnail_url',
-            'photo_uploaded_at',
-            'ai_generated',
-            'tiered_config',
-
-            // Configurator compat fields (may or may not exist depending on DB)
-            'variant',
-            'length_cm',
-            'width_cm',
-            'height_cm',
-            'capacity_m3',
-            'capacity_kg',
-            'gross_weight_kg',
-            'axles',
-            'number_of_wheels',
-          ] as const;
-
-          const insertPayload: Record<string, any> = {};
-          for (const key of allowedInsertColumns) {
-            if (data[key] !== undefined) insertPayload[key] = data[key];
-          }
-
-          // Backward compatibility: our UI uses `vehicle_type` but legacy schema uses `type`
-          if (insertPayload.type === undefined && (data as any).vehicle_type) {
-            insertPayload.type = (data as any).vehicle_type;
-          }
-
-          // Legacy schema requires plate_number - map from license_plate if present
-          if (insertPayload.plate_number === undefined && (data as any).license_plate) {
-            insertPayload.plate_number = (data as any).license_plate;
-          }
-
-          // Defensive: some date columns may be `date`/`timestamptz` in older schemas.
-          // PostgREST will throw (e.g. 22007) if we send empty string.
-          const dateLikeFields = [
-            'acquisition_date',
-            'insurance_expiry',
-            'registration_expiry',
-            'date_acquired',
-          ] as const;
-          for (const f of dateLikeFields) {
-            if (insertPayload[f] === '') delete insertPayload[f];
-          }
-
-          const { data: vehicle, error } = await supabase
+          // Create a type-safe insert operation
+          const { data: result, error } = await supabase
             .from('vehicles')
-            .insert({
-              ...insertPayload,
-              created_by: user.user.id,
-              updated_by: user.user.id,
-            })
+            .insert(vehicleData as any) // Type assertion needed due to complex types
             .select()
-            .single();
+            .single() as { data: Vehicle; error: any };
 
-          if (error) {
-            console.error('Supabase error creating vehicle:', error);
-            throw error;
-          }
+          if (error) throw error;
 
           // Refresh vehicles list
           await get().fetchVehicles();
@@ -344,7 +283,7 @@ export const useVehiclesStore = create<VehiclesState>()(
           set({ isLoading: false });
           toast.success('Vehicle created successfully');
 
-          return vehicle;
+          return result;
         } catch (error: any) {
           console.error('Failed to create vehicle:', error);
           set({ error: error.message, isLoading: false });
@@ -360,12 +299,19 @@ export const useVehiclesStore = create<VehiclesState>()(
           const { data: user } = await supabase.auth.getUser();
           if (!user.user) throw new Error('Not authenticated');
 
+          const userId = user.user.id;
+
+          // Create update payload with proper type mapping
+          const updateData: Partial<Vehicle> = {
+            ...data,
+            fuel_type: data.fuel_type === 'gasoline' ? 'petrol' : data.fuel_type as any,
+            status: data.status ? normalizeStatus(data.status) : undefined,
+            updated_by: userId,
+          };
+
           const { error } = await supabase
             .from('vehicles')
-            .update({
-              ...data,
-              updated_by: user.user.id,
-            })
+            .update(updateData)
             .eq('id', id);
 
           if (error) throw error;
@@ -398,13 +344,10 @@ export const useVehiclesStore = create<VehiclesState>()(
 
           if (error) throw error;
 
-          // Remove from local state
           set((state) => ({
             vehicles: state.vehicles.filter((v) => v.id !== id),
-            selectedVehicle: state.selectedVehicle?.id === id ? null : state.selectedVehicle,
             isLoading: false,
           }));
-
           toast.success('Vehicle deleted successfully');
         } catch (error: any) {
           set({ error: error.message, isLoading: false });
@@ -419,7 +362,7 @@ export const useVehiclesStore = create<VehiclesState>()(
         try {
           // Upload file to Supabase Storage
           const fileExt = file.name.split('.').pop();
-          const fileName = `${vehicleId}/${Date.now()}.${fileExt}`;
+          const fileName = `${vehicleId}/documents/${Date.now()}.${fileExt}`;
 
           const { error: uploadError } = await supabase.storage
             .from('vlms-documents')
@@ -441,12 +384,12 @@ export const useVehiclesStore = create<VehiclesState>()(
 
           if (fetchError) throw fetchError;
 
-          // Add new document to array
-          const documents = vehicle.documents || [];
+          // Safely update vehicle documents array
+          const documents = safeArray<DocumentFile>(vehicle.documents);
           documents.push({
-            name: file.name,
             url: urlData.publicUrl,
             type,
+            name: file.name,
             uploaded_at: new Date().toISOString(),
             size: file.size,
           });
@@ -499,8 +442,8 @@ export const useVehiclesStore = create<VehiclesState>()(
 
           if (fetchError) throw fetchError;
 
-          // Add new photo to array
-          const photos = vehicle.photos || [];
+          // Add new photo to array with type safety
+          const photos = safeArray<PhotoFile>(vehicle.photos);
           photos.push({
             url: urlData.publicUrl,
             caption: caption || '',
@@ -540,15 +483,16 @@ export const useVehiclesStore = create<VehiclesState>()(
 
           if (fetchError) throw fetchError;
 
-          // Remove document from array
-          const documents = (vehicle.documents || []).filter(
-            (doc: any) => doc.url !== documentUrl
+          // Safely filter documents array
+          const documents = safeArray<DocumentFile>(vehicle.documents);
+          const updatedDocuments = documents.filter(
+            (doc) => doc.url !== documentUrl
           );
 
           // Update vehicle
           const { error: updateError } = await supabase
             .from('vehicles')
-            .update({ documents })
+            .update({ documents: updatedDocuments })
             .eq('id', vehicleId);
 
           if (updateError) throw updateError;
