@@ -95,9 +95,9 @@ export function VehicleConfiguratorDialog({
         // REQUIRED: license_plate
         license_plate: formData.license_plate || `TEMP-${Date.now().toString().slice(-6)}`, // Generate temp plate if missing
 
-        // Optional Insurance & Registration
-        registration_expiry: formData.registration_expiry,
-        insurance_expiry: formData.insurance_expiry,
+        // Optional Insurance & Registration (convert empty strings to null for date fields)
+        registration_expiry: formData.registration_expiry || null,
+        insurance_expiry: formData.insurance_expiry || null,
 
         // Interior (from user input)
         interior_length_cm: formData.interior_length_cm,
