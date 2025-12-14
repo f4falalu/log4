@@ -123,6 +123,11 @@ export function VehicleConfiguratorDialog({
 
         // Current mileage (required by store)
         current_mileage: 0,
+
+        // Array fields (required by schema - default to empty arrays)
+        tags: [],
+        documents: [],
+        photos: [],
       };
 
       console.log('Transformed vehicleData to send:', JSON.stringify(vehicleData, null, 2));
