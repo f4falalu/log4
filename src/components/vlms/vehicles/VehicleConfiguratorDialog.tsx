@@ -54,6 +54,11 @@ export function VehicleConfiguratorDialog({
         gross_weight_kg: formData.gross_weight_kg,
         capacity_kg: formData.capacity_kg,
 
+        // Legacy required fields (for old vehicles table schema)
+        capacity: formData.capacity_m3 || 0, // Legacy capacity field (cubic meters)
+        max_weight: formData.gross_weight_kg || formData.capacity_kg || 0, // Legacy max weight
+        fuel_efficiency: 0, // Default value for required legacy field
+
         // Tier configuration
         tiered_config: formData.tiered_config,
 
@@ -61,10 +66,15 @@ export function VehicleConfiguratorDialog({
         vehicle_id: formData.vehicle_name ? formData.vehicle_name.toUpperCase().replace(/\s+/g, '-') : `VEH-${Date.now()}`,
         variant: formData.variant,
 
-        // REQUIRED: vehicle_type must be valid enum value
+        // REQUIRED: vehicle_type must be valid enum value (VLMS column)
         vehicle_type: (formData.vehicle_type && ['sedan', 'suv', 'truck', 'van', 'motorcycle', 'bus', 'other'].includes(formData.vehicle_type))
           ? formData.vehicle_type
           : 'truck', // Default to truck
+
+        // REQUIRED: type must match vehicle_type (legacy column - still required by DB)
+        type: (formData.vehicle_type && ['sedan', 'suv', 'truck', 'van', 'motorcycle', 'bus', 'other'].includes(formData.vehicle_type))
+          ? formData.vehicle_type
+          : 'truck',
 
         // REQUIRED: year must be a valid number
         year: (formData.year && typeof formData.year === 'number')
@@ -92,8 +102,11 @@ export function VehicleConfiguratorDialog({
           : 'purchase', // Default to purchase
         vendor_name: formData.vendor,
 
-        // REQUIRED: license_plate
+        // REQUIRED: license_plate (VLMS column)
         license_plate: formData.license_plate || `TEMP-${Date.now().toString().slice(-6)}`, // Generate temp plate if missing
+
+        // REQUIRED: plate_number (legacy column - must match license_plate)
+        plate_number: formData.license_plate || `TEMP-${Date.now().toString().slice(-6)}`,
 
         // Optional Insurance & Registration (convert empty strings to null for date fields)
         registration_expiry: formData.registration_expiry || null,
