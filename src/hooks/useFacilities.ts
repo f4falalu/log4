@@ -9,10 +9,10 @@ interface Facility {
   state: string;
   lga: string | null;
   type: string | null;
-  is_active: boolean;
   created_at: string;
   updated_at: string | null;
   deleted_at: string | null;
+  // Note: is_active column doesn't exist in facilities table
   // Add other facility fields as needed
 }
 
@@ -21,7 +21,7 @@ interface FacilityFilterOptions {
   lga?: string;
   type?: string;
   search?: string;
-  is_active?: boolean;
+  // Note: is_active removed - column doesn't exist in facilities table
 }
 
 export const useFacilities = () => {
@@ -52,9 +52,8 @@ export const useFacilities = () => {
         if (filters.search) {
           query = query.ilike('name', `%${filters.search}%`);
         }
-        if (filters.is_active !== undefined) {
-          query = query.eq('is_active', filters.is_active);
-        }
+        // Note: is_active column doesn't exist in facilities table
+        // Removed: if (filters.is_active !== undefined) query = query.eq('is_active', filters.is_active);
       }
 
       const { data, error: queryError } = await query;
@@ -153,8 +152,7 @@ export const useFacilities = () => {
       
       const { error } = await supabase
         .from('facilities')
-        .update({ 
-          is_active: false,
+        .update({
           deleted_at: new Date().toISOString()
         })
         .eq('id', id);
@@ -196,7 +194,7 @@ export const useFacilities = () => {
 
   // Initial fetch
   useEffect(() => {
-    fetchFacilities({ is_active: true });
+    fetchFacilities(); // Fetch all facilities (is_active column doesn't exist)
   }, [fetchFacilities]);
 
   return {
@@ -305,7 +303,6 @@ export const useDeleteFacility = () => {
       const { error } = await supabase
         .from('facilities')
         .update({
-          is_active: false,
           deleted_at: new Date().toISOString()
         })
         .eq('id', id);
@@ -326,7 +323,6 @@ export const useBulkDeleteFacilities = () => {
       const { error } = await supabase
         .from('facilities')
         .update({
-          is_active: false,
           deleted_at: new Date().toISOString()
         })
         .in('id', ids);
