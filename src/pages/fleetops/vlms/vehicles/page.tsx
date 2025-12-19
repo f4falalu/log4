@@ -291,7 +291,9 @@ export default function VehiclesPage() {
                             header: 'Location',
                             width: 150,
                             render: (vehicle) =>
-                              vehicle.current_location?.name || (
+                              vehicle.current_location_id ? (
+                                <span className="text-sm">#{vehicle.current_location_id.slice(0, 8)}</span>
+                              ) : (
                                 <span className="text-muted-foreground text-sm">-</span>
                               ),
                           },
