@@ -1,5 +1,5 @@
 import { Outlet, useLocation } from 'react-router-dom';
-import { Package, LayoutDashboard, Users, Truck, MapPin, Car, GitBranch, FileBarChart, Wrench } from 'lucide-react';
+import { Package, LayoutDashboard, Users, Truck, MapPin, GitBranch, FileBarChart, Wrench } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { SecondarySidebar, NavigationGroup } from '@/components/layout/SecondarySidebar';
 import { useMemo } from 'react';
@@ -38,11 +38,6 @@ const navigationGroups: NavigationGroup[] = [
         label: 'Drivers',
         href: '/fleetops/drivers',
         icon: Users
-      },
-      {
-        label: 'Vehicles',
-        href: '/fleetops/vehicles',
-        icon: Car
       },
       {
         label: 'Fleet Management',
