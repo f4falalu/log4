@@ -104,17 +104,12 @@ export const useVehiclesStore = create<VehiclesState>()(
           const table = tableName as any;
 
           // Build query with proper typing
+          // Note: Removed FK joins as the constraint names don't exist in the database schema
+          // Related data can be fetched separately if needed (see fetchVehicleById for pattern)
           let query = supabase
             .from(table)
-            .select(
-              `
-              *,
-              current_location:facilities!vehicles_current_location_id_fkey(id, name),
-              current_driver:drivers!vehicles_current_driver_id_fkey(id, name, phone)
-            `,
-              { count: 'exact' }
-            )
-            .order('created_at', { ascending: false }) as any; // Temporary any to bypass type issues
+            .select('*', { count: 'exact' })
+            .order('created_at', { ascending: false }) as any;
 
           // Apply filters
           if (filters.search) {
