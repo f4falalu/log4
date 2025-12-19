@@ -540,25 +540,51 @@ border-info/50        /* Blue border with opacity */
 
 **Deprecation**: Removed dependency on VehicleIllustration SVG component (being deprecated)
 
-### ✅ Navigation Cleanup
-**Date**: December 19, 2025 (Commit: cd8650b)
+### ✅ Navigation Consolidation
+**Date**: December 19, 2025 (Commits: e949d5d, 53c2897)
 
 **Problem**: Duplicate vehicle management routes causing user confusion:
 - Legacy: `/fleetops/vehicles` (better UI - card/list views)
-- VLMS: `/fleetops/vlms/vehicles` (table view not intuitive)
+- VLMS: `/fleetops/vlms/vehicles` (more comprehensive data model)
 
-**Solution**: Removed VLMS navigation link from menu, keeping legacy route as primary.
+**User Decision**: Keep VLMS as primary system with better UI from legacy.
+
+**Solution**: Removed legacy "Vehicles" link, kept VLMS as primary vehicle system.
 
 **Files Updated**:
-- `/src/pages/fleetops/layout.tsx` - Removed VLMS link from OPERATIONS navigation group
+- `/src/pages/fleetops/layout.tsx` - Removed legacy Vehicles link, kept VLMS
 
 **Result**:
-- Simplified navigation menu
-- Legacy "Vehicles" route remains primary
-- VLMS pages still accessible via direct URL if needed
-- Reduced user confusion
+- VLMS is now the primary vehicle system
+- Legacy `/fleetops/vehicles` route removed from navigation
+- VLMS uses comprehensive data model + superior UI
+- Reduced navigation confusion
 
-**Build Status**: ✅ Passed (20.96s, 0 errors)
+**Build Status**: ✅ Passed (16.46s, 0 errors)
+
+### ✅ VLMS Silhouette Integration
+**Date**: December 19, 2025 (Commit: a3e3c5a)
+
+**Problem**: VLMS vehicle cards showed generic car icon instead of vehicle-specific silhouettes.
+
+**Solution**: Integrated silhouette system into VLMS components.
+
+**Files Updated**:
+- `/src/components/vlms/vehicles/VehicleImage.tsx` - Added silhouette fallback support
+- `/src/components/vlms/vehicles/VehicleCard.tsx` - Pass vehicle type to VehicleImage
+
+**Key Changes**:
+- VehicleImage now accepts `vehicleType` prop
+- Falls back to vehicle-specific silhouettes when no photo available
+- Uses same classification system as legacy (M1, M2, N1, N2, N3, L1, L2, BIKO_*)
+- Maintains backward compatibility with generic car icon if type not provided
+
+**Result**:
+- VLMS vehicles display beautiful classification-based silhouettes
+- Consistent visual experience across both systems
+- Better user experience when vehicles don't have photos
+
+**Build Status**: ✅ Passed (16.46s, 0 errors)
 
 ---
 
