@@ -1,10 +1,10 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { VehicleIllustration } from '@/components/vehicle/VehicleIllustration';
 import { Vehicle } from '@/types';
 import { Clock, Package, Fuel, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getVehicleStateColors, getBadgeVariant } from '@/lib/designTokens';
+import { getVehicleSilhouette } from '@/lib/vehicleUtils';
 
 interface VehicleCardProps {
   vehicle: Vehicle;
@@ -64,11 +64,11 @@ export const VehicleCard = ({ vehicle, onClick, compact = false }: VehicleCardPr
           </Badge>
         </div>
 
-        {/* Vehicle Image or Illustration */}
+        {/* Vehicle Image or Silhouette */}
         {vehicle.photo_url ? (
             <div className="relative w-full aspect-[16/9] bg-muted/30 rounded-lg overflow-hidden">
-              <img 
-                src={vehicle.photo_url} 
+              <img
+                src={vehicle.photo_url}
                 alt={`${vehicle.plateNumber} - ${vehicle.model}`}
                 className="w-full h-full object-contain p-2"
               />
@@ -79,10 +79,14 @@ export const VehicleCard = ({ vehicle, onClick, compact = false }: VehicleCardPr
             )}
           </div>
         ) : (
-          <div className="flex items-center justify-center py-4 bg-muted/30 rounded-lg">
-            <VehicleIllustration 
-              type={vehicle.type} 
-              size={compact ? 80 : 120}
+          <div className="relative w-full aspect-[16/9] bg-muted/30 rounded-lg overflow-hidden flex items-center justify-center">
+            <img
+              src={getVehicleSilhouette(vehicle.type)}
+              alt={`${vehicle.type} silhouette`}
+              className={cn(
+                "object-contain",
+                compact ? "h-20" : "h-28"
+              )}
             />
           </div>
         )}

@@ -30,8 +30,6 @@ export function VehicleConfiguratorDialog({
 
   const handleSave = async (formData: any) => {
     try {
-      console.log('=== VehicleConfiguratorDialog ===');
-      console.log('Raw formData from configurator:', JSON.stringify(formData, null, 2));
 
       // Ensure all required fields have valid values
       const currentYear = new Date().getFullYear();
@@ -59,8 +57,10 @@ export function VehicleConfiguratorDialog({
         max_weight: formData.gross_weight_kg || formData.capacity_kg || 0, // Legacy max weight
         fuel_efficiency: 0, // Default value for required legacy field
 
-        // Tier configuration
-        tiered_config: formData.tiered_config,
+        // Tier configuration - ensure proper format or set to null
+        tiered_config: (formData.tiered_config && formData.tiered_config.tiers && formData.tiered_config.tiers.length > 0)
+          ? formData.tiered_config
+          : null,
 
         // Basic Information (from user input) - REQUIRED FIELDS
         vehicle_id: formData.vehicle_name ? formData.vehicle_name.toUpperCase().replace(/\s+/g, '-') : `VEH-${Date.now()}`,
@@ -129,9 +129,6 @@ export function VehicleConfiguratorDialog({
         documents: [],
         photos: [],
       };
-
-      console.log('Transformed vehicleData to send:', JSON.stringify(vehicleData, null, 2));
-      console.log('=================================');
 
       const result = await createVehicle(vehicleData);
 

@@ -10,7 +10,9 @@ interface VehicleCapacityCardProps {
 }
 
 export function VehicleCapacityCard({ vehicle }: VehicleCapacityCardProps) {
-  const tierConfigs: TierConfig[] = (vehicle.tiered_config as TierConfig[]) || [];
+  // Extract tiers array from tiered_config object
+  const tieredConfig = vehicle.tiered_config as any;
+  const tierConfigs: TierConfig[] = tieredConfig?.tiers || [];
 
   // Sort tiers by order (Upper first for visual display)
   const sortedTiers = [...tierConfigs].sort((a, b) => (b.tier_order || 0) - (a.tier_order || 0));

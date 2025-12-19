@@ -7,25 +7,11 @@ import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Vehicle, VehicleWithRelations, VehicleFormData, VehicleFilters, DocumentFile, PhotoFile } from '@/types/vlms';
+import { Vehicle, VehicleWithRelations, VehicleFormData, VehicleFilters } from '@/types/vlms';
 import { getVehiclesTableName } from '@/lib/featureFlags';
 
 type SafeArray<T> = (value: unknown) => T[];
 const safeArray: SafeArray<any> = (value) => Array.isArray(value) ? value : [];
-
-type DocumentFile = {
-  url: string;
-  type: string;
-  name: string;
-  uploaded_at: string;
-  size: number;
-};
-
-type PhotoFile = {
-  url: string;
-  caption: string;
-  uploaded_at: string;
-};
 
 const normalizeStatus = (status?: string): 'available' | 'in-use' | 'maintenance' | 'out_of_service' | 'disposed' => {
   if (!status) return 'available';
@@ -227,7 +213,7 @@ export const useVehiclesStore = create<VehiclesState>()(
               const { data: driver } = await supabase
                 .from('drivers')
                 .select('id, name, phone')
-                .eq('id', vehicle.current_driver_id)
+                .eq('id', vehicle.current_driver_id as string)
                 .single();
 
               if (driver) {
@@ -259,11 +245,11 @@ export const useVehiclesStore = create<VehiclesState>()(
           // Map form data to database schema
           const vehicleData = {
             ...data,
-            capacity_m3: data.capacity_m3 ?? 0,
-            capacity_kg: data.capacity_kg ?? 0,
-            capacity: data.capacity ?? 0, // Legacy field
+            capacity_m3: (data as any).capacity_m3 ?? 0,
+            capacity_kg: (data as any).capacity_kg ?? 0,
+            capacity: (data as any).capacity ?? 0, // Legacy field
             fuel_type: data.fuel_type === 'gasoline' ? 'petrol' : data.fuel_type,
-            status: normalizeStatus(data.status),
+            status: normalizeStatus(data.status) as 'available' | 'in-use' | 'maintenance',
             created_by: userId,
             updated_by: userId,
           };
@@ -305,7 +291,7 @@ export const useVehiclesStore = create<VehiclesState>()(
           const updateData: Partial<Vehicle> = {
             ...data,
             fuel_type: data.fuel_type === 'gasoline' ? 'petrol' : data.fuel_type as any,
-            status: data.status ? normalizeStatus(data.status) : undefined,
+            status: data.status ? (normalizeStatus(data.status) as 'available' | 'in-use' | 'maintenance') : undefined,
             updated_by: userId,
           };
 
@@ -385,7 +371,7 @@ export const useVehiclesStore = create<VehiclesState>()(
           if (fetchError) throw fetchError;
 
           // Safely update vehicle documents array
-          const documents = safeArray<DocumentFile>(vehicle.documents);
+          const documents = safeArray(vehicle.documents);
           documents.push({
             url: urlData.publicUrl,
             type,
@@ -443,7 +429,7 @@ export const useVehiclesStore = create<VehiclesState>()(
           if (fetchError) throw fetchError;
 
           // Add new photo to array with type safety
-          const photos = safeArray<PhotoFile>(vehicle.photos);
+          const photos = safeArray(vehicle.photos);
           photos.push({
             url: urlData.publicUrl,
             caption: caption || '',
@@ -484,7 +470,7 @@ export const useVehiclesStore = create<VehiclesState>()(
           if (fetchError) throw fetchError;
 
           // Safely filter documents array
-          const documents = safeArray<DocumentFile>(vehicle.documents);
+          const documents = safeArray(vehicle.documents);
           const updatedDocuments = documents.filter(
             (doc) => doc.url !== documentUrl
           );
@@ -529,7 +515,7 @@ export const useVehiclesStore = create<VehiclesState>()(
           if (fetchError) throw fetchError;
 
           // Remove photo from array
-          const photos = (vehicle.photos || []).filter((photo: any) => photo.url !== photoUrl);
+          const photos = safeArray(vehicle.photos).filter((photo: any) => photo.url !== photoUrl);
 
           // Update vehicle
           const { error: updateError } = await supabase
