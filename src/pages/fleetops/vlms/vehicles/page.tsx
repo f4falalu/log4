@@ -244,18 +244,14 @@ export default function VehiclesPage() {
                         data={paginatedVehicles || []}
                         columns={[
                           {
-                            key: 'vehicle_id',
                             header: 'Vehicle ID',
-                            width: 150,
-                            render: (vehicle) => (
+                            cell: (vehicle) => (
                               <span className="font-medium font-mono text-sm">{vehicle.vehicle_id}</span>
                             ),
                           },
                           {
-                            key: 'make',
                             header: 'Make / Model',
-                            width: 200,
-                            render: (vehicle) => (
+                            cell: (vehicle) => (
                               <div>
                                 <div className="font-medium text-foreground">
                                   {vehicle.make} {vehicle.model}
@@ -265,32 +261,24 @@ export default function VehiclesPage() {
                             ),
                           },
                           {
-                            key: 'license_plate',
                             header: 'License Plate',
-                            width: 150,
-                            render: (vehicle) => (
+                            cell: (vehicle) => (
                               <span className="font-mono text-sm">{vehicle.license_plate}</span>
                             ),
                           },
                           {
-                            key: 'type',
                             header: 'Type',
-                            width: 120,
-                            render: (vehicle) => (
+                            cell: (vehicle) => (
                               <span className="capitalize">{vehicle.type?.replace('_', ' ') || '-'}</span>
                             ),
                           },
                           {
-                            key: 'status',
                             header: 'Status',
-                            width: 130,
-                            render: (vehicle) => getStatusBadge(vehicle.status),
+                            cell: (vehicle) => getStatusBadge(vehicle.status),
                           },
                           {
-                            key: 'current_location',
                             header: 'Location',
-                            width: 150,
-                            render: (vehicle) =>
+                            cell: (vehicle) =>
                               vehicle.current_location_id ? (
                                 <span className="text-sm">#{vehicle.current_location_id.slice(0, 8)}</span>
                               ) : (
@@ -298,21 +286,16 @@ export default function VehiclesPage() {
                               ),
                           },
                           {
-                            key: 'current_mileage',
                             header: 'Mileage',
-                            width: 120,
-                            render: (vehicle) => (
+                            cell: (vehicle) => (
                               <span className="text-sm">
                                 {vehicle.current_mileage?.toLocaleString() || '0'} km
                               </span>
                             ),
                           },
                           {
-                            key: 'actions',
                             header: 'Actions',
-                            width: 100,
-                            align: 'right',
-                            render: (vehicle) => (
+                            cell: (vehicle) => (
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                   <Button
