@@ -504,5 +504,63 @@ border-info/50        /* Blue border with opacity */
 
 ---
 
-**Last Updated**: December 10, 2025
-**Next Review**: December 17, 2025 (Week 2 checkpoint)
+---
+
+## Vehicle Management Consolidation (December 19, 2025)
+
+### ✅ Vehicle Silhouettes Implementation
+**Date**: December 19, 2025 (Commit: a4c8a73)
+
+**Problem**: Vehicle cards displayed empty state when `photo_url` was null, creating poor user experience.
+
+**Solution**: Implemented default vehicle silhouettes based on vehicle classification system.
+
+**Files Created**:
+- `/src/lib/vehicleUtils.ts` - Vehicle type mapping utility with `getVehicleSilhouette()` function
+
+**Files Updated**:
+- `/src/components/vehicle/VehicleCard.tsx` - Added silhouette fallback rendering
+
+**Vehicle Classification Mapping**:
+- **M1** (Passenger cars): sedan, suv, hatchback → `M1.webp`
+- **M2** (Large passenger): van, minivan, bus → `M2.webp`, `BIKO_MINIVAN.webp`
+- **N1** (Light commercial): pickup, small truck → `N1.webp`
+- **N2** (Medium trucks): truck, delivery truck → `N2.webp`
+- **N3** (Heavy trucks): large truck, lorry → `N3.webp`
+- **L1** (Motorcycles): motorcycle, bike, moped → `L1.webp`, `BIKO_MOPED.webp`
+- **L2** (Three-wheelers): keke, rickshaw, tricycle → `L2.webp`, `BIKO_KEKE.webp`
+- **Special**: cold_chain, refrigerated → `BIKO_COLDCHAIN.webp`
+
+**Key Features**:
+- Exact match lookup for vehicle types
+- Partial match fallback (contains/includes)
+- Default fallback to M1 (sedan) for unknown types
+- Responsive sizing (compact: h-20, regular: h-28)
+- Proper aspect ratio container (16:9)
+
+**Deprecation**: Removed dependency on VehicleIllustration SVG component (being deprecated)
+
+### ✅ Navigation Cleanup
+**Date**: December 19, 2025 (Commit: cd8650b)
+
+**Problem**: Duplicate vehicle management routes causing user confusion:
+- Legacy: `/fleetops/vehicles` (better UI - card/list views)
+- VLMS: `/fleetops/vlms/vehicles` (table view not intuitive)
+
+**Solution**: Removed VLMS navigation link from menu, keeping legacy route as primary.
+
+**Files Updated**:
+- `/src/pages/fleetops/layout.tsx` - Removed VLMS link from OPERATIONS navigation group
+
+**Result**:
+- Simplified navigation menu
+- Legacy "Vehicles" route remains primary
+- VLMS pages still accessible via direct URL if needed
+- Reduced user confusion
+
+**Build Status**: ✅ Passed (20.96s, 0 errors)
+
+---
+
+**Last Updated**: December 19, 2025
+**Next Review**: December 26, 2025 (Post-holiday checkpoint)
