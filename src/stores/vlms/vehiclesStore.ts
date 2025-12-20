@@ -18,7 +18,7 @@ const normalizeStatus = (status?: string): 'available' | 'in-use' | 'maintenance
   return status === 'in_use' ? 'in-use' : status as any;
 };
 
-export type ViewMode = 'list' | 'card' | 'table';
+export type ViewMode = 'list' | 'card' | 'kanban';
 
 export type FuelType = 'diesel' | 'petrol' | 'electric' | 'gasoline' | 'hybrid' | 'cng' | 'lpg';
 
@@ -61,7 +61,7 @@ export const useVehiclesStore = create<VehiclesState>()(
       filters: {},
       isLoading: false,
       error: null,
-      viewMode: (typeof window !== 'undefined' && localStorage.getItem('vehicleViewMode') as ViewMode) || 'table',
+      viewMode: (typeof window !== 'undefined' && localStorage.getItem('vehicleViewMode') as ViewMode) || 'kanban',
       sidebarCollapsed: (typeof window !== 'undefined' && localStorage.getItem('vehicleSidebarCollapsed') === 'true') || false,
 
       // Setters

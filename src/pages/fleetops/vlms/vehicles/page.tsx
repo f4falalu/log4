@@ -12,26 +12,11 @@ import { VehicleFilters } from '@/components/vlms/vehicles/VehicleFilters';
 import { VehicleViewToggle } from '@/components/vlms/vehicles/VehicleViewToggle';
 import { VehicleGridView } from '@/components/vlms/vehicles/VehicleGridView';
 import { VehicleListView } from '@/components/vlms/vehicles/VehicleListView';
-import { VirtualTable } from '@/components/ui/virtual-table';
+import { VehicleKanbanView } from '@/components/vlms/vehicles/VehicleKanbanView';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Card } from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Plus, Search, MoreVertical, Eye, Edit, Trash2, Loader2, ChevronRight, Package } from 'lucide-react';
+import { Plus, Search, Loader2, ChevronRight, Package } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getStatusColors } from '@/lib/designTokens';
 import { PaginationControls, usePagination } from '@/components/ui/pagination-controls';
@@ -237,103 +222,14 @@ export default function VehiclesPage() {
                     />
                   )}
 
-                  {/* Table View - With Virtual Scrolling */}
-                  {viewMode === 'table' && (
-                    <Card>
-                      <VirtualTable
-                        data={paginatedVehicles || []}
-                        columns={[
-                          {
-                            header: 'Vehicle ID',
-                            cell: (vehicle) => (
-                              <span className="font-medium font-mono text-sm">{vehicle.vehicle_id}</span>
-                            ),
-                          },
-                          {
-                            header: 'Make / Model',
-                            cell: (vehicle) => (
-                              <div>
-                                <div className="font-medium text-foreground">
-                                  {vehicle.make} {vehicle.model}
-                                </div>
-                                <div className="text-sm text-muted-foreground">{vehicle.year}</div>
-                              </div>
-                            ),
-                          },
-                          {
-                            header: 'License Plate',
-                            cell: (vehicle) => (
-                              <span className="font-mono text-sm">{vehicle.license_plate}</span>
-                            ),
-                          },
-                          {
-                            header: 'Type',
-                            cell: (vehicle) => (
-                              <span className="capitalize">{vehicle.type?.replace('_', ' ') || '-'}</span>
-                            ),
-                          },
-                          {
-                            header: 'Status',
-                            cell: (vehicle) => getStatusBadge(vehicle.status),
-                          },
-                          {
-                            header: 'Location',
-                            cell: (vehicle) =>
-                              vehicle.current_location_id ? (
-                                <span className="text-sm">#{vehicle.current_location_id.slice(0, 8)}</span>
-                              ) : (
-                                <span className="text-muted-foreground text-sm">-</span>
-                              ),
-                          },
-                          {
-                            header: 'Mileage',
-                            cell: (vehicle) => (
-                              <span className="text-sm">
-                                {vehicle.current_mileage?.toLocaleString() || '0'} km
-                              </span>
-                            ),
-                          },
-                          {
-                            header: 'Actions',
-                            cell: (vehicle) => (
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-9 w-9"
-                                    aria-label="Vehicle actions"
-                                    onClick={(e) => e.stopPropagation()}
-                                  >
-                                    <MoreVertical className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={() => handleView(vehicle)}>
-                                    <Eye className="h-4 w-4 mr-2" />
-                                    View Details
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => handleEdit(vehicle)}>
-                                    <Edit className="h-4 w-4 mr-2" />
-                                    Edit
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    className="text-destructive focus:text-destructive"
-                                    onClick={() => handleDelete(vehicle)}
-                                  >
-                                    <Trash2 className="h-4 w-4 mr-2" />
-                                    Delete
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            ),
-                          },
-                        ]}
-                        estimateSize={70}
-                        overscan={5}
-                        onRowClick={(vehicle) => handleView(vehicle)}
-                      />
-                    </Card>
+                  {/* Kanban View - Status Board */}
+                  {viewMode === 'kanban' && (
+                    <VehicleKanbanView
+                      vehicles={paginatedVehicles || []}
+                      onView={handleView}
+                      onEdit={handleEdit}
+                      onDelete={handleDelete}
+                    />
                   )}
                 </div>
 

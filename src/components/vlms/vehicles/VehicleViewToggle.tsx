@@ -1,14 +1,14 @@
 /**
  * VehicleViewToggle Component
- * Toggle between list, card (grid), and table views
+ * Toggle between list, card (grid), and kanban views
  * Uses BIKO design system branding
  */
 
 import React from 'react';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { List, Grid3x3, Table } from 'lucide-react';
+import { List, Grid3x3, Kanban } from 'lucide-react';
 
-export type ViewMode = 'list' | 'card' | 'table';
+export type ViewMode = 'list' | 'card' | 'kanban';
 
 interface VehicleViewToggleProps {
   value: ViewMode;
@@ -42,12 +42,12 @@ export function VehicleViewToggle({ value, onValueChange }: VehicleViewTogglePro
         <span className="ml-2 text-sm font-medium hidden sm:inline">Card</span>
       </ToggleGroupItem>
       <ToggleGroupItem
-        value="table"
-        aria-label="Table view"
+        value="kanban"
+        aria-label="Kanban view"
         className="px-3 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
       >
-        <Table className="h-4 w-4" />
-        <span className="ml-2 text-sm font-medium hidden sm:inline">Table</span>
+        <Kanban className="h-4 w-4" />
+        <span className="ml-2 text-sm font-medium hidden sm:inline">Kanban</span>
       </ToggleGroupItem>
     </ToggleGroup>
   );
