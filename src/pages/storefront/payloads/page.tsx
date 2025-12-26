@@ -8,16 +8,15 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Plus, Package, Truck, Calculator, Trash2, AlertTriangle, Send, Wand2 } from 'lucide-react';
+import { Plus, Package, Truck, Calculator, Trash2, AlertTriangle, Send, Wand2, Save } from 'lucide-react';
 import { toast } from 'sonner';
 import { useVehicles } from '@/hooks/useVehicles';
 import { useFacilities } from '@/hooks/useFacilities';
-import { useCreatePayloadItem, useDeletePayloadItem } from '@/hooks/usePayloadItems';
+import { usePayloadItems, useCreatePayloadItem, useDeletePayloadItem } from '@/hooks/usePayloadItems';
+import { usePayloads, useCreatePayload, useUpdatePayload, useFinalizePayload } from '@/hooks/usePayloads';
 import { PayloadVisualizer } from '@/components/payload/PayloadVisualizer';
 import { FinalizePayloadDialog } from '@/components/storefront/FinalizePayloadDialog';
 import { useRequisitions } from '@/hooks/useRequisitions';
-import { useConvertRequisitionToPayload } from '@/hooks/useRequisitionToPayload';
-
 
 const boxTypes = [
   { value: 'small', label: 'Small (45×30×67cm)', volume: 0.091 },
@@ -26,34 +25,34 @@ const boxTypes = [
   { value: 'custom', label: 'Custom Dimensions', volume: 0 }
 ];
 
-interface PayloadItem {
-  id: string;
-  facilityId: string;
-  facilityName: string;
-  boxType: string;
-  quantity: number;
-  customLength?: number;
-  customWidth?: number;
-  customHeight?: number;
-  weightKg: number;
-  volumeM3: number;
-}
-
 export default function PayloadPlannerPage() {
-  // Real data hooks
+  // Data hooks
   const { data: vehicles = [], isLoading: vehiclesLoading } = useVehicles();
   const { data: facilities = [], isLoading: facilitiesLoading } = useFacilities();
   const { data: approvedRequisitions = [] } = useRequisitions('approved');
+  const { data: draftPayloads = [] } = usePayloads('draft');
+
+  // Mutations
+  const createPayloadMutation = useCreatePayload();
+  const updatePayloadMutation = useUpdatePayload();
   const createPayloadItemMutation = useCreatePayloadItem();
   const deletePayloadItemMutation = useDeletePayloadItem();
-  const convertRequisition = useConvertRequisitionToPayload();
+  const finalizePayloadMutation = useFinalizePayload();
 
-  const [selectedVehicle, setSelectedVehicle] = useState<any>(null);
-  const [payloadItems, setPayloadItems] = useState<PayloadItem[]>([]);
+  // Local state
+  const [currentPayloadId, setCurrentPayloadId] = useState<string | null>(null);
+  const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
   const [isAddItemDialogOpen, setIsAddItemDialogOpen] = useState(false);
   const [isFinalizeDialogOpen, setIsFinalizeDialogOpen] = useState(false);
-  const [payloadUtilization, setPayloadUtilization] = useState(0);
+  const [payloadName, setPayloadName] = useState('');
 
+  // Get current payload items
+  const { data: payloadItems = [] } = usePayloadItems(undefined, currentPayloadId || undefined);
+
+  // Get current payload details
+  const currentPayload = draftPayloads.find(p => p.id === currentPayloadId);
+
+  // Item form state
   const [itemFormData, setItemFormData] = useState({
     facilityId: '',
     boxType: 'small',
@@ -64,25 +63,48 @@ export default function PayloadPlannerPage() {
     weightKg: 10
   });
 
-  const calculateVolume = (boxType: string, quantity: number, customDimensions?: { length: number; width: number; height: number }) => {
-    const boxTypeData = boxTypes.find(bt => bt.value === boxType);
-    if (boxType === 'custom' && customDimensions) {
-      return (customDimensions.length * customDimensions.width * customDimensions.height) / 1000000 * quantity;
-    }
-    return (boxTypeData?.volume || 0) * quantity;
-  };
-
-  const calculatePayloadUtilization = () => {
-    if (!selectedVehicle || payloadItems.length === 0) return 0;
-    
-    const totalVolume = payloadItems.reduce((sum, item) => sum + item.volumeM3, 0);
-    const utilization = (totalVolume / selectedVehicle.capacityVolume) * 100;
-    return Math.min(utilization, 100);
-  };
-
+  // Initialize or load existing draft payload
   useEffect(() => {
-    setPayloadUtilization(calculatePayloadUtilization());
-  }, [payloadItems, selectedVehicle]);
+    if (draftPayloads.length > 0 && !currentPayloadId) {
+      // Load the most recent draft
+      setCurrentPayloadId(draftPayloads[0].id);
+      setPayloadName(draftPayloads[0].name);
+      setSelectedVehicleId(draftPayloads[0].vehicle_id);
+    }
+  }, [draftPayloads, currentPayloadId]);
+
+  const createNewPayload = async () => {
+    const name = `Payload ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`;
+    const result = await createPayloadMutation.mutateAsync({
+      name,
+      vehicle_id: selectedVehicleId,
+      status: 'draft',
+    });
+    setCurrentPayloadId(result.id);
+    setPayloadName(result.name);
+  };
+
+  const handleVehicleSelect = async (vehicleId: string) => {
+    setSelectedVehicleId(vehicleId);
+
+    if (currentPayloadId) {
+      // Update existing payload
+      await updatePayloadMutation.mutateAsync({
+        id: currentPayloadId,
+        data: { vehicle_id: vehicleId }
+      });
+    }
+  };
+
+  const handleSavePayload = async () => {
+    if (!currentPayloadId) return;
+
+    await updatePayloadMutation.mutateAsync({
+      id: currentPayloadId,
+      data: { name: payloadName }
+    });
+    toast.success('Payload saved successfully');
+  };
 
   const resetItemForm = () => {
     setItemFormData({
@@ -96,51 +118,48 @@ export default function PayloadPlannerPage() {
     });
   };
 
-  const handleAddPayloadItem = (e: React.FormEvent) => {
+  const handleAddPayloadItem = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!itemFormData.facilityId) {
       toast.error('Please select a facility');
       return;
     }
 
-    const facility = facilities.find(f => f.id === itemFormData.facilityId);
-    if (!facility) return;
+    if (!currentPayloadId) {
+      toast.error('Please create or select a payload first');
+      return;
+    }
 
-    const volume = calculateVolume(
-      itemFormData.boxType,
-      itemFormData.quantity,
-      itemFormData.boxType === 'custom' ? {
-        length: itemFormData.customLength,
-        width: itemFormData.customWidth,
-        height: itemFormData.customHeight
-      } : undefined
-    );
-
-    const newItem: PayloadItem = {
-      id: Date.now().toString(),
-      facilityId: itemFormData.facilityId,
-      facilityName: facility.name,
-      boxType: itemFormData.boxType,
+    await createPayloadItemMutation.mutateAsync({
+      payload_id: currentPayloadId,
+      facility_id: itemFormData.facilityId,
+      box_type: itemFormData.boxType as 'small' | 'medium' | 'large' | 'custom',
+      custom_length_cm: itemFormData.boxType === 'custom' ? itemFormData.customLength : undefined,
+      custom_width_cm: itemFormData.boxType === 'custom' ? itemFormData.customWidth : undefined,
+      custom_height_cm: itemFormData.boxType === 'custom' ? itemFormData.customHeight : undefined,
       quantity: itemFormData.quantity,
-      customLength: itemFormData.boxType === 'custom' ? itemFormData.customLength : undefined,
-      customWidth: itemFormData.boxType === 'custom' ? itemFormData.customWidth : undefined,
-      customHeight: itemFormData.boxType === 'custom' ? itemFormData.customHeight : undefined,
-      weightKg: itemFormData.weightKg,
-      volumeM3: volume
-    };
+      weight_kg: itemFormData.weightKg,
+      status: 'pending',
+    });
 
-    setPayloadItems([...payloadItems, newItem]);
     setIsAddItemDialogOpen(false);
     resetItemForm();
-    toast.success('Payload item added successfully');
   };
 
-  const handleRemovePayloadItem = (itemId: string) => {
-    setPayloadItems(payloadItems.filter(item => item.id !== itemId));
-    toast.success('Payload item removed');
+  const handleRemovePayloadItem = async (itemId: string) => {
+    await deletePayloadItemMutation.mutateAsync(itemId);
   };
 
+  const handleFinalizePayload = async () => {
+    if (!currentPayloadId) return;
+
+    await finalizePayloadMutation.mutateAsync(currentPayloadId);
+    setIsFinalizeDialogOpen(false);
+    setCurrentPayloadId(null);
+    setSelectedVehicleId(null);
+    setPayloadName('');
+  };
 
   const getUtilizationColor = (utilization: number) => {
     if (utilization <= 70) return 'bg-success';
@@ -154,44 +173,59 @@ export default function PayloadPlannerPage() {
     return { label: 'Overloaded', color: 'text-destructive' };
   };
 
-  const totalWeight = payloadItems.reduce((sum, item) => sum + (item.weightKg * item.quantity), 0);
-  const totalVolume = payloadItems.reduce((sum, item) => sum + item.volumeM3, 0);
+  const selectedVehicle = vehicles.find(v => v.id === selectedVehicleId);
+  const payloadUtilization = currentPayload?.utilization_pct || 0;
+  const totalWeight = currentPayload?.total_weight_kg || 0;
+  const totalVolume = currentPayload?.total_volume_m3 || 0;
   const utilizationStatus = getUtilizationStatus(payloadUtilization);
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">Payload Planner</h1>
-            <p className="text-muted-foreground">Plan and optimize vehicle payload assignments</p>
-          </div>
-          <div className="flex gap-2">
-            {approvedRequisitions.length > 0 && (
-              <Button 
-                variant="outline"
-                onClick={() => {
-                  // Convert first approved requisition as example
-                  if (approvedRequisitions[0]) {
-                    toast.info('Converting requisition to payload items...');
-                  }
-                }}
-              >
-                <Wand2 className="h-4 w-4 mr-2" />
-                Import from Requisitions
-              </Button>
-            )}
-            <Button 
-              onClick={() => setIsFinalizeDialogOpen(true)}
-              disabled={!selectedVehicle || payloadItems.length === 0}
-              className="bg-biko-primary hover:bg-biko-primary/90"
-            >
-              <Send className="h-4 w-4 mr-2" />
-              Finalize & Send to FleetOps
-            </Button>
-          </div>
+        <div>
+          <h1 className="text-3xl font-bold">Payload Planner</h1>
+          <p className="text-muted-foreground">Plan and optimize vehicle payload assignments</p>
         </div>
+        <div className="flex gap-2">
+          {!currentPayloadId && (
+            <Button onClick={createNewPayload}>
+              <Plus className="h-4 w-4 mr-2" />
+              New Payload
+            </Button>
+          )}
+          {currentPayloadId && (
+            <>
+              <Button variant="outline" onClick={handleSavePayload}>
+                <Save className="h-4 w-4 mr-2" />
+                Save
+              </Button>
+              <Button
+                onClick={() => setIsFinalizeDialogOpen(true)}
+                disabled={!selectedVehicleId || payloadItems.length === 0}
+                className="bg-biko-primary hover:bg-biko-primary/90"
+              >
+                <Send className="h-4 w-4 mr-2" />
+                Finalize & Send to FleetOps
+              </Button>
+            </>
+          )}
+        </div>
+      </div>
 
+      {!currentPayloadId ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <Package className="h-16 w-16 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold mb-2">No Active Payload</h3>
+            <p className="text-muted-foreground mb-4">Create a new payload to start planning</p>
+            <Button onClick={createNewPayload}>
+              <Plus className="h-4 w-4 mr-2" />
+              Create Payload
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Vehicle Selection */}
           <div className="lg:col-span-1">
@@ -204,64 +238,98 @@ export default function PayloadPlannerPage() {
                 <CardDescription>Choose a vehicle for this payload</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <Select
-                  value={selectedVehicle?.id || ''}
-                  onValueChange={(value) => {
-                    const vehicle = vehicles.find(v => v.id === value);
-                    setSelectedVehicle(vehicle);
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select vehicle" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {vehicles.map((vehicle) => (
-                      <SelectItem key={vehicle.id} value={vehicle.id}>
-                        <div className="flex flex-col">
-                          <span>{vehicle.model} ({vehicle.plateNumber})</span>
-                          <span className="text-sm text-muted-foreground">
-                            {(vehicle as any).capacity_volume_m3 || 0}m³ • {(vehicle as any).capacity_weight_kg || 0}kg
-                          </span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div>
+                  <Label htmlFor="payload-name">Payload Name</Label>
+                  <Input
+                    id="payload-name"
+                    value={payloadName}
+                    onChange={(e) => setPayloadName(e.target.value)}
+                    placeholder="Enter payload name"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="vehicle">Select Vehicle</Label>
+                  <Select
+                    value={selectedVehicleId || ''}
+                    onValueChange={handleVehicleSelect}
+                  >
+                    <SelectTrigger id="vehicle">
+                      <SelectValue placeholder="Choose a vehicle" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {vehiclesLoading ? (
+                        <SelectItem value="loading" disabled>Loading vehicles...</SelectItem>
+                      ) : (
+                        vehicles.map((vehicle) => (
+                          <SelectItem key={vehicle.id} value={vehicle.id}>
+                            {vehicle.registration_number} - {vehicle.type}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
 
                 {selectedVehicle && (
-                  <div className="space-y-3 p-4 bg-muted/50 rounded-lg">
+                  <div className="pt-4 space-y-3 border-t">
                     <div className="flex justify-between text-sm">
-                      <span>Capacity:</span>
-                      <span>{(selectedVehicle as any).capacity_volume_m3 || 0}m³</span>
+                      <span className="text-muted-foreground">Capacity (Volume)</span>
+                      <span className="font-medium">{selectedVehicle.capacityVolume?.toFixed(2) || 'N/A'} m³</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span>Max Weight:</span>
-                      <span>{(selectedVehicle as any).capacity_weight_kg || 0}kg</span>
+                      <span className="text-muted-foreground">Capacity (Weight)</span>
+                      <span className="font-medium">{selectedVehicle.capacityWeight?.toFixed(0) || 'N/A'} kg</span>
                     </div>
-                    <div className="flex justify-between text-sm">
-                      <span>Status:</span>
-                      <Badge variant="secondary">{selectedVehicle.status}</Badge>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Utilization</span>
+                        <span className={`font-medium ${utilizationStatus.color}`}>
+                          {payloadUtilization.toFixed(1)}% - {utilizationStatus.label}
+                        </span>
+                      </div>
+                      <Progress
+                        value={payloadUtilization}
+                        className={`h-2 ${getUtilizationColor(payloadUtilization)}`}
+                      />
                     </div>
                   </div>
                 )}
               </CardContent>
             </Card>
 
-            {/* Payload Visualizer */}
-            {selectedVehicle && (
-              <PayloadVisualizer
-                items={payloadItems.map(item => ({
-                  id: item.id,
-                  name: item.facilityName,
-                  weight_kg: item.weightKg,
-                  volume_m3: item.volumeM3,
-                  quantity: item.quantity
-                }))}
-                vehicleCapacityWeight={(selectedVehicle as any).max_weight || 1000}
-                vehicleCapacityVolume={(selectedVehicle as any).capacity || 10}
-                showVisual={true}
-              />
-            )}
+            {/* Payload Summary */}
+            <Card className="mt-4">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Calculator className="h-5 w-5" />
+                  Payload Summary
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Total Items</span>
+                  <span className="font-semibold">{payloadItems.length}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Total Weight</span>
+                  <span className="font-semibold">{totalWeight.toFixed(2)} kg</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Total Volume</span>
+                  <span className="font-semibold">{totalVolume.toFixed(3)} m³</span>
+                </div>
+                {payloadUtilization > 90 && (
+                  <div className="flex items-start gap-2 p-3 bg-destructive/10 rounded-md">
+                    <AlertTriangle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
+                    <div className="text-sm">
+                      <p className="font-medium text-destructive">Capacity Warning</p>
+                      <p className="text-muted-foreground">Vehicle is over 90% capacity. Consider redistributing items.</p>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
 
           {/* Payload Items */}
@@ -274,59 +342,56 @@ export default function PayloadPlannerPage() {
                       <Package className="h-5 w-5" />
                       Payload Items
                     </CardTitle>
-                    <CardDescription>Add facilities and their delivery requirements</CardDescription>
+                    <CardDescription>Add items to this payload</CardDescription>
                   </div>
                   <Dialog open={isAddItemDialogOpen} onOpenChange={setIsAddItemDialogOpen}>
                     <DialogTrigger asChild>
-                      <Button onClick={resetItemForm}>
+                      <Button size="sm">
                         <Plus className="h-4 w-4 mr-2" />
                         Add Item
                       </Button>
                     </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Add Payload Item</DialogTitle>
-                        <DialogDescription>
-                          Add a facility and specify the delivery requirements
-                        </DialogDescription>
-                      </DialogHeader>
+                    <DialogContent className="max-w-md">
                       <form onSubmit={handleAddPayloadItem}>
+                        <DialogHeader>
+                          <DialogTitle>Add Payload Item</DialogTitle>
+                          <DialogDescription>
+                            Add a new item to this payload
+                          </DialogDescription>
+                        </DialogHeader>
                         <div className="space-y-4 py-4">
-                          <div className="space-y-2">
+                          <div>
                             <Label htmlFor="facility">Facility</Label>
                             <Select
                               value={itemFormData.facilityId}
-                              onValueChange={(value) => setItemFormData({ ...itemFormData, facilityId: value })}
+                              onValueChange={(value) => setItemFormData({...itemFormData, facilityId: value})}
                             >
-                              <SelectTrigger>
+                              <SelectTrigger id="facility">
                                 <SelectValue placeholder="Select facility" />
                               </SelectTrigger>
                               <SelectContent>
                                 {facilities.map((facility) => (
                                   <SelectItem key={facility.id} value={facility.id}>
-                                    <div className="flex flex-col">
-                                      <span>{facility.name}</span>
-                                      <span className="text-sm text-muted-foreground">{facility.type}</span>
-                                    </div>
+                                    {facility.name}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
                             </Select>
                           </div>
 
-                          <div className="space-y-2">
-                            <Label htmlFor="box-type">Box Type</Label>
+                          <div>
+                            <Label htmlFor="boxType">Box Type</Label>
                             <Select
                               value={itemFormData.boxType}
-                              onValueChange={(value) => setItemFormData({ ...itemFormData, boxType: value })}
+                              onValueChange={(value) => setItemFormData({...itemFormData, boxType: value})}
                             >
-                              <SelectTrigger>
+                              <SelectTrigger id="boxType">
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
-                                {boxTypes.map((boxType) => (
-                                  <SelectItem key={boxType.value} value={boxType.value}>
-                                    {boxType.label}
+                                {boxTypes.map((type) => (
+                                  <SelectItem key={type.value} value={type.value}>
+                                    {type.label}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
@@ -335,57 +400,57 @@ export default function PayloadPlannerPage() {
 
                           {itemFormData.boxType === 'custom' && (
                             <div className="grid grid-cols-3 gap-2">
-                              <div className="space-y-2">
+                              <div>
                                 <Label htmlFor="length">Length (cm)</Label>
                                 <Input
                                   id="length"
                                   type="number"
                                   value={itemFormData.customLength}
-                                  onChange={(e) => setItemFormData({ ...itemFormData, customLength: parseFloat(e.target.value) })}
+                                  onChange={(e) => setItemFormData({...itemFormData, customLength: parseFloat(e.target.value)})}
                                 />
                               </div>
-                              <div className="space-y-2">
+                              <div>
                                 <Label htmlFor="width">Width (cm)</Label>
                                 <Input
                                   id="width"
                                   type="number"
                                   value={itemFormData.customWidth}
-                                  onChange={(e) => setItemFormData({ ...itemFormData, customWidth: parseFloat(e.target.value) })}
+                                  onChange={(e) => setItemFormData({...itemFormData, customWidth: parseFloat(e.target.value)})}
                                 />
                               </div>
-                              <div className="space-y-2">
+                              <div>
                                 <Label htmlFor="height">Height (cm)</Label>
                                 <Input
                                   id="height"
                                   type="number"
                                   value={itemFormData.customHeight}
-                                  onChange={(e) => setItemFormData({ ...itemFormData, customHeight: parseFloat(e.target.value) })}
+                                  onChange={(e) => setItemFormData({...itemFormData, customHeight: parseFloat(e.target.value)})}
                                 />
                               </div>
                             </div>
                           )}
 
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                              <Label htmlFor="quantity">Quantity</Label>
-                              <Input
-                                id="quantity"
-                                type="number"
-                                min="1"
-                                value={itemFormData.quantity}
-                                onChange={(e) => setItemFormData({ ...itemFormData, quantity: parseInt(e.target.value) })}
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="weight">Weight per item (kg)</Label>
-                              <Input
-                                id="weight"
-                                type="number"
-                                step="0.1"
-                                value={itemFormData.weightKg}
-                                onChange={(e) => setItemFormData({ ...itemFormData, weightKg: parseFloat(e.target.value) })}
-                              />
-                            </div>
+                          <div>
+                            <Label htmlFor="quantity">Quantity</Label>
+                            <Input
+                              id="quantity"
+                              type="number"
+                              min="1"
+                              value={itemFormData.quantity}
+                              onChange={(e) => setItemFormData({...itemFormData, quantity: parseInt(e.target.value)})}
+                            />
+                          </div>
+
+                          <div>
+                            <Label htmlFor="weight">Weight per Box (kg)</Label>
+                            <Input
+                              id="weight"
+                              type="number"
+                              min="0"
+                              step="0.1"
+                              value={itemFormData.weightKg}
+                              onChange={(e) => setItemFormData({...itemFormData, weightKg: parseFloat(e.target.value)})}
+                            />
                           </div>
                         </div>
                         <DialogFooter>
@@ -403,8 +468,8 @@ export default function PayloadPlannerPage() {
                 {payloadItems.length === 0 ? (
                   <div className="text-center py-12 text-muted-foreground">
                     <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>No payload items added yet</p>
-                    <p className="text-sm">Add facilities and their delivery requirements to start planning</p>
+                    <p>No items added yet</p>
+                    <p className="text-sm">Click "Add Item" to start building your payload</p>
                   </div>
                 ) : (
                   <Table>
@@ -412,36 +477,31 @@ export default function PayloadPlannerPage() {
                       <TableRow>
                         <TableHead>Facility</TableHead>
                         <TableHead>Box Type</TableHead>
-                        <TableHead>Quantity</TableHead>
-                        <TableHead>Weight</TableHead>
-                        <TableHead>Volume</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
+                        <TableHead>Qty</TableHead>
+                        <TableHead>Weight (kg)</TableHead>
+                        <TableHead>Volume (m³)</TableHead>
+                        <TableHead className="w-[50px]"></TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {payloadItems.map((item) => (
                         <TableRow key={item.id}>
-                          <TableCell className="font-medium">{item.facilityName}</TableCell>
+                          <TableCell>{item.facility?.name || 'N/A'}</TableCell>
                           <TableCell>
-                            <div className="flex flex-col">
-                              <span className="capitalize">{item.boxType}</span>
-                              {item.boxType === 'custom' && (
-                                <span className="text-xs text-muted-foreground">
-                                  {item.customLength}×{item.customWidth}×{item.customHeight}cm
-                                </span>
-                              )}
-                            </div>
+                            <Badge variant="outline">
+                              {boxTypes.find(t => t.value === item.box_type)?.label.split(' ')[0] || item.box_type}
+                            </Badge>
                           </TableCell>
                           <TableCell>{item.quantity}</TableCell>
-                          <TableCell>{(item.weightKg * item.quantity).toFixed(1)}kg</TableCell>
-                          <TableCell>{item.volumeM3.toFixed(3)}m³</TableCell>
-                          <TableCell className="text-right">
+                          <TableCell>{(item.weight_kg * item.quantity).toFixed(2)}</TableCell>
+                          <TableCell>{item.volume_m3.toFixed(3)}</TableCell>
+                          <TableCell>
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => handleRemovePayloadItem(item.id)}
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>
                           </TableCell>
                         </TableRow>
@@ -451,16 +511,50 @@ export default function PayloadPlannerPage() {
                 )}
               </CardContent>
             </Card>
+
+            {/* Payload Visualizer */}
+            {selectedVehicle && payloadItems.length > 0 && (
+              <Card className="mt-4">
+                <CardHeader>
+                  <CardTitle>Payload Visualization</CardTitle>
+                  <CardDescription>Visual representation of vehicle utilization</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <PayloadVisualizer
+                    items={payloadItems.map(item => ({
+                      id: item.id,
+                      facilityId: item.facility_id || '',
+                      facilityName: item.facility?.name || 'Unknown',
+                      boxType: item.box_type,
+                      quantity: item.quantity,
+                      customLength: item.custom_length_cm,
+                      customWidth: item.custom_width_cm,
+                      customHeight: item.custom_height_cm,
+                      weightKg: item.weight_kg,
+                      volumeM3: item.volume_m3,
+                    }))}
+                    vehicleCapacity={selectedVehicle.capacityVolume || 0}
+                  />
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
+      )}
 
       {/* Finalize Dialog */}
-      {selectedVehicle && (
+      {currentPayloadId && (
         <FinalizePayloadDialog
           open={isFinalizeDialogOpen}
-          onClose={() => setIsFinalizeDialogOpen(false)}
-          vehicleId={selectedVehicle.id}
-          vehicleName={`${selectedVehicle.model} (${selectedVehicle.plateNumber})`}
+          onOpenChange={setIsFinalizeDialogOpen}
+          onConfirm={handleFinalizePayload}
+          payloadSummary={{
+            vehicleName: selectedVehicle?.registration_number || 'No vehicle selected',
+            totalItems: payloadItems.length,
+            totalWeight,
+            totalVolume,
+            utilization: payloadUtilization,
+          }}
         />
       )}
     </div>

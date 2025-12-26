@@ -215,5 +215,16 @@ export const MAP_DESIGN_SYSTEM = {
   },
 } as const;
 
-export type MapMode = 'fullscreen' | 'embedded' | 'dashboard';
+/**
+ * MapLayout - Visual presentation mode
+ * Renamed from MapMode to avoid confusion with MapCapability
+ */
+export type MapLayout = 'fullscreen' | 'embedded' | 'dashboard';
+
+/**
+ * Legacy alias for backward compatibility
+ * @deprecated Use MapLayout instead
+ */
+export type MapMode = MapLayout;
+
 export type OverlayPosition = 'topRight' | 'topLeft' | 'bottomRight' | 'bottomLeft';

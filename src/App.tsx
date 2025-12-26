@@ -2,11 +2,12 @@ import React, { useEffect, Suspense, lazy } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { MapStateProvider } from "./contexts/MapStateContext";
 import { WorkspaceProvider, useWorkspace } from "./contexts/WorkspaceContext";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
+import { PermissionRoute } from "./components/auth/PermissionRoute";
 import { CommandPalette } from "./components/layout/CommandPalette";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { Loader2 } from "lucide-react";
@@ -29,7 +30,7 @@ const StorefrontLayout = lazy(() => import("./pages/storefront/layout").then(m =
 
 // Lazy load FleetOps pages
 const FleetOpsHome = lazy(() => import("./pages/fleetops/page"));
-const DriverManagement = lazy(() => import("./pages/DriverManagement"));
+const DriverManagementPage = lazy(() => import("./pages/fleetops/drivers/page"));
 const DispatchPage = lazy(() => import("./pages/DispatchPage"));
 const BatchManagement = lazy(() => import("./pages/BatchManagement"));
 const TacticalMap = lazy(() => import("./pages/TacticalMap"));
@@ -46,6 +47,13 @@ const VLMSMaintenance = lazy(() => import("./pages/fleetops/vlms/maintenance/pag
 const VLMSFuel = lazy(() => import("./pages/fleetops/vlms/fuel/page"));
 const VLMSAssignments = lazy(() => import("./pages/fleetops/vlms/assignments/page"));
 const VLMSIncidents = lazy(() => import("./pages/fleetops/vlms/incidents/page"));
+const VLMSInspections = lazy(() => import("./pages/fleetops/vlms/inspections/page"));
+
+// Lazy load Map System pages
+const MapLayout = lazy(() => import("./pages/fleetops/map/layout"));
+const OperationalMapPage = lazy(() => import("./pages/fleetops/map/operational/page"));
+const PlanningMapPage = lazy(() => import("./pages/fleetops/map/planning/page"));
+const ForensicsMapPage = lazy(() => import("./pages/fleetops/map/forensics/page"));
 
 // Lazy load Storefront pages
 const StorefrontHome = lazy(() => import("./pages/storefront/page"));
@@ -56,6 +64,10 @@ const StorefrontZones = lazy(() => import("./pages/storefront/zones/page"));
 const StorefrontLGAs = lazy(() => import("./pages/storefront/lgas/page"));
 const SchedulePlanner = lazy(() => import("./pages/storefront/schedule-planner/page"));
 const SchedulerPage = lazy(() => import("./pages/storefront/scheduler/page"));
+
+// Lazy load Admin pages
+const UserManagementPage = lazy(() => import("./pages/admin/users/page"));
+const LocationManagementPage = lazy(() => import("./pages/admin/LocationManagement"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -110,27 +122,98 @@ const App = () => (
                       </ProtectedRoute>
                     }>
                       <Route index element={<FleetOpsHome />} />
-                      <Route path="drivers" element={<DriverManagement />} />
-                      <Route path="dispatch" element={<DispatchPage />} />
-                      <Route path="batches" element={<BatchManagement />} />
-                      <Route path="tactical" element={<TacticalMap />} />
-                      <Route path="vehicles" element={<VehicleManagementPage />} />
-                      <Route path="fleet-management" element={
-                        <ErrorBoundary>
-                          <FleetManagement />
-                        </ErrorBoundary>
+                      <Route path="drivers" element={
+                        <PermissionRoute permission="manage_drivers">
+                          <DriverManagementPage />
+                        </PermissionRoute>
                       } />
-                      <Route path="reports" element={<ReportsPageWrapper />} />
+                      <Route path="dispatch" element={
+                        <PermissionRoute permission={['assign_drivers', 'update_batches']} requireAll>
+                          <DispatchPage />
+                        </PermissionRoute>
+                      } />
+                      <Route path="batches" element={
+                        <PermissionRoute permission={['create_batches', 'update_batches']}>
+                          <BatchManagement />
+                        </PermissionRoute>
+                      } />
+                      <Route path="tactical" element={
+                        <PermissionRoute permission="view_tactical_map">
+                          <TacticalMap />
+                        </PermissionRoute>
+                      } />
+                      <Route path="vehicles" element={
+                        <PermissionRoute permission="manage_vehicles">
+                          <VehicleManagementPage />
+                        </PermissionRoute>
+                      } />
+                      <Route path="fleet-management" element={
+                        <PermissionRoute permission={['manage_drivers', 'manage_vehicles']}>
+                          <ErrorBoundary>
+                            <FleetManagement />
+                          </ErrorBoundary>
+                        </PermissionRoute>
+                      } />
+                      <Route path="reports" element={
+                        <PermissionRoute permission="view_reports">
+                          <ReportsPageWrapper />
+                        </PermissionRoute>
+                      } />
 
                       {/* VLMS Routes */}
-                      <Route path="vlms" element={<VLMSDashboard />} />
-                      <Route path="vlms/vehicles" element={<VLMSVehicles />} />
-                      <Route path="vlms/vehicles/onboard" element={<VehicleOnboardPage />} />
-                      <Route path="vlms/vehicles/:id" element={<VLMSVehicleDetail />} />
-                      <Route path="vlms/maintenance" element={<VLMSMaintenance />} />
-                      <Route path="vlms/fuel" element={<VLMSFuel />} />
-                      <Route path="vlms/assignments" element={<VLMSAssignments />} />
-                      <Route path="vlms/incidents" element={<VLMSIncidents />} />
+                      <Route path="vlms" element={
+                        <PermissionRoute permission="manage_vehicles">
+                          <VLMSDashboard />
+                        </PermissionRoute>
+                      } />
+                      <Route path="vlms/vehicles" element={
+                        <PermissionRoute permission="manage_vehicles">
+                          <VLMSVehicles />
+                        </PermissionRoute>
+                      } />
+                      <Route path="vlms/vehicles/onboard" element={
+                        <PermissionRoute permission="manage_vehicles">
+                          <VehicleOnboardPage />
+                        </PermissionRoute>
+                      } />
+                      <Route path="vlms/vehicles/:id" element={
+                        <PermissionRoute permission="manage_vehicles">
+                          <VLMSVehicleDetail />
+                        </PermissionRoute>
+                      } />
+                      <Route path="vlms/maintenance" element={
+                        <PermissionRoute permission="manage_vehicles">
+                          <VLMSMaintenance />
+                        </PermissionRoute>
+                      } />
+                      <Route path="vlms/fuel" element={
+                        <PermissionRoute permission="manage_vehicles">
+                          <VLMSFuel />
+                        </PermissionRoute>
+                      } />
+                      <Route path="vlms/assignments" element={
+                        <PermissionRoute permission={['manage_vehicles', 'assign_drivers']}>
+                          <VLMSAssignments />
+                        </PermissionRoute>
+                      } />
+                      <Route path="vlms/incidents" element={
+                        <PermissionRoute permission="manage_vehicles">
+                          <VLMSIncidents />
+                        </PermissionRoute>
+                      } />
+                      <Route path="vlms/inspections" element={
+                        <PermissionRoute permission="manage_vehicles">
+                          <VLMSInspections />
+                        </PermissionRoute>
+                      } />
+
+                      {/* Map System Routes */}
+                      <Route path="map" element={<MapLayout />}>
+                        <Route index element={<Navigate to="/fleetops/map/operational" replace />} />
+                        <Route path="operational" element={<OperationalMapPage />} />
+                        <Route path="planning" element={<PlanningMapPage />} />
+                        <Route path="forensics" element={<ForensicsMapPage />} />
+                      </Route>
                     </Route>
 
                     {/* Storefront Workspace */}
@@ -140,13 +223,61 @@ const App = () => (
                       </ProtectedRoute>
                     }>
                       <Route index element={<StorefrontHome />} />
-                      <Route path="zones" element={<StorefrontZones />} />
-                      <Route path="lgas" element={<StorefrontLGAs />} />
-                      <Route path="facilities" element={<StorefrontFacilities />} />
-                      <Route path="requisitions" element={<StorefrontRequisitions />} />
-                      <Route path="payloads" element={<StorefrontPayloads />} />
-                      <Route path="schedule-planner" element={<SchedulePlanner />} />
-                      <Route path="scheduler" element={<SchedulerPage />} />
+                      <Route path="zones" element={
+                        <PermissionRoute permission="manage_facilities">
+                          <StorefrontZones />
+                        </PermissionRoute>
+                      } />
+                      <Route path="lgas" element={
+                        <PermissionRoute permission="manage_facilities">
+                          <StorefrontLGAs />
+                        </PermissionRoute>
+                      } />
+                      <Route path="facilities" element={
+                        <PermissionRoute permission="manage_facilities">
+                          <StorefrontFacilities />
+                        </PermissionRoute>
+                      } />
+                      <Route path="requisitions" element={
+                        <PermissionRoute permission={['create_batches', 'manage_facilities']}>
+                          <StorefrontRequisitions />
+                        </PermissionRoute>
+                      } />
+                      <Route path="payloads" element={
+                        <PermissionRoute permission="create_batches">
+                          <StorefrontPayloads />
+                        </PermissionRoute>
+                      } />
+                      <Route path="schedule-planner" element={
+                        <PermissionRoute permission="create_batches">
+                          <SchedulePlanner />
+                        </PermissionRoute>
+                      } />
+                      <Route path="scheduler" element={
+                        <PermissionRoute permission="create_batches">
+                          <SchedulerPage />
+                        </PermissionRoute>
+                      } />
+                    </Route>
+
+                    {/* Admin Routes */}
+                    <Route path="/admin" element={
+                      <ProtectedRoute>
+                        <PermissionRoute permission="manage_users">
+                          <div className="min-h-screen bg-background">
+                            <div className="container mx-auto py-6">
+                              <Suspense fallback={<PageLoader />}>
+                                <ErrorBoundary>
+                                  <Outlet />
+                                </ErrorBoundary>
+                              </Suspense>
+                            </div>
+                          </div>
+                        </PermissionRoute>
+                      </ProtectedRoute>
+                    }>
+                      <Route path="users" element={<UserManagementPage />} />
+                      <Route path="locations" element={<LocationManagementPage />} />
                     </Route>
 
                     {/* Legacy routes - redirect to workspace structure */}

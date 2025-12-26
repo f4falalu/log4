@@ -1,5 +1,5 @@
 import { Outlet, useLocation } from 'react-router-dom';
-import { Package, LayoutDashboard, Users, Truck, MapPin, GitBranch, FileBarChart, Wrench } from 'lucide-react';
+import { Package, LayoutDashboard, Users, Truck, MapPin, GitBranch, FileBarChart, Wrench, Map } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { SecondarySidebar, NavigationGroup } from '@/components/layout/SecondarySidebar';
 import { useMemo } from 'react';
@@ -54,6 +54,11 @@ const navigationGroups: NavigationGroup[] = [
   {
     label: 'INTELLIGENCE',
     items: [
+      {
+        label: 'Map System',
+        href: '/fleetops/map',
+        icon: Map
+      },
       {
         label: 'Tactical Map',
         href: '/fleetops/tactical',

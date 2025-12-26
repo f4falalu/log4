@@ -4,7 +4,8 @@ import { toast } from 'sonner';
 
 export interface PayloadItem {
   id: string;
-  batch_id: string;
+  batch_id?: string | null;
+  payload_id?: string | null;
   facility_id?: string;
   box_type: 'small' | 'medium' | 'large' | 'custom';
   custom_length_cm?: number;
@@ -23,7 +24,8 @@ export interface PayloadItem {
 }
 
 export interface CreatePayloadItemData {
-  batch_id: string;
+  batch_id?: string | null;
+  payload_id?: string | null;
   facility_id?: string;
   box_type: 'small' | 'medium' | 'large' | 'custom';
   custom_length_cm?: number;
@@ -34,9 +36,9 @@ export interface CreatePayloadItemData {
   status?: string;
 }
 
-export function usePayloadItems(batchId?: string) {
+export function usePayloadItems(batchId?: string, payloadId?: string) {
   return useQuery({
-    queryKey: ['payload-items', batchId],
+    queryKey: ['payload-items', batchId, payloadId],
     queryFn: async () => {
       let query = (supabase as any)
         .from('payload_items')
@@ -50,6 +52,10 @@ export function usePayloadItems(batchId?: string) {
         query = query.eq('batch_id', batchId);
       }
 
+      if (payloadId) {
+        query = query.eq('payload_id', payloadId);
+      }
+
       const { data, error } = await query;
 
       if (error) {
@@ -59,7 +65,7 @@ export function usePayloadItems(batchId?: string) {
 
       return data as unknown as PayloadItem[];
     },
-    enabled: !!batchId,
+    enabled: !!batchId || !!payloadId,
   });
 }
 
@@ -82,7 +88,14 @@ export function useCreatePayloadItem() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['payload-items'] });
-      queryClient.invalidateQueries({ queryKey: ['payload-items', data.batch_id] });
+      if (data.batch_id) {
+        queryClient.invalidateQueries({ queryKey: ['payload-items', data.batch_id] });
+      }
+      if (data.payload_id) {
+        queryClient.invalidateQueries({ queryKey: ['payload-items', undefined, data.payload_id] });
+        queryClient.invalidateQueries({ queryKey: ['payload', data.payload_id] });
+        queryClient.invalidateQueries({ queryKey: ['payloads'] });
+      }
       toast.success('Payload item added successfully');
     },
     onError: (error: any) => {
@@ -112,7 +125,14 @@ export function useUpdatePayloadItem() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['payload-items'] });
-      queryClient.invalidateQueries({ queryKey: ['payload-items', data.batch_id] });
+      if (data.batch_id) {
+        queryClient.invalidateQueries({ queryKey: ['payload-items', data.batch_id] });
+      }
+      if (data.payload_id) {
+        queryClient.invalidateQueries({ queryKey: ['payload-items', undefined, data.payload_id] });
+        queryClient.invalidateQueries({ queryKey: ['payload', data.payload_id] });
+        queryClient.invalidateQueries({ queryKey: ['payloads'] });
+      }
       toast.success('Payload item updated successfully');
     },
     onError: (error: any) => {
@@ -136,6 +156,8 @@ export function useDeletePayloadItem() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['payload-items'] });
+      queryClient.invalidateQueries({ queryKey: ['payloads'] });
+      queryClient.invalidateQueries({ queryKey: ['payload'] });
       toast.success('Payload item removed successfully');
     },
     onError: (error: any) => {
