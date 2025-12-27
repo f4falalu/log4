@@ -1,5 +1,5 @@
-import ReportsPage from '@/pages/ReportsPage';
+import AnalyticsDashboard from '@/pages/fleetops/reports/page';
 
 export default function ReportsPageWrapper() {
-  return <ReportsPage />;
+  return <AnalyticsDashboard />;
 }
