@@ -2,7 +2,6 @@ import { useState, ReactNode, useCallback } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { LeafletMapCore } from './LeafletMapCore';
-import { MapToolsToolbar } from './MapToolsToolbar';
 import { BottomDataPanel } from './BottomDataPanel';
 import { DriversLayer } from './layers/DriversLayer';
 import { FacilitiesLayer } from './layers/FacilitiesLayer';
@@ -228,29 +227,8 @@ export function UnifiedMapContainer({
           onVehicleClick={onVehicleClick}
         />
       )}
-      
+
       {/* Conditional UI Controls */}
-      {showToolbar && mode === 'fullscreen' && (
-        <MapToolsToolbar
-          map={map}
-          onLocateMe={() => {
-            if (map && navigator.geolocation) {
-              navigator.geolocation.getCurrentPosition((position) => {
-                map.setView([position.coords.latitude, position.coords.longitude], 13);
-              });
-            }
-          }}
-          onServiceAreasClick={onServiceAreasClick || (() => {})}
-          onSearchClick={onSearchClick || (() => {})}
-          onDrawToggle={onDrawToggle || (() => {})}
-          onLayersClick={onLayersClick || (() => {})}
-          onMeasureClick={onMeasureClick || (() => {})}
-          onLegendClick={onLegendClick || (() => {})}
-          isDrawing={isDrawing}
-          isMeasuring={isMeasuring}
-        />
-      )}
-      
       {showBottomPanel && mode === 'fullscreen' && (
         <BottomDataPanel 
           drivers={drivers}

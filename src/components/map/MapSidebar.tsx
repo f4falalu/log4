@@ -94,9 +94,9 @@ export function MapSidebar({
   const getEventColor = (type: RealtimeEvent['type']) => {
     switch (type) {
       case 'zone_entry':
-        return 'bg-blue-500/10 border-blue-500/20';
+        return 'bg-primary/10 border-primary/20';
       case 'zone_exit':
-        return 'bg-orange-500/10 border-orange-500/20';
+        return 'bg-warning/10 border-warning/20';
       case 'alert':
         return 'bg-warning/10 border-warning/20';
       case 'handoff':

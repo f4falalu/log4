@@ -75,25 +75,25 @@ const FleetStatus = ({ batches }: FleetStatusProps) => {
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <CircleDot className="h-4 w-4 text-green-600" />
+                <CircleDot className="h-4 w-4 text-success" />
                 <span className="text-sm">Active</span>
               </div>
-              <Badge variant="default" className="bg-green-600">
+              <Badge variant="success">
                 {fleetStats.vehicleStats.active}
               </Badge>
             </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <CircleDot className="h-4 w-4 text-blue-600" />
+                <CircleDot className="h-4 w-4 text-info" />
                 <span className="text-sm">Available</span>
               </div>
-              <Badge variant="secondary" className="bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+              <Badge variant="info">
                 {fleetStats.vehicleStats.available}
               </Badge>
             </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <CircleDot className="h-4 w-4 text-gray-400" />
+                <CircleDot className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm">Maintenance</span>
               </div>
               <Badge variant="outline">
@@ -115,25 +115,25 @@ const FleetStatus = ({ batches }: FleetStatusProps) => {
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <CircleDot className="h-4 w-4 text-green-600" />
+                <CircleDot className="h-4 w-4 text-success" />
                 <span className="text-sm">On Duty</span>
               </div>
-              <Badge variant="default" className="bg-green-600">
+              <Badge variant="success">
                 {fleetStats.driverStats.active}
               </Badge>
             </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <CircleDot className="h-4 w-4 text-blue-600" />
+                <CircleDot className="h-4 w-4 text-info" />
                 <span className="text-sm">Available</span>
               </div>
-              <Badge variant="secondary" className="bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+              <Badge variant="info">
                 {fleetStats.driverStats.available}
               </Badge>
             </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <CircleDot className="h-4 w-4 text-gray-400" />
+                <CircleDot className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm">Off Duty</span>
               </div>
               <Badge variant="outline">

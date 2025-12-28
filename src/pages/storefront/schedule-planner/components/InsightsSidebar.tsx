@@ -28,7 +28,7 @@ export function InsightsSidebar({ schedules }: InsightsSidebarProps) {
           <Card>
             <CardHeader>
               <CardTitle className="text-sm flex items-center gap-2">
-                <Lightbulb className="h-4 w-4 text-yellow-500" />
+                <Lightbulb className="h-4 w-4 text-warning" />
                 Route Optimization Tips
               </CardTitle>
             </CardHeader>
@@ -78,7 +78,7 @@ export function InsightsSidebar({ schedules }: InsightsSidebarProps) {
           <Card>
             <CardHeader>
               <CardTitle className="text-sm flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-green-500" />
+                <TrendingUp className="h-4 w-4 text-success" />
                 Fleet Performance
               </CardTitle>
             </CardHeader>

@@ -67,9 +67,9 @@ const KPIMetrics = ({ batches }: KPIMetricsProps) => {
 
   const getStatusColor = (status: KPICard['status']) => {
     switch (status) {
-      case 'success': return 'text-green-600 dark:text-green-400';
-      case 'warning': return 'text-amber-600 dark:text-amber-400';
-      case 'danger': return 'text-red-600 dark:text-red-400';
+      case 'success': return 'text-success';
+      case 'warning': return 'text-warning';
+      case 'danger': return 'text-destructive';
       default: return 'text-muted-foreground';
     }
   };

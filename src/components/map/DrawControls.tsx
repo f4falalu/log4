@@ -17,7 +17,7 @@ export function DrawControls({
   if (!isVisible) return null;
 
   return (
-    <div className="absolute top-4 right-4 z-[1000] flex items-center gap-2 bg-background/95 backdrop-blur border rounded-lg p-2 shadow-lg">
+    <div className="absolute top-4 right-4 z-floating flex items-center gap-2 bg-background/95 backdrop-blur border rounded-lg p-2 shadow-lg">
       <span className="text-sm font-medium px-2">Drawing Mode</span>
       <div className="h-4 w-px bg-border" />
       <Button

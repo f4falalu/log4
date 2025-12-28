@@ -10,18 +10,27 @@ interface RouteCardProps {
 }
 
 export function RouteCard({ route }: RouteCardProps) {
-  const getStatusBadge = (status: Route['status']) => {
+  const getStatusVariant = (status: Route['status']): 'success' | 'warning' | 'info' | 'secondary' => {
     const statusMap = {
-      on_the_way: { label: 'ON THE WAY', className: 'bg-green-500' },
-      loading: { label: 'LOADING', className: 'bg-orange-500' },
-      unloading: { label: 'UNLOADING', className: 'bg-blue-500' },
-      waiting: { label: 'WAITING', className: 'bg-yellow-500' },
-      completed: { label: 'COMPLETED', className: 'bg-gray-500' },
+      on_the_way: 'success' as const,
+      loading: 'warning' as const,
+      unloading: 'info' as const,
+      waiting: 'warning' as const,
+      completed: 'secondary' as const,
     };
-    return statusMap[status] || statusMap.waiting;
+    return statusMap[status] || 'secondary';
   };
 
-  const statusBadge = getStatusBadge(route.status);
+  const getStatusLabel = (status: Route['status']) => {
+    const labelMap = {
+      on_the_way: 'ON THE WAY',
+      loading: 'LOADING',
+      unloading: 'UNLOADING',
+      waiting: 'WAITING',
+      completed: 'COMPLETED',
+    };
+    return labelMap[status] || 'WAITING';
+  };
 
   return (
     <Card className="overflow-hidden">
@@ -30,9 +39,9 @@ export function RouteCard({ route }: RouteCardProps) {
           <div>
             <div className="flex items-center gap-2 mb-1">
               <span className="font-semibold text-lg">{route.id}</span>
-              <Badge variant="secondary" className="text-xs">
+              <Badge size="sm" variant="secondary">
                 <Package className="h-3 w-3 mr-1" />
-                {route.packageCount} packages
+                {route.packageCount}
               </Badge>
             </div>
             <div className="flex items-start gap-2 text-sm text-muted-foreground">
@@ -43,8 +52,8 @@ export function RouteCard({ route }: RouteCardProps) {
               </div>
             </div>
           </div>
-          <Badge className={`text-white ${statusBadge.className}`}>
-            {statusBadge.label}
+          <Badge size="sm" variant={getStatusVariant(route.status)}>
+            {getStatusLabel(route.status)}
           </Badge>
         </div>
 
@@ -63,28 +72,40 @@ export function RouteCard({ route }: RouteCardProps) {
               <MapPin className="h-3 w-3" />
               Distance
             </div>
-            <div className="font-semibold text-sm">{route.distance} mi</div>
+            <div className="font-semibold text-sm">
+              {route.distance}
+              <span className="text-xs text-muted-foreground ml-0.5">mi</span>
+            </div>
           </div>
           <div className="bg-muted/50 rounded p-2">
             <div className="text-xs text-muted-foreground flex items-center justify-center gap-1 mb-1">
               <Clock className="h-3 w-3" />
               Time Left
             </div>
-            <div className="font-semibold text-sm">{route.timeLeft} min</div>
+            <div className="font-semibold text-sm">
+              {route.timeLeft}
+              <span className="text-xs text-muted-foreground ml-0.5">min</span>
+            </div>
           </div>
           <div className="bg-muted/50 rounded p-2">
             <div className="text-xs text-muted-foreground flex items-center justify-center gap-1 mb-1">
               <Weight className="h-3 w-3" />
               Weight
             </div>
-            <div className="font-semibold text-sm">{route.weight} lbs</div>
+            <div className="font-semibold text-sm">
+              {route.weight}
+              <span className="text-xs text-muted-foreground ml-0.5">lbs</span>
+            </div>
           </div>
           <div className="bg-muted/50 rounded p-2">
             <div className="text-xs text-muted-foreground flex items-center justify-center gap-1 mb-1">
               <Box className="h-3 w-3" />
               Volume
             </div>
-            <div className="font-semibold text-sm">{(route.volume / 1000).toFixed(0)}k</div>
+            <div className="font-semibold text-sm">
+              {(route.volume / 1000).toFixed(0)}k
+              <span className="text-xs text-muted-foreground ml-0.5">ft³</span>
+            </div>
           </div>
         </div>
 

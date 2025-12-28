@@ -137,7 +137,7 @@ export function LeafletMapCore({
   return (
     <>
       {!tilesLoaded && (
-        <div className="absolute inset-0 bg-muted/20 animate-pulse z-[999] pointer-events-none flex items-center justify-center">
+        <div className="absolute inset-0 bg-muted/20 animate-pulse z-floating pointer-events-none flex items-center justify-center">
           <div className="flex items-center gap-2">
             <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
             <span className="text-sm text-muted-foreground">Loading map...</span>

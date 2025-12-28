@@ -46,7 +46,7 @@ export function BatchDrawer({ isOpen, batchId, onClose }: BatchDrawerProps) {
         <SheetHeader className="border-b border-border pb-4 mb-6">
           <div className="flex items-center justify-between">
             <SheetTitle>Batch Details</SheetTitle>
-            <Button variant="ghost" size="icon" onClick={onClose}>
+            <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close drawer">
               <X className="h-4 w-4" />
             </Button>
           </div>
@@ -139,7 +139,7 @@ export function BatchDrawer({ isOpen, batchId, onClose }: BatchDrawerProps) {
                         </div>
                       </div>
                       {facility.status === 'delivered' && (
-                        <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
+                        <CheckCircle className="h-4 w-4 text-success flex-shrink-0" />
                       )}
                     </div>
                   ))}

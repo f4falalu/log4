@@ -47,7 +47,7 @@ const ActivityTimeline = ({ batches }: ActivityTimelineProps) => {
         title: 'Batch Created',
         description: `${batch.name} • ${batch.facilities.length} facilities • ${batch.totalDistance}km`,
         icon: Package,
-        iconColor: 'text-blue-600',
+        iconColor: 'text-primary',
         batchId: batch.id,
         batchName: batch.name
       });
@@ -65,7 +65,7 @@ const ActivityTimeline = ({ batches }: ActivityTimelineProps) => {
           title: 'Driver Assigned',
           description: `${driver?.name || 'Unknown Driver'} → ${batch.name}`,
           icon: User,
-          iconColor: 'text-purple-600',
+          iconColor: 'text-primary',
           batchId: batch.id,
           batchName: batch.name
         });
@@ -80,7 +80,7 @@ const ActivityTimeline = ({ batches }: ActivityTimelineProps) => {
           title: 'Delivery Started',
           description: `${batch.name} • ${drivers.find(d => d.id === batch.driverId)?.name || 'Driver'}`,
           icon: Play,
-          iconColor: 'text-green-600',
+          iconColor: 'text-success',
           batchId: batch.id,
           batchName: batch.name
         });
@@ -102,7 +102,7 @@ const ActivityTimeline = ({ batches }: ActivityTimelineProps) => {
             title: 'Stop Completed',
             description: `${batch.facilities[i]?.name || `Stop ${i + 1}`} • ${batch.name}`,
             icon: CheckCircle2,
-            iconColor: 'text-green-600',
+            iconColor: 'text-success',
             batchId: batch.id,
             batchName: batch.name
           });
@@ -136,7 +136,7 @@ const ActivityTimeline = ({ batches }: ActivityTimelineProps) => {
           title: 'Batch Cancelled',
           description: `${batch.name}`,
           icon: Square,
-          iconColor: 'text-red-600',
+          iconColor: 'text-destructive',
           batchId: batch.id,
           batchName: batch.name
         });

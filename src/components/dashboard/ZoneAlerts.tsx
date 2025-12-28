@@ -69,11 +69,11 @@ export default function ZoneAlerts() {
   const getAlertIcon = (type: string) => {
     switch (type) {
       case 'entry':
-        return <MapPin className="h-4 w-4 text-blue-500" />;
+        return <MapPin className="h-4 w-4 text-primary" />;
       case 'exit':
-        return <MapPin className="h-4 w-4 text-orange-500" />;
+        return <MapPin className="h-4 w-4 text-warning" />;
       case 'duration_exceeded':
-        return <AlertTriangle className="h-4 w-4 text-red-500" />;
+        return <AlertTriangle className="h-4 w-4 text-destructive" />;
       default:
         return <MapPin className="h-4 w-4" />;
     }
@@ -82,9 +82,9 @@ export default function ZoneAlerts() {
   const getAlertBadge = (type: string) => {
     switch (type) {
       case 'entry':
-        return <Badge variant="secondary" className="bg-blue-100 text-blue-700">Entry</Badge>;
+        return <Badge variant="info">Entry</Badge>;
       case 'exit':
-        return <Badge variant="secondary" className="bg-orange-100 text-orange-700">Exit</Badge>;
+        return <Badge variant="warning">Exit</Badge>;
       case 'duration_exceeded':
         return <Badge variant="destructive">Duration Exceeded</Badge>;
       default:

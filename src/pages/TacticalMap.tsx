@@ -13,19 +13,23 @@ import { useMapLayers } from '@/hooks/useMapLayers';
 import { UnifiedMapContainer } from '@/components/map/UnifiedMapContainer';
 import { MapInstanceCapture } from '@/components/map/MapInstanceCapture';
 import { OperationalContextBar } from '@/components/map/ui/OperationalContextBar';
-import { CommandSidebar } from '@/components/map/ui/CommandSidebar';
-import { MissionControlPanel } from '@/components/map/ui/MissionControlPanel';
+import { FilterBar } from '@/components/map/ui/FilterBar';
+import { KPIRibbon } from '@/components/map/ui/KPIRibbon';
+import { MapToolbarClusters } from '@/components/map/ui/MapToolbarClusters';
+import { PlaybackBar } from '@/components/map/ui/PlaybackBar';
+import { AnalyticsDrawer } from '@/components/map/ui/AnalyticsDrawer';
 import { DriverDrawer } from '@/components/map/drawers/DriverDrawer';
 import { VehicleDrawer } from '@/components/map/drawers/VehicleDrawer';
 import { BatchDrawer } from '@/components/map/drawers/BatchDrawer';
 import { ServiceAreasMenu } from '@/components/map/ServiceAreasMenu';
 import { DrawControls } from '@/components/map/DrawControls';
-import { MapToolsToolbar } from '@/components/map/MapToolsToolbar';
 import { SearchPanel } from '@/components/map/SearchPanel';
 import { LayersPanel } from '@/components/map/LayersPanel';
 import { DeliveriesLayer } from '@/components/map/layers/DeliveriesLayer';
 import { RouteOptimizationDialog } from '@/components/map/RouteOptimizationDialog';
+import { CreateBatchDialog } from '@/components/map/CreateBatchDialog';
 import type { ServiceZone } from '@/types/zones';
+import { useRealtimeStats } from '@/hooks/useRealtimeStats';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { MAP_CONFIG } from '@/lib/mapConfig';
@@ -39,13 +43,14 @@ export default function TacticalMap() {
   const { data: warehouses = [] } = useWarehouses();
   const { data: vehicles = [] } = useVehicles();
   const { data: batches = [] } = useDeliveryBatches();
+  const { data: stats } = useRealtimeStats();
   const { layers } = useMapLayers();
-  
+
   useRealtimeDrivers();
   useRealtimeZones();
   useRealtimeVehicles();
   useRealtimeDeliveries();
-  
+
   const [serviceAreasOpen, setServiceAreasOpen] = useState(false);
   const [isDrawing, setIsDrawing] = useState(false);
   const [visibleZones, setVisibleZones] = useState<Set<string>>(new Set());
@@ -55,6 +60,12 @@ export default function TacticalMap() {
   const [legendOpen, setLegendOpen] = useState(false);
   const [isMeasuring, setIsMeasuring] = useState(false);
   const [optimizeDialogOpen, setOptimizeDialogOpen] = useState(false);
+  const [createBatchDialogOpen, setCreateBatchDialogOpen] = useState(false);
+  const [analyticsDrawerOpen, setAnalyticsDrawerOpen] = useState(false);
+  const [playbackMode, setPlaybackMode] = useState<'live' | 'playback'>('live');
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedZone, setSelectedZone] = useState<string | null>(null);
+  const [selectedFleet, setSelectedFleet] = useState<string | null>(null);
   const [selectedDrawerType, setSelectedDrawerType] = useState<'driver' | 'vehicle' | 'batch' | null>(null);
   const [selectedDrawerId, setSelectedDrawerId] = useState<string | null>(null);
   
@@ -181,50 +192,75 @@ export default function TacticalMap() {
     <div className="flex flex-col h-screen overflow-hidden">
       {/* Operational Context Bar */}
       <OperationalContextBar
+        onAnalyticsClick={() => setAnalyticsDrawerOpen(true)}
         onOptimizeClick={() => setOptimizeDialogOpen(true)}
-        onCreateBatchClick={() => {
-          // TODO: Implement create batch dialog
-          console.log('Create batch clicked');
-        }}
+        onCreateBatchClick={() => setCreateBatchDialogOpen(true)}
       />
-      
+
+      {/* Filter Bar */}
+      <FilterBar
+        selectedDate={selectedDate}
+        selectedZone={selectedZone}
+        selectedFleet={selectedFleet}
+        onDateChange={setSelectedDate}
+        onZoneChange={setSelectedZone}
+        onFleetChange={setSelectedFleet}
+      />
+
       {/* ARIA Live Region for Alerts */}
-      <div 
-        role="status" 
-        aria-live="polite" 
+      <div
+        role="status"
+        aria-live="polite"
         aria-atomic="true"
         className="sr-only"
       >
         {/* Alert messages will be announced here */}
       </div>
-      
-      <div className="flex flex-1 overflow-hidden">
-        {/* Map Area */}
-        <div className="flex-1 relative">
-          <UnifiedMapContainer
-            mode="fullscreen"
-            facilities={layers.facilities ? facilities : []}
-            warehouses={layers.warehouses ? warehouses : []}
-            drivers={layers.drivers ? drivers : []}
-            batches={layers.batches ? batches : []}
-            vehicles={layers.vehicles ? vehicles : []}
-            showToolbar={false}
-            showBottomPanel={false}
-            onMapReady={handleMapCapture}
-          >
-            {/* Floating Map Tools Toolbar */}
-            <MapToolsToolbar
-              map={mapInstanceRef.current}
-              onLocateMe={handleLocateMe}
-              onServiceAreasClick={() => setServiceAreasOpen(!serviceAreasOpen)}
-              onSearchClick={() => setSearchOpen(!searchOpen)}
-              onDrawToggle={() => setIsDrawing(!isDrawing)}
-              onLayersClick={() => setLayersOpen(!layersOpen)}
-              onMeasureClick={() => setIsMeasuring(!isMeasuring)}
-              onLegendClick={() => setLegendOpen(!legendOpen)}
-              isDrawing={isDrawing}
-              isMeasuring={isMeasuring}
-            />
+
+      {/* Map Container - Full Screen */}
+      <div className="flex-1 relative overflow-hidden">
+        <UnifiedMapContainer
+          mode="fullscreen"
+          facilities={layers.facilities ? facilities : []}
+          warehouses={layers.warehouses ? warehouses : []}
+          drivers={layers.drivers ? drivers : []}
+          batches={layers.batches ? batches : []}
+          vehicles={layers.vehicles ? vehicles : []}
+          showToolbar={false}
+          showBottomPanel={false}
+          onMapReady={handleMapCapture}
+        >
+          {/* KPI Ribbon - Floating at Top */}
+          <KPIRibbon
+            activeVehicles={stats?.activeVehicles}
+            inProgress={stats?.inProgressDeliveries}
+            completed={stats?.completedDeliveries}
+            alerts={stats?.activeAlerts}
+            onTimePercentage={stats?.onTimePercentage}
+          />
+
+          {/* Map Toolbar Clusters - Left Side */}
+          <MapToolbarClusters
+            map={mapInstanceRef.current}
+            onLocateMe={handleLocateMe}
+            onSearchClick={() => setSearchOpen(!searchOpen)}
+            onServiceAreasClick={() => setServiceAreasOpen(!serviceAreasOpen)}
+            onLayersClick={() => setLayersOpen(!layersOpen)}
+            onLegendClick={() => setLegendOpen(!legendOpen)}
+            onDrawToggle={() => setIsDrawing(!isDrawing)}
+            onMeasureClick={() => setIsMeasuring(!isMeasuring)}
+            isDrawing={isDrawing}
+            isMeasuring={isMeasuring}
+          />
+
+          {/* Playback Bar - Floating at Bottom */}
+          <PlaybackBar
+            mode={playbackMode}
+            currentTime={new Date()}
+            shiftStart={new Date()}
+            shiftEnd={new Date()}
+            onModeToggle={() => setPlaybackMode(playbackMode === 'live' ? 'playback' : 'live')}
+          />
 
             {/* Search Panel */}
             <SearchPanel
@@ -255,7 +291,7 @@ export default function TacticalMap() {
             )}
             
             {editingZone && drawingLayerRef.current && (
-              <div className="absolute top-4 right-4 z-[1000] bg-background border border-border rounded-lg shadow-lg p-4 space-y-2">
+              <div className="absolute top-4 right-4 z-floating bg-background border border-border rounded-lg shadow-lg p-4 space-y-2">
                 <p className="text-sm font-medium">Edit Zone: {zones.find(z => z.id === editingZone)?.name}</p>
                 <p className="text-xs text-muted-foreground">Drag vertices to reshape the zone</p>
                 <div className="flex gap-2">
@@ -283,43 +319,43 @@ export default function TacticalMap() {
                 </div>
               </div>
             )}
-          </UnifiedMapContainer>
+        </UnifiedMapContainer>
 
-          {/* Floating Service Areas Menu */}
-          <div className="absolute top-20 right-4 z-[1000]">
-            <ServiceAreasMenu
-              zones={zones}
-              visibleZones={visibleZones}
-              selectedZoneId={editingZone}
-              onToggleVisibility={handleToggleVisibility}
-              onCenterOnZone={handleCenterOnZone}
-              onEditZone={(zoneId) => {
-                const zone = zones.find(z => z.id === zoneId);
-                if (zone) {
-                  setEditingZone(zoneId);
-                  if (drawingLayerRef.current) {
-                    const layers = drawingLayerRef.current.getLayers();
-                    const layer = layers.find((l: any) => l.options?.zoneId === zoneId);
-                    if (layer && 'editing' in layer) {
-                      (layer as any).editing.enable();
-                    }
+        {/* Floating Service Areas Menu */}
+        <div className="absolute top-20 right-4 z-floating">
+          <ServiceAreasMenu
+            zones={zones}
+            visibleZones={visibleZones}
+            selectedZoneId={editingZone}
+            onToggleVisibility={handleToggleVisibility}
+            onCenterOnZone={handleCenterOnZone}
+            onEditZone={(zoneId) => {
+              const zone = zones.find(z => z.id === zoneId);
+              if (zone) {
+                setEditingZone(zoneId);
+                if (drawingLayerRef.current) {
+                  const layers = drawingLayerRef.current.getLayers();
+                  const layer = layers.find((l: any) => l.options?.zoneId === zoneId);
+                  if (layer && 'editing' in layer) {
+                    (layer as any).editing.enable();
                   }
                 }
-              }}
-              onDeleteZone={handleDeleteZone}
-              onCreateNew={handleStartDrawing}
-            >
-              <div />
-            </ServiceAreasMenu>
-          </div>
+              }
+            }}
+            onDeleteZone={handleDeleteZone}
+            onCreateNew={handleStartDrawing}
+          >
+            <div />
+          </ServiceAreasMenu>
         </div>
-        
-        {/* Right Command Sidebar */}
-        <CommandSidebar 
-          mapInstance={mapInstanceRef.current}
-          onEntityClick={handleEntityClick}
-        />
       </div>
+
+      {/* Analytics Drawer - Replaces CommandSidebar */}
+      <AnalyticsDrawer
+        isOpen={analyticsDrawerOpen}
+        onClose={() => setAnalyticsDrawerOpen(false)}
+        onEntityClick={handleEntityClick}
+      />
       
       {/* Route Optimization Dialog */}
       <RouteOptimizationDialog
@@ -327,10 +363,13 @@ export default function TacticalMap() {
         onOpenChange={setOptimizeDialogOpen}
         batches={batches}
       />
-      
-      {/* Mission Control Panel */}
-      <MissionControlPanel />
-      
+
+      {/* Create Batch Dialog */}
+      <CreateBatchDialog
+        open={createBatchDialogOpen}
+        onOpenChange={setCreateBatchDialogOpen}
+      />
+
       {/* Entity Drawers */}
       <DriverDrawer
         isOpen={selectedDrawerType === 'driver'}

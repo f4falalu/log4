@@ -15,9 +15,9 @@ export function AnalyticsPanel() {
   return (
     <div className="h-full overflow-y-auto">
       {/* KPI Cards Grid */}
-      <div className="p-4 grid grid-cols-4 gap-4">
+      <div className="p-6 grid grid-cols-2 xl:grid-cols-4 gap-6">
         <Card>
-          <CardHeader className="pb-2">
+          <CardHeader className="pb-4 pt-4">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Package className="h-4 w-4 text-muted-foreground" />
               Total Deliveries
@@ -33,7 +33,7 @@ export function AnalyticsPanel() {
         </Card>
 
         <Card>
-          <CardHeader className="pb-2">
+          <CardHeader className="pb-4 pt-4">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Clock className="h-4 w-4 text-muted-foreground" />
               Avg ETA Accuracy
@@ -41,7 +41,7 @@ export function AnalyticsPanel() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">87%</div>
-            <div className="flex items-center gap-1 mt-2 text-xs text-green-600">
+            <div className="flex items-center gap-1 mt-2 text-xs text-success">
               <TrendingUp className="h-3 w-3" />
               <span>+5% vs yesterday</span>
             </div>
@@ -49,7 +49,7 @@ export function AnalyticsPanel() {
         </Card>
 
         <Card>
-          <CardHeader className="pb-2">
+          <CardHeader className="pb-4 pt-4">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Gauge className="h-4 w-4 text-muted-foreground" />
               Payload Utilization
@@ -69,7 +69,7 @@ export function AnalyticsPanel() {
         </Card>
 
         <Card>
-          <CardHeader className="pb-2">
+          <CardHeader className="pb-4 pt-4">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Route className="h-4 w-4 text-muted-foreground" />
               Route Efficiency
@@ -77,7 +77,7 @@ export function AnalyticsPanel() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">92%</div>
-            <div className="flex items-center gap-1 mt-2 text-xs text-green-600">
+            <div className="flex items-center gap-1 mt-2 text-xs text-success">
               <TrendingUp className="h-3 w-3" />
               <span>Optimized routing</span>
             </div>
@@ -86,7 +86,7 @@ export function AnalyticsPanel() {
       </div>
 
       {/* Charts Section */}
-      <div className="px-4 pb-4 grid grid-cols-2 gap-4">
+      <div className="px-6 pb-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
             <CardTitle className="text-sm">Deliveries by Zone</CardTitle>
@@ -145,7 +145,7 @@ export function AnalyticsPanel() {
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Fuel Efficiency</span>
-                <span className="text-sm font-medium flex items-center gap-1 text-green-600">
+                <span className="text-sm font-medium flex items-center gap-1 text-success">
                   <TrendingUp className="h-3 w-3" />
                   Good
                 </span>

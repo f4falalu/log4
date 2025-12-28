@@ -16,13 +16,13 @@ interface DriverListItemProps {
 const getStatusInfo = (status: Driver['status']) => {
   switch (status) {
     case 'busy':
-      return { label: 'ON THE WAY', className: 'bg-green-500' };
+      return { label: 'ON THE WAY', className: 'bg-success' };
     case 'available':
-      return { label: 'WAITING', className: 'bg-yellow-500' };
+      return { label: 'WAITING', className: 'bg-warning' };
     case 'offline':
-      return { label: 'OFFLINE', className: 'bg-gray-400' };
+      return { label: 'OFFLINE', className: 'bg-muted' };
     default:
-      return { label: 'LOADING', className: 'bg-orange-500' };
+      return { label: 'LOADING', className: 'bg-warning' };
   }
 };
 
@@ -47,7 +47,7 @@ export function DriverListItem({
       onClick={onSelect}
       className={cn(
         'flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors',
-        isActive ? 'bg-blue-50 dark:bg-blue-950/20' : 'hover:bg-muted/50'
+        isActive ? 'bg-primary/10' : 'hover:bg-muted/50'
       )}
     >
       <Avatar className="h-10 w-10">
@@ -78,7 +78,7 @@ export function DriverListItem({
         <Star
           className={cn(
             'h-4 w-4',
-            isFavorite ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground'
+            isFavorite ? 'fill-warning text-warning' : 'text-muted-foreground'
           )}
         />
       </button>

@@ -209,7 +209,7 @@ export default function Auth() {
                 )}
                 {success && (
                   <Alert>
-                    <AlertDescription className="text-green-600">{success}</AlertDescription>
+                    <AlertDescription className="text-success">{success}</AlertDescription>
                   </Alert>
                 )}
                 <Button type="submit" className="w-full" disabled={loading}>

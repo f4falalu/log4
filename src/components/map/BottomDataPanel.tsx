@@ -57,13 +57,13 @@ export function BottomDataPanel({
   const getStatusColor = (status: Driver['status']) => {
     switch (status) {
       case 'available':
-        return 'bg-green-500';
+        return 'bg-success';
       case 'busy':
-        return 'bg-yellow-500';
+        return 'bg-warning';
       case 'offline':
-        return 'bg-gray-500';
+        return 'bg-muted';
       default:
-        return 'bg-gray-500';
+        return 'bg-muted';
     }
   };
 
@@ -72,7 +72,7 @@ export function BottomDataPanel({
   };
 
   return (
-    <div className="absolute bottom-0 left-0 right-0 h-60 bg-background border-t border-border shadow-lg z-[999]">
+    <div className="absolute bottom-0 left-0 right-0 h-60 bg-background border-t border-border shadow-lg z-floating">
       <Tabs defaultValue="drivers" className="h-full flex flex-col">
         <div className="flex items-center justify-between px-4 pt-3 pb-2">
           <TabsList>
@@ -249,10 +249,10 @@ export function BottomDataPanel({
                     className="flex items-center gap-3 p-2 rounded-lg hover:bg-accent cursor-pointer transition-colors"
                   >
                     <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
-                      place.type === 'warehouse' ? 'bg-purple-500/10' : 'bg-blue-500/10'
+                      place.type === 'warehouse' ? 'bg-primary/10' : 'bg-info/10'
                     }`}>
                       <Icon className={`h-4 w-4 ${
-                        place.type === 'warehouse' ? 'text-purple-500' : 'text-blue-500'
+                        place.type === 'warehouse' ? 'text-primary' : 'text-info'
                       }`} />
                     </div>
 

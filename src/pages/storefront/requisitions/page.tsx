@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { Plus, Eye, Check, X, Trash2, Filter } from 'lucide-react';
+import { Plus, Eye, Check, X, Trash2, Filter, FileText } from 'lucide-react';
+import { EmptyState } from '@/components/ui/empty-state';
+import { TableLoadingState } from '@/components/ui/loading-state';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -27,7 +29,9 @@ import {
 } from '@/components/ui/select';
 import { useRequisitions, useUpdateRequisitionStatus, useDeleteRequisition } from '@/hooks/useRequisitions';
 import { Requisition, RequisitionStatus } from '@/types/requisitions';
+import { RequisitionTypeDialog } from './RequisitionTypeDialog';
 import { CreateRequisitionDialog } from './CreateRequisitionDialog';
+import { UploadRequisitionDialog } from './UploadRequisitionDialog';
 import { RequisitionDetailsDialog } from './RequisitionDetailsDialog';
 import { format } from 'date-fns';
 import {
@@ -45,7 +49,9 @@ import { Label } from '@/components/ui/label';
 
 export default function RequisitionsPage() {
   const [statusFilter, setStatusFilter] = useState<RequisitionStatus | 'all'>('all');
+  const [typeDialogOpen, setTypeDialogOpen] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [selectedRequisition, setSelectedRequisition] = useState<Requisition | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -129,11 +135,11 @@ export default function RequisitionsPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Requisitions</h1>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground mt-2">
             Manage delivery requisitions and approval workflow
           </p>
         </div>
-        <Button onClick={() => setCreateDialogOpen(true)}>
+        <Button onClick={() => setTypeDialogOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
           New Requisition
         </Button>
@@ -166,11 +172,26 @@ export default function RequisitionsPage() {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="text-center py-8">Loading...</div>
+            <TableLoadingState message="Loading requisitions..." />
           ) : requisitions.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              No requisitions found
-            </div>
+            <EmptyState
+              icon={FileText}
+              title="No requisitions found"
+              description={
+                statusFilter === 'all'
+                  ? 'Get started by creating your first delivery requisition.'
+                  : `No requisitions with status "${statusFilter}".`
+              }
+              action={
+                statusFilter === 'all' && (
+                  <Button onClick={() => setTypeDialogOpen(true)} className="gap-2">
+                    <Plus className="h-4 w-4" />
+                    New Requisition
+                  </Button>
+                )
+              }
+              variant="dashed"
+            />
           ) : (
             <Table>
               <TableHeader>
@@ -221,14 +242,14 @@ export default function RequisitionsPage() {
                               size="sm"
                               onClick={() => handleApprove(req.id)}
                             >
-                              <Check className="h-4 w-4 text-green-600" />
+                              <Check className="h-4 w-4 text-success" />
                             </Button>
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => handleReject(req)}
                             >
-                              <X className="h-4 w-4 text-red-600" />
+                              <X className="h-4 w-4 text-destructive" />
                             </Button>
                           </>
                         )}
@@ -238,7 +259,7 @@ export default function RequisitionsPage() {
                             size="sm"
                             onClick={() => handleFulfill(req.id)}
                           >
-                            <Check className="h-4 w-4 text-blue-600" />
+                            <Check className="h-4 w-4 text-primary" />
                           </Button>
                         )}
                         <Button
@@ -258,9 +279,21 @@ export default function RequisitionsPage() {
         </CardContent>
       </Card>
 
+      <RequisitionTypeDialog
+        open={typeDialogOpen}
+        onOpenChange={setTypeDialogOpen}
+        onSelectManual={() => setCreateDialogOpen(true)}
+        onSelectUpload={() => setUploadDialogOpen(true)}
+      />
+
       <CreateRequisitionDialog
         open={createDialogOpen}
         onOpenChange={setCreateDialogOpen}
+      />
+
+      <UploadRequisitionDialog
+        open={uploadDialogOpen}
+        onOpenChange={setUploadDialogOpen}
       />
 
       {selectedRequisition && (

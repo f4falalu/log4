@@ -12,11 +12,11 @@ interface BatchDetailsOverlayProps {
 
 export function BatchDetailsOverlay({ batch, onClose }: BatchDetailsOverlayProps) {
   const statusColors: Record<string, string> = {
-    planned: 'bg-gray-500',
-    assigned: 'bg-blue-500',
-    'in-progress': 'bg-yellow-500',
-    completed: 'bg-green-500',
-    cancelled: 'bg-red-500',
+    planned: 'bg-muted',
+    assigned: 'bg-primary',
+    'in-progress': 'bg-warning',
+    completed: 'bg-success',
+    cancelled: 'bg-destructive',
   };
 
   return (

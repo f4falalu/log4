@@ -6,9 +6,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
+import { WeightInput, VolumeInput } from '@/components/ui/unit-input';
 import { Plus, Trash2, Package, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { Vehicle } from '@/types';
 import { validatePayload, suggestVehicle, PayloadItem } from '@/lib/payloadValidation';
+import { type WeightUnit, type VolumeUnit, getUserUnitPreferences, saveUserUnitPreferences } from '@/lib/unitConversions';
 
 interface PayloadPlannerProps {
   selectedVehicle?: Vehicle;
@@ -17,11 +19,11 @@ interface PayloadPlannerProps {
   onVehicleSuggested?: (vehicle: Vehicle) => void;
 }
 
-export default function PayloadPlanner({ 
-  selectedVehicle, 
+export default function PayloadPlanner({
+  selectedVehicle,
   availableVehicles,
   onPayloadValidated,
-  onVehicleSuggested 
+  onVehicleSuggested
 }: PayloadPlannerProps) {
   const [items, setItems] = useState<PayloadItem[]>([]);
   const [currentItem, setCurrentItem] = useState<Partial<PayloadItem>>({
@@ -30,6 +32,21 @@ export default function PayloadPlanner({
     weight_kg: 0,
     volume_m3: 0
   });
+
+  // Unit preferences
+  const userPrefs = getUserUnitPreferences();
+  const [weightUnit, setWeightUnit] = useState<WeightUnit>(userPrefs.weight);
+  const [volumeUnit, setVolumeUnit] = useState<VolumeUnit>(userPrefs.volume);
+
+  const handleWeightUnitChange = (unit: WeightUnit) => {
+    setWeightUnit(unit);
+    saveUserUnitPreferences({ weight: unit });
+  };
+
+  const handleVolumeUnitChange = (unit: VolumeUnit) => {
+    setVolumeUnit(unit);
+    saveUserUnitPreferences({ volume: unit });
+  };
 
   const addItem = () => {
     if (!currentItem.name || !currentItem.weight_kg || !currentItem.volume_m3) {
@@ -103,8 +120,8 @@ export default function PayloadPlanner({
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Add Item Form */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          <div className="col-span-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
             <Label htmlFor="item-name">Item Name</Label>
             <Input
               id="item-name"
@@ -123,28 +140,24 @@ export default function PayloadPlanner({
               onChange={(e) => setCurrentItem({ ...currentItem, quantity: parseInt(e.target.value) })}
             />
           </div>
-          <div>
-            <Label htmlFor="weight">Weight (kg)</Label>
-            <Input
-              id="weight"
-              type="number"
-              step="0.1"
-              min="0"
-              value={currentItem.weight_kg || ''}
-              onChange={(e) => setCurrentItem({ ...currentItem, weight_kg: parseFloat(e.target.value) })}
-            />
-          </div>
-          <div>
-            <Label htmlFor="volume">Volume (m³)</Label>
-            <Input
-              id="volume"
-              type="number"
-              step="0.01"
-              min="0"
-              value={currentItem.volume_m3 || ''}
-              onChange={(e) => setCurrentItem({ ...currentItem, volume_m3: parseFloat(e.target.value) })}
-            />
-          </div>
+          <WeightInput
+            label="Weight"
+            value={currentItem.weight_kg || 0}
+            onChange={(value) => setCurrentItem({ ...currentItem, weight_kg: value })}
+            unit={weightUnit}
+            onUnitChange={handleWeightUnitChange}
+            min={0}
+            placeholder="Enter weight"
+          />
+          <VolumeInput
+            label="Volume"
+            value={currentItem.volume_m3 || 0}
+            onChange={(value) => setCurrentItem({ ...currentItem, volume_m3: value })}
+            unit={volumeUnit}
+            onUnitChange={handleVolumeUnitChange}
+            min={0}
+            placeholder="Enter volume"
+          />
         </div>
 
         <Button onClick={addItem} size="sm" className="w-full">
@@ -216,9 +229,9 @@ export default function PayloadPlanner({
             )}
 
             {validation.isValid && (
-              <Alert className="border-green-500 bg-green-50 dark:bg-green-950">
-                <CheckCircle2 className="h-4 w-4 text-green-600" />
-                <AlertDescription className="text-green-600">
+              <Alert variant="success" className="border-success/20 bg-success/10">
+                <CheckCircle2 className="h-4 w-4 text-success" />
+                <AlertDescription className="text-success">
                   Payload validated successfully
                 </AlertDescription>
               </Alert>

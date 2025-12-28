@@ -204,7 +204,7 @@ export default function HandoffManager({ activeBatches, vehicles, onHandoffCreat
         </Button>
 
         {selectedBatch && fromVehicle && toVehicle && (
-          <Alert className="border-blue-500 bg-blue-50 dark:bg-blue-950">
+          <Alert variant="info" className="border-primary/20 bg-primary/10">
             <AlertDescription className="text-sm">
               <strong>Handoff Summary:</strong><br />
               Transfer {selectedBatch.facilities.length} delivery stops from {fromVehicle.plateNumber} to {toVehicle.plateNumber}

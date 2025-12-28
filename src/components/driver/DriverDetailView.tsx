@@ -56,23 +56,23 @@ export function DriverDetailView({ driver }: DriverDetailViewProps) {
                   ID: {driver.id.slice(0, 11)}
                 </Badge>
                 {driver.licenseVerified && (
-                  <CheckCircle2 className="h-4 w-4 text-green-500" />
+                  <CheckCircle2 className="h-4 w-4 text-success" />
                 )}
                 {!driver.onboardingCompleted && (
-                  <XCircle className="h-4 w-4 text-orange-500" />
+                  <XCircle className="h-4 w-4 text-warning" />
                 )}
               </div>
             </div>
           </div>
 
           <div className="flex gap-2">
-            <Button variant="outline" size="icon">
+            <Button variant="outline" size="icon" aria-label="Send message">
               <MessageSquare className="h-4 w-4" />
             </Button>
-            <Button variant="outline" size="icon">
+            <Button variant="outline" size="icon" aria-label="Call driver">
               <Phone className="h-4 w-4" />
             </Button>
-            <Button variant="outline" size="icon">
+            <Button variant="outline" size="icon" aria-label="More actions">
               <MoreVertical className="h-4 w-4" />
             </Button>
           </div>
@@ -121,7 +121,7 @@ export function DriverDetailView({ driver }: DriverDetailViewProps) {
 
               {/* License Plate */}
               <div className="flex items-center justify-between">
-                <div className="bg-yellow-400 text-black font-bold px-4 py-2 rounded border-2 border-black">
+                <div className="bg-warning text-warning-foreground font-bold px-4 py-2 rounded border-2 border-foreground">
                   {currentVehicle.plateNumber}
                 </div>
                 <Button variant="outline" size="sm">

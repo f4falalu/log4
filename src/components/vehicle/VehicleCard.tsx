@@ -1,9 +1,10 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { VehicleIllustration } from '@/components/vehicle/VehicleIllustration';
 import { Vehicle } from '@/types';
 import { Clock, Package, Fuel, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { getVehicleStateColors, getBadgeVariant } from '@/lib/designTokens';
+import { getVehicleSilhouette } from '@/lib/vehicleUtils';
 
 interface VehicleCardProps {
   vehicle: Vehicle;
@@ -12,17 +13,17 @@ interface VehicleCardProps {
 }
 
 export const VehicleCard = ({ vehicle, onClick, compact = false }: VehicleCardProps) => {
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'in-use':
-        return 'bg-green-100 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300 dark:border-green-800';
-      case 'available':
-        return 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800';
-      case 'maintenance':
-        return 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-950 dark:text-gray-300 dark:border-gray-800';
-      default:
-        return '';
-    }
+  const getStatusColorClasses = (status: string) => {
+    // Map vehicle status to our semantic states
+    let state: 'available' | 'in_use' | 'maintenance' | 'out_of_service' = 'available';
+
+    if (status === 'in-use') state = 'in_use';
+    else if (status === 'available') state = 'available';
+    else if (status === 'maintenance') state = 'maintenance';
+    else state = 'out_of_service';
+
+    const colors = getVehicleStateColors(state);
+    return cn(colors.bg, colors.text, colors.border, 'border');
   };
 
   const getStatusLabel = (status: string) => {
@@ -55,19 +56,19 @@ export const VehicleCard = ({ vehicle, onClick, compact = false }: VehicleCardPr
             </p>
             <p className="text-xs text-muted-foreground">{vehicle.model}</p>
           </div>
-          <Badge 
-            variant="outline" 
-            className={cn("text-xs", getStatusColor(vehicle.status))}
+          <Badge
+            variant="outline"
+            className={cn("text-xs", getStatusColorClasses(vehicle.status))}
           >
             {getStatusLabel(vehicle.status)}
           </Badge>
         </div>
 
-        {/* Vehicle Image or Illustration */}
+        {/* Vehicle Image or Silhouette */}
         {vehicle.photo_url ? (
             <div className="relative w-full aspect-[16/9] bg-muted/30 rounded-lg overflow-hidden">
-              <img 
-                src={vehicle.photo_url} 
+              <img
+                src={vehicle.photo_url}
                 alt={`${vehicle.plateNumber} - ${vehicle.model}`}
                 className="w-full h-full object-contain p-2"
               />
@@ -78,10 +79,14 @@ export const VehicleCard = ({ vehicle, onClick, compact = false }: VehicleCardPr
             )}
           </div>
         ) : (
-          <div className="flex items-center justify-center py-4 bg-muted/30 rounded-lg">
-            <VehicleIllustration 
-              type={vehicle.type} 
-              size={compact ? 80 : 120}
+          <div className="relative w-full aspect-[16/9] bg-muted/30 rounded-lg overflow-hidden flex items-center justify-center">
+            <img
+              src={getVehicleSilhouette(vehicle.type)}
+              alt={`${vehicle.type} silhouette`}
+              className={cn(
+                "object-contain",
+                compact ? "h-20" : "h-28"
+              )}
             />
           </div>
         )}

@@ -1,0 +1,35 @@
+{
+  "rules": {
+    "color-contrast": {
+      "enabled": true
+    },
+    "aria-required-attr": {
+      "enabled": true
+    },
+    "aria-valid-attr": {
+      "enabled": true
+    },
+    "button-name": {
+      "enabled": true
+    },
+    "image-alt": {
+      "enabled": true
+    },
+    "label": {
+      "enabled": true
+    },
+    "link-name": {
+      "enabled": true
+    }
+  },
+  "checks": [
+    {
+      "id": "color-contrast",
+      "options": {
+        "noScroll": true
+      }
+    }
+  ],
+  "disableOtherRules": false,
+  "locale": "en"
+}

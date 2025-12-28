@@ -44,18 +44,18 @@ const ActiveDeliveriesPanel = ({
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'urgent': return 'bg-red-600';
-      case 'high': return 'bg-orange-600';
-      case 'medium': return 'bg-yellow-600';
-      default: return 'bg-blue-600';
+      case 'urgent': return 'bg-destructive';
+      case 'high': return 'bg-warning';
+      case 'medium': return 'bg-warning/70';
+      default: return 'bg-primary';
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'in-progress': return 'bg-green-600';
-      case 'assigned': return 'bg-blue-600';
-      default: return 'bg-gray-600';
+      case 'in-progress': return 'bg-success';
+      case 'assigned': return 'bg-primary';
+      default: return 'bg-muted-foreground';
     }
   };
 
@@ -171,12 +171,12 @@ const ActiveDeliveriesPanel = ({
                         <div className="bg-muted/50 rounded-lg p-3 border">
                           <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-2">
-                              <Badge 
-                                variant="outline" 
+                              <Badge
+                                variant="outline"
                                 className={`text-sm font-bold ${
-                                  progress >= 70 ? 'bg-green-100 text-green-700 border-green-300' :
-                                  progress >= 30 ? 'bg-yellow-100 text-yellow-700 border-yellow-300' :
-                                  'bg-gray-100 text-gray-700 border-gray-300'
+                                  progress >= 70 ? 'bg-success/10 text-success border-success/20' :
+                                  progress >= 30 ? 'bg-warning/10 text-warning border-warning/20' :
+                                  'bg-muted text-muted-foreground border-border'
                                 }`}
                               >
                                 Stop {completedStops}/{batch.facilities.length}
@@ -216,7 +216,7 @@ const ActiveDeliveriesPanel = ({
                           )}
                           
                           {batch.status === 'completed' && (
-                            <div className="text-xs text-green-600 font-medium">
+                            <div className="text-xs text-success font-medium">
                               ✓ All stops completed
                             </div>
                           )}

@@ -13,6 +13,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { LogOut, User, Shield } from 'lucide-react';
 import { AppRole } from '@/types';
+import { cn } from '@/lib/utils';
 
 const ROLE_LABELS: Record<AppRole, string> = {
   system_admin: 'System Admin',
@@ -23,7 +24,11 @@ const ROLE_LABELS: Record<AppRole, string> = {
   zonal_manager: 'Zonal Manager',
 };
 
-export function UserMenu() {
+interface UserMenuProps {
+  compact?: boolean;
+}
+
+export function UserMenu({ compact = false }: UserMenuProps) {
   const { user, signOut } = useAuth();
   const { activeRole } = useUserRole();
 
@@ -33,12 +38,15 @@ export function UserMenu() {
     return email.substring(0, 2).toUpperCase();
   };
 
+  const avatarSize = compact ? 'h-10 w-10' : 'h-10 w-10';
+  const buttonSize = compact ? 'h-10 w-10' : 'h-10 w-10';
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-          <Avatar className="h-10 w-10">
-            <AvatarFallback className="bg-primary/10">
+        <Button variant="ghost" className={cn('relative rounded-full', buttonSize)}>
+          <Avatar className={avatarSize}>
+            <AvatarFallback className="bg-primary/10 text-xs">
               {getInitials(user.email || 'U')}
             </AvatarFallback>
           </Avatar>
