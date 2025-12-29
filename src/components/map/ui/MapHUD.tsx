@@ -18,17 +18,28 @@ export function MapHUD({ map, tileProvider, onTileProviderToggle }: MapHUDProps)
     if (!map) return;
 
     const updateMapInfo = () => {
-      setCenter(map.getCenter());
-      setZoom(map.getZoom());
+      try {
+        setCenter(map.getCenter());
+        setZoom(map.getZoom());
+      } catch (error) {
+        // Map not fully initialized yet, ignore
+        console.debug('MapHUD: Map not ready yet');
+      }
     };
 
-    updateMapInfo();
-    map.on('move', updateMapInfo);
-    map.on('zoom', updateMapInfo);
+    // Wait for map to be fully initialized
+    const timer = setTimeout(() => {
+      updateMapInfo();
+      map.on('move', updateMapInfo);
+      map.on('zoom', updateMapInfo);
+    }, 100);
 
     return () => {
-      map.off('move', updateMapInfo);
-      map.off('zoom', updateMapInfo);
+      clearTimeout(timer);
+      if (map) {
+        map.off('move', updateMapInfo);
+        map.off('zoom', updateMapInfo);
+      }
     };
   }, [map]);
 

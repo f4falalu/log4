@@ -23,7 +23,11 @@ const CommandCenter = ({ facilities, warehouses, batches }: CommandCenterProps) 
   const [lastRefresh, setLastRefresh] = useState(new Date());
   const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<'all' | 'assigned' | 'in-progress' | 'completed' | 'delayed'>('all');
-  
+  const [dateRange, setDateRange] = useState<{ start: string | null; end: string | null }>({
+    start: null,
+    end: null
+  });
+
   // Enable real-time updates
   useRealtimeBatches();
   useRealtimeDrivers();
@@ -74,7 +78,7 @@ const CommandCenter = ({ facilities, warehouses, batches }: CommandCenterProps) 
 
         {/* KPI Metrics & Fleet Status */}
         <div className="space-y-4">
-          <KPIMetrics batches={batches} />
+          <KPIMetrics startDate={dateRange.start} endDate={dateRange.end} />
           <FleetStatus batches={batches} />
         </div>
 

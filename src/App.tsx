@@ -15,6 +15,9 @@ import StorefrontFacilities from "./pages/storefront/facilities/page";
 import StorefrontPayloads from "./pages/storefront/payloads/page";
 import StorefrontRequisitions from "./pages/storefront/requisitions/page";
 import SchedulePlanner from "./pages/storefront/schedule-planner/page";
+import StorefrontZones from "./pages/storefront/zones/page";
+import StorefrontLGAs from "./pages/storefront/lgas/page";
+import StorefrontScheduler from "./pages/storefront/scheduler/page";
 import FleetManagement from "./pages/fleetops/fleet-management/page";
 import VehicleRegistry from "./pages/fleetops/vehicles/registry/page";
 import Index from "./pages/Index";
@@ -23,13 +26,23 @@ import AuthCallback from "./pages/AuthCallback";
 import NotFound from "./pages/NotFound";
 import ErrorBoundary from "./components/ErrorBoundary";
 import DriverManagement from "./pages/DriverManagement";
-import TacticalMap from "./pages/TacticalMap";
 import CommandCenterPage from "./pages/CommandCenterPage";
 import DispatchPage from "./pages/DispatchPage";
 import FacilityManagerPage from "./pages/FacilityManagerPage";
 import VehicleManagementPage from "./pages/VehicleManagementPage";
 import ReportsPageWrapper from "./pages/ReportsPageWrapper";
 import BatchManagement from "./pages/BatchManagement";
+import MapLayout from "./pages/fleetops/map/layout";
+import PlanningMapPage from "./pages/fleetops/map/planning/page";
+import OperationalMapPage from "./pages/fleetops/map/operational/page";
+import ForensicsMapPage from "./pages/fleetops/map/forensics/page";
+import VLMSDashboard from "./pages/fleetops/vlms/page";
+import VLMSVehicles from "./pages/fleetops/vlms/vehicles/page";
+import VLMSVehicleDetail from "./pages/fleetops/vlms/vehicles/[id]/page";
+import VLMSMaintenance from "./pages/fleetops/vlms/maintenance/page";
+import VLMSFuel from "./pages/fleetops/vlms/fuel/page";
+import VLMSAssignments from "./pages/fleetops/vlms/assignments/page";
+import VLMSIncidents from "./pages/fleetops/vlms/incidents/page";
 
 const queryClient = new QueryClient();
 
@@ -72,7 +85,7 @@ const App = () => (
                     <Route path="drivers" element={<DriverManagement />} />
                     <Route path="dispatch" element={<DispatchPage />} />
                     <Route path="batches" element={<BatchManagement />} />
-                    <Route path="tactical" element={<TacticalMap />} />
+                    <Route path="tactical" element={<Navigate to="/fleetops/map/operational" replace />} />
                     <Route path="vehicles" element={<VehicleRegistry />} />
                     <Route path="vehicles/:id" element={
                       React.createElement(
@@ -81,6 +94,20 @@ const App = () => (
                     } />
                     <Route path="fleet-management" element={<FleetManagement />} />
                     <Route path="reports" element={<ReportsPageWrapper />} />
+                    <Route path="map" element={<MapLayout />}>
+                      <Route path="planning" element={<PlanningMapPage />} />
+                      <Route path="operational" element={<OperationalMapPage />} />
+                      <Route path="forensics" element={<ForensicsMapPage />} />
+                    </Route>
+                    <Route path="vlms">
+                      <Route index element={<VLMSDashboard />} />
+                      <Route path="vehicles" element={<VLMSVehicles />} />
+                      <Route path="vehicles/:id" element={<VLMSVehicleDetail />} />
+                      <Route path="maintenance" element={<VLMSMaintenance />} />
+                      <Route path="fuel" element={<VLMSFuel />} />
+                      <Route path="assignments" element={<VLMSAssignments />} />
+                      <Route path="incidents" element={<VLMSIncidents />} />
+                    </Route>
                   </Route>
 
                   {/* Storefront Workspace */}
@@ -94,6 +121,9 @@ const App = () => (
                     <Route path="requisitions" element={<StorefrontRequisitions />} />
                     <Route path="payloads" element={<StorefrontPayloads />} />
                     <Route path="schedule-planner" element={<SchedulePlanner />} />
+                    <Route path="zones" element={<StorefrontZones />} />
+                    <Route path="lgas" element={<StorefrontLGAs />} />
+                    <Route path="scheduler" element={<StorefrontScheduler />} />
                   </Route>
 
                   {/* Legacy routes - redirect to workspace structure */}

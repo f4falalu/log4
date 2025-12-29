@@ -71,19 +71,35 @@ CREATE INDEX IF NOT EXISTS idx_zone_configurations_centroid ON public.zone_confi
 -- RLS
 ALTER TABLE public.zone_configurations ENABLE ROW LEVEL SECURITY;
 
--- Simplified RLS: Allow authenticated users
--- TODO: Add proper workspace membership check when workspace_members table is created
-CREATE POLICY "Users can view zone configurations"
+DROP POLICY IF EXISTS "Users can view zone configurations in their workspace" ON public.zone_configurations;
+CREATE POLICY "Users can view zone configurations in their workspace"
   ON public.zone_configurations FOR SELECT
-  USING (auth.role() = 'authenticated');
+  USING (
+    workspace_id IN (
+      SELECT workspace_id FROM public.workspace_members
+      WHERE user_id = auth.uid()
+    )
+  );
 
-CREATE POLICY "Users can create zone configurations"
+DROP POLICY IF EXISTS "Users can create zone configurations in their workspace" ON public.zone_configurations;
+CREATE POLICY "Users can create zone configurations in their workspace"
   ON public.zone_configurations FOR INSERT
-  WITH CHECK (auth.role() = 'authenticated');
+  WITH CHECK (
+    workspace_id IN (
+      SELECT workspace_id FROM public.workspace_members
+      WHERE user_id = auth.uid()
+    )
+  );
 
-CREATE POLICY "Users can update zone configurations"
+DROP POLICY IF EXISTS "Users can update zone configurations in their workspace" ON public.zone_configurations;
+CREATE POLICY "Users can update zone configurations in their workspace"
   ON public.zone_configurations FOR UPDATE
-  USING (auth.role() = 'authenticated');
+  USING (
+    workspace_id IN (
+      SELECT workspace_id FROM public.workspace_members
+      WHERE user_id = auth.uid()
+    )
+  );
 
 COMMENT ON TABLE public.zone_configurations IS 'Service zone configurations with versioning and draft workflow';
 
@@ -134,6 +150,7 @@ CREATE INDEX IF NOT EXISTS idx_route_sketches_end_facility ON public.route_sketc
 -- RLS
 ALTER TABLE public.route_sketches ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view route sketches in their workspace" ON public.route_sketches;
 CREATE POLICY "Users can view route sketches in their workspace"
   ON public.route_sketches FOR SELECT
   USING (
@@ -143,6 +160,7 @@ CREATE POLICY "Users can view route sketches in their workspace"
     )
   );
 
+DROP POLICY IF EXISTS "Users can manage route sketches in their workspace" ON public.route_sketches;
 CREATE POLICY "Users can manage route sketches in their workspace"
   ON public.route_sketches FOR ALL
   USING (
@@ -195,6 +213,7 @@ CREATE INDEX IF NOT EXISTS idx_facility_assignments_active ON public.facility_as
 -- RLS
 ALTER TABLE public.facility_assignments ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view facility assignments in their workspace" ON public.facility_assignments;
 CREATE POLICY "Users can view facility assignments in their workspace"
   ON public.facility_assignments FOR SELECT
   USING (
@@ -204,6 +223,7 @@ CREATE POLICY "Users can view facility assignments in their workspace"
     )
   );
 
+DROP POLICY IF EXISTS "Users can manage facility assignments in their workspace" ON public.facility_assignments;
 CREATE POLICY "Users can manage facility assignments in their workspace"
   ON public.facility_assignments FOR ALL
   USING (
@@ -259,6 +279,7 @@ CREATE INDEX IF NOT EXISTS idx_map_action_audit_created_at ON public.map_action_
 -- RLS
 ALTER TABLE public.map_action_audit ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view audit logs in their workspace" ON public.map_action_audit;
 CREATE POLICY "Users can view audit logs in their workspace"
   ON public.map_action_audit FOR SELECT
   USING (
@@ -268,6 +289,7 @@ CREATE POLICY "Users can view audit logs in their workspace"
     )
   );
 
+DROP POLICY IF EXISTS "System can insert audit logs" ON public.map_action_audit;
 CREATE POLICY "System can insert audit logs"
   ON public.map_action_audit FOR INSERT
   WITH CHECK (true);
@@ -310,6 +332,7 @@ CREATE INDEX IF NOT EXISTS idx_forensics_query_log_created_at ON public.forensic
 -- RLS
 ALTER TABLE public.forensics_query_log ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view query logs in their workspace" ON public.forensics_query_log;
 CREATE POLICY "Users can view query logs in their workspace"
   ON public.forensics_query_log FOR SELECT
   USING (
@@ -319,6 +342,7 @@ CREATE POLICY "Users can view query logs in their workspace"
     )
   );
 
+DROP POLICY IF EXISTS "System can insert query logs" ON public.forensics_query_log;
 CREATE POLICY "System can insert query logs"
   ON public.forensics_query_log FOR INSERT
   WITH CHECK (true);
@@ -338,20 +362,24 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS calculate_zone_centroid_trigger ON public.zone_configurations;
 CREATE TRIGGER calculate_zone_centroid_trigger
   BEFORE INSERT OR UPDATE OF boundary ON public.zone_configurations
   FOR EACH ROW
   EXECUTE FUNCTION calculate_zone_centroid();
 
 -- Update updated_at timestamp
+DROP TRIGGER IF EXISTS update_zone_configurations_updated_at ON public.zone_configurations;
 CREATE TRIGGER update_zone_configurations_updated_at
   BEFORE UPDATE ON public.zone_configurations
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_route_sketches_updated_at ON public.route_sketches;
 CREATE TRIGGER update_route_sketches_updated_at
   BEFORE UPDATE ON public.route_sketches
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_facility_assignments_updated_at ON public.facility_assignments;
 CREATE TRIGGER update_facility_assignments_updated_at
   BEFORE UPDATE ON public.facility_assignments
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
