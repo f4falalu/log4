@@ -139,27 +139,17 @@ export function UnifiedMapContainer({
     : MAP_DESIGN_SYSTEM.layout.embedded;
 
   const handleMapReady = useCallback((mapInstance: L.Map) => {
-    const pollReady = (attempt: number = 0) => {
-      if (MapUtils.isMapReady(mapInstance)) {
-        setMap(mapInstance);
-        MapUtils.safeInvalidateSize(mapInstance);
-        onMapReady?.(mapInstance);
-      } else if (attempt < 5) {  // Max 5 retries at this level
-        const delay = Math.min(100 * Math.pow(1.5, attempt), 500);
-        setTimeout(() => pollReady(attempt + 1), delay);
-      } else {
-        console.warn('[UnifiedMapContainer] Map readiness check failed after 5 retries, proceeding anyway');
-        setMap(mapInstance);
-        MapUtils.safeInvalidateSize(mapInstance);
-        onMapReady?.(mapInstance);
-      }
-    };
-
-    pollReady(0);
+    setMap(mapInstance);
+    MapUtils.safeInvalidateSize(mapInstance);
+    onMapReady?.(mapInstance);
   }, [onMapReady]);
 
+  const handleMapDestroy = useCallback(() => {
+    setMap(null);
+  }, []);
+
   return (
-    <div className={cn('relative', layoutClass, className)}>
+    <div className={cn('relative z-0 isolate', layoutClass, className)}>
       {/* Core Leaflet Map */}
       <LeafletMapCore
         center={center}
@@ -170,6 +160,7 @@ export function UnifiedMapContainer({
         showResetControl={mode === 'fullscreen'}
         className="h-full w-full"
         onReady={handleMapReady}
+        onDestroy={handleMapDestroy}
       />
 
       {/* Map HUD */}
@@ -239,10 +230,14 @@ export function UnifiedMapContainer({
           facilities={facilities}
           warehouses={warehouses}
           onDriverClick={(driverId) => {
-            onDriverClick?.(driverId);
             const driver = drivers.find(d => d.id === driverId);
             if (driver?.currentLocation && map) {
-              map.setView([driver.currentLocation.lat, driver.currentLocation.lng], 14);
+              map.flyTo([driver.currentLocation.lat, driver.currentLocation.lng], 14, { duration: 1.5 });
+              map.once('moveend', () => {
+                onDriverClick?.(driverId);
+              });
+            } else {
+              onDriverClick?.(driverId);
             }
           }}
           onVehicleClick={(vehicleId) => onVehicleClick?.(vehicleId)}

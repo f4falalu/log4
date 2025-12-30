@@ -31,6 +31,9 @@ export function LeafletMapCore({
 }: LeafletMapCoreProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<L.Map | null>(null);
+  const tileLayerRef = useRef<L.TileLayer | null>(null);
+  const layersRef = useRef<Record<string, L.TileLayer>>({});
+  const viewTimeoutRef = useRef<NodeJS.Timeout>();
   const onReadyRef = useRef(onReady);
   const onDestroyRef = useRef(onDestroy);
   const [tilesLoaded, setTilesLoaded] = useState(false);
@@ -42,61 +45,27 @@ export function LeafletMapCore({
     onDestroyRef.current = onDestroy;
   });
 
+  // 1. Initialize Map (Run Once)
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
+
+    // Initialize shared layer instances once
+    if (Object.keys(layersRef.current).length === 0) {
+      Object.entries(MAP_CONFIG.tileProviders).forEach(([key, config]) => {
+        const layer = L.tileLayer(config.url, {
+          attribution: config.attribution,
+          maxZoom: MAP_CONFIG.maxZoom,
+        });
+        layer.on('load', () => setTilesLoaded(true));
+        layersRef.current[key] = layer;
+      });
+    }
 
     const map = L.map(containerRef.current, {
       ...MAP_CONFIG.leafletOptions,
       center,
       zoom,
     });
-
-    // Create tile layers
-    const tileLayers: Record<TileProvider, L.TileLayer> = {
-      standard: L.tileLayer(MAP_CONFIG.tileProviders.standard.url, {
-        attribution: MAP_CONFIG.tileProviders.standard.attribution,
-        maxZoom: MAP_CONFIG.maxZoom,
-      }),
-      humanitarian: L.tileLayer(MAP_CONFIG.tileProviders.humanitarian.url, {
-        attribution: MAP_CONFIG.tileProviders.humanitarian.attribution,
-        maxZoom: MAP_CONFIG.maxZoom,
-      }),
-      cartoLight: L.tileLayer(MAP_CONFIG.tileProviders.cartoLight.url, {
-        attribution: MAP_CONFIG.tileProviders.cartoLight.attribution,
-        maxZoom: MAP_CONFIG.maxZoom,
-      }),
-      cartoDark: L.tileLayer(MAP_CONFIG.tileProviders.cartoDark.url, {
-        attribution: MAP_CONFIG.tileProviders.cartoDark.attribution,
-        maxZoom: MAP_CONFIG.maxZoom,
-      }),
-    };
-
-    // Add default tile layer with error handling
-    tileLayers[tileProvider].on('tileerror', () => {
-      if (!tileError) {
-        console.warn(`Tiles failed for ${tileProvider}, falling back to standard`);
-        setTileError(true);
-        tileLayers.standard.addTo(map);
-        toast.info('Map tiles switched to fallback provider');
-      }
-    });
-    
-    tileLayers[tileProvider].on('load', () => {
-      setTilesLoaded(true);
-    });
-    
-    tileLayers[tileProvider].addTo(map);
-
-    // Add layer switcher if requested
-    if (showLayerSwitcher) {
-      const baseMaps = {
-        "Standard": tileLayers.standard,
-        "Humanitarian": tileLayers.humanitarian,
-        "Light": tileLayers.cartoLight,
-        "Dark": tileLayers.cartoDark,
-      };
-      L.control.layers(baseMaps, undefined, { position: 'topright' }).addTo(map);
-    }
 
     // Add scale control if requested
     if (showScaleControl) {
@@ -125,27 +94,14 @@ export function LeafletMapCore({
       }
     });
 
-    // Poll for map readiness with exponential backoff
-    const pollMapReady = () => {
-      if (MapUtils.isMapReady(map)) {
+    // Event-driven readiness check
+    map.whenReady(() => {
+      const panes = map.getPanes();
+      if (panes && panes.overlayPane) {
         onReadyRef.current(map);
       } else {
-        const retryCount = (map as any)._readyRetryCount || 0;
-        (map as any)._readyRetryCount = retryCount + 1;
-
-        if (retryCount < 10) {  // Max 10 retries (~2 seconds)
-          const delay = Math.min(50 * Math.pow(1.5, retryCount), 500);
-          setTimeout(pollMapReady, delay);
-        } else {
-          console.error('[LeafletMapCore] Map failed to become ready after 10 retries');
-          onReadyRef.current(map); // Fallback to avoid blocking
-        }
+        console.error('[LeafletMapCore] Map loaded but overlayPane is missing');
       }
-    };
-
-    // Start polling after RAF completes
-    requestAnimationFrame(() => {
-      requestAnimationFrame(pollMapReady);
     });
 
     return () => {
@@ -155,13 +111,87 @@ export function LeafletMapCore({
       try {
         map.remove();
       } catch (e) {
-        console.error('[LeafletMapCore] Error during map cleanup', e);
+        // Silent cleanup
       }
       onDestroyRef.current?.();
       mapRef.current = null;
+      tileLayerRef.current = null;
+      if (viewTimeoutRef.current) clearTimeout(viewTimeoutRef.current);
     };
-    // Only re-run if map configuration changes, NOT on callback changes
-  }, [center, zoom, tileProvider, showLayerSwitcher, showScaleControl, showResetControl, tileError]);
+  }, []); // Mount only
+
+  // 2. Handle View Updates (Center/Zoom)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    
+    if (viewTimeoutRef.current) {
+      clearTimeout(viewTimeoutRef.current);
+    }
+
+    viewTimeoutRef.current = setTimeout(() => {
+      // Prevent jitter by checking if move is necessary
+      const currentCenter = map.getCenter();
+      const currentZoom = map.getZoom();
+      
+      const dist = Math.sqrt(
+        Math.pow(currentCenter.lat - center[0], 2) + 
+        Math.pow(currentCenter.lng - center[1], 2)
+      );
+
+      if (dist > 0.0001 || currentZoom !== zoom) {
+        map.setView(center, zoom);
+      }
+    }, 100);
+  }, [center[0], center[1], zoom]);
+
+  // 3. Handle Tile Provider Updates
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    const layer = layersRef.current[tileProvider];
+    if (!layer) return;
+
+    // Only remove if the layer has actually changed
+    if (tileLayerRef.current && tileLayerRef.current !== layer) {
+      map.removeLayer(tileLayerRef.current);
+    }
+
+    if (!map.hasLayer(layer)) {
+      layer.addTo(map);
+    }
+
+    layer.on('tileerror', () => {
+      if (!tileError) {
+        console.warn(`Tiles failed for ${tileProvider}, falling back to standard`);
+        setTileError(true);
+        toast.info('Map tiles switched to fallback provider');
+      }
+    });
+
+    tileLayerRef.current = layer;
+  }, [tileProvider]);
+
+  // 4. Handle Layer Switcher Control
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !showLayerSwitcher) return;
+
+    const baseLayers: Record<string, L.TileLayer> = {};
+    Object.entries(MAP_CONFIG.tileProviders).forEach(([key, _]) => {
+      // Format name: cartoDark -> Carto Dark
+      const name = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+      baseLayers[name] = layersRef.current[key];
+    });
+
+    const control = L.control.layers(baseLayers, undefined, { position: 'topright' });
+    control.addTo(map);
+
+    return () => {
+      control.remove();
+    };
+  }, [showLayerSwitcher]);
 
   return (
     <>
