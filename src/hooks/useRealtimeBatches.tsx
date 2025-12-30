@@ -17,7 +17,6 @@ export function useRealtimeBatches() {
           table: 'delivery_batches'
         },
         (payload) => {
-          console.log('Batch update received:', payload);
           
           // Invalidate queries to refetch latest data
           queryClient.invalidateQueries({ queryKey: ['delivery-batches'] });

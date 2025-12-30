@@ -17,7 +17,6 @@ export function useRealtimeRouteProgress() {
           table: 'route_history'
         },
         (payload) => {
-          console.log('Route progress update:', payload);
           queryClient.invalidateQueries({ queryKey: ['route-history'] });
           
           if (payload.eventType === 'UPDATE' && payload.new) {

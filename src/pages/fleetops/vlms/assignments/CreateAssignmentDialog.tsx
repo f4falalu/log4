@@ -57,7 +57,7 @@ export function CreateAssignmentDialog({ open, onOpenChange }: CreateAssignmentD
     }
 
     // Validate that either driver or location is assigned
-    if (!assignedToId && !assignedLocationId) {
+    if ((!assignedToId || assignedToId === 'none') && (!assignedLocationId || assignedLocationId === 'none')) {
       return;
     }
 
@@ -66,8 +66,8 @@ export function CreateAssignmentDialog({ open, onOpenChange }: CreateAssignmentD
       assignment_type: assignmentType,
       start_date: startDate,
       purpose,
-      assigned_to_id: assignedToId || undefined,
-      assigned_location_id: assignedLocationId || undefined,
+      assigned_to_id: assignedToId && assignedToId !== 'none' ? assignedToId : undefined,
+      assigned_location_id: assignedLocationId && assignedLocationId !== 'none' ? assignedLocationId : undefined,
       end_date: endDate || undefined,
       project_name: projectName || undefined,
       authorization_number: authorizationNumber || undefined,
@@ -153,7 +153,7 @@ export function CreateAssignmentDialog({ open, onOpenChange }: CreateAssignmentD
                   <SelectValue placeholder="Select driver (optional)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value="none">None</SelectItem>
                   {drivers.map((driver) => (
                     <SelectItem key={driver.id} value={driver.id}>
                       {driver.name}
@@ -170,7 +170,7 @@ export function CreateAssignmentDialog({ open, onOpenChange }: CreateAssignmentD
                   <SelectValue placeholder="Select location (optional)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value="none">None</SelectItem>
                   {facilities.map((facility) => (
                     <SelectItem key={facility.id} value={facility.id}>
                       {facility.name}
@@ -299,7 +299,7 @@ export function CreateAssignmentDialog({ open, onOpenChange }: CreateAssignmentD
                 !vehicleId ||
                 !startDate ||
                 !purpose.trim() ||
-                (!assignedToId && !assignedLocationId) ||
+                ((!assignedToId || assignedToId === 'none') && (!assignedLocationId || assignedLocationId === 'none')) ||
                 isLoading
               }
             >

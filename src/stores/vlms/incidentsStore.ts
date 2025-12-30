@@ -38,7 +38,8 @@ export const useIncidentsStore = create<IncidentsState>()(
               `
               *,
               vehicle:vehicles(id, vehicle_id, make, model, license_plate),
-              driver:profiles(id, full_name)
+              driver:profiles!vlms_incidents_driver_id_fkey(id, full_name),
+              created_by_profile:profiles!vlms_incidents_created_by_fkey(id, full_name)
             `
             )
             .order('incident_date', { ascending: false });

@@ -28,7 +28,6 @@ export function useRealtimeEvents(onEvent?: (event: SystemEvent) => void) {
           table: 'delivery_batches'
         },
         (payload) => {
-          console.log('Batch event:', payload);
           
           const newData = payload.new as any;
           const oldData = payload.old as any;
@@ -76,7 +75,6 @@ export function useRealtimeEvents(onEvent?: (event: SystemEvent) => void) {
           table: 'handoffs'
         },
         (payload) => {
-          console.log('Handoff event:', payload);
           
           const newData = payload.new as any;
           const oldData = payload.old as any;
@@ -122,7 +120,6 @@ export function useRealtimeEvents(onEvent?: (event: SystemEvent) => void) {
           table: 'drivers'
         },
         (payload) => {
-          console.log('Driver event:', payload);
           
           if (payload.new && payload.old) {
             const newDriver = payload.new as any;
@@ -166,7 +163,6 @@ export function useRealtimeEvents(onEvent?: (event: SystemEvent) => void) {
           table: 'zone_alerts'
         },
         (payload) => {
-          console.log('Zone alert event:', payload);
           
           if (payload.new) {
             const alert = payload.new as any;

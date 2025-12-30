@@ -56,7 +56,6 @@ export function useZoneAlerts() {
           table: 'zone_alerts',
         },
         (payload) => {
-          console.log('New zone alert:', payload);
           queryClient.invalidateQueries({ queryKey: ['zone-alerts'] });
 
           // Show toast notification
@@ -69,7 +68,6 @@ export function useZoneAlerts() {
               label: 'View',
               onClick: () => {
                 // Navigate to map or alert details
-                console.log('View alert:', alert.id);
               },
             },
           });
@@ -83,7 +81,6 @@ export function useZoneAlerts() {
           table: 'zone_alerts',
         },
         (payload) => {
-          console.log('Zone alert updated:', payload);
           queryClient.invalidateQueries({ queryKey: ['zone-alerts'] });
         }
       )

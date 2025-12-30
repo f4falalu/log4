@@ -17,7 +17,6 @@ export function useRealtimeSchedules() {
           table: 'delivery_schedules',
         },
         (payload) => {
-          console.log('Schedule change:', payload);
           queryClient.invalidateQueries({ queryKey: ['delivery-schedules'] });
           
           if (payload.eventType === 'UPDATE') {
@@ -38,7 +37,6 @@ export function useRealtimeSchedules() {
           table: 'schedule_batches',
         },
         (payload) => {
-          console.log('Batch change:', payload);
           queryClient.invalidateQueries({ queryKey: ['schedule-batches'] });
         }
       )

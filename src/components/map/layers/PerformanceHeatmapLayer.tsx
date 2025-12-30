@@ -46,6 +46,11 @@ export function PerformanceHeatmapLayer({
       return;
     }
 
+    // Wait for map to be fully initialized
+    if (!map.getContainer || !map.getContainer()) {
+      return;
+    }
+
     // TODO: Fetch actual performance data from database based on timeRange
     // For now, using mock data points and rendering with circle markers
     const mockHeatmapData = generateMockHeatmapData(metric);

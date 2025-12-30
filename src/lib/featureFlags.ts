@@ -82,7 +82,6 @@ export function logFeatureFlagStatus(): void {
   if (import.meta.env.DEV) {
     console.group('🚩 Feature Flags Status');
     Object.entries(FEATURE_FLAGS).forEach(([key, value]) => {
-      console.log(`${key}: ${value ? '✅ ENABLED' : '❌ DISABLED'}`);
     });
     console.groupEnd();
   }

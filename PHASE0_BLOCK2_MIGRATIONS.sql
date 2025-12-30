@@ -1,3 +1,173 @@
+-- Create workspace_members table for multi-tenancy RLS policies
+-- This table is required by planning system RLS policies
+
+-- ============================================================================
+-- 1. CREATE WORKSPACE_MEMBERS TABLE
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS public.workspace_members (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  workspace_id UUID NOT NULL REFERENCES public.workspaces(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  role TEXT NOT NULL DEFAULT 'member' CHECK (role IN ('owner', 'admin', 'member', 'viewer')),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(workspace_id, user_id)
+);
+
+-- ============================================================================
+-- 2. CREATE INDEXES
+-- ============================================================================
+
+CREATE INDEX IF NOT EXISTS idx_workspace_members_workspace_id ON public.workspace_members(workspace_id);
+CREATE INDEX IF NOT EXISTS idx_workspace_members_user_id ON public.workspace_members(user_id);
+CREATE INDEX IF NOT EXISTS idx_workspace_members_role ON public.workspace_members(role);
+
+-- ============================================================================
+-- 3. ENABLE RLS
+-- ============================================================================
+
+ALTER TABLE public.workspace_members ENABLE ROW LEVEL SECURITY;
+
+-- ============================================================================
+-- 4. CREATE RLS POLICIES
+-- ============================================================================
+
+-- Users can view their own workspace memberships
+DROP POLICY IF EXISTS "Users can view their own workspace memberships" ON public.workspace_members;
+CREATE POLICY "Users can view their own workspace memberships"
+  ON public.workspace_members FOR SELECT
+  USING (auth.uid() = user_id);
+
+-- Workspace admins can view all members in their workspaces
+DROP POLICY IF EXISTS "Admins can view workspace members" ON public.workspace_members;
+CREATE POLICY "Admins can view workspace members"
+  ON public.workspace_members FOR SELECT
+  USING (
+    workspace_id IN (
+      SELECT workspace_id FROM public.workspace_members
+      WHERE user_id = auth.uid() AND role IN ('owner', 'admin')
+    )
+  );
+
+-- Workspace owners can insert new members
+DROP POLICY IF EXISTS "Owners can add workspace members" ON public.workspace_members;
+CREATE POLICY "Owners can add workspace members"
+  ON public.workspace_members FOR INSERT
+  WITH CHECK (
+    workspace_id IN (
+      SELECT workspace_id FROM public.workspace_members
+      WHERE user_id = auth.uid() AND role = 'owner'
+    )
+  );
+
+-- Workspace owners can update member roles
+DROP POLICY IF EXISTS "Owners can update member roles" ON public.workspace_members;
+CREATE POLICY "Owners can update member roles"
+  ON public.workspace_members FOR UPDATE
+  USING (
+    workspace_id IN (
+      SELECT workspace_id FROM public.workspace_members
+      WHERE user_id = auth.uid() AND role = 'owner'
+    )
+  );
+
+-- Workspace owners can remove members (except themselves)
+DROP POLICY IF EXISTS "Owners can remove members" ON public.workspace_members;
+CREATE POLICY "Owners can remove members"
+  ON public.workspace_members FOR DELETE
+  USING (
+    workspace_id IN (
+      SELECT workspace_id FROM public.workspace_members
+      WHERE user_id = auth.uid() AND role = 'owner'
+    )
+    AND user_id != auth.uid() -- Cannot remove yourself
+  );
+
+-- ============================================================================
+-- 5. CREATE UPDATED_AT TRIGGER
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION update_workspace_members_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS workspace_members_updated_at ON public.workspace_members;
+CREATE TRIGGER workspace_members_updated_at
+  BEFORE UPDATE ON public.workspace_members
+  FOR EACH ROW
+  EXECUTE FUNCTION update_workspace_members_updated_at();
+
+-- ============================================================================
+-- 6. BOOTSTRAP EXISTING USER INTO DEFAULT WORKSPACE
+-- ============================================================================
+
+-- Get the authenticated user (if running in a session context)
+-- Otherwise this will be run manually after deployment
+
+DO $$
+DECLARE
+  v_default_workspace_id UUID;
+  v_admin_email TEXT := 'frankbarde@gmail.com'; -- Default admin email
+  v_admin_user_id UUID;
+BEGIN
+  -- Find the default workspace by slug
+  SELECT id INTO v_default_workspace_id
+  FROM public.workspaces
+  WHERE slug = 'kano-pharma'
+  LIMIT 1;
+
+  -- Only proceed if workspace exists
+  IF v_default_workspace_id IS NULL THEN
+    RAISE NOTICE 'Default workspace not found - skipping user bootstrap';
+    RETURN;
+  END IF;
+
+  -- Try to find the admin user by email
+  SELECT id INTO v_admin_user_id
+  FROM auth.users
+  WHERE email = v_admin_email
+  LIMIT 1;
+
+  -- If admin user exists, add them as owner of default workspace
+  IF v_admin_user_id IS NOT NULL THEN
+    INSERT INTO public.workspace_members (workspace_id, user_id, role)
+    VALUES (v_default_workspace_id, v_admin_user_id, 'owner')
+    ON CONFLICT (workspace_id, user_id) DO UPDATE
+    SET role = 'owner', updated_at = NOW();
+
+    RAISE NOTICE 'Admin user % added as owner of default workspace', v_admin_email;
+  ELSE
+    RAISE NOTICE 'Admin user % not found - workspace membership must be created manually', v_admin_email;
+  END IF;
+END $$;
+
+-- ============================================================================
+-- 7. VERIFICATION
+-- ============================================================================
+
+DO $$
+DECLARE
+  v_members_count INTEGER;
+BEGIN
+  SELECT COUNT(*) INTO v_members_count FROM public.workspace_members;
+
+  RAISE NOTICE '';
+  RAISE NOTICE '=================================================================';
+  RAISE NOTICE 'Workspace Members Table Created';
+  RAISE NOTICE '=================================================================';
+  RAISE NOTICE 'Total workspace members: %', v_members_count;
+  RAISE NOTICE '';
+  RAISE NOTICE 'Next steps:';
+  RAISE NOTICE '1. Verify admin user is added to default workspace';
+  RAISE NOTICE '2. Add additional users via admin interface';
+  RAISE NOTICE '3. Deploy planning system migration (depends on this table)';
+  RAISE NOTICE '=================================================================';
+END $$;
 -- Planning System Migration
 -- This migration creates tables for the Planning mode features
 -- Planning mode: Draft → Review → Activate workflow for spatial configurations
@@ -71,6 +241,7 @@ CREATE INDEX IF NOT EXISTS idx_zone_configurations_centroid ON public.zone_confi
 -- RLS
 ALTER TABLE public.zone_configurations ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view zone configurations in their workspace" ON public.zone_configurations;
 CREATE POLICY "Users can view zone configurations in their workspace"
   ON public.zone_configurations FOR SELECT
   USING (
@@ -80,6 +251,7 @@ CREATE POLICY "Users can view zone configurations in their workspace"
     )
   );
 
+DROP POLICY IF EXISTS "Users can create zone configurations in their workspace" ON public.zone_configurations;
 CREATE POLICY "Users can create zone configurations in their workspace"
   ON public.zone_configurations FOR INSERT
   WITH CHECK (
@@ -89,6 +261,7 @@ CREATE POLICY "Users can create zone configurations in their workspace"
     )
   );
 
+DROP POLICY IF EXISTS "Users can update zone configurations in their workspace" ON public.zone_configurations;
 CREATE POLICY "Users can update zone configurations in their workspace"
   ON public.zone_configurations FOR UPDATE
   USING (
@@ -147,6 +320,7 @@ CREATE INDEX IF NOT EXISTS idx_route_sketches_end_facility ON public.route_sketc
 -- RLS
 ALTER TABLE public.route_sketches ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view route sketches in their workspace" ON public.route_sketches;
 CREATE POLICY "Users can view route sketches in their workspace"
   ON public.route_sketches FOR SELECT
   USING (
@@ -156,6 +330,7 @@ CREATE POLICY "Users can view route sketches in their workspace"
     )
   );
 
+DROP POLICY IF EXISTS "Users can manage route sketches in their workspace" ON public.route_sketches;
 CREATE POLICY "Users can manage route sketches in their workspace"
   ON public.route_sketches FOR ALL
   USING (
@@ -208,6 +383,7 @@ CREATE INDEX IF NOT EXISTS idx_facility_assignments_active ON public.facility_as
 -- RLS
 ALTER TABLE public.facility_assignments ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view facility assignments in their workspace" ON public.facility_assignments;
 CREATE POLICY "Users can view facility assignments in their workspace"
   ON public.facility_assignments FOR SELECT
   USING (
@@ -217,6 +393,7 @@ CREATE POLICY "Users can view facility assignments in their workspace"
     )
   );
 
+DROP POLICY IF EXISTS "Users can manage facility assignments in their workspace" ON public.facility_assignments;
 CREATE POLICY "Users can manage facility assignments in their workspace"
   ON public.facility_assignments FOR ALL
   USING (
@@ -272,6 +449,7 @@ CREATE INDEX IF NOT EXISTS idx_map_action_audit_created_at ON public.map_action_
 -- RLS
 ALTER TABLE public.map_action_audit ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view audit logs in their workspace" ON public.map_action_audit;
 CREATE POLICY "Users can view audit logs in their workspace"
   ON public.map_action_audit FOR SELECT
   USING (
@@ -281,6 +459,7 @@ CREATE POLICY "Users can view audit logs in their workspace"
     )
   );
 
+DROP POLICY IF EXISTS "System can insert audit logs" ON public.map_action_audit;
 CREATE POLICY "System can insert audit logs"
   ON public.map_action_audit FOR INSERT
   WITH CHECK (true);
@@ -323,6 +502,7 @@ CREATE INDEX IF NOT EXISTS idx_forensics_query_log_created_at ON public.forensic
 -- RLS
 ALTER TABLE public.forensics_query_log ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view query logs in their workspace" ON public.forensics_query_log;
 CREATE POLICY "Users can view query logs in their workspace"
   ON public.forensics_query_log FOR SELECT
   USING (
@@ -332,6 +512,7 @@ CREATE POLICY "Users can view query logs in their workspace"
     )
   );
 
+DROP POLICY IF EXISTS "System can insert query logs" ON public.forensics_query_log;
 CREATE POLICY "System can insert query logs"
   ON public.forensics_query_log FOR INSERT
   WITH CHECK (true);
@@ -351,20 +532,24 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS calculate_zone_centroid_trigger ON public.zone_configurations;
 CREATE TRIGGER calculate_zone_centroid_trigger
   BEFORE INSERT OR UPDATE OF boundary ON public.zone_configurations
   FOR EACH ROW
   EXECUTE FUNCTION calculate_zone_centroid();
 
 -- Update updated_at timestamp
+DROP TRIGGER IF EXISTS update_zone_configurations_updated_at ON public.zone_configurations;
 CREATE TRIGGER update_zone_configurations_updated_at
   BEFORE UPDATE ON public.zone_configurations
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_route_sketches_updated_at ON public.route_sketches;
 CREATE TRIGGER update_route_sketches_updated_at
   BEFORE UPDATE ON public.route_sketches
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_facility_assignments_updated_at ON public.facility_assignments;
 CREATE TRIGGER update_facility_assignments_updated_at
   BEFORE UPDATE ON public.facility_assignments
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
@@ -444,3 +629,210 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Grant execute permission
 GRANT EXECUTE ON FUNCTION get_active_zones(UUID) TO authenticated;
+-- Create storage buckets for VLMS and driver documents
+-- Required for file upload/download functionality
+
+-- ============================================================================
+-- 1. CREATE STORAGE BUCKETS
+-- ============================================================================
+
+-- VLMS Documents Bucket (maintenance records, inspection reports, etc.)
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+  'vlms-documents',
+  'vlms-documents',
+  false, -- Not public, requires authentication
+  10485760, -- 10MB max file size
+  ARRAY[
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'text/plain',
+    'text/csv'
+  ]
+)
+ON CONFLICT (id) DO NOTHING;
+
+-- VLMS Photos Bucket (vehicle photos, incident photos, etc.)
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+  'vlms-photos',
+  'vlms-photos',
+  false, -- Not public, requires authentication
+  5242880, -- 5MB max file size
+  ARRAY[
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+    'image/heic'
+  ]
+)
+ON CONFLICT (id) DO NOTHING;
+
+-- General Documents Bucket (driver documents, certificates, licenses, etc.)
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+  'documents',
+  'documents',
+  false, -- Not public, requires authentication
+  10485760, -- 10MB max file size
+  ARRAY[
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'image/jpeg',
+    'image/png',
+    'image/webp'
+  ]
+)
+ON CONFLICT (id) DO NOTHING;
+
+-- ============================================================================
+-- 2. CREATE RLS POLICIES FOR VLMS-DOCUMENTS
+-- ============================================================================
+
+-- Allow authenticated users to upload documents
+DROP POLICY IF EXISTS "Authenticated users can upload VLMS documents" ON storage.objects;
+CREATE POLICY "Authenticated users can upload VLMS documents"
+  ON storage.objects FOR INSERT
+  WITH CHECK (
+    bucket_id = 'vlms-documents' AND
+    auth.role() = 'authenticated'
+  );
+
+-- Allow authenticated users to view documents
+DROP POLICY IF EXISTS "Authenticated users can view VLMS documents" ON storage.objects;
+CREATE POLICY "Authenticated users can view VLMS documents"
+  ON storage.objects FOR SELECT
+  USING (
+    bucket_id = 'vlms-documents' AND
+    auth.role() = 'authenticated'
+  );
+
+-- Allow authenticated users to update their own documents
+DROP POLICY IF EXISTS "Authenticated users can update VLMS documents" ON storage.objects;
+CREATE POLICY "Authenticated users can update VLMS documents"
+  ON storage.objects FOR UPDATE
+  USING (
+    bucket_id = 'vlms-documents' AND
+    auth.role() = 'authenticated'
+  );
+
+-- Allow authenticated users to delete documents
+DROP POLICY IF EXISTS "Authenticated users can delete VLMS documents" ON storage.objects;
+CREATE POLICY "Authenticated users can delete VLMS documents"
+  ON storage.objects FOR DELETE
+  USING (
+    bucket_id = 'vlms-documents' AND
+    auth.role() = 'authenticated'
+  );
+
+-- ============================================================================
+-- 3. CREATE RLS POLICIES FOR VLMS-PHOTOS
+-- ============================================================================
+
+-- Allow authenticated users to upload photos
+DROP POLICY IF EXISTS "Authenticated users can upload VLMS photos" ON storage.objects;
+CREATE POLICY "Authenticated users can upload VLMS photos"
+  ON storage.objects FOR INSERT
+  WITH CHECK (
+    bucket_id = 'vlms-photos' AND
+    auth.role() = 'authenticated'
+  );
+
+-- Allow authenticated users to view photos
+DROP POLICY IF EXISTS "Authenticated users can view VLMS photos" ON storage.objects;
+CREATE POLICY "Authenticated users can view VLMS photos"
+  ON storage.objects FOR SELECT
+  USING (
+    bucket_id = 'vlms-photos' AND
+    auth.role() = 'authenticated'
+  );
+
+-- Allow authenticated users to update their own photos
+DROP POLICY IF EXISTS "Authenticated users can update VLMS photos" ON storage.objects;
+CREATE POLICY "Authenticated users can update VLMS photos"
+  ON storage.objects FOR UPDATE
+  USING (
+    bucket_id = 'vlms-photos' AND
+    auth.role() = 'authenticated'
+  );
+
+-- Allow authenticated users to delete photos
+DROP POLICY IF EXISTS "Authenticated users can delete VLMS photos" ON storage.objects;
+CREATE POLICY "Authenticated users can delete VLMS photos"
+  ON storage.objects FOR DELETE
+  USING (
+    bucket_id = 'vlms-photos' AND
+    auth.role() = 'authenticated'
+  );
+
+-- ============================================================================
+-- 4. CREATE RLS POLICIES FOR DOCUMENTS
+-- ============================================================================
+
+-- Allow authenticated users to upload documents
+DROP POLICY IF EXISTS "Authenticated users can upload documents" ON storage.objects;
+CREATE POLICY "Authenticated users can upload documents"
+  ON storage.objects FOR INSERT
+  WITH CHECK (
+    bucket_id = 'documents' AND
+    auth.role() = 'authenticated'
+  );
+
+-- Allow authenticated users to view documents
+DROP POLICY IF EXISTS "Authenticated users can view documents" ON storage.objects;
+CREATE POLICY "Authenticated users can view documents"
+  ON storage.objects FOR SELECT
+  USING (
+    bucket_id = 'documents' AND
+    auth.role() = 'authenticated'
+  );
+
+-- Allow authenticated users to update documents
+DROP POLICY IF EXISTS "Authenticated users can update documents" ON storage.objects;
+CREATE POLICY "Authenticated users can update documents"
+  ON storage.objects FOR UPDATE
+  USING (
+    bucket_id = 'documents' AND
+    auth.role() = 'authenticated'
+  );
+
+-- Allow authenticated users to delete documents
+DROP POLICY IF EXISTS "Authenticated users can delete documents" ON storage.objects;
+CREATE POLICY "Authenticated users can delete documents"
+  ON storage.objects FOR DELETE
+  USING (
+    bucket_id = 'documents' AND
+    auth.role() = 'authenticated'
+  );
+
+-- ============================================================================
+-- 5. VERIFICATION
+-- ============================================================================
+
+DO $$
+DECLARE
+  v_buckets_count INTEGER;
+BEGIN
+  SELECT COUNT(*) INTO v_buckets_count
+  FROM storage.buckets
+  WHERE id IN ('vlms-documents', 'vlms-photos', 'documents');
+
+  RAISE NOTICE '';
+  RAISE NOTICE '=================================================================';
+  RAISE NOTICE 'Storage Buckets Created';
+  RAISE NOTICE '=================================================================';
+  RAISE NOTICE 'Buckets created: %', v_buckets_count;
+  RAISE NOTICE 'Expected: 3 (vlms-documents, vlms-photos, documents)';
+  RAISE NOTICE '';
+  RAISE NOTICE 'Bucket Details:';
+  RAISE NOTICE '- vlms-documents: 10MB limit, office documents + PDFs';
+  RAISE NOTICE '- vlms-photos: 5MB limit, images only';
+  RAISE NOTICE '- documents: 10MB limit, mixed documents + images';
+  RAISE NOTICE '';
+  RAISE NOTICE 'All buckets have RLS enabled with authenticated user access';
+  RAISE NOTICE '=================================================================';
+END $$;

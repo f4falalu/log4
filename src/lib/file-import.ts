@@ -137,7 +137,6 @@ function parseGeoCoordinates(value: string, columnName?: string): { latitude?: n
   const lowerColumnName = columnName ? columnName.toLowerCase() : '';
 
   if (process.env.NODE_ENV === 'development') {
-    console.log('[CSV Import] parseGeoCoordinates called:', {
       value,
       columnName,
       numbers: [first, second],
@@ -148,7 +147,6 @@ function parseGeoCoordinates(value: string, columnName?: string): { latitude?: n
   if (lowerColumnName.includes('longitude/latitude') || lowerColumnName.includes('lon/lat') ||
       lowerColumnName.includes('long/lat') || lowerColumnName.includes('longitude latitude')) {
     if (process.env.NODE_ENV === 'development') {
-      console.log('[CSV Import] Detected longitude/latitude order from column name');
     }
     return {
       longitude: first,
@@ -160,7 +158,6 @@ function parseGeoCoordinates(value: string, columnName?: string): { latitude?: n
   if (lowerColumnName.includes('latitude/longitude') || lowerColumnName.includes('lat/lon') ||
       lowerColumnName.includes('lat/long') || lowerColumnName.includes('latitude longitude')) {
     if (process.env.NODE_ENV === 'development') {
-      console.log('[CSV Import] Detected latitude/longitude order from column name');
     }
     return {
       latitude: first,
@@ -172,7 +169,6 @@ function parseGeoCoordinates(value: string, columnName?: string): { latitude?: n
   // If first value is > 90 or < -90, it must be longitude
   if (Math.abs(first) > 90) {
     if (process.env.NODE_ENV === 'development') {
-      console.log('[CSV Import] Auto-detected: first value >90, must be longitude');
     }
     return {
       longitude: first,
@@ -183,7 +179,6 @@ function parseGeoCoordinates(value: string, columnName?: string): { latitude?: n
   // If second value is > 90 or < -90, it must be longitude
   if (Math.abs(second) > 90) {
     if (process.env.NODE_ENV === 'development') {
-      console.log('[CSV Import] Auto-detected: second value >90, must be longitude');
     }
     return {
       latitude: first,
@@ -194,7 +189,6 @@ function parseGeoCoordinates(value: string, columnName?: string): { latitude?: n
   // Default assumption: first is longitude, second is latitude
   // (common in many systems like Google Maps)
   if (process.env.NODE_ENV === 'development') {
-    console.log('[CSV Import] Using default order: longitude, latitude');
   }
   return {
     longitude: first,
@@ -214,7 +208,6 @@ function normalizeColumnNames(row: any, generateDiagnostics: boolean = false): {
   if (process.env.NODE_ENV === 'development') {
     const originalColumns = Object.keys(row);
     if (originalColumns.length > 0) {
-      console.log('[CSV Import] Original CSV columns:', originalColumns);
     }
   }
 
@@ -274,7 +267,6 @@ function normalizeColumnNames(row: any, generateDiagnostics: boolean = false): {
   const hasLongitude = normalized.longitude && String(normalized.longitude).trim() !== '';
 
   if (process.env.NODE_ENV === 'development') {
-    console.log('[CSV Import] Coordinate check:', {
       hasLatitude,
       hasLongitude,
       latitudeValue: normalized.latitude,
@@ -294,20 +286,17 @@ function normalizeColumnNames(row: any, generateDiagnostics: boolean = false): {
       const parsed = parseGeoCoordinates(geoValue, geoColumnName);
 
       if (process.env.NODE_ENV === 'development') {
-        console.log('[CSV Import] Parsed geo-coordinates result:', parsed);
       }
 
       if (!hasLatitude && parsed.latitude !== undefined) {
         normalized.latitude = parsed.latitude;
         if (process.env.NODE_ENV === 'development') {
-          console.log('[CSV Import] ✓ Extracted latitude from geo_coordinates:', parsed.latitude);
         }
       }
 
       if (!hasLongitude && parsed.longitude !== undefined) {
         normalized.longitude = parsed.longitude;
         if (process.env.NODE_ENV === 'development') {
-          console.log('[CSV Import] ✓ Extracted longitude from geo_coordinates:', parsed.longitude);
         }
       }
     }
@@ -317,8 +306,6 @@ function normalizeColumnNames(row: any, generateDiagnostics: boolean = false): {
   if (process.env.NODE_ENV === 'development') {
     const normalizedColumns = Object.keys(normalized);
     if (normalizedColumns.length > 0) {
-      console.log('[CSV Import] Normalized columns:', normalizedColumns);
-      console.log('[CSV Import] Sample normalized data:', {
         name: normalized.name,
         address: normalized.address,
         latitude: normalized.latitude,
@@ -808,8 +795,6 @@ export function applyManualMappings(
   }
 
   if (process.env.NODE_ENV === 'development') {
-    console.log('[CSV Import] Applying manual mappings:', manualMappings);
-    console.log('[CSV Import] Reverse mapping:', reverseMapping);
   }
 
   // Apply mappings to all rows
@@ -824,7 +809,6 @@ export function applyManualMappings(
         mappedRow[expectedField] = value;
 
         if (process.env.NODE_ENV === 'development') {
-          console.log(`[CSV Import] Mapped: ${originalKey} -> ${expectedField}`);
         }
       } else {
         // Otherwise, keep the original key (lowercase normalized)

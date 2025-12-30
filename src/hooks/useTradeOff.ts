@@ -226,7 +226,6 @@ export const useTradeOff = create<TradeOffStore>((set, get) => ({
     // 4. Update dispatch state
     // 5. Create audit log entry
 
-    console.log('Executing Trade-Off:', state);
 
     set({ state: 'executed' });
 

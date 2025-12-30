@@ -123,7 +123,6 @@ export default function TacticalMap() {
   }, [zones]);
 
   const handleEditZone = useCallback((zoneId: string, coordinates: L.LatLng[]) => {
-    console.log('Edit zone:', zoneId, coordinates);
     setEditingZone(null);
     toast.success('Zone updated');
   }, []);

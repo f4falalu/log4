@@ -17,7 +17,6 @@ export function useRealtimeDrivers() {
           table: 'drivers'
         },
         (payload) => {
-          console.log('Driver update received:', payload);
           
           // Debounce invalidation to prevent rapid re-renders
           if (timeoutRef.current) {

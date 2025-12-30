@@ -1,10 +1,23 @@
-import { useMemo } from 'react';
+/**
+ * Phase 2: Analytics Backend - KPIMetrics Component
+ *
+ * CRITICAL: This component contains ZERO client-side aggregation logic.
+ * All calculations are performed server-side via analytics hooks (Ticket A7).
+ * This component ONLY displays pre-computed data from the database.
+ *
+ * DO NOT add .filter(), .reduce(), .length, or any aggregation logic here.
+ * Use hooks from @/hooks/useAnalytics instead.
+ *
+ * Last Updated: 2025-12-29 (Phase 0 Block 3 - Architecture Correction)
+ */
+
 import { Card } from '@/components/ui/card';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
-import { DeliveryBatch } from '@/types';
+import { useDashboardSummary } from '@/hooks/useAnalytics';
 
 interface KPIMetricsProps {
-  batches: DeliveryBatch[];
+  startDate?: string | null;
+  endDate?: string | null;
 }
 
 interface KPICard {
@@ -15,55 +28,69 @@ interface KPICard {
   status: 'success' | 'warning' | 'danger' | 'neutral';
 }
 
-const KPIMetrics = ({ batches }: KPIMetricsProps) => {
-  const kpis = useMemo((): KPICard[] => {
-    const activeRoutes = batches.filter(b => b.status === 'in-progress').length;
-    const totalRoutes = batches.length;
-    const completedRoutes = batches.filter(b => b.status === 'completed').length;
-    const assignedRoutes = batches.filter(b => b.status === 'assigned' || b.status === 'in-progress').length;
-    
-    // Calculate fleet utilization (assuming 4 vehicles total)
-    const totalVehicles = 4;
-    const inUseVehicles = batches.filter(b => b.status === 'in-progress' && b.vehicleId).length;
-    const fleetUtilization = totalVehicles > 0 ? Math.round((inUseVehicles / totalVehicles) * 100) : 0;
-    
-    // Calculate on-time performance (simplified: completed vs delayed)
-    const onTimePerformance = totalRoutes > 0 ? Math.round((completedRoutes / totalRoutes) * 100) : 100;
-    
-    // Calculate completion rate
-    const completionRate = totalRoutes > 0 ? Math.round((completedRoutes / totalRoutes) * 100) : 0;
+const KPIMetrics = ({ startDate, endDate }: KPIMetricsProps) => {
+  // ✅ CORRECT: All data from server-side hook (no client-side aggregation)
+  const { data: summary, isLoading, error } = useDashboardSummary(startDate, endDate);
 
-    return [
-      {
-        label: 'Active Routes',
-        value: activeRoutes,
-        trend: activeRoutes > 2 ? 'up' : 'neutral',
-        trendValue: `${assignedRoutes} assigned`,
-        status: activeRoutes > 3 ? 'warning' : 'success'
-      },
-      {
-        label: 'Fleet Utilization',
-        value: `${fleetUtilization}%`,
-        trend: fleetUtilization > 75 ? 'up' : fleetUtilization > 50 ? 'neutral' : 'down',
-        trendValue: `${inUseVehicles}/${totalVehicles} vehicles`,
-        status: fleetUtilization > 80 ? 'success' : fleetUtilization > 50 ? 'warning' : 'danger'
-      },
-      {
-        label: 'On-Time Performance',
-        value: `${onTimePerformance}%`,
-        trend: onTimePerformance >= 90 ? 'up' : onTimePerformance >= 70 ? 'neutral' : 'down',
-        trendValue: `${completedRoutes} completed`,
-        status: onTimePerformance >= 90 ? 'success' : onTimePerformance >= 70 ? 'warning' : 'danger'
-      },
-      {
-        label: "Today's Completion",
-        value: `${completionRate}%`,
-        trend: completionRate > 50 ? 'up' : 'neutral',
-        trendValue: `${completedRoutes}/${totalRoutes} routes`,
-        status: completionRate > 75 ? 'success' : completionRate > 50 ? 'warning' : 'neutral'
-      }
-    ];
-  }, [batches]);
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {[1, 2, 3, 4].map((i) => (
+          <Card key={i} className="p-4 animate-pulse">
+            <div className="h-20 bg-muted rounded" />
+          </Card>
+        ))}
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="p-4 col-span-full">
+          <div className="text-destructive text-sm">
+            Error loading KPI metrics: {error.message}
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!summary) {
+    return null;
+  }
+
+  // ✅ CORRECT: All values come from server-side pre-computed summary
+  const kpis: KPICard[] = [
+    {
+      label: 'Active Routes',
+      value: summary.active_routes || 0,
+      trend: (summary.active_routes || 0) > 2 ? 'up' : 'neutral',
+      trendValue: `${summary.assigned_routes || 0} assigned`,
+      status: (summary.active_routes || 0) > 3 ? 'warning' : 'success'
+    },
+    {
+      label: 'Fleet Utilization',
+      value: `${Math.round(summary.fleet_utilization_percent || 0)}%`,
+      trend: (summary.fleet_utilization_percent || 0) > 75 ? 'up' : (summary.fleet_utilization_percent || 0) > 50 ? 'neutral' : 'down',
+      trendValue: `${summary.vehicles_in_use || 0}/${summary.total_vehicles || 0} vehicles`,
+      status: (summary.fleet_utilization_percent || 0) > 80 ? 'success' : (summary.fleet_utilization_percent || 0) > 50 ? 'warning' : 'danger'
+    },
+    {
+      label: 'On-Time Performance',
+      value: `${Math.round(summary.on_time_percent || 0)}%`,
+      trend: (summary.on_time_percent || 0) >= 90 ? 'up' : (summary.on_time_percent || 0) >= 70 ? 'neutral' : 'down',
+      trendValue: `${summary.completed_routes || 0} completed`,
+      status: (summary.on_time_percent || 0) >= 90 ? 'success' : (summary.on_time_percent || 0) >= 70 ? 'warning' : 'danger'
+    },
+    {
+      label: "Today's Completion",
+      value: `${Math.round(summary.completion_rate_percent || 0)}%`,
+      trend: (summary.completion_rate_percent || 0) > 50 ? 'up' : 'neutral',
+      trendValue: `${summary.completed_routes || 0}/${summary.total_routes || 0} routes`,
+      status: (summary.completion_rate_percent || 0) > 75 ? 'success' : (summary.completion_rate_percent || 0) > 50 ? 'warning' : 'neutral'
+    }
+  ];
 
   const getStatusColor = (status: KPICard['status']) => {
     switch (status) {

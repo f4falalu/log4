@@ -78,16 +78,6 @@ export function ScheduleWizardDialog({
 
   const handleFinish = async () => {
     // Validate required fields
-    console.log('=== Schedule Creation Debug ===');
-    console.log('Schedule Title:', scheduleTitle);
-    console.log('Warehouse ID:', warehouseId);
-    console.log('Planned Date:', plannedDate);
-    console.log('Selected Facilities:', selectedFacilities);
-    console.log('Time Window:', timeWindow);
-    console.log('Scheduling Mode:', schedulingMode);
-    console.log('Driver ID:', driverId);
-    console.log('Vehicle ID:', vehicleId);
-    console.log('Notes:', notes);
 
     if (!scheduleTitle || !warehouseId || !plannedDate || selectedFacilities.length === 0) {
       const missingFields = [];
@@ -117,11 +107,9 @@ export function ScheduleWizardDialog({
         priority: 'medium' as const,
       };
 
-      console.log('Mutation payload:', JSON.stringify(payload, null, 2));
 
       // Create scheduler_batch record
       const result = await createBatch.mutateAsync(payload);
-      console.log('Schedule created successfully:', result);
 
       toast.success('Schedule created successfully!');
       handleClose();

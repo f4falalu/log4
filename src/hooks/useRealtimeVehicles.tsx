@@ -16,7 +16,6 @@ export function useRealtimeVehicles() {
           table: 'vehicles',
         },
         (payload) => {
-          console.log('[useRealtimeVehicles] Vehicle update:', payload);
           queryClient.invalidateQueries({ queryKey: ['vehicles'] });
         }
       )
