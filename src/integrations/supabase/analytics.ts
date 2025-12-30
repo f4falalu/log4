@@ -159,7 +159,7 @@ export async function getDeliveryKPIs(
   startDate?: string | null,
   endDate?: string | null
 ): Promise<DeliveryKPIs> {
-  const { data, error } = await supabase.rpc('get_delivery_kpis', {
+  const { data, error } = await supabase.schema('analytics').rpc('get_delivery_kpis', {
     start_date: startDate || null,
     end_date: endDate || null,
   });
@@ -180,7 +180,7 @@ export async function getDeliveryKPIs(
 export async function getTopVehiclesByOnTime(
   limit: number = 10
 ): Promise<TopVehiclePerformance[]> {
-  const { data, error } = await supabase.rpc('get_top_vehicles_by_ontime', {
+  const { data, error } = await supabase.schema('analytics').rpc('get_top_vehicles_by_ontime', {
     limit_count: limit,
   });
 
@@ -197,7 +197,7 @@ export async function getTopVehiclesByOnTime(
  * @returns Driver efficiency metrics
  */
 export async function getDriverKPIs(): Promise<DriverKPIs> {
-  const { data, error } = await supabase.rpc('get_driver_kpis');
+  const { data, error } = await supabase.schema('analytics').rpc('get_driver_kpis');
 
   if (error) handleSupabaseError(error, 'getDriverKPIs');
   if (!data || data.length === 0) {
@@ -217,7 +217,7 @@ export async function getTopDrivers(
   metric: 'on_time_rate' | 'fuel_efficiency' | 'deliveries' = 'on_time_rate',
   limit: number = 10
 ): Promise<TopDriverPerformance[]> {
-  const { data, error } = await supabase.rpc('get_top_drivers', {
+  const { data, error } = await supabase.schema('analytics').rpc('get_top_drivers', {
     metric,
     limit_count: limit,
   });
@@ -235,7 +235,7 @@ export async function getTopDrivers(
  * @returns Vehicle utilization metrics
  */
 export async function getVehicleKPIs(): Promise<VehicleKPIs> {
-  const { data, error } = await supabase.rpc('get_vehicle_kpis');
+  const { data, error } = await supabase.schema('analytics').rpc('get_vehicle_kpis');
 
   if (error) handleSupabaseError(error, 'getVehicleKPIs');
   if (!data || data.length === 0) {
@@ -250,7 +250,7 @@ export async function getVehicleKPIs(): Promise<VehicleKPIs> {
  * @returns Array of vehicles needing maintenance
  */
 export async function getVehiclesNeedingMaintenance(): Promise<VehicleMaintenanceNeeded[]> {
-  const { data, error } = await supabase.rpc('get_vehicles_needing_maintenance');
+  const { data, error } = await supabase.schema('analytics').rpc('get_vehicles_needing_maintenance');
 
   if (error) handleSupabaseError(error, 'getVehiclesNeedingMaintenance');
   return (data || []) as VehicleMaintenanceNeeded[];
@@ -265,7 +265,7 @@ export async function getVehiclesNeedingMaintenance(): Promise<VehicleMaintenanc
  * @returns Cost metrics
  */
 export async function getCostKPIs(): Promise<CostKPIs> {
-  const { data, error } = await supabase.rpc('get_cost_kpis');
+  const { data, error } = await supabase.schema('analytics').rpc('get_cost_kpis');
 
   if (error) handleSupabaseError(error, 'getCostKPIs');
   if (!data || data.length === 0) {
@@ -281,7 +281,7 @@ export async function getCostKPIs(): Promise<CostKPIs> {
  * @returns Array of vehicle costs
  */
 export async function getVehicleCosts(limit: number = 10): Promise<VehicleCostBreakdown[]> {
-  const { data, error } = await supabase.rpc('get_vehicle_costs', {
+  const { data, error } = await supabase.schema('analytics').rpc('get_vehicle_costs', {
     limit_count: limit,
   });
 
@@ -295,7 +295,7 @@ export async function getVehicleCosts(limit: number = 10): Promise<VehicleCostBr
  * @returns Array of driver costs
  */
 export async function getDriverCosts(limit: number = 10): Promise<DriverCostBreakdown[]> {
-  const { data, error } = await supabase.rpc('get_driver_costs', {
+  const { data, error } = await supabase.schema('analytics').rpc('get_driver_costs', {
     limit_count: limit,
   });
 
@@ -317,7 +317,7 @@ export async function getDashboardSummary(
   startDate?: string | null,
   endDate?: string | null
 ): Promise<DashboardSummary> {
-  const { data, error } = await supabase.rpc('get_dashboard_summary', {
+  const { data, error } = await supabase.schema('analytics').rpc('get_dashboard_summary', {
     start_date: startDate || null,
     end_date: endDate || null,
   });
