@@ -136,18 +136,11 @@ function parseGeoCoordinates(value: string, columnName?: string): { latitude?: n
   // CRITICAL FIX: Check the COLUMN NAME (not the value) for order hints
   const lowerColumnName = columnName ? columnName.toLowerCase() : '';
 
-  if (process.env.NODE_ENV === 'development') {
-      value,
-      columnName,
-      numbers: [first, second],
-    });
-  }
+  // Debug logging removed during Phase 1 Block 2 quality hardening
 
   // If column name explicitly indicates order as "longitude/latitude" or "lon/lat"
   if (lowerColumnName.includes('longitude/latitude') || lowerColumnName.includes('lon/lat') ||
       lowerColumnName.includes('long/lat') || lowerColumnName.includes('longitude latitude')) {
-    if (process.env.NODE_ENV === 'development') {
-    }
     return {
       longitude: first,
       latitude: second,
@@ -157,8 +150,6 @@ function parseGeoCoordinates(value: string, columnName?: string): { latitude?: n
   // If column name explicitly indicates order as "latitude/longitude" or "lat/lon"
   if (lowerColumnName.includes('latitude/longitude') || lowerColumnName.includes('lat/lon') ||
       lowerColumnName.includes('lat/long') || lowerColumnName.includes('latitude longitude')) {
-    if (process.env.NODE_ENV === 'development') {
-    }
     return {
       latitude: first,
       longitude: second,
@@ -168,8 +159,6 @@ function parseGeoCoordinates(value: string, columnName?: string): { latitude?: n
   // Auto-detect based on value ranges
   // If first value is > 90 or < -90, it must be longitude
   if (Math.abs(first) > 90) {
-    if (process.env.NODE_ENV === 'development') {
-    }
     return {
       longitude: first,
       latitude: second,
@@ -178,8 +167,6 @@ function parseGeoCoordinates(value: string, columnName?: string): { latitude?: n
 
   // If second value is > 90 or < -90, it must be longitude
   if (Math.abs(second) > 90) {
-    if (process.env.NODE_ENV === 'development') {
-    }
     return {
       latitude: first,
       longitude: second,
@@ -188,8 +175,6 @@ function parseGeoCoordinates(value: string, columnName?: string): { latitude?: n
 
   // Default assumption: first is longitude, second is latitude
   // (common in many systems like Google Maps)
-  if (process.env.NODE_ENV === 'development') {
-  }
   return {
     longitude: first,
     latitude: second,
@@ -204,12 +189,7 @@ function normalizeColumnNames(row: any, generateDiagnostics: boolean = false): {
   const columnMappingMetadata: Record<string, string> = {}; // Track which original column mapped to each field
   const diagnostics: ColumnMappingDiagnostic[] = [];
 
-  // Log original columns for debugging (only log first row to avoid spam)
-  if (process.env.NODE_ENV === 'development') {
-    const originalColumns = Object.keys(row);
-    if (originalColumns.length > 0) {
-    }
-  }
+  // Debug logging removed during Phase 1 Block 2 quality hardening
 
   // Create a lowercase version of all row keys for case-insensitive matching
   const rowKeysLowercase = Object.keys(row).reduce((acc, key) => {
@@ -266,16 +246,7 @@ function normalizeColumnNames(row: any, generateDiagnostics: boolean = false): {
   const hasLatitude = normalized.latitude && String(normalized.latitude).trim() !== '';
   const hasLongitude = normalized.longitude && String(normalized.longitude).trim() !== '';
 
-  if (process.env.NODE_ENV === 'development') {
-      hasLatitude,
-      hasLongitude,
-      latitudeValue: normalized.latitude,
-      longitudeValue: normalized.longitude,
-      hasGeoCoordinates: !!normalized.geo_coordinates,
-      geoCoordinatesValue: normalized.geo_coordinates,
-      geoCoordinatesColumnName: columnMappingMetadata['geo_coordinates'],
-    });
-  }
+  // Debug logging removed during Phase 1 Block 2 quality hardening
 
   if ((!hasLatitude || !hasLongitude) && normalized.geo_coordinates) {
     const geoValue = String(normalized.geo_coordinates);
@@ -285,35 +256,17 @@ function normalizeColumnNames(row: any, generateDiagnostics: boolean = false): {
       // Pass the original column name to help determine coordinate order
       const parsed = parseGeoCoordinates(geoValue, geoColumnName);
 
-      if (process.env.NODE_ENV === 'development') {
-      }
-
       if (!hasLatitude && parsed.latitude !== undefined) {
         normalized.latitude = parsed.latitude;
-        if (process.env.NODE_ENV === 'development') {
-        }
       }
 
       if (!hasLongitude && parsed.longitude !== undefined) {
         normalized.longitude = parsed.longitude;
-        if (process.env.NODE_ENV === 'development') {
-        }
       }
     }
   }
 
-  // Log normalized columns for debugging (only first row)
-  if (process.env.NODE_ENV === 'development') {
-    const normalizedColumns = Object.keys(normalized);
-    if (normalizedColumns.length > 0) {
-        name: normalized.name,
-        address: normalized.address,
-        latitude: normalized.latitude,
-        longitude: normalized.longitude,
-        geo_coordinates: normalized.geo_coordinates,
-      });
-    }
-  }
+  // Debug logging removed during Phase 1 Block 2 quality hardening
 
   return { normalized, diagnostics: generateDiagnostics ? diagnostics : undefined };
 }

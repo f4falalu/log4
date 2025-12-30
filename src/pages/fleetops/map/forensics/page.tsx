@@ -181,7 +181,7 @@ export default function ForensicsMapPage() {
             )
           }
           title="Route Comparison"
-          className="bg-card/95 backdrop-blur-sm"
+          className="bg-card shadow-lg border"
         >
           <Route className="h-4 w-4" />
         </Button>
@@ -191,7 +191,7 @@ export default function ForensicsMapPage() {
           size="icon"
           onClick={() => setActiveAnalysis(activeAnalysis === 'heatmap' ? null : 'heatmap')}
           title="Performance Heatmap"
-          className="bg-card/95 backdrop-blur-sm"
+          className="bg-card shadow-lg border"
         >
           <Activity className="h-4 w-4" />
         </Button>
@@ -205,7 +205,7 @@ export default function ForensicsMapPage() {
             )
           }
           title="Trade-Off History"
-          className="bg-card/95 backdrop-blur-sm"
+          className="bg-card shadow-lg border"
         >
           <GitBranch className="h-4 w-4" />
         </Button>
@@ -224,7 +224,7 @@ export default function ForensicsMapPage() {
 
       {/* Heatmap Controls */}
       {activeAnalysis === 'heatmap' && (
-        <Card className="absolute top-4 right-4 z-[1000] p-4 w-80 bg-card/95 backdrop-blur-sm">
+        <Card className="absolute top-4 right-4 z-[1000] p-4 w-80 bg-card shadow-lg border">
           <div className="flex items-center gap-2 mb-3">
             <Activity className="h-4 w-4 text-primary" />
             <h3 className="font-semibold text-sm">Performance Heatmap</h3>
@@ -260,7 +260,7 @@ export default function ForensicsMapPage() {
 
       {/* Trade-Off History Controls */}
       {activeAnalysis === 'tradeoff_history' && (
-        <Card className="absolute top-4 right-4 z-[1000] p-4 w-80 bg-card/95 backdrop-blur-sm">
+        <Card className="absolute top-4 right-4 z-[1000] p-4 w-80 bg-card shadow-lg border">
           <div className="flex items-center gap-2 mb-3">
             <GitBranch className="h-4 w-4 text-purple-600" />
             <h3 className="font-semibold text-sm">Trade-Off History</h3>
@@ -299,7 +299,7 @@ export default function ForensicsMapPage() {
 
       {/* Timeline Scrubber */}
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[900] w-[600px]">
-        <Card className="p-4 bg-card/95 backdrop-blur-sm">
+        <Card className="p-4 bg-card shadow-lg border">
           <div className="flex items-center gap-3 mb-3">
             <History className="h-4 w-4 text-purple-600" />
             <h3 className="font-semibold text-sm">Timeline Playback</h3>
@@ -343,7 +343,7 @@ export default function ForensicsMapPage() {
 
       {/* Read-Only Reminder */}
       <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[900]">
-        <div className="bg-purple-500/10 border border-purple-500/20 backdrop-blur-sm rounded-lg px-4 py-2">
+        <div className="bg-purple-50 dark:bg-purple-950 border border-purple-200 dark:border-purple-800 rounded-lg px-4 py-2 shadow-lg">
           <p className="text-xs text-purple-600 dark:text-purple-400 font-medium">
             Read-Only Mode: Historical data is immutable
           </p>

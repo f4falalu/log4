@@ -280,7 +280,7 @@ export function RouteSketchTool({ map, active, onClose }: RouteSketchToolProps) 
   if (!active) return null;
 
   return (
-    <Card className="absolute top-24 right-4 z-[2000] p-4 w-96 bg-card/95 backdrop-blur-sm max-h-[calc(100vh-120px)] overflow-y-auto">
+    <Card className="absolute top-4 right-4 z-[2000] p-4 w-96 bg-card shadow-lg border max-h-[calc(100vh-32px)] overflow-y-auto">
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">

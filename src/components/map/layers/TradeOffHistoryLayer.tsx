@@ -66,6 +66,11 @@ export function TradeOffHistoryLayer({
       return;
     }
 
+    // Wait for map to be fully initialized
+    if (!map.getContainer || !map.getContainer()) {
+      return;
+    }
+
     // Create layer group
     const lg = L.layerGroup().addTo(map);
     setLayerGroup(lg);

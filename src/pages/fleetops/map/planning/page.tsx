@@ -206,7 +206,7 @@ export default function PlanningMapPage() {
 
       {/* Workflow Reminder */}
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[900]">
-        <div className="bg-blue-500/10 border border-blue-500/20 backdrop-blur-sm rounded-lg px-4 py-2">
+        <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg px-4 py-2 shadow-lg">
           <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">
             Workflow: Draft → Review → Activate (All changes are draft by default)
           </p>
