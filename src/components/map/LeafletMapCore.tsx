@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { MAP_CONFIG, TileProvider } from '@/lib/mapConfig';
+import { MapUtils } from '@/lib/mapUtils';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -115,9 +116,29 @@ export function LeafletMapCore({
         console.warn('[LeafletMapCore] Skipped invalidateSize after unmount');
       }
     });
-    
-    // Call onReady with map instance
-    onReady(map);
+
+    // Poll for map readiness with exponential backoff
+    const pollMapReady = () => {
+      if (MapUtils.isMapReady(map)) {
+        onReady(map);
+      } else {
+        const retryCount = (map as any)._readyRetryCount || 0;
+        (map as any)._readyRetryCount = retryCount + 1;
+
+        if (retryCount < 10) {  // Max 10 retries (~2 seconds)
+          const delay = Math.min(50 * Math.pow(1.5, retryCount), 500);
+          setTimeout(pollMapReady, delay);
+        } else {
+          console.error('[LeafletMapCore] Map failed to become ready after 10 retries');
+          onReady(map); // Fallback to avoid blocking
+        }
+      }
+    };
+
+    // Start polling after RAF completes
+    requestAnimationFrame(() => {
+      requestAnimationFrame(pollMapReady);
+    });
 
     return () => {
       try {

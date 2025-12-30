@@ -22,7 +22,7 @@
  * Critical: History is truth - accept imperfect data
  */
 
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useMapContext } from '@/hooks/useMapContext';
 import { useServiceZones } from '@/hooks/useServiceZones';
 import { useFacilities } from '@/hooks/useFacilities';
@@ -83,11 +83,10 @@ export default function ForensicsMapPage() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTimestamp, setCurrentTimestamp] = useState(new Date());
   const [timelinePosition, setTimelinePosition] = useState(50); // 0-100
-
-  const mapInstanceRef = useRef<L.Map | null>(null);
+  const [mapInstance, setMapInstance] = useState<L.Map | null>(null);
 
   const handleMapCapture = useCallback((map: L.Map) => {
-    mapInstanceRef.current = map;
+    setMapInstance(map);
   }, []);
 
   // Timeline controls
@@ -147,7 +146,7 @@ export default function ForensicsMapPage() {
         {/* Conditional Forensics Layers */}
         {activeAnalysis === 'heatmap' && (
           <PerformanceHeatmapLayer
-            map={mapInstanceRef.current}
+            map={mapInstance}
             active={true}
             metric={heatmapMetric}
             timeRange={{
@@ -159,7 +158,7 @@ export default function ForensicsMapPage() {
 
         {activeAnalysis === 'tradeoff_history' && (
           <TradeOffHistoryLayer
-            map={mapInstanceRef.current}
+            map={mapInstance}
             active={true}
             statusFilter={tradeOffStatusFilter}
             timeRange={{
@@ -214,7 +213,7 @@ export default function ForensicsMapPage() {
       {/* Route Comparison Overlay */}
       {activeAnalysis === 'route_comparison' && (
         <RouteComparisonOverlay
-          map={mapInstanceRef.current}
+          map={mapInstance}
           active={true}
           batchId={selectedBatchId || undefined}
           timestamp={currentTimestamp}

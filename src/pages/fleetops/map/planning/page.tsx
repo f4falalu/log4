@@ -21,7 +21,7 @@
  * Critical Workflow: Draft → Review → Activate
  */
 
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useMapContext } from '@/hooks/useMapContext';
 import { useServiceZones } from '@/hooks/useServiceZones';
 import { useFacilities } from '@/hooks/useFacilities';
@@ -58,11 +58,10 @@ export default function PlanningMapPage() {
   // UI state
   const [activeTool, setActiveTool] = useState<string | null>(null);
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
-
-  const mapInstanceRef = useRef<L.Map | null>(null);
+  const [mapInstance, setMapInstance] = useState<L.Map | null>(null);
 
   const handleMapCapture = useCallback((map: L.Map) => {
-    mapInstanceRef.current = map;
+    setMapInstance(map);
   }, []);
 
   const handleSaveDraft = useCallback(
@@ -178,13 +177,13 @@ export default function PlanningMapPage() {
 
       {/* Planning Tools */}
       <DistanceMeasureTool
-        map={mapInstanceRef.current}
+        map={mapInstance}
         active={activeTool === 'measure'}
         onClose={() => setActiveTool(null)}
       />
 
       <ZoneEditor
-        map={mapInstanceRef.current}
+        map={mapInstance}
         active={activeTool === 'zone'}
         onClose={() => setActiveTool(null)}
         onSaveDraft={handleSaveDraft}
@@ -196,7 +195,7 @@ export default function PlanningMapPage() {
       />
 
       <RouteSketchTool
-        map={mapInstanceRef.current}
+        map={mapInstance}
         active={activeTool === 'route'}
         onClose={() => setActiveTool(null)}
       />

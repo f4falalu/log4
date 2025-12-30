@@ -139,20 +139,23 @@ export function UnifiedMapContainer({
     : MAP_DESIGN_SYSTEM.layout.embedded;
 
   const handleMapReady = useCallback((mapInstance: L.Map) => {
-    if (MapUtils.isMapReady(mapInstance)) {
-      setMap(mapInstance);
-      MapUtils.safeInvalidateSize(mapInstance);
-      onMapReady?.(mapInstance);
-    } else {
-      // Retry after delay
-      setTimeout(() => {
-        if (MapUtils.isMapReady(mapInstance)) {
-          setMap(mapInstance);
-          MapUtils.safeInvalidateSize(mapInstance);
-          onMapReady?.(mapInstance);
-        }
-      }, 100);
-    }
+    const pollReady = (attempt: number = 0) => {
+      if (MapUtils.isMapReady(mapInstance)) {
+        setMap(mapInstance);
+        MapUtils.safeInvalidateSize(mapInstance);
+        onMapReady?.(mapInstance);
+      } else if (attempt < 5) {  // Max 5 retries at this level
+        const delay = Math.min(100 * Math.pow(1.5, attempt), 500);
+        setTimeout(() => pollReady(attempt + 1), delay);
+      } else {
+        console.warn('[UnifiedMapContainer] Map readiness check failed after 5 retries, proceeding anyway');
+        setMap(mapInstance);
+        MapUtils.safeInvalidateSize(mapInstance);
+        onMapReady?.(mapInstance);
+      }
+    };
+
+    pollReady(0);
   }, [onMapReady]);
 
   return (
