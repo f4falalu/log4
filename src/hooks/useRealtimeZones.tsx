@@ -17,7 +17,6 @@ export function useRealtimeZones() {
           table: 'service_zones'
         },
         (payload) => {
-          console.log('Service zone update received:', payload);
           
           // Debounce invalidation to prevent rapid re-renders
           if (timeoutRef.current) {

@@ -103,7 +103,6 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
 }
 
 export default function FleetManagementPage() {
-  console.log('Rendering FleetManagementPage');
   
   // Data fetching with loading and error states
   const { 

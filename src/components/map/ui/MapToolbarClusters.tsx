@@ -122,7 +122,6 @@ export function MapToolbarClusters({
           label="Focus Mode"
           onClick={() => {
             // Toggle focus mode - hide all UI except map
-            console.log('Focus mode toggle');
           }}
         />
       </div>

@@ -43,6 +43,7 @@ import VLMSMaintenance from "./pages/fleetops/vlms/maintenance/page";
 import VLMSFuel from "./pages/fleetops/vlms/fuel/page";
 import VLMSAssignments from "./pages/fleetops/vlms/assignments/page";
 import VLMSIncidents from "./pages/fleetops/vlms/incidents/page";
+import VLMSInspections from "./pages/fleetops/vlms/inspections/page";
 
 const queryClient = new QueryClient();
 
@@ -107,6 +108,7 @@ const App = () => (
                       <Route path="fuel" element={<VLMSFuel />} />
                       <Route path="assignments" element={<VLMSAssignments />} />
                       <Route path="incidents" element={<VLMSIncidents />} />
+                      <Route path="inspections" element={<VLMSInspections />} />
                     </Route>
                   </Route>
 

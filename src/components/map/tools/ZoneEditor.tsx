@@ -51,6 +51,11 @@ export function ZoneEditor({ map, active, onClose, onSaveDraft }: ZoneEditorProp
       return;
     }
 
+    // Wait for map to be fully initialized
+    if (!map.getContainer || !map.getContainer()) {
+      return;
+    }
+
     // Create feature group for drawn items
     const fg = L.featureGroup().addTo(map);
     setFeatureGroup(fg);
@@ -139,7 +144,7 @@ export function ZoneEditor({ map, active, onClose, onSaveDraft }: ZoneEditorProp
   if (!active) return null;
 
   return (
-    <Card className="absolute top-24 right-4 z-[1000] p-4 w-80 bg-card/95 backdrop-blur-sm">
+    <Card className="absolute top-24 right-4 z-[2000] p-4 w-80 bg-card/95 backdrop-blur-sm">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <Pencil className="h-4 w-4 text-green-600" />

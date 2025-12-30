@@ -17,7 +17,6 @@ export function useRealtimeDeliveries() {
           table: 'route_history',
         },
         (payload) => {
-          console.log('[useRealtimeDeliveries] Delivery update:', payload);
           queryClient.invalidateQueries({ queryKey: ['route-history'] });
           queryClient.invalidateQueries({ queryKey: ['realtime-stats'] });
 

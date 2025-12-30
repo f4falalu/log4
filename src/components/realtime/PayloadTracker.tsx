@@ -55,7 +55,6 @@ export function PayloadTracker({ batchId, vehicleId }: PayloadTrackerProps) {
           filter: `id=eq.${batchId}`,
         },
         (payload) => {
-          console.log('Delivery batch updated:', payload);
           fetchPayloadData();
           
           if (payload.eventType === 'UPDATE') {
@@ -74,7 +73,6 @@ export function PayloadTracker({ batchId, vehicleId }: PayloadTrackerProps) {
           filter: `batch_id=eq.${batchId}`,
         },
         (payload) => {
-          console.log('Payload items updated:', payload);
           fetchPayloadItems();
           
           if (payload.eventType === 'UPDATE') {

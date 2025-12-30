@@ -116,7 +116,6 @@ export default function SchedulePlanner() {
 
   const handleViewRoute = (schedule: DeliverySchedule) => {
     // Could open a map view dialog
-    console.log('View route for:', schedule.title);
   };
 
   const handleOptimize = (schedule: DeliverySchedule) => {

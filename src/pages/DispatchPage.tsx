@@ -19,7 +19,6 @@ export default function DispatchPage() {
   const [handoffDialogOpen, setHandoffDialogOpen] = useState(false);
   
   const handleBatchCreate = (batch: unknown) => {
-    console.log('Batch created:', batch);
   };
 
   const activeBatches = batches.filter(b => b.status === 'in-progress' || b.status === 'planned');

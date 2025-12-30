@@ -15,7 +15,6 @@ export function useActiveHandoffs() {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'handoffs' },
         (payload) => {
-          console.log('Handoff update:', payload);
           queryClient.invalidateQueries({ queryKey: ['active-handoffs'] });
           
           if (payload.eventType === 'INSERT') {

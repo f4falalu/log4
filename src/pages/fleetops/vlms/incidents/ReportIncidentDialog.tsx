@@ -53,11 +53,15 @@ export function ReportIncidentDialog({ open, onOpenChange }: ReportIncidentDialo
   // Update driver name when driver is selected
   const handleDriverChange = (selectedDriverId: string) => {
     setDriverId(selectedDriverId);
-    const driver = drivers.find((d) => d.id === selectedDriverId);
-    if (driver) {
-      setDriverName(driver.name);
-    } else {
+    if (selectedDriverId === 'none') {
       setDriverName('');
+    } else {
+      const driver = drivers.find((d) => d.id === selectedDriverId);
+      if (driver) {
+        setDriverName(driver.name);
+      } else {
+        setDriverName('');
+      }
     }
   };
 
@@ -76,7 +80,7 @@ export function ReportIncidentDialog({ open, onOpenChange }: ReportIncidentDialo
       location,
       driver_name: driverName,
       description,
-      driver_id: driverId || undefined,
+      driver_id: driverId && driverId !== 'none' ? driverId : undefined,
       cause: cause || undefined,
       damages_description: damagesDescription || undefined,
       passengers: passengers || undefined,
@@ -218,7 +222,7 @@ export function ReportIncidentDialog({ open, onOpenChange }: ReportIncidentDialo
                   <SelectValue placeholder="Select driver (optional)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value="none">None</SelectItem>
                   {drivers.map((driver) => (
                     <SelectItem key={driver.id} value={driver.id}>
                       {driver.name}

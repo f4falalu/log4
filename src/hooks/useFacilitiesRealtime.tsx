@@ -23,7 +23,6 @@ export function useFacilitiesRealtime() {
           table: 'facilities',
         },
         (payload: RealtimePostgresChangesPayload<any>) => {
-          console.log('Facilities change received:', payload);
 
           // Invalidate facilities queries to refetch
           queryClient.invalidateQueries({ queryKey: ['facilities'] });
@@ -77,7 +76,6 @@ export function useFacilityServicesRealtime(facilityId?: string) {
           filter: `facility_id=eq.${facilityId}`,
         },
         (payload: RealtimePostgresChangesPayload<any>) => {
-          console.log('Facility services change:', payload);
           queryClient.invalidateQueries({ queryKey: ['facility-services', facilityId] });
         }
       )
@@ -109,7 +107,6 @@ export function useFacilityDeliveriesRealtime(facilityId?: string) {
           filter: `facility_id=eq.${facilityId}`,
         },
         (payload: RealtimePostgresChangesPayload<any>) => {
-          console.log('Facility deliveries change:', payload);
           queryClient.invalidateQueries({ queryKey: ['facility-deliveries', facilityId] });
 
           if (payload.eventType === 'INSERT') {
@@ -147,7 +144,6 @@ export function useFacilityStockRealtime(facilityId?: string) {
           filter: `facility_id=eq.${facilityId}`,
         },
         (payload: RealtimePostgresChangesPayload<any>) => {
-          console.log('Facility stock change:', payload);
           queryClient.invalidateQueries({ queryKey: ['facility-stock', facilityId] });
 
           if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
@@ -185,7 +181,6 @@ export function useFacilityAuditLogRealtime(facilityId?: string) {
           filter: `facility_id=eq.${facilityId}`,
         },
         (payload: RealtimePostgresChangesPayload<any>) => {
-          console.log('Facility audit log change:', payload);
           queryClient.invalidateQueries({ queryKey: ['facility-audit-log', facilityId] });
         }
       )

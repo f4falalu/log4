@@ -49,7 +49,7 @@ export default function MaintenancePage() {
           <p className="text-muted-foreground mt-2">Track vehicle maintenance and service records</p>
         </div>
         <div className="flex gap-3">
-          <Button variant="outline">
+          <Button variant="outline" onClick={() => alert('Calendar view coming soon!')}>
             <Calendar className="h-4 w-4 mr-2" />
             Calendar View
           </Button>

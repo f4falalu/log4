@@ -21,7 +21,6 @@ export function useRealtimePayload() {
           table: 'payload_items',
         },
         (payload) => {
-          console.log('Payload item update received:', payload);
 
           // Debounce invalidation to prevent rapid re-renders
           if (timeoutRef.current) {
