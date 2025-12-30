@@ -6,23 +6,25 @@ export const MapUtils = {
    */
   isMapReady: (map: L.Map | null): boolean => {
     if (!map) return false;
-    
+
     try {
       const container = map.getContainer();
+      if (!container) return false;
+
       // Check if container is connected to DOM
-      if (!(container as any)?.isConnected) return false;
-      
+      const isConnected = container.isConnected !== undefined ? container.isConnected : document.body.contains(container);
+      if (!isConnected) return false;
+
       // Check if map panes exist (critical for layer operations)
       const panes = map.getPanes();
       if (!panes || !panes.overlayPane) return false;
-      
+
       // Check if map has valid size
       const size = map.getSize();
       if (!size || size.x === 0 || size.y === 0) return false;
-      
+
       return true;
     } catch (e) {
-      console.warn('[MapUtils] Map readiness check failed:', e);
       return false;
     }
   },
