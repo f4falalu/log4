@@ -74,8 +74,10 @@ export function TradeOffHistoryLayer({
     }
 
     // Create layer group
+    let newLayerGroup: L.LayerGroup | null = null;
     try {
       const lg = L.layerGroup().addTo(map);
+      newLayerGroup = lg;
       setLayerGroup(lg);
 
       // TODO: Fetch actual Trade-Off history from database
@@ -97,12 +99,12 @@ export function TradeOffHistoryLayer({
     }
 
     return () => {
-      if (layerGroup) {
-        layerGroup.clearLayers();
-        layerGroup.remove();
+      if (newLayerGroup) {
+        newLayerGroup.clearLayers();
+        newLayerGroup.remove();
       }
     };
-  }, [map, active, timeRange, statusFilter]);
+  }, [map, active, timeRange, statusFilter, layerGroup]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -113,7 +115,7 @@ export function TradeOffHistoryLayer({
         setLayerGroup(null);
       }
     };
-  }, []);
+  }, [layerGroup]);
 
   return null; // This is a pure layer component
 }

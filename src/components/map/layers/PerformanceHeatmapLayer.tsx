@@ -61,6 +61,7 @@ export function PerformanceHeatmapLayer({
     }
 
     // Create heatmap layer
+    let newLayer: L.LayerGroup | null = null;
     try {
       const mockHeatmapData = generateMockHeatmapData(metric);
       const gradient = getGradientForMetric(metric);
@@ -81,19 +82,20 @@ export function PerformanceHeatmapLayer({
       });
 
       layerGroup.addTo(map);
+      newLayer = layerGroup;
       setHeatmapLayer(layerGroup);
     } catch (e) {
       console.error('[PerformanceHeatmapLayer] Failed to create heatmap:', e);
     }
 
     return () => {
-      if (heatmapLayer && map) {
+      if (newLayer && map) {
         try {
-          map.removeLayer(heatmapLayer);
+          map.removeLayer(newLayer);
         } catch {}
       }
     };
-  }, [map, active, metric, timeRange]);
+  }, [map, active, metric, timeRange, heatmapLayer]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -105,7 +107,7 @@ export function PerformanceHeatmapLayer({
         setHeatmapLayer(null);
       }
     };
-  }, []);
+  }, [heatmapLayer, map]);
 
   return null; // This is a pure layer component
 }

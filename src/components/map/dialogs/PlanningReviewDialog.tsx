@@ -90,6 +90,40 @@ export function PlanningReviewDialog({ open, onClose }: PlanningReviewDialogProp
   // Conflicts
   const [conflicts, setConflicts] = useState<string[]>([]);
 
+  // Detect conflicts in draft configurations
+  const detectConflicts = useCallback(
+    (zones: DraftZone[], assignments: DraftFacilityAssignment[]) => {
+      const foundConflicts: string[] = [];
+
+      // Check for duplicate zone names
+      const zoneNames = zones.map((z) => z.name);
+      const duplicateZones = zoneNames.filter((name, index) => zoneNames.indexOf(name) !== index);
+      if (duplicateZones.length > 0) {
+        foundConflicts.push(`Duplicate zone names detected: ${duplicateZones.join(', ')}`);
+      }
+
+      // Check for duplicate facility assignments (same facility assigned to multiple zones)
+      const facilityAssignmentMap = new Map<string, string[]>();
+      assignments.forEach((assignment) => {
+        const existing = facilityAssignmentMap.get(assignment.facility_id) || [];
+        existing.push(assignment.zone?.name || 'Unknown');
+        facilityAssignmentMap.set(assignment.facility_id, existing);
+      });
+
+      facilityAssignmentMap.forEach((zones, facilityId) => {
+        if (zones.length > 1) {
+          const assignment = assignments.find((a) => a.facility_id === facilityId);
+          foundConflicts.push(
+            `Facility "${assignment?.facility?.name}" assigned to multiple zones: ${zones.join(', ')}`
+          );
+        }
+      });
+
+      setConflicts(foundConflicts);
+    },
+    []
+  );
+
   // Fetch draft configurations
   const fetchDrafts = useCallback(async () => {
     try {
@@ -157,40 +191,6 @@ export function PlanningReviewDialog({ open, onClose }: PlanningReviewDialogProp
       setLoading(false);
     }
   }, [detectConflicts]);
-
-  // Detect conflicts in draft configurations
-  const detectConflicts = useCallback(
-    (zones: DraftZone[], assignments: DraftFacilityAssignment[]) => {
-      const foundConflicts: string[] = [];
-
-      // Check for duplicate zone names
-      const zoneNames = zones.map((z) => z.name);
-      const duplicateZones = zoneNames.filter((name, index) => zoneNames.indexOf(name) !== index);
-      if (duplicateZones.length > 0) {
-        foundConflicts.push(`Duplicate zone names detected: ${duplicateZones.join(', ')}`);
-      }
-
-      // Check for duplicate facility assignments (same facility assigned to multiple zones)
-      const facilityAssignmentMap = new Map<string, string[]>();
-      assignments.forEach((assignment) => {
-        const existing = facilityAssignmentMap.get(assignment.facility_id) || [];
-        existing.push(assignment.zone?.name || 'Unknown');
-        facilityAssignmentMap.set(assignment.facility_id, existing);
-      });
-
-      facilityAssignmentMap.forEach((zones, facilityId) => {
-        if (zones.length > 1) {
-          const assignment = assignments.find((a) => a.facility_id === facilityId);
-          foundConflicts.push(
-            `Facility "${assignment?.facility?.name}" assigned to multiple zones: ${zones.join(', ')}`
-          );
-        }
-      });
-
-      setConflicts(foundConflicts);
-    },
-    []
-  );
 
   // Fetch drafts when dialog opens
   useEffect(() => {

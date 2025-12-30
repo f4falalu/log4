@@ -68,7 +68,7 @@ export function DistanceMeasureTool({ map, active, onClose }: DistanceMeasureToo
     return () => {
       map.off('click', handleMapClick);
     };
-  }, [map, active]);
+  }, [map, active, layerGroup]);
 
   // Update visualization when points change
   useEffect(() => {
