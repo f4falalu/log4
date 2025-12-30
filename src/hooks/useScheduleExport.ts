@@ -1,11 +1,10 @@
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import * as XLSX from 'xlsx';
 import { format } from 'date-fns';
 import { DeliverySchedule } from './useDeliverySchedules';
 
 export function useScheduleExport() {
-  const exportToPDF = (schedule: DeliverySchedule) => {
+  const exportToPDF = async (schedule: DeliverySchedule) => {
+    // Lazy load PDF library only when needed
+    const { default: jsPDF } = await import('jspdf');
     const doc = new jsPDF();
 
     // Header
@@ -35,7 +34,10 @@ export function useScheduleExport() {
     doc.save(`schedule-${schedule.title}-${schedule.planned_date}.pdf`);
   };
 
-  const exportToExcel = (schedule: DeliverySchedule) => {
+  const exportToExcel = async (schedule: DeliverySchedule) => {
+    // Lazy load Excel library only when needed
+    const XLSX = await import('xlsx');
+
     // Summary Sheet
     const summaryData = [
       ['Schedule Title', schedule.title],

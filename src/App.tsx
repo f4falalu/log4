@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -30,8 +30,10 @@ import CommandCenterPage from "./pages/CommandCenterPage";
 import DispatchPage from "./pages/DispatchPage";
 import FacilityManagerPage from "./pages/FacilityManagerPage";
 import VehicleManagementPage from "./pages/VehicleManagementPage";
-import ReportsPageWrapper from "./pages/ReportsPageWrapper";
 import BatchManagement from "./pages/BatchManagement";
+
+// Lazy load Reports page (includes Recharts - ~300 kB uncompressed / 77 kB gzipped)
+const ReportsPageWrapper = lazy(() => import("./pages/ReportsPageWrapper"));
 import MapLayout from "./pages/fleetops/map/layout";
 import PlanningMapPage from "./pages/fleetops/map/planning/page";
 import OperationalMapPage from "./pages/fleetops/map/operational/page";
@@ -94,7 +96,11 @@ const App = () => (
                       )
                     } />
                     <Route path="fleet-management" element={<FleetManagement />} />
-                    <Route path="reports" element={<ReportsPageWrapper />} />
+                    <Route path="reports" element={
+                      <Suspense fallback={<div className="flex items-center justify-center h-screen"><Loader2 className="h-8 w-8 animate-spin" /></div>}>
+                        <ReportsPageWrapper />
+                      </Suspense>
+                    } />
                     <Route path="map" element={<MapLayout />}>
                       <Route path="planning" element={<PlanningMapPage />} />
                       <Route path="operational" element={<OperationalMapPage />} />

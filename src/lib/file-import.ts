@@ -1,5 +1,4 @@
 import Papa from 'papaparse';
-import * as XLSX from 'xlsx';
 import { CSVFacilityData, csvFacilitySchema } from './facility-validation';
 
 export type FileFormat = 'csv' | 'xlsx' | 'xls';
@@ -324,8 +323,12 @@ function parseCSVFile(file: File): Promise<ParsedFile> {
 
 /**
  * Parse Excel file (.xlsx, .xls) using SheetJS
+ * Lazy loads XLSX library only when needed
  */
-function parseExcelFile(file: File): Promise<ParsedFile> {
+async function parseExcelFile(file: File): Promise<ParsedFile> {
+  // Lazy load XLSX library only when parsing Excel files
+  const XLSX = await import('xlsx');
+
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
 

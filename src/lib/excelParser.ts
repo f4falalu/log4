@@ -1,5 +1,3 @@
-import * as XLSX from 'xlsx';
-
 export interface ParsedRow {
   facilityId?: string;
   facilityName?: string;
@@ -23,6 +21,9 @@ export interface ParsedData {
 }
 
 export async function parseExcelFile(file: File): Promise<ParsedData> {
+  // Lazy load XLSX library only when parsing files
+  const XLSX = await import('xlsx');
+
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
 
