@@ -89,6 +89,7 @@ export function RouteSketchTool({ map, active, onClose }: RouteSketchToolProps) 
       if (layerGroupRef.current) {
         layerGroupRef.current.clearLayers();
         map?.removeLayer(layerGroupRef.current);
+      }
     };
   }, [active, map]);
 
