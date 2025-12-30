@@ -46,42 +46,47 @@ export function PerformanceHeatmapLayer({
       return;
     }
 
-    // Wait for map to be fully initialized
-    // Check if map container exists AND has been added to DOM
-    const container = map.getContainer();
-    if (!container || !container.parentNode) {
-      return;
-    }
+    // Use Leaflet's whenReady to ensure map is fully initialized
+    let cleanupFn: (() => void) | null = null;
 
-    // TODO: Fetch actual performance data from database based on timeRange
-    // For now, using mock data points and rendering with circle markers
-    const mockHeatmapData = generateMockHeatmapData(metric);
-    const gradient = getGradientForMetric(metric);
+    map.whenReady(() => {
+      // TODO: Fetch actual performance data from database based on timeRange
+      // For now, using mock data points and rendering with circle markers
+      const mockHeatmapData = generateMockHeatmapData(metric);
+      const gradient = getGradientForMetric(metric);
 
-    // Create layer group for heatmap visualization (using circle markers)
-    const layerGroup = L.layerGroup();
+      // Create layer group for heatmap visualization (using circle markers)
+      const layerGroup = L.layerGroup();
 
-    // Render each data point as a circle marker with color based on intensity
-    mockHeatmapData.forEach(([lat, lng, intensity]) => {
-      const color = getColorFromGradient(gradient, intensity);
-      L.circleMarker([lat, lng], {
-        radius: 8,
-        fillColor: color,
-        color: color,
-        weight: 1,
-        opacity: 0.6,
-        fillOpacity: 0.4,
-      })
-        .bindPopup(`${metric.replace(/_/g, ' ')}: ${(intensity * 100).toFixed(0)}%`)
-        .addTo(layerGroup);
+      // Render each data point as a circle marker with color based on intensity
+      mockHeatmapData.forEach(([lat, lng, intensity]) => {
+        const color = getColorFromGradient(gradient, intensity);
+        L.circleMarker([lat, lng], {
+          radius: 8,
+          fillColor: color,
+          color: color,
+          weight: 1,
+          opacity: 0.6,
+          fillOpacity: 0.4,
+        })
+          .bindPopup(`${metric.replace(/_/g, ' ')}: ${(intensity * 100).toFixed(0)}%`)
+          .addTo(layerGroup);
+      });
+
+      layerGroup.addTo(map);
+      setHeatmapLayer(layerGroup);
+
+      // Store cleanup function
+      cleanupFn = () => {
+        if (layerGroup) {
+          map.removeLayer(layerGroup);
+        }
+      };
     });
 
-    layerGroup.addTo(map);
-    setHeatmapLayer(layerGroup);
-
     return () => {
-      if (layerGroup) {
-        map.removeLayer(layerGroup);
+      if (cleanupFn) {
+        cleanupFn();
       }
     };
   }, [map, active, metric, timeRange]);

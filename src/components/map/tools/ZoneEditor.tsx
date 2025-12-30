@@ -51,64 +51,69 @@ export function ZoneEditor({ map, active, onClose, onSaveDraft }: ZoneEditorProp
       return;
     }
 
-    // Wait for map to be fully initialized
-    // Check if map container exists AND has been added to DOM
-    const container = map.getContainer();
-    if (!container || !container.parentNode) {
-      return;
-    }
+    // Use Leaflet's whenReady to ensure map is fully initialized
+    let cleanupFn: (() => void) | null = null;
 
-    // Create feature group for drawn items
-    const fg = L.featureGroup().addTo(map);
-    setFeatureGroup(fg);
+    map.whenReady(() => {
+      // Create feature group for drawn items
+      const fg = L.featureGroup().addTo(map);
+      setFeatureGroup(fg);
 
-    // Create draw control
-    const dc = new L.Control.Draw({
-      edit: {
-        featureGroup: fg,
-      },
-      draw: {
-        polygon: {
-          allowIntersection: false,
-          showArea: true,
-          metric: true,
+      // Create draw control
+      const dc = new L.Control.Draw({
+        edit: {
+          featureGroup: fg,
         },
-        polyline: false,
-        rectangle: false,
-        circle: false,
-        marker: false,
-        circlemarker: false,
-      },
+        draw: {
+          polygon: {
+            allowIntersection: false,
+            showArea: true,
+            metric: true,
+          },
+          polyline: false,
+          rectangle: false,
+          circle: false,
+          marker: false,
+          circlemarker: false,
+        },
+      });
+
+      map.addControl(dc);
+      setDrawControl(dc);
+
+      // Handle draw events
+      const handleDrawCreated = (e: any) => {
+        const layer = e.layer as L.Polygon;
+        fg.addLayer(layer);
+        setDrawnZone(layer);
+      };
+
+      const handleDrawEdited = (e: any) => {
+        const layers = e.layers;
+        layers.eachLayer((layer: L.Polygon) => {
+          setDrawnZone(layer);
+        });
+      };
+
+      map.on(L.Draw.Event.CREATED, handleDrawCreated);
+      map.on(L.Draw.Event.EDITED, handleDrawEdited);
+
+      // Store cleanup function
+      cleanupFn = () => {
+        map.off(L.Draw.Event.CREATED, handleDrawCreated);
+        map.off(L.Draw.Event.EDITED, handleDrawEdited);
+        if (dc) {
+          map.removeControl(dc);
+        }
+        fg.clearLayers();
+        fg.remove();
+      };
     });
 
-    map.addControl(dc);
-    setDrawControl(dc);
-
-    // Handle draw events
-    const handleDrawCreated = (e: any) => {
-      const layer = e.layer as L.Polygon;
-      fg.addLayer(layer);
-      setDrawnZone(layer);
-    };
-
-    const handleDrawEdited = (e: any) => {
-      const layers = e.layers;
-      layers.eachLayer((layer: L.Polygon) => {
-        setDrawnZone(layer);
-      });
-    };
-
-    map.on(L.Draw.Event.CREATED, handleDrawCreated);
-    map.on(L.Draw.Event.EDITED, handleDrawEdited);
-
     return () => {
-      map.off(L.Draw.Event.CREATED, handleDrawCreated);
-      map.off(L.Draw.Event.EDITED, handleDrawEdited);
-      if (dc) {
-        map.removeControl(dc);
+      if (cleanupFn) {
+        cleanupFn();
       }
-      fg.clearLayers();
-      fg.remove();
     };
   }, [map, active]);
 

@@ -66,35 +66,40 @@ export function TradeOffHistoryLayer({
       return;
     }
 
-    // Wait for map to be fully initialized
-    // Check if map container exists AND has been added to DOM
-    const container = map.getContainer();
-    if (!container || !container.parentNode) {
-      return;
-    }
+    // Use Leaflet's whenReady to ensure map is fully initialized
+    let cleanupFn: (() => void) | null = null;
 
-    // Create layer group
-    const lg = L.layerGroup().addTo(map);
-    setLayerGroup(lg);
+    map.whenReady(() => {
+      // Create layer group
+      const lg = L.layerGroup().addTo(map);
+      setLayerGroup(lg);
 
-    // TODO: Fetch actual Trade-Off history from database
-    // For now, using mock data
-    const mockTradeOffs = generateMockTradeOffHistory();
-    const filteredTradeOffs =
-      statusFilter === 'all'
-        ? mockTradeOffs
-        : mockTradeOffs.filter((to) => to.status === statusFilter);
+      // TODO: Fetch actual Trade-Off history from database
+      // For now, using mock data
+      const mockTradeOffs = generateMockTradeOffHistory();
+      const filteredTradeOffs =
+        statusFilter === 'all'
+          ? mockTradeOffs
+          : mockTradeOffs.filter((to) => to.status === statusFilter);
 
-    setTradeOffs(filteredTradeOffs);
+      setTradeOffs(filteredTradeOffs);
 
-    // Render each Trade-Off
-    filteredTradeOffs.forEach((tradeOff) => {
-      renderTradeOff(lg, tradeOff);
+      // Render each Trade-Off
+      filteredTradeOffs.forEach((tradeOff) => {
+        renderTradeOff(lg, tradeOff);
+      });
+
+      // Store cleanup function
+      cleanupFn = () => {
+        lg.clearLayers();
+        lg.remove();
+      };
     });
 
     return () => {
-      lg.clearLayers();
-      lg.remove();
+      if (cleanupFn) {
+        cleanupFn();
+      }
     };
   }, [map, active, timeRange, statusFilter]);
 
