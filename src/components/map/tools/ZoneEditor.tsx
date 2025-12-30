@@ -18,6 +18,7 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Pencil, X, Save, AlertTriangle } from 'lucide-react';
+import { MapUtils } from '@/lib/mapUtils';
 import L from 'leaflet';
 import 'leaflet-draw';
 
@@ -35,10 +36,15 @@ export function ZoneEditor({ map, active, onClose, onSaveDraft }: ZoneEditorProp
   const [featureGroup, setFeatureGroup] = useState<L.FeatureGroup | null>(null);
 
   useEffect(() => {
-    if (!map || !active) {
-      // Clean up
+    // Early exit with MapUtils check instead of whenReady
+    if (!MapUtils.isMapReady(map) || !active) {
+      // Cleanup existing controls
       if (drawControl && map) {
-        map.removeControl(drawControl);
+        try {
+          map.removeControl(drawControl);
+        } catch (e) {
+          console.warn('[ZoneEditor] Failed to remove draw control:', e);
+        }
       }
       if (featureGroup) {
         featureGroup.clearLayers();
@@ -51,71 +57,85 @@ export function ZoneEditor({ map, active, onClose, onSaveDraft }: ZoneEditorProp
       return;
     }
 
-    // Use Leaflet's whenReady to ensure map is fully initialized
-    let cleanupFn: (() => void) | null = null;
+    // Lazy initialization (only create once)
+    if (!featureGroup) {
+      try {
+        const fg = L.featureGroup().addTo(map);
+        setFeatureGroup(fg);
 
-    map.whenReady(() => {
-      // Create feature group for drawn items
-      const fg = L.featureGroup().addTo(map);
-      setFeatureGroup(fg);
-
-      // Create draw control
-      const dc = new L.Control.Draw({
-        edit: {
-          featureGroup: fg,
-        },
-        draw: {
-          polygon: {
-            allowIntersection: false,
-            showArea: true,
-            metric: true,
+        const dc = new L.Control.Draw({
+          edit: { featureGroup: fg },
+          draw: {
+            polygon: {
+              allowIntersection: false,
+              showArea: true,
+              metric: true,
+            },
+            polyline: false,
+            rectangle: false,
+            circle: false,
+            marker: false,
+            circlemarker: false,
           },
-          polyline: false,
-          rectangle: false,
-          circle: false,
-          marker: false,
-          circlemarker: false,
-        },
-      });
-
-      map.addControl(dc);
-      setDrawControl(dc);
-
-      // Handle draw events
-      const handleDrawCreated = (e: any) => {
-        const layer = e.layer as L.Polygon;
-        fg.addLayer(layer);
-        setDrawnZone(layer);
-      };
-
-      const handleDrawEdited = (e: any) => {
-        const layers = e.layers;
-        layers.eachLayer((layer: L.Polygon) => {
-          setDrawnZone(layer);
         });
-      };
 
-      map.on(L.Draw.Event.CREATED, handleDrawCreated);
-      map.on(L.Draw.Event.EDITED, handleDrawEdited);
+        map.addControl(dc);
+        setDrawControl(dc);
 
-      // Store cleanup function
-      cleanupFn = () => {
-        map.off(L.Draw.Event.CREATED, handleDrawCreated);
-        map.off(L.Draw.Event.EDITED, handleDrawEdited);
-        if (dc) {
-          map.removeControl(dc);
-        }
-        fg.clearLayers();
-        fg.remove();
-      };
-    });
+        // Event handlers
+        const handleDrawCreated = (e: any) => {
+          const layer = e.layer as L.Polygon;
+          fg.addLayer(layer);
+          setDrawnZone(layer);
+        };
+
+        const handleDrawEdited = (e: any) => {
+          const layers = e.layers;
+          layers.eachLayer((layer: L.Polygon) => {
+            setDrawnZone(layer);
+          });
+        };
+
+        map.on(L.Draw.Event.CREATED, handleDrawCreated);
+        map.on(L.Draw.Event.EDITED, handleDrawEdited);
+      } catch (e) {
+        console.error('[ZoneEditor] Failed to initialize draw controls:', e);
+      }
+    }
 
     return () => {
-      if (cleanupFn) {
-        cleanupFn();
+      if (drawControl && map) {
+        try {
+          map.off(L.Draw.Event.CREATED);
+          map.off(L.Draw.Event.EDITED);
+          map.removeControl(drawControl);
+        } catch (e) {
+          console.warn('[ZoneEditor] Cleanup error:', e);
+        }
+      }
+      if (featureGroup) {
+        featureGroup.clearLayers();
+        featureGroup.remove();
       }
     };
   }, [map, active]);
+
+  // Add unmount cleanup
+  useEffect(() => {
+    return () => {
+      if (featureGroup) {
+        featureGroup.clearLayers();
+        featureGroup.remove();
+        setFeatureGroup(null);
+      }
+      if (drawControl && map) {
+        try {
+          map.removeControl(drawControl);
+        } catch {}
+        setDrawControl(null);
+      }
+    };
+  }, []);
 
   const handleSaveDraft = () => {
     if (!drawnZone || !zoneName) return;

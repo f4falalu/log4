@@ -27,6 +27,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Route, X, Save, Trash2, AlertCircle, MapPin } from 'lucide-react';
+import { MapUtils } from '@/lib/mapUtils';
 import L from 'leaflet';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -64,14 +65,30 @@ export function RouteSketchTool({ map, active, onClose }: RouteSketchToolProps) 
 
   // Initialize layer group
   useEffect(() => {
-    if (!active || !map) return;
+    if (!MapUtils.isMapReady(map) || !active) {
+      if (layerGroupRef.current) {
+        layerGroupRef.current.clearLayers();
+        map?.removeLayer(layerGroupRef.current);
+        layerGroupRef.current = null;
+      }
+      return;
+    }
 
-    const lg = L.layerGroup().addTo(map);
-    layerGroupRef.current = lg;
+    // Lazy initialization
+    if (!layerGroupRef.current) {
+      try {
+        const lg = L.layerGroup().addTo(map);
+        layerGroupRef.current = lg;
+      } catch (e) {
+        console.error('[RouteSketchTool] Failed to create layer group:', e);
+        return;
+      }
+    }
 
     return () => {
-      lg.clearLayers();
-      map?.removeLayer(lg);
+      if (layerGroupRef.current) {
+        layerGroupRef.current.clearLayers();
+        map?.removeLayer(layerGroupRef.current);
     };
   }, [active, map]);
 

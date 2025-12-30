@@ -19,6 +19,7 @@
  */
 
 import { useEffect, useState } from 'react';
+import { MapUtils } from '@/lib/mapUtils';
 import L from 'leaflet';
 
 interface PerformanceHeatmapLayerProps {
@@ -37,28 +38,34 @@ export function PerformanceHeatmapLayer({
   const [heatmapLayer, setHeatmapLayer] = useState<L.Layer | null>(null);
 
   useEffect(() => {
-    if (!map || !active) {
-      // Clean up
-      if (heatmapLayer) {
-        map?.removeLayer(heatmapLayer);
+    // Early exit with MapUtils check
+    if (!MapUtils.isMapReady(map) || !active) {
+      if (heatmapLayer && map) {
+        try {
+          map.removeLayer(heatmapLayer);
+        } catch (e) {
+          console.warn('[PerformanceHeatmapLayer] Failed to remove layer:', e);
+        }
         setHeatmapLayer(null);
       }
       return;
     }
 
-    // Use Leaflet's whenReady to ensure map is fully initialized
-    let cleanupFn: (() => void) | null = null;
+    // Clear existing layer before creating new one
+    if (heatmapLayer) {
+      try {
+        map.removeLayer(heatmapLayer);
+      } catch (e) {
+        console.warn('[PerformanceHeatmapLayer] Failed to remove existing layer:', e);
+      }
+    }
 
-    map.whenReady(() => {
-      // TODO: Fetch actual performance data from database based on timeRange
-      // For now, using mock data points and rendering with circle markers
+    // Create heatmap layer
+    try {
       const mockHeatmapData = generateMockHeatmapData(metric);
       const gradient = getGradientForMetric(metric);
-
-      // Create layer group for heatmap visualization (using circle markers)
       const layerGroup = L.layerGroup();
 
-      // Render each data point as a circle marker with color based on intensity
       mockHeatmapData.forEach(([lat, lng, intensity]) => {
         const color = getColorFromGradient(gradient, intensity);
         L.circleMarker([lat, lng], {
@@ -75,21 +82,30 @@ export function PerformanceHeatmapLayer({
 
       layerGroup.addTo(map);
       setHeatmapLayer(layerGroup);
-
-      // Store cleanup function
-      cleanupFn = () => {
-        if (layerGroup) {
-          map.removeLayer(layerGroup);
-        }
-      };
-    });
+    } catch (e) {
+      console.error('[PerformanceHeatmapLayer] Failed to create heatmap:', e);
+    }
 
     return () => {
-      if (cleanupFn) {
-        cleanupFn();
+      if (heatmapLayer && map) {
+        try {
+          map.removeLayer(heatmapLayer);
+        } catch {}
       }
     };
   }, [map, active, metric, timeRange]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (heatmapLayer && map) {
+        try {
+          map.removeLayer(heatmapLayer);
+        } catch {}
+        setHeatmapLayer(null);
+      }
+    };
+  }, []);
 
   return null; // This is a pure layer component
 }

@@ -15,6 +15,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Ruler, X } from 'lucide-react';
+import { MapUtils } from '@/lib/mapUtils';
 import L from 'leaflet';
 
 interface DistanceMeasureToolProps {
@@ -34,8 +35,7 @@ export function DistanceMeasureTool({ map, active, onClose }: DistanceMeasureToo
   const [layerGroup, setLayerGroup] = useState<L.LayerGroup | null>(null);
 
   useEffect(() => {
-    if (!map || !active) {
-      // Clean up when tool is deactivated
+    if (!MapUtils.isMapReady(map) || !active) {
       if (layerGroup) {
         layerGroup.clearLayers();
         layerGroup.remove();
@@ -46,9 +46,16 @@ export function DistanceMeasureTool({ map, active, onClose }: DistanceMeasureToo
       return;
     }
 
-    // Create layer group for measurements
-    const lg = L.layerGroup().addTo(map);
-    setLayerGroup(lg);
+    // Lazy initialization
+    if (!layerGroup) {
+      try {
+        const lg = L.layerGroup().addTo(map);
+        setLayerGroup(lg);
+      } catch (e) {
+        console.error('[DistanceMeasureTool] Failed to create layer group:', e);
+        return;
+      }
+    }
 
     // Handle map clicks
     const handleMapClick = (e: L.LeafletMouseEvent) => {
@@ -60,8 +67,6 @@ export function DistanceMeasureTool({ map, active, onClose }: DistanceMeasureToo
 
     return () => {
       map.off('click', handleMapClick);
-      lg.clearLayers();
-      lg.remove();
     };
   }, [map, active]);
 

@@ -19,6 +19,7 @@
  */
 
 import { useEffect, useState } from 'react';
+import { MapUtils } from '@/lib/mapUtils';
 import L from 'leaflet';
 
 interface TradeOffHistoryLayerProps {
@@ -55,8 +56,8 @@ export function TradeOffHistoryLayer({
   const [tradeOffs, setTradeOffs] = useState<HistoricalTradeOff[]>([]);
 
   useEffect(() => {
-    if (!map || !active) {
-      // Clean up
+    // Early exit with MapUtils check
+    if (!MapUtils.isMapReady(map) || !active) {
       if (layerGroup) {
         layerGroup.clearLayers();
         layerGroup.remove();
@@ -66,11 +67,14 @@ export function TradeOffHistoryLayer({
       return;
     }
 
-    // Use Leaflet's whenReady to ensure map is fully initialized
-    let cleanupFn: (() => void) | null = null;
+    // Clear existing layer before creating new one
+    if (layerGroup) {
+      layerGroup.clearLayers();
+      map.removeLayer(layerGroup);
+    }
 
-    map.whenReady(() => {
-      // Create layer group
+    // Create layer group
+    try {
       const lg = L.layerGroup().addTo(map);
       setLayerGroup(lg);
 
@@ -88,20 +92,28 @@ export function TradeOffHistoryLayer({
       filteredTradeOffs.forEach((tradeOff) => {
         renderTradeOff(lg, tradeOff);
       });
-
-      // Store cleanup function
-      cleanupFn = () => {
-        lg.clearLayers();
-        lg.remove();
-      };
-    });
+    } catch (e) {
+      console.error('[TradeOffHistoryLayer] Failed to create layer:', e);
+    }
 
     return () => {
-      if (cleanupFn) {
-        cleanupFn();
+      if (layerGroup) {
+        layerGroup.clearLayers();
+        layerGroup.remove();
       }
     };
   }, [map, active, timeRange, statusFilter]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (layerGroup) {
+        layerGroup.clearLayers();
+        layerGroup.remove();
+        setLayerGroup(null);
+      }
+    };
+  }, []);
 
   return null; // This is a pure layer component
 }
