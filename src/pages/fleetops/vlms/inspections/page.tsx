@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useInspectionsStore } from '@/stores/vlms/inspectionsStore';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -8,9 +8,13 @@ import { Card } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Loader2, ClipboardCheck, Calendar, Plus } from 'lucide-react';
 import { EmptyState } from '@/components/ui/empty-state';
+import { InspectionsCalendarView } from './InspectionsCalendarView';
+import { CreateInspectionDialog } from './CreateInspectionDialog';
 
 export default function InspectionsPage() {
   const { inspections, isLoading, fetchInspections } = useInspectionsStore();
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
 
   useEffect(() => {
     fetchInspections();
@@ -49,16 +53,30 @@ export default function InspectionsPage() {
           <p className="text-muted-foreground">Track vehicle safety and compliance inspections</p>
         </div>
         <div className="flex gap-3">
-          <Button variant="outline" onClick={() => alert('Calendar view coming soon!')}>
+          <Button variant="outline" onClick={() => setShowCalendar(true)}>
             <Calendar className="h-4 w-4 mr-2" />
             Calendar View
           </Button>
-          <Button onClick={() => alert('Create inspection form coming soon!')}>
+          <Button onClick={() => setShowCreateDialog(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Create Inspection
           </Button>
         </div>
       </div>
+
+      {/* Calendar View Modal */}
+      {showCalendar && (
+        <InspectionsCalendarView
+          inspections={inspections}
+          onClose={() => setShowCalendar(false)}
+        />
+      )}
+
+      {/* Create Inspection Dialog */}
+      <CreateInspectionDialog
+        open={showCreateDialog}
+        onClose={() => setShowCreateDialog(false)}
+      />
 
       <Card>
         {isLoading ? (

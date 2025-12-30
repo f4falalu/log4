@@ -34,10 +34,25 @@ interface Inspection {
   };
 }
 
+interface CreateInspectionData {
+  vehicle_id: string;
+  inspection_date: string;
+  inspection_type: string;
+  inspector_name: string;
+  overall_status: string;
+  roadworthy: boolean;
+  meets_safety_standards: boolean;
+  odometer_reading: number | null;
+  notes: string | null;
+  next_inspection_date: string | null;
+}
+
 interface InspectionsState {
   inspections: Inspection[];
   isLoading: boolean;
+  isCreating: boolean;
   fetchInspections: (vehicleId?: string) => Promise<void>;
+  createInspection: (data: CreateInspectionData) => Promise<boolean>;
   deleteInspection: (id: string) => Promise<void>;
 }
 
@@ -46,6 +61,7 @@ export const useInspectionsStore = create<InspectionsState>()(
     (set, get) => ({
       inspections: [],
       isLoading: false,
+      isCreating: false,
 
       fetchInspections: async (vehicleId?: string) => {
         set({ isLoading: true });
@@ -70,6 +86,44 @@ export const useInspectionsStore = create<InspectionsState>()(
         } catch (error: any) {
           set({ isLoading: false });
           toast.error(`Failed to fetch inspections: ${error.message}`);
+        }
+      },
+
+      createInspection: async (data: CreateInspectionData) => {
+        set({ isCreating: true });
+        try {
+          // Generate inspection ID (format: INS-YYYYMMDD-XXX)
+          const date = new Date().toISOString().split('T')[0].replace(/-/g, '');
+          const randomSuffix = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+          const inspection_id = `INS-${date}-${randomSuffix}`;
+
+          const { data: newInspection, error } = await supabase
+            .from('vlms_inspections')
+            .insert({
+              inspection_id,
+              ...data,
+            })
+            .select(
+              `
+              *,
+              vehicle:vehicles(id, vehicle_id, make, model, license_plate),
+              inspector:profiles!vlms_inspections_inspector_id_fkey(id, full_name)
+            `
+            )
+            .single();
+
+          if (error) throw error;
+
+          set((state) => ({
+            inspections: [newInspection, ...state.inspections],
+            isCreating: false,
+          }));
+          toast.success('Inspection created successfully');
+          return true;
+        } catch (error: any) {
+          set({ isCreating: false });
+          toast.error(`Failed to create inspection: ${error.message}`);
+          return false;
         }
       },
 
