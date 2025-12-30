@@ -156,7 +156,7 @@ export function PlanningReviewDialog({ open, onClose }: PlanningReviewDialogProp
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [detectConflicts]);
 
   // Detect conflicts in draft configurations
   const detectConflicts = useCallback(

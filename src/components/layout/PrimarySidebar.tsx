@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { UserMenu } from './UserMenu';
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 
 type WorkspaceConfig = {
   id: 'fleetops' | 'storefront' | 'admin' | 'dashboard' | 'mod4';
@@ -57,6 +57,14 @@ export function PrimarySidebar() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const handleWorkspaceClick = useCallback((ws: WorkspaceConfig) => {
+    if (!ws.available) return;
+    if (ws.id === 'fleetops' || ws.id === 'storefront') {
+      setWorkspace(ws.id);
+    }
+    navigate(ws.path);
+  }, [setWorkspace, navigate]);
+
   // Keyboard shortcuts for workspace switching (Cmd+1-5)
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -74,15 +82,7 @@ export function PrimarySidebar() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
-  const handleWorkspaceClick = (ws: WorkspaceConfig) => {
-    if (!ws.available) return;
-    if (ws.id === 'fleetops' || ws.id === 'storefront') {
-      setWorkspace(ws.id);
-    }
-    navigate(ws.path);
-  };
+  }, [handleWorkspaceClick]);
 
   const isWorkspaceActive = (ws: WorkspaceConfig) => {
     return location.pathname.startsWith(ws.path);

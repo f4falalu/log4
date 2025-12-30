@@ -18,21 +18,29 @@ interface LeafletMapCoreProps {
   onDestroy?: () => void;
 }
 
-export function LeafletMapCore({ 
+export function LeafletMapCore({
   center = MAP_CONFIG.defaultCenter,
   zoom = MAP_CONFIG.defaultZoom,
-  className, 
+  className,
   tileProvider = 'standard',
   showLayerSwitcher = false,
   showScaleControl = false,
   showResetControl = false,
-  onReady, 
-  onDestroy 
+  onReady,
+  onDestroy
 }: LeafletMapCoreProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<L.Map | null>(null);
+  const onReadyRef = useRef(onReady);
+  const onDestroyRef = useRef(onDestroy);
   const [tilesLoaded, setTilesLoaded] = useState(false);
   const [tileError, setTileError] = useState(false);
+
+  // Keep callback refs up to date
+  useEffect(() => {
+    onReadyRef.current = onReady;
+    onDestroyRef.current = onDestroy;
+  });
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -120,7 +128,7 @@ export function LeafletMapCore({
     // Poll for map readiness with exponential backoff
     const pollMapReady = () => {
       if (MapUtils.isMapReady(map)) {
-        onReady(map);
+        onReadyRef.current(map);
       } else {
         const retryCount = (map as any)._readyRetryCount || 0;
         (map as any)._readyRetryCount = retryCount + 1;
@@ -130,7 +138,7 @@ export function LeafletMapCore({
           setTimeout(pollMapReady, delay);
         } else {
           console.error('[LeafletMapCore] Map failed to become ready after 10 retries');
-          onReady(map); // Fallback to avoid blocking
+          onReadyRef.current(map); // Fallback to avoid blocking
         }
       }
     };
@@ -149,11 +157,11 @@ export function LeafletMapCore({
       } catch (e) {
         console.error('[LeafletMapCore] Error during map cleanup', e);
       }
-      onDestroy?.();
+      onDestroyRef.current?.();
       mapRef.current = null;
     };
     // Only re-run if map configuration changes, NOT on callback changes
-  }, [center, zoom, tileProvider, showLayerSwitcher, showScaleControl, showResetControl]);
+  }, [center, zoom, tileProvider, showLayerSwitcher, showScaleControl, showResetControl, tileError]);
 
   return (
     <>

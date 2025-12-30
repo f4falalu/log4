@@ -89,22 +89,22 @@ const TacticalDispatchScheduler = ({ facilities, batches, onBatchCreate }: Tacti
 
   // Auto-select optimal warehouse when facilities change
   useEffect(() => {
-    if (selectedFacilities.length > 0 && !selectedWarehouseId) {
+    if (selectedFacilities.length > 0 && !selectedWarehouseId && warehouses.length > 0) {
       const selectedFacilityObjects = facilities.filter(f => selectedFacilities.includes(f.id));
       if (selectedFacilityObjects.length > 0) {
         const centerLat = selectedFacilityObjects.reduce((sum, f) => sum + f.lat, 0) / selectedFacilityObjects.length;
         const centerLng = selectedFacilityObjects.reduce((sum, f) => sum + f.lng, 0) / selectedFacilityObjects.length;
-        
+
         const optimalWarehouse = warehouses.reduce((best, current) => {
           const distToBest = Math.sqrt(Math.pow(centerLat - best.lat, 2) + Math.pow(centerLng - best.lng, 2));
           const distToCurrent = Math.sqrt(Math.pow(centerLat - current.lat, 2) + Math.pow(centerLng - current.lng, 2));
           return distToCurrent < distToBest ? current : best;
         });
-        
+
         setSelectedWarehouseId(optimalWarehouse.id);
       }
     }
-  }, [selectedFacilities, facilities, selectedWarehouseId]);
+  }, [selectedFacilities, facilities, selectedWarehouseId, warehouses]);
 
   const handleFacilityToggle = (facilityId: string, checked: boolean) => {
     if (checked) {
