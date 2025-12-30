@@ -47,7 +47,9 @@ export function PerformanceHeatmapLayer({
     }
 
     // Wait for map to be fully initialized
-    if (!map.getContainer || !map.getContainer()) {
+    // Check if map container exists AND has been added to DOM
+    const container = map.getContainer();
+    if (!container || !container.parentNode) {
       return;
     }
 
