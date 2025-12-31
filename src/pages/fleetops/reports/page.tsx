@@ -16,6 +16,20 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   useDashboardSummary,
   useTopVehiclesByOnTime,
@@ -35,6 +49,11 @@ import {
   Clock,
   Fuel,
   Wrench,
+  Download,
+  FileSpreadsheet,
+  FileText,
+  Filter,
+  X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -81,37 +100,107 @@ function MetricCard({ title, value, description, icon: Icon, trend, trendValue, 
 }
 
 // ============================================================================
-// DATE RANGE SELECTOR (SIMPLE)
+// FILTER PANEL COMPONENT
 // ============================================================================
 
-function DateRangeSelector({
-  startDate,
-  endDate,
-  onStartDateChange,
-  onEndDateChange
-}: {
+interface FilterPanelProps {
   startDate: string | null;
   endDate: string | null;
   onStartDateChange: (date: string | null) => void;
   onEndDateChange: (date: string | null) => void;
-}) {
+  metricType: string;
+  onMetricTypeChange: (type: string) => void;
+  sortBy: string;
+  onSortByChange: (sort: string) => void;
+  onClearFilters: () => void;
+  hasActiveFilters: boolean;
+}
+
+function FilterPanel({
+  startDate,
+  endDate,
+  onStartDateChange,
+  onEndDateChange,
+  metricType,
+  onMetricTypeChange,
+  sortBy,
+  onSortByChange,
+  onClearFilters,
+  hasActiveFilters,
+}: FilterPanelProps) {
   return (
-    <div className="flex gap-2 items-center">
-      <label className="text-sm font-medium">From:</label>
-      <input
-        type="date"
-        value={startDate || ''}
-        onChange={(e) => onStartDateChange(e.target.value || null)}
-        className="px-3 py-1.5 text-sm border border-input rounded-md"
-      />
-      <label className="text-sm font-medium">To:</label>
-      <input
-        type="date"
-        value={endDate || ''}
-        onChange={(e) => onEndDateChange(e.target.value || null)}
-        className="px-3 py-1.5 text-sm border border-input rounded-md"
-      />
-    </div>
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4" />
+            <CardTitle className="text-base">Filters</CardTitle>
+          </div>
+          {hasActiveFilters && (
+            <Button variant="ghost" size="sm" onClick={onClearFilters}>
+              <X className="h-4 w-4 mr-1" />
+              Clear All
+            </Button>
+          )}
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {/* Date Range */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Start Date</label>
+            <input
+              type="date"
+              value={startDate || ''}
+              onChange={(e) => onStartDateChange(e.target.value || null)}
+              className="w-full px-3 py-2 text-sm border border-input rounded-md"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">End Date</label>
+            <input
+              type="date"
+              value={endDate || ''}
+              onChange={(e) => onEndDateChange(e.target.value || null)}
+              className="w-full px-3 py-2 text-sm border border-input rounded-md"
+            />
+          </div>
+
+          {/* Metric Type */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Metric Type</label>
+            <Select value={metricType} onValueChange={onMetricTypeChange}>
+              <SelectTrigger>
+                <SelectValue placeholder="All Metrics" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Metrics</SelectItem>
+                <SelectItem value="delivery">Delivery Performance</SelectItem>
+                <SelectItem value="vehicle">Vehicle Performance</SelectItem>
+                <SelectItem value="driver">Driver Performance</SelectItem>
+                <SelectItem value="cost">Cost Analysis</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Sort By */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Sort By</label>
+            <Select value={sortBy} onValueChange={onSortByChange}>
+              <SelectTrigger>
+                <SelectValue placeholder="Sort by..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="on_time_rate">On-Time Rate</SelectItem>
+                <SelectItem value="total_cost">Total Cost</SelectItem>
+                <SelectItem value="efficiency">Efficiency</SelectItem>
+                <SelectItem value="incidents">Incidents</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -122,14 +211,157 @@ function DateRangeSelector({
 export default function AnalyticsDashboard() {
   const [startDate, setStartDate] = useState<string | null>(null);
   const [endDate, setEndDate] = useState<string | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
+  const [metricType, setMetricType] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<string>('on_time_rate');
 
   // Fetch all analytics data using React Query hooks (A7)
   const { data: summary, isLoading: summaryLoading, error: summaryError } = useDashboardSummary(startDate, endDate);
   const { data: topVehicles, isLoading: vehiclesLoading } = useTopVehiclesByOnTime(5);
-  const { data: topDrivers, isLoading: driversLoading } = useTopDrivers('on_time_rate', 5);
+  const { data: topDrivers, isLoading: driversLoading } = useTopDrivers(sortBy as any, 5);
   const { data: maintenanceNeeded, isLoading: maintenanceLoading } = useVehiclesNeedingMaintenance();
   const { data: vehicleCosts, isLoading: vehicleCostsLoading } = useVehicleCosts(5);
   const { data: driverCosts, isLoading: driverCostsLoading } = useDriverCosts(5);
+
+  // Check if filters are active
+  const hasActiveFilters = startDate !== null || endDate !== null || metricType !== 'all' || sortBy !== 'on_time_rate';
+
+  // Clear all filters
+  const handleClearFilters = () => {
+    setStartDate(null);
+    setEndDate(null);
+    setMetricType('all');
+    setSortBy('on_time_rate');
+  };
+
+  // Export to Excel
+  const handleExportExcel = async () => {
+    if (!summary) return;
+
+    setIsExporting(true);
+    try {
+      const XLSX = await import('xlsx');
+
+      // Summary sheet
+      const summaryData = [
+        ['Analytics Dashboard Report'],
+        ['Generated:', new Date().toLocaleString()],
+        ['Date Range:', `${startDate || 'All'} to ${endDate || 'All'}`],
+        [],
+        ['Metric', 'Value'],
+        ['Total Deliveries', summary.total_deliveries ?? 0],
+        ['On-Time Rate', `${summary.on_time_rate?.toFixed(1) ?? '0.0'}%`],
+        ['Avg Completion Hours', summary.avg_completion_hours?.toFixed(1) ?? '0.0'],
+        ['Total Items', summary.total_items ?? 0],
+        ['Active Vehicles', summary.active_vehicles ?? 0],
+        ['Vehicle Utilization Rate', `${summary.vehicle_utilization_rate?.toFixed(1) ?? '0.0'}%`],
+        ['Vehicles in Maintenance', summary.vehicles_in_maintenance ?? 0],
+        ['Active Drivers', summary.active_drivers ?? 0],
+        ['Driver On-Time Rate', `${summary.driver_on_time_rate?.toFixed(1) ?? '0.0'}%`],
+        ['Total Incidents', summary.total_incidents ?? 0],
+        ['Total Cost', `$${summary.total_cost?.toLocaleString() ?? '0'}`],
+        ['Cost Per Item', `$${summary.cost_per_item?.toFixed(2) ?? '0.00'}`],
+        ['Cost Per KM', `$${summary.cost_per_km?.toFixed(2) ?? '0.00'}`],
+      ];
+
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.aoa_to_sheet(summaryData);
+      XLSX.utils.book_append_sheet(wb, ws, 'Summary');
+
+      // Top Vehicles sheet
+      if (topVehicles && topVehicles.length > 0) {
+        const vehiclesData = [
+          ['Top Performing Vehicles'],
+          [],
+          ['Rank', 'Vehicle Number', 'Type', 'On-Time Rate', 'On-Time Batches', 'Total Batches'],
+          ...topVehicles.map((v, i) => [
+            i + 1,
+            v.vehicle_number,
+            v.vehicle_type,
+            `${v.on_time_rate?.toFixed(1) ?? '0.0'}%`,
+            v.on_time_batches,
+            v.total_batches
+          ])
+        ];
+        const wsVehicles = XLSX.utils.aoa_to_sheet(vehiclesData);
+        XLSX.utils.book_append_sheet(wb, wsVehicles, 'Top Vehicles');
+      }
+
+      // Top Drivers sheet
+      if (topDrivers && topDrivers.length > 0) {
+        const driversData = [
+          ['Top Performing Drivers'],
+          [],
+          ['Rank', 'Driver Name', 'On-Time Rate', 'Completed Batches', 'Fuel Efficiency (km/L)'],
+          ...topDrivers.map((d, i) => [
+            i + 1,
+            d.driver_name,
+            `${d.on_time_rate?.toFixed(1) ?? '0.0'}%`,
+            d.completed_batches,
+            d.fuel_efficiency_km_per_liter?.toFixed(1) ?? 'N/A'
+          ])
+        ];
+        const wsDrivers = XLSX.utils.aoa_to_sheet(driversData);
+        XLSX.utils.book_append_sheet(wb, wsDrivers, 'Top Drivers');
+      }
+
+      XLSX.writeFile(wb, `analytics-dashboard-${new Date().toISOString().split('T')[0]}.xlsx`);
+    } catch (error) {
+      console.error('Export failed:', error);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  // Export to PDF
+  const handleExportPDF = async () => {
+    if (!summary) return;
+
+    setIsExporting(true);
+    try {
+      const { jsPDF } = await import('jspdf');
+      const doc = new jsPDF();
+
+      // Title
+      doc.setFontSize(20);
+      doc.text('Analytics Dashboard Report', 20, 20);
+
+      // Date info
+      doc.setFontSize(10);
+      doc.text(`Generated: ${new Date().toLocaleString()}`, 20, 30);
+      doc.text(`Date Range: ${startDate || 'All'} to ${endDate || 'All'}`, 20, 36);
+
+      // Summary KPIs
+      doc.setFontSize(14);
+      doc.text('Summary', 20, 50);
+
+      doc.setFontSize(10);
+      let y = 60;
+      const metrics = [
+        ['Total Deliveries', summary.total_deliveries ?? 0],
+        ['On-Time Rate', `${summary.on_time_rate?.toFixed(1) ?? '0.0'}%`],
+        ['Avg Completion Hours', summary.avg_completion_hours?.toFixed(1) ?? '0.0'],
+        ['Total Items', summary.total_items ?? 0],
+        ['Active Vehicles', summary.active_vehicles ?? 0],
+        ['Vehicles in Maintenance', summary.vehicles_in_maintenance ?? 0],
+        ['Active Drivers', summary.active_drivers ?? 0],
+        ['Total Incidents', summary.total_incidents ?? 0],
+        ['Total Cost', `$${summary.total_cost?.toLocaleString() ?? '0'}`],
+        ['Cost Per Item', `$${summary.cost_per_item?.toFixed(2) ?? '0.00'}`],
+      ];
+
+      metrics.forEach(([label, value]) => {
+        doc.text(`${label}: ${value}`, 20, y);
+        y += 6;
+      });
+
+      doc.save(`analytics-dashboard-${new Date().toISOString().split('T')[0]}.pdf`);
+    } catch (error) {
+      console.error('Export failed:', error);
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   // Error state
   if (summaryError) {
@@ -167,29 +399,55 @@ export default function AnalyticsDashboard() {
           <h1 className="text-3xl font-bold tracking-tight">Analytics Dashboard</h1>
           <p className="text-muted-foreground">Real-time fleet performance metrics</p>
         </div>
-        <DateRangeSelector
-          startDate={startDate}
-          endDate={endDate}
-          onStartDateChange={setStartDate}
-          onEndDateChange={setEndDate}
-        />
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button disabled={isExporting || !summary}>
+              <Download className="mr-2 h-4 w-4" />
+              {isExporting ? 'Exporting...' : 'Export'}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={handleExportExcel}>
+              <FileSpreadsheet className="mr-2 h-4 w-4" />
+              Export to Excel
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={handleExportPDF}>
+              <FileText className="mr-2 h-4 w-4" />
+              Export to PDF
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
+
+      {/* Filter Panel */}
+      <FilterPanel
+        startDate={startDate}
+        endDate={endDate}
+        onStartDateChange={setStartDate}
+        onEndDateChange={setEndDate}
+        metricType={metricType}
+        onMetricTypeChange={setMetricType}
+        sortBy={sortBy}
+        onSortByChange={setSortBy}
+        onClearFilters={handleClearFilters}
+        hasActiveFilters={hasActiveFilters}
+      />
 
       {/* Summary KPI Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <MetricCard
           title="Total Deliveries"
-          value={summary?.total_deliveries.toLocaleString() || '0'}
+          value={summary?.total_deliveries?.toLocaleString() ?? '0'}
           description="Completed deliveries"
           icon={Package}
         />
         <MetricCard
           title="On-Time Rate"
-          value={`${summary?.on_time_rate.toFixed(1) || '0'}%`}
+          value={`${summary?.on_time_rate?.toFixed(1) ?? '0.0'}%`}
           description="Deliveries on schedule"
           icon={Clock}
-          trend={summary && summary.on_time_rate >= 90 ? 'up' : 'down'}
-          trendValue={summary ? `${summary.on_time_rate >= 90 ? '+' : ''}${(summary.on_time_rate - 90).toFixed(1)}%` : undefined}
+          trend={summary && summary.on_time_rate && summary.on_time_rate >= 90 ? 'up' : 'down'}
+          trendValue={summary?.on_time_rate ? `${summary.on_time_rate >= 90 ? '+' : ''}${(summary.on_time_rate - 90).toFixed(1)}%` : undefined}
         />
         <MetricCard
           title="Active Fleet"
@@ -199,8 +457,8 @@ export default function AnalyticsDashboard() {
         />
         <MetricCard
           title="Total Cost"
-          value={`$${summary?.total_cost.toLocaleString() || '0'}`}
-          description={`$${summary?.cost_per_item.toFixed(2) || '0'} per item`}
+          value={`$${summary?.total_cost?.toLocaleString() ?? '0'}`}
+          description={`$${summary?.cost_per_item?.toFixed(2) ?? '0.00'} per item`}
           icon={DollarSign}
         />
       </div>
@@ -219,13 +477,13 @@ export default function AnalyticsDashboard() {
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             <MetricCard
               title="Avg Completion Time"
-              value={`${summary?.avg_completion_hours.toFixed(1) || '0'}h`}
+              value={`${summary?.avg_completion_hours?.toFixed(1) ?? '0.0'}h`}
               description="Hours per delivery"
               icon={Clock}
             />
             <MetricCard
               title="Items Delivered"
-              value={summary?.total_items.toLocaleString() || '0'}
+              value={summary?.total_items?.toLocaleString() ?? '0'}
               description="Total items"
               icon={Package}
             />
@@ -261,7 +519,7 @@ export default function AnalyticsDashboard() {
                           <div className="text-sm text-muted-foreground">{vehicle.vehicle_type}</div>
                         </div>
                         <div className="text-right">
-                          <div className="text-sm font-medium">{vehicle.total_distance_km.toLocaleString()} km</div>
+                          <div className="text-sm font-medium">{vehicle.total_distance_km?.toLocaleString() ?? '0'} km</div>
                           <Badge variant={vehicle.maintenance_in_progress > 0 ? "default" : "outline"}>
                             {vehicle.maintenance_in_progress > 0 ? "In Progress" : "Scheduled"}
                           </Badge>
@@ -297,7 +555,7 @@ export default function AnalyticsDashboard() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="text-lg font-bold">{vehicle.on_time_rate.toFixed(1)}%</div>
+                        <div className="text-lg font-bold">{vehicle.on_time_rate?.toFixed(1) ?? '0.0'}%</div>
                         <div className="text-sm text-muted-foreground">
                           {vehicle.on_time_batches}/{vehicle.total_batches} on-time
                         </div>
@@ -334,10 +592,10 @@ export default function AnalyticsDashboard() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="text-lg font-bold">{driver.on_time_rate.toFixed(1)}%</div>
+                        <div className="text-lg font-bold">{driver.on_time_rate?.toFixed(1) ?? '0.0'}%</div>
                         <div className="text-sm text-muted-foreground flex items-center gap-1">
                           <Fuel className="h-3 w-3" />
-                          {driver.fuel_efficiency_km_per_liter?.toFixed(1) || 'N/A'} km/L
+                          {driver.fuel_efficiency_km_per_liter?.toFixed(1) ?? 'N/A'} km/L
                         </div>
                       </div>
                     </div>
@@ -369,11 +627,11 @@ export default function AnalyticsDashboard() {
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">Total Cost</span>
-                          <span className="font-semibold">${vehicle.total_cost.toLocaleString()}</span>
+                          <span className="font-semibold">${vehicle.total_cost?.toLocaleString() ?? '0'}</span>
                         </div>
                         <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                          <span>Fuel: ${vehicle.fuel_cost.toLocaleString()}</span>
-                          <span>Maintenance: ${vehicle.maintenance_cost.toLocaleString()}</span>
+                          <span>Fuel: ${vehicle.fuel_cost?.toLocaleString() ?? '0'}</span>
+                          <span>Maintenance: ${vehicle.maintenance_cost?.toLocaleString() ?? '0'}</span>
                         </div>
                       </div>
                     ))}
@@ -400,11 +658,11 @@ export default function AnalyticsDashboard() {
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">Total Cost</span>
-                          <span className="font-semibold">${driver.total_cost.toLocaleString()}</span>
+                          <span className="font-semibold">${driver.total_cost?.toLocaleString() ?? '0'}</span>
                         </div>
                         <div className="flex justify-between text-xs text-muted-foreground mt-1">
                           <span>{driver.items_delivered} items</span>
-                          <span>${driver.cost_per_item.toFixed(2)}/item</span>
+                          <span>${driver.cost_per_item?.toFixed(2) ?? '0.00'}/item</span>
                         </div>
                       </div>
                     ))}
