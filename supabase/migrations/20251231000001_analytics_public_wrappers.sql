@@ -190,7 +190,22 @@ RETURNS TABLE (
   cost_per_km NUMERIC
 ) AS $$
 BEGIN
-  RETURN QUERY SELECT * FROM analytics.get_dashboard_summary(start_date, end_date);
+  RETURN QUERY
+  SELECT
+    a.total_deliveries,
+    a.on_time_rate,
+    a.avg_completion_hours,
+    a.total_items,
+    a.active_vehicles,
+    a.vehicle_utilization_rate,
+    a.vehicles_in_maintenance,
+    a.active_drivers,
+    a.driver_on_time_rate,
+    a.total_incidents,
+    a.total_cost,
+    a.cost_per_item,
+    a.cost_per_km
+  FROM analytics.get_dashboard_summary(start_date, end_date) a;
 END;
 $$ LANGUAGE plpgsql STABLE SECURITY DEFINER;
 
