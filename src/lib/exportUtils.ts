@@ -36,23 +36,9 @@ export async function exportToPDF(data: any[], filename: string, title: string) 
 }
 import { DeliveryBatch, Facility, Driver, Vehicle } from '@/types';
 
-export function exportFacilitiesToCSV(facilities: Facility[]) {
-  const headers = ['Name', 'Type', 'Address', 'Latitude', 'Longitude', 'Phone', 'Contact Person'];
-  const rows = facilities.map(f => [
-    f.name,
-    f.type,
-    f.address,
-    f.lat,
-    f.lng,
-    f.phone || '',
-    f.contactPerson || ''
-  ]);
+export async function exportBatchesToExcel(batches: DeliveryBatch[]) {
+  const XLSX = await import('xlsx');
 
-  const csv = [headers, ...rows].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
-  downloadFile(csv, 'facilities.csv', 'text/csv');
-}
-
-export function exportBatchesToExcel(batches: DeliveryBatch[]) {
   const data = batches.map(b => ({
     'Batch Name': b.name,
     'Priority': b.priority,
@@ -70,26 +56,31 @@ export function exportBatchesToExcel(batches: DeliveryBatch[]) {
   const worksheet = XLSX.utils.json_to_sheet(data);
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Delivery Batches');
-  
+
   XLSX.writeFile(workbook, 'delivery-batches.xlsx');
 }
 
-export function exportReportToPDF(
+export async function exportReportToPDF(
   title: string,
   data: any[],
   columns: string[],
   filename: string
 ) {
+  const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
+    import('jspdf'),
+    import('jspdf-autotable'),
+  ]);
+
   const doc = new jsPDF();
-  
+
   // Title
   doc.setFontSize(18);
   doc.text(title, 14, 20);
-  
+
   // Date
   doc.setFontSize(10);
   doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 28);
-  
+
   // Table
   autoTable(doc, {
     head: [columns],
@@ -99,11 +90,11 @@ export function exportReportToPDF(
     styles: { fontSize: 8 },
     headStyles: { fillColor: [59, 130, 246] }
   });
-  
+
   doc.save(filename);
 }
 
-export function exportDriverPerformancePDF(drivers: Driver[], metrics: any[]) {
+export async function exportDriverPerformancePDF(drivers: Driver[], metrics: any[]) {
   const data = drivers.map((d, i) => {
     const metric = metrics[i] || {};
     return [
@@ -115,7 +106,7 @@ export function exportDriverPerformancePDF(drivers: Driver[], metrics: any[]) {
     ];
   });
 
-  exportReportToPDF(
+  await exportReportToPDF(
     'Driver Performance Report',
     data,
     ['Driver', 'Total Deliveries', 'On-Time %', 'Avg Time', 'Status'],
