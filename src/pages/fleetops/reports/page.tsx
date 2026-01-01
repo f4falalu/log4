@@ -39,6 +39,11 @@ import {
   useDriverCosts,
 } from '@/hooks/useAnalytics';
 import {
+  useStockStatus,
+  useStockByZone,
+  useLowStockAlerts,
+} from '@/hooks/useStockAnalytics';
+import {
   TrendingUp,
   TrendingDown,
   Package,
@@ -222,6 +227,11 @@ export default function AnalyticsDashboard() {
   const { data: maintenanceNeeded, isLoading: maintenanceLoading } = useVehiclesNeedingMaintenance();
   const { data: vehicleCosts, isLoading: vehicleCostsLoading } = useVehicleCosts(5);
   const { data: driverCosts, isLoading: driverCostsLoading } = useDriverCosts(5);
+
+  // Fetch stock analytics data
+  const { data: stockStatus, isLoading: stockStatusLoading } = useStockStatus();
+  const { data: stockByZone, isLoading: stockByZoneLoading } = useStockByZone();
+  const { data: lowStockAlerts, isLoading: lowStockAlertsLoading } = useLowStockAlerts(7);
 
   // Check if filters are active
   const hasActiveFilters = startDate !== null || endDate !== null || metricType !== 'all' || sortBy !== 'on_time_rate';
@@ -463,6 +473,37 @@ export default function AnalyticsDashboard() {
         />
       </div>
 
+      {/* Stock KPI Cards */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <MetricCard
+          title="Total Stock Items"
+          value={stockStatusLoading ? '...' : stockStatus?.total_stock_items?.toLocaleString() ?? '0'}
+          description={`${stockStatus?.total_facilities_with_stock ?? 0} facilities with stock`}
+          icon={Package}
+        />
+        <MetricCard
+          title="Low Stock Alerts"
+          value={stockStatusLoading ? '...' : stockStatus?.low_stock_count?.toLocaleString() ?? '0'}
+          description="Facilities need restocking"
+          icon={AlertTriangle}
+          trend={stockStatus && stockStatus.low_stock_count > 0 ? 'down' : 'up'}
+          trendValue={stockStatus && stockStatus.low_stock_count > 0 ? 'Attention needed' : 'All good'}
+        />
+        <MetricCard
+          title="Total Products"
+          value={stockStatusLoading ? '...' : stockStatus?.total_products?.toLocaleString() ?? '0'}
+          description="Unique products tracked"
+          icon={Package}
+        />
+        <MetricCard
+          title="Out of Stock"
+          value={stockStatusLoading ? '...' : stockStatus?.out_of_stock_count?.toLocaleString() ?? '0'}
+          description="Facilities with no stock"
+          icon={AlertTriangle}
+          trend={stockStatus && stockStatus.out_of_stock_count > 0 ? 'down' : 'up'}
+        />
+      </div>
+
       {/* Tabbed Analytics */}
       <Tabs defaultValue="overview" className="space-y-4">
         <TabsList>
@@ -470,6 +511,7 @@ export default function AnalyticsDashboard() {
           <TabsTrigger value="vehicles">Vehicles</TabsTrigger>
           <TabsTrigger value="drivers">Drivers</TabsTrigger>
           <TabsTrigger value="costs">Costs</TabsTrigger>
+          <TabsTrigger value="stock">Stock</TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}
@@ -671,6 +713,113 @@ export default function AnalyticsDashboard() {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        {/* Stock Tab */}
+        <TabsContent value="stock" className="space-y-4">
+          {/* Stock by Zone */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Stock Distribution by Zone</CardTitle>
+              <CardDescription>Stock levels across service zones</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {stockByZoneLoading ? (
+                <Skeleton className="h-48" />
+              ) : (
+                <div className="space-y-2">
+                  {stockByZone?.map((zone) => (
+                    <div key={zone.zone} className="p-4 border rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <div>
+                          <div className="font-semibold text-lg">{zone.zone}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {zone.facilities_count} facilities
+                          </div>
+                        </div>
+                        <Badge variant="outline" className="text-lg px-3 py-1">
+                          {zone.total_quantity?.toLocaleString() ?? '0'} items
+                        </Badge>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4 mt-3 pt-3 border-t">
+                        <div>
+                          <div className="text-xs text-muted-foreground">Products</div>
+                          <div className="text-sm font-medium">{zone.total_products}</div>
+                        </div>
+                        <div>
+                          <div className="text-xs text-muted-foreground">Low Stock Facilities</div>
+                          <div className="text-sm font-medium flex items-center gap-1">
+                            {zone.low_stock_facilities > 0 && (
+                              <AlertTriangle className="h-3 w-3 text-orange-600" />
+                            )}
+                            {zone.low_stock_facilities}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {(!stockByZone || stockByZone.length === 0) && (
+                    <div className="text-center py-8 text-muted-foreground">
+                      No stock data available
+                    </div>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Low Stock Alerts */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-orange-600" />
+                Low Stock Alerts
+              </CardTitle>
+              <CardDescription>
+                Facilities with low stock levels (less than 10 items)
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {lowStockAlertsLoading ? (
+                <Skeleton className="h-48" />
+              ) : (
+                <div className="space-y-2">
+                  {lowStockAlerts?.slice(0, 10).map((alert) => (
+                    <div key={`${alert.facility_id}-${alert.product_name}`} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                      <div className="flex-1">
+                        <div className="font-medium">{alert.facility_name}</div>
+                        <div className="text-sm text-muted-foreground">{alert.product_name}</div>
+                        {alert.zone && alert.zone !== 'N/A' && (
+                          <Badge variant="outline" className="text-xs mt-1">
+                            {alert.zone}
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="text-right">
+                        <div className={cn(
+                          "text-lg font-bold",
+                          alert.current_quantity < 5 ? "text-red-600" : "text-orange-600"
+                        )}>
+                          {alert.current_quantity} items
+                        </div>
+                        {alert.days_supply_remaining !== null && (
+                          <div className="text-xs text-muted-foreground">
+                            {alert.days_supply_remaining.toFixed(1)} days supply
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  {(!lowStockAlerts || lowStockAlerts.length === 0) && (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <div className="text-green-600 font-medium mb-2">All stock levels healthy</div>
+                      <div className="text-sm">No low stock alerts at this time</div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
