@@ -19,6 +19,7 @@ import SchedulePlanner from "./pages/storefront/schedule-planner/page";
 import StorefrontZones from "./pages/storefront/zones/page";
 import StorefrontLGAs from "./pages/storefront/lgas/page";
 import StorefrontScheduler from "./pages/storefront/scheduler/page";
+import StorefrontStockReports from "./pages/storefront/stock-reports/page";
 import FleetManagement from "./pages/fleetops/fleet-management/page";
 import VehicleRegistry from "./pages/fleetops/vehicles/registry/page";
 import Index from "./pages/Index";
@@ -133,6 +134,7 @@ const App = () => (
                     <Route path="zones" element={<StorefrontZones />} />
                     <Route path="lgas" element={<StorefrontLGAs />} />
                     <Route path="scheduler" element={<StorefrontScheduler />} />
+                    <Route path="stock-reports" element={<StorefrontStockReports />} />
                   </Route>
 
                   {/* Legacy routes - redirect to workspace structure */}

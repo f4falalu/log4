@@ -51,6 +51,7 @@ const routePrefetchMap: Record<string, () => Promise<any>> = {
   '/storefront/payloads': () => import('@/pages/storefront/payloads/page'),
   '/storefront/schedule-planner': () => import('@/pages/storefront/schedule-planner/page'),
   '/storefront/scheduler': () => import('@/pages/storefront/scheduler/page'),
+  '/storefront/stock-reports': () => import('@/pages/storefront/stock-reports/page'),
 };
 
 // Menu item with prefetching
