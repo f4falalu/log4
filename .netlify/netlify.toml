@@ -1,3 +1,5 @@
+redirectsOrigin = "config"
+branch = "production"
 plugins = []
 headers = []
 
@@ -7,8 +9,8 @@ headers = []
 
 [build]
 publish = "/Users/fbarde/Documents/log4/log4/dist"
-publishOrigin = "ui"
-commandOrigin = "ui"
+publishOrigin = "config"
+commandOrigin = "config"
 command = "npm run build"
 
 [build.environment]

@@ -335,3 +335,46 @@ export interface UserRole {
   assigned_by?: string;
   assigned_at: string;
 }
+
+// Stock Analytics Types
+export interface StockStatus {
+  total_products: number;
+  total_facilities_with_stock: number;
+  total_stock_items: number;
+  low_stock_count: number;
+  out_of_stock_count: number;
+}
+
+export interface StockBalance {
+  product_name: string;
+  total_quantity: number;
+  allocated_quantity: number;
+  available_quantity: number;
+  facilities_count: number;
+}
+
+export interface StockPerformance {
+  product_name: string;
+  turnover_rate: number;
+  avg_days_supply: number | null;
+  total_delivered: number;
+  current_stock: number;
+}
+
+export interface StockByZone {
+  zone: string;
+  total_products: number;
+  total_quantity: number;
+  facilities_count: number;
+  low_stock_facilities: number;
+}
+
+export interface LowStockAlert {
+  facility_id: string;
+  facility_name: string;
+  zone: string;
+  product_name: string;
+  current_quantity: number;
+  days_supply_remaining: number | null;
+  last_delivery_date: string | null;
+}

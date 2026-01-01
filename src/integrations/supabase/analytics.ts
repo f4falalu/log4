@@ -11,6 +11,13 @@
  */
 
 import { supabase } from './client';
+import type {
+  StockStatus,
+  StockBalance,
+  StockPerformance,
+  StockByZone,
+  LowStockAlert,
+} from '@/types';
 
 // ============================================================================
 // TYPES - Analytics Function Response Types
@@ -331,6 +338,87 @@ export async function getDashboardSummary(
 }
 
 // ============================================================================
+// 6. STOCK ANALYTICS API
+// ============================================================================
+
+/**
+ * Get overall stock status metrics
+ * @returns Stock status including total products, facilities, items, and alerts
+ */
+export async function getStockStatus(): Promise<StockStatus> {
+  const { data, error } = await supabase.rpc('get_stock_status');
+
+  if (error) handleSupabaseError(error, 'getStockStatus');
+  if (!data || data.length === 0) {
+    throw new AnalyticsAPIError('No stock status data returned');
+  }
+
+  return data[0] as StockStatus;
+}
+
+/**
+ * Get stock balance (allocated vs available) by product
+ * @param productName - Optional product name to filter by
+ * @returns Array of stock balance per product
+ */
+export async function getStockBalance(
+  productName?: string | null
+): Promise<StockBalance[]> {
+  const { data, error } = await supabase.rpc('get_stock_balance', {
+    p_product_name: productName || null,
+  });
+
+  if (error) handleSupabaseError(error, 'getStockBalance');
+  return (data || []) as StockBalance[];
+}
+
+/**
+ * Get stock performance metrics including turnover rate and days of supply
+ * @param startDate - Optional start date (YYYY-MM-DD)
+ * @param endDate - Optional end date (YYYY-MM-DD)
+ * @returns Array of stock performance per product
+ */
+export async function getStockPerformance(
+  startDate?: string | null,
+  endDate?: string | null
+): Promise<StockPerformance[]> {
+  const { data, error } = await supabase.rpc('get_stock_performance', {
+    p_start_date: startDate || null,
+    p_end_date: endDate || null,
+  });
+
+  if (error) handleSupabaseError(error, 'getStockPerformance');
+  return (data || []) as StockPerformance[];
+}
+
+/**
+ * Get stock distribution by service zone
+ * @returns Array of stock metrics per zone
+ */
+export async function getStockByZone(): Promise<StockByZone[]> {
+  const { data, error } = await supabase.rpc('get_stock_by_zone');
+
+  if (error) handleSupabaseError(error, 'getStockByZone');
+  return (data || []) as StockByZone[];
+}
+
+/**
+ * Get low stock alerts for facilities needing restocking
+ * @param thresholdDays - Days of supply threshold (default: 7)
+ * @returns Array of facilities with low stock
+ */
+export async function getLowStockAlerts(
+  thresholdDays: number = 7
+): Promise<LowStockAlert[]> {
+  const { data, error } = await supabase.rpc('get_low_stock_alerts', {
+    p_threshold_days: thresholdDays,
+  });
+
+  if (error) handleSupabaseError(error, 'getLowStockAlerts');
+  return (data || []) as LowStockAlert[];
+}
+
+// ============================================================================
 // EXPORTS
 // ============================================================================
 
@@ -354,4 +442,11 @@ export const analyticsAPI = {
 
   // Dashboard summary
   getDashboardSummary,
+
+  // Stock analytics
+  getStockStatus,
+  getStockBalance,
+  getStockPerformance,
+  getStockByZone,
+  getLowStockAlerts,
 };
