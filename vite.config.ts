@@ -38,9 +38,9 @@ export default defineConfig(({ mode }) => ({
         manualChunks: (id) => {
           // Vendor chunks for large dependencies
           if (id.includes('node_modules')) {
-            // React ecosystem
-            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
-              return 'vendor-react';
+            // PDF/Export libraries (isolate these completely)
+            if (id.includes('jspdf') || id.includes('html2canvas') || id.includes('xlsx')) {
+              return 'vendor-export';
             }
 
             // Maps (Leaflet is heavy)
@@ -48,19 +48,9 @@ export default defineConfig(({ mode }) => ({
               return 'vendor-maps';
             }
 
-            // UI library (Radix UI)
-            if (id.includes('@radix-ui')) {
-              return 'vendor-ui';
-            }
-
             // Charts
             if (id.includes('recharts') || id.includes('d3')) {
               return 'vendor-charts';
-            }
-
-            // Data fetching and state
-            if (id.includes('@tanstack') || id.includes('zustand')) {
-              return 'vendor-data';
             }
 
             // Supabase
@@ -68,23 +58,13 @@ export default defineConfig(({ mode }) => ({
               return 'vendor-supabase';
             }
 
-            // PDF/Export libraries
-            if (id.includes('jspdf') || id.includes('html2canvas') || id.includes('xlsx')) {
-              return 'vendor-export';
-            }
-
-            // Form libraries
-            if (id.includes('react-hook-form') || id.includes('zod')) {
-              return 'vendor-forms';
-            }
-
             // Date utilities
             if (id.includes('date-fns')) {
               return 'vendor-date';
             }
 
-            // Other vendor dependencies
-            return 'vendor-other';
+            // Everything else stays together to avoid circular deps
+            return 'vendor';
           }
 
           // Application code chunks by module
