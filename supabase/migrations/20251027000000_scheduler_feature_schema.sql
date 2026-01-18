@@ -10,29 +10,44 @@
 -- =====================================================
 
 -- Scheduler batch status (pre-dispatch planning stages)
-CREATE TYPE scheduler_batch_status AS ENUM (
-  'draft',              -- Initial creation, not yet ready
-  'ready',              -- Ready for dispatch assignment
-  'scheduled',          -- Driver/vehicle assigned, awaiting dispatch
-  'published',          -- Pushed to FleetOps (delivery_batches)
-  'cancelled'           -- Cancelled before dispatch
-);
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'scheduler_batch_status') THEN
+    CREATE TYPE scheduler_batch_status AS ENUM (
+      'draft',              -- Initial creation, not yet ready
+      'ready',              -- Ready for dispatch assignment
+      'scheduled',          -- Driver/vehicle assigned, awaiting dispatch
+      'published',          -- Pushed to FleetOps (delivery_batches)
+      'cancelled'           -- Cancelled before dispatch
+    );
+  END IF;
+END$$;
 
 -- Scheduling mode tracking
-CREATE TYPE scheduling_mode AS ENUM (
-  'manual',             -- Human-created grouping
-  'ai_optimized',       -- AI optimization run
-  'uploaded',           -- From Excel/CSV file
-  'template'            -- From saved template
-);
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'scheduling_mode') THEN
+    CREATE TYPE scheduling_mode AS ENUM (
+      'manual',             -- Human-created grouping
+      'ai_optimized',       -- AI optimization run
+      'uploaded',           -- From Excel/CSV file
+      'template'            -- From saved template
+    );
+  END IF;
+END$$;
 
 -- Optimization status
-CREATE TYPE optimization_status AS ENUM (
-  'pending',            -- Queued for processing
-  'running',            -- Currently optimizing
-  'completed',          -- Successfully completed
-  'failed'              -- Optimization failed
-);
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'optimization_status') THEN
+    CREATE TYPE optimization_status AS ENUM (
+      'pending',            -- Queued for processing
+      'running',            -- Currently optimizing
+      'completed',          -- Successfully completed
+      'failed'              -- Optimization failed
+    );
+  END IF;
+END$$;
 
 -- =====================================================
 -- 2. SCHEDULER BATCHES TABLE
@@ -208,25 +223,25 @@ CREATE TABLE IF NOT EXISTS public.scheduler_settings (
 -- =====================================================
 
 -- Scheduler batches indexes
-CREATE INDEX idx_scheduler_batches_warehouse ON public.scheduler_batches(warehouse_id);
-CREATE INDEX idx_scheduler_batches_status ON public.scheduler_batches(status);
-CREATE INDEX idx_scheduler_batches_planned_date ON public.scheduler_batches(planned_date);
-CREATE INDEX idx_scheduler_batches_driver ON public.scheduler_batches(driver_id);
-CREATE INDEX idx_scheduler_batches_vehicle ON public.scheduler_batches(vehicle_id);
-CREATE INDEX idx_scheduler_batches_zone ON public.scheduler_batches(zone);
-CREATE INDEX idx_scheduler_batches_created_by ON public.scheduler_batches(created_by);
-CREATE INDEX idx_scheduler_batches_published ON public.scheduler_batches(published_batch_id);
+CREATE INDEX IF NOT EXISTS idx_scheduler_batches_warehouse ON public.scheduler_batches(warehouse_id);
+CREATE INDEX IF NOT EXISTS idx_scheduler_batches_status ON public.scheduler_batches(status);
+CREATE INDEX IF NOT EXISTS idx_scheduler_batches_planned_date ON public.scheduler_batches(planned_date);
+CREATE INDEX IF NOT EXISTS idx_scheduler_batches_driver ON public.scheduler_batches(driver_id);
+CREATE INDEX IF NOT EXISTS idx_scheduler_batches_vehicle ON public.scheduler_batches(vehicle_id);
+CREATE INDEX IF NOT EXISTS idx_scheduler_batches_zone ON public.scheduler_batches(zone);
+CREATE INDEX IF NOT EXISTS idx_scheduler_batches_created_by ON public.scheduler_batches(created_by);
+CREATE INDEX IF NOT EXISTS idx_scheduler_batches_published ON public.scheduler_batches(published_batch_id);
 
 -- Schedule templates indexes
-CREATE INDEX idx_schedule_templates_warehouse ON public.schedule_templates(warehouse_id);
-CREATE INDEX idx_schedule_templates_active ON public.schedule_templates(active);
-CREATE INDEX idx_schedule_templates_created_by ON public.schedule_templates(created_by);
+CREATE INDEX IF NOT EXISTS idx_schedule_templates_warehouse ON public.schedule_templates(warehouse_id);
+CREATE INDEX IF NOT EXISTS idx_schedule_templates_active ON public.schedule_templates(active);
+CREATE INDEX IF NOT EXISTS idx_schedule_templates_created_by ON public.schedule_templates(created_by);
 
 -- Optimization runs indexes
-CREATE INDEX idx_optimization_runs_warehouse ON public.optimization_runs(warehouse_id);
-CREATE INDEX idx_optimization_runs_status ON public.optimization_runs(status);
-CREATE INDEX idx_optimization_runs_created_by ON public.optimization_runs(created_by);
-CREATE INDEX idx_optimization_runs_created_at ON public.optimization_runs(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_optimization_runs_warehouse ON public.optimization_runs(warehouse_id);
+CREATE INDEX IF NOT EXISTS idx_optimization_runs_status ON public.optimization_runs(status);
+CREATE INDEX IF NOT EXISTS idx_optimization_runs_created_by ON public.optimization_runs(created_by);
+CREATE INDEX IF NOT EXISTS idx_optimization_runs_created_at ON public.optimization_runs(created_at DESC);
 
 -- =====================================================
 -- 7. FUNCTIONS & TRIGGERS
@@ -263,6 +278,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trigger_generate_batch_code ON public.scheduler_batches;
 CREATE TRIGGER trigger_generate_batch_code
 BEFORE INSERT ON public.scheduler_batches
 FOR EACH ROW
@@ -278,16 +294,19 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trigger_scheduler_batches_updated_at ON public.scheduler_batches;
 CREATE TRIGGER trigger_scheduler_batches_updated_at
 BEFORE UPDATE ON public.scheduler_batches
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS trigger_schedule_templates_updated_at ON public.schedule_templates;
 CREATE TRIGGER trigger_schedule_templates_updated_at
 BEFORE UPDATE ON public.schedule_templates
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS trigger_scheduler_settings_updated_at ON public.scheduler_settings;
 CREATE TRIGGER trigger_scheduler_settings_updated_at
 BEFORE UPDATE ON public.scheduler_settings
 FOR EACH ROW
@@ -311,6 +330,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trigger_track_scheduler_status ON public.scheduler_batches;
 CREATE TRIGGER trigger_track_scheduler_status
 BEFORE UPDATE ON public.scheduler_batches
 FOR EACH ROW

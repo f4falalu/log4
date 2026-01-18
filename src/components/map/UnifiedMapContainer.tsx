@@ -3,11 +3,11 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { LeafletMapCore } from './LeafletMapCore';
 import { BottomDataPanel } from './BottomDataPanel';
-import { DriversLayer } from './layers/DriversLayer';
-import { FacilitiesLayer } from './layers/FacilitiesLayer';
-import { WarehousesLayer } from './layers/WarehousesLayer';
+import { ClusteredDriversLayer } from './layers/ClusteredDriversLayer';
+import { ClusteredFacilitiesLayer } from './layers/ClusteredFacilitiesLayer';
+import { ClusteredWarehousesLayer } from './layers/ClusteredWarehousesLayer';
 import { ZonesLayer } from './layers/ZonesLayer';
-import { VehiclesLayer } from './layers/VehiclesLayer';
+import { ClusteredVehiclesLayer } from './layers/ClusteredVehiclesLayer';
 import { RoutesLayer } from './layers/RoutesLayer';
 import { BatchesLayer } from './layers/BatchesLayer';
 import { DeliveriesLayer } from './layers/DeliveriesLayer';
@@ -17,6 +17,7 @@ import { MAP_DESIGN_SYSTEM, MapMode } from '@/lib/mapDesignSystem';
 import { MAP_CONFIG, TileProvider } from '@/lib/mapConfig';
 import { MapUtils } from '@/lib/mapUtils';
 import { cn } from '@/lib/utils';
+import { useThemeAwareBasemap } from '@/hooks/useThemeAwareBasemap';
 import type { Facility, Warehouse, Driver, DeliveryBatch, RouteOptimization } from '@/types';
 
 export interface UnifiedMapContainerProps {
@@ -124,11 +125,11 @@ export function UnifiedMapContainer({
   const { workspace } = useWorkspace();
   const [map, setMap] = useState<L.Map | null>(null);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
-  const [tileProviderState, setTileProviderState] = useState<TileProvider>(
-    tileProvider || (workspace === 'fleetops' ? 'cartoDark' : 'cartoLight')
-  );
-  
-  // Workspace-aware theme: FleetOps → dark, Storefront → light
+
+  // Theme-aware basemap: automatically switches with light/dark mode
+  const [tileProviderState, setTileProviderState] = useThemeAwareBasemap(workspace);
+
+  // Use controlled tileProvider prop if provided, otherwise use theme-aware state
   const effectiveTileProvider = tileProvider || tileProviderState;
   
   // Determine layout class based on mode
@@ -167,35 +168,28 @@ export function UnifiedMapContainer({
       <MapHUD
         map={map}
         tileProvider={effectiveTileProvider}
-        onTileProviderToggle={() =>
-          setTileProviderState((prev) =>
-            prev === 'cartoDark' ? 'cartoLight' : 'cartoDark'
-          )
-        }
+        onTileProviderToggle={() => {
+          const newProvider = tileProviderState === 'cartoDark' ? 'cartoLight' : 'cartoDark';
+          setTileProviderState(newProvider);
+        }}
       />
       
       {/* Modular Layers - Conditionally Rendered */}
-      {showWarehouses && (
-        <WarehousesLayer 
-          map={map} 
+      {showWarehouses && onWarehouseClick && (
+        <ClusteredWarehousesLayer 
           warehouses={warehouses}
-          selectedIds={selectedWarehouseIds}
           onWarehouseClick={onWarehouseClick}
         />
       )}
-      {showDrivers && (
-        <DriversLayer 
-          map={map} 
+      {showDrivers && onDriverClick && (
+        <ClusteredDriversLayer 
           drivers={drivers}
-          batches={batches}
           onDriverClick={onDriverClick}
         />
       )}
-      {showFacilities && (
-        <FacilitiesLayer 
-          map={map} 
+      {showFacilities && onFacilityClick && (
+        <ClusteredFacilitiesLayer 
           facilities={facilities}
-          selectedIds={selectedFacilityIds}
           onFacilityClick={onFacilityClick}
         />
       )}
@@ -215,9 +209,9 @@ export function UnifiedMapContainer({
           onBatchClick={onBatchClick}
         />
       )}
-      {showVehicles && vehicles.length > 0 && (
-        <VehiclesLayer 
-          selectedVehicleId={null}
+      {showVehicles && vehicles.length > 0 && onVehicleClick && (
+        <ClusteredVehiclesLayer 
+          vehicles={vehicles}
           onVehicleClick={onVehicleClick}
         />
       )}

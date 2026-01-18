@@ -59,7 +59,9 @@ export function VehicleListItem({ vehicle, onView, onEdit, onDelete }: VehicleLi
             src={vehicle.thumbnail_url || vehicle.photo_url}
             alt={`${vehicle.make} ${vehicle.model}`}
             aiGenerated={vehicle.ai_generated || false}
-            vehicleType={vehicle.type}
+            vehicleType={vehicle.type || vehicle.vehicle_type}
+            make={vehicle.make}
+            model={vehicle.model}
             className="w-32 h-24 rounded-lg overflow-hidden flex-shrink-0"
             fallbackClassName="w-32 h-24 rounded-lg"
           />

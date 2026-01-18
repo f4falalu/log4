@@ -17,6 +17,12 @@ import type {
   StockPerformance,
   StockByZone,
   LowStockAlert,
+  VehiclePayloadUtilization,
+  ProgramPerformance,
+  DriverUtilization,
+  RouteEfficiency,
+  FacilityCoverage,
+  CostByProgram,
 } from '@/types';
 
 // ============================================================================
@@ -419,6 +425,130 @@ export async function getLowStockAlerts(
 }
 
 // ============================================================================
+// 7. RESOURCE UTILIZATION API
+// ============================================================================
+
+/**
+ * Get vehicle payload utilization metrics
+ * @param startDate - Optional start date (YYYY-MM-DD)
+ * @param endDate - Optional end date (YYYY-MM-DD)
+ * @param vehicleId - Optional vehicle ID to filter by
+ * @returns Array of vehicle payload and weight utilization metrics
+ */
+export async function getVehiclePayloadUtilization(
+  startDate?: string | null,
+  endDate?: string | null,
+  vehicleId?: string | null
+): Promise<VehiclePayloadUtilization[]> {
+  const { data, error } = await supabase.rpc('get_vehicle_payload_utilization', {
+    p_start_date: startDate || null,
+    p_end_date: endDate || null,
+    p_vehicle_id: vehicleId || null,
+  });
+
+  if (error) handleSupabaseError(error, 'getVehiclePayloadUtilization');
+  return (data || []) as VehiclePayloadUtilization[];
+}
+
+/**
+ * Get delivery performance by health program
+ * @param startDate - Optional start date (YYYY-MM-DD)
+ * @param endDate - Optional end date (YYYY-MM-DD)
+ * @returns Array of program performance metrics
+ */
+export async function getProgramPerformance(
+  startDate?: string | null,
+  endDate?: string | null
+): Promise<ProgramPerformance[]> {
+  const { data, error } = await supabase.rpc('get_program_performance', {
+    p_start_date: startDate || null,
+    p_end_date: endDate || null,
+  });
+
+  if (error) handleSupabaseError(error, 'getProgramPerformance');
+  return (data || []) as ProgramPerformance[];
+}
+
+/**
+ * Get driver utilization metrics (deliveries per week)
+ * @param startDate - Optional start date (YYYY-MM-DD)
+ * @param endDate - Optional end date (YYYY-MM-DD)
+ * @returns Array of driver utilization metrics with status
+ */
+export async function getDriverUtilization(
+  startDate?: string | null,
+  endDate?: string | null
+): Promise<DriverUtilization[]> {
+  const { data, error } = await supabase.rpc('get_driver_utilization', {
+    p_start_date: startDate || null,
+    p_end_date: endDate || null,
+  });
+
+  if (error) handleSupabaseError(error, 'getDriverUtilization');
+  return (data || []) as DriverUtilization[];
+}
+
+/**
+ * Get route efficiency analysis (actual vs estimated metrics)
+ * @param startDate - Optional start date (YYYY-MM-DD)
+ * @param endDate - Optional end date (YYYY-MM-DD)
+ * @returns Array of route efficiency metrics with ratings
+ */
+export async function getRouteEfficiency(
+  startDate?: string | null,
+  endDate?: string | null
+): Promise<RouteEfficiency[]> {
+  const { data, error } = await supabase.rpc('get_route_efficiency', {
+    p_start_date: startDate || null,
+    p_end_date: endDate || null,
+  });
+
+  if (error) handleSupabaseError(error, 'getRouteEfficiency');
+  return (data || []) as RouteEfficiency[];
+}
+
+/**
+ * Get facility delivery coverage metrics
+ * @param startDate - Optional start date (YYYY-MM-DD)
+ * @param endDate - Optional end date (YYYY-MM-DD)
+ * @param programme - Optional program to filter by
+ * @returns Array of facility coverage metrics
+ */
+export async function getFacilityCoverage(
+  startDate?: string | null,
+  endDate?: string | null,
+  programme?: string | null
+): Promise<FacilityCoverage[]> {
+  const { data, error } = await supabase.rpc('get_facility_coverage', {
+    p_start_date: startDate || null,
+    p_end_date: endDate || null,
+    p_programme: programme || null,
+  });
+
+  if (error) handleSupabaseError(error, 'getFacilityCoverage');
+  return (data || []) as FacilityCoverage[];
+}
+
+/**
+ * Get cost analysis by health program
+ * @param startDate - Optional start date (YYYY-MM-DD)
+ * @param endDate - Optional end date (YYYY-MM-DD)
+ * @returns Array of cost metrics per program
+ */
+export async function getCostByProgram(
+  startDate?: string | null,
+  endDate?: string | null
+): Promise<CostByProgram[]> {
+  const { data, error } = await supabase.rpc('get_cost_by_program', {
+    p_start_date: startDate || null,
+    p_end_date: endDate || null,
+  });
+
+  if (error) handleSupabaseError(error, 'getCostByProgram');
+  return (data || []) as CostByProgram[];
+}
+
+// ============================================================================
 // EXPORTS
 // ============================================================================
 
@@ -449,4 +579,12 @@ export const analyticsAPI = {
   getStockPerformance,
   getStockByZone,
   getLowStockAlerts,
+
+  // Resource utilization
+  getVehiclePayloadUtilization,
+  getProgramPerformance,
+  getDriverUtilization,
+  getRouteEfficiency,
+  getFacilityCoverage,
+  getCostByProgram,
 };

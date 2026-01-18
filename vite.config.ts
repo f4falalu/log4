@@ -3,6 +3,7 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 import viteCompression from "vite-plugin-compression";
+import { VitePWA } from "vite-plugin-pwa";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -13,6 +14,79 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     mode === "development" && componentTagger(),
+    // PWA Plugin (enabled only when VITE_ENABLE_PWA=true)
+    process.env.VITE_ENABLE_PWA === 'true' && VitePWA({
+      registerType: 'autoUpdate',
+      injectRegister: 'auto',
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/basemaps\.cartocdn\.com\/.*/i,
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'map-tiles-v1',
+              expiration: {
+                maxEntries: 500,
+                maxAgeSeconds: 60 * 60 * 24 * 7, // 7 days
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
+          {
+            urlPattern: /^https:\/\/.*\.supabase\.co\/rest\/v1\/.*/i,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'telemetry-v1',
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 5, // 5 minutes
+              },
+              networkTimeoutSeconds: 3,
+            },
+          },
+        ],
+        cleanupOutdatedCaches: true,
+        skipWaiting: true,
+        clientsClaim: true,
+      },
+      manifest: {
+        name: 'BIKO - Fleet Operations & Logistics',
+        short_name: 'BIKO',
+        description: 'Real-time fleet operations, route planning, and logistics management',
+        theme_color: '#3b82f6',
+        background_color: '#ffffff',
+        display: 'standalone',
+        orientation: 'any',
+        scope: '/',
+        start_url: '/',
+        icons: [
+          {
+            src: '/favicon.ico',
+            sizes: '64x64 32x32 24x24 16x16',
+            type: 'image/x-icon',
+          },
+          {
+            src: '/map/sprites/map-icons.png',
+            sizes: '192x192',
+            type: 'image/png',
+            purpose: 'any maskable',
+          },
+          {
+            src: '/map/sprites/map-icons@2x.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'any maskable',
+          },
+        ],
+      },
+      devOptions: {
+        enabled: mode === 'development',
+        type: 'module',
+      },
+    }),
     // Gzip compression for production
     mode === "production" && viteCompression({
       algorithm: 'gzip',
@@ -43,8 +117,10 @@ export default defineConfig(({ mode }) => ({
               return 'vendor-export';
             }
 
-            // Maps (Leaflet is heavy)
-            if (id.includes('leaflet') || id.includes('react-leaflet')) {
+            // Maps (Leaflet + MapLibre)
+            if (id.includes('leaflet') || id.includes('react-leaflet') ||
+                id.includes('maplibre-gl') || id.includes('react-map-gl') ||
+                id.includes('@mapbox/mapbox-gl-draw')) {
               return 'vendor-maps';
             }
 

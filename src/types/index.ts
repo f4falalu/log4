@@ -378,3 +378,79 @@ export interface LowStockAlert {
   days_supply_remaining: number | null;
   last_delivery_date: string | null;
 }
+
+// Resource Utilization Analytics Types
+export interface VehiclePayloadUtilization {
+  vehicle_id: string;
+  plate_number: string;
+  vehicle_type: string;
+  vehicle_capacity_kg: number;
+  max_weight_kg: number;
+  total_deliveries: number;
+  total_items_delivered: number;
+  total_weight_kg: number | null;
+  avg_payload_utilization_pct: number;
+  avg_weight_utilization_pct: number | null;
+  max_payload_utilization_pct: number;
+  max_weight_utilization_pct: number | null;
+  underutilized_deliveries: number;
+}
+
+export interface ProgramPerformance {
+  programme: string;
+  total_deliveries: number;
+  total_facilities_served: number;
+  total_items_delivered: number;
+  avg_items_per_delivery: number;
+  on_time_deliveries: number;
+  on_time_rate_pct: number;
+  total_distance_km: number;
+  avg_distance_per_delivery_km: number;
+}
+
+export interface DriverUtilization {
+  driver_id: string;
+  driver_name: string;
+  total_deliveries: number;
+  avg_deliveries_per_week: number;
+  total_items_delivered: number;
+  total_distance_km: number;
+  avg_items_per_delivery: number;
+  utilization_status: 'High' | 'Medium' | 'Low' | 'Underutilized';
+}
+
+export interface RouteEfficiency {
+  batch_id: string;
+  batch_name: string;
+  vehicle_plate: string;
+  estimated_distance_km: number;
+  actual_distance_km: number;
+  distance_variance_pct: number;
+  estimated_duration_min: number;
+  actual_duration_min: number;
+  duration_variance_pct: number;
+  efficiency_rating: 'Excellent' | 'Good' | 'Fair' | 'Poor';
+}
+
+export interface FacilityCoverage {
+  total_facilities: number;
+  facilities_served: number;
+  facilities_not_served: number;
+  coverage_pct: number;
+  programme: string | null;
+  program_total_facilities: number | null;
+  program_facilities_served: number | null;
+  program_coverage_pct: number | null;
+  unserved_facility_names: string[];
+}
+
+export interface CostByProgram {
+  programme: string;
+  total_deliveries: number;
+  total_fuel_cost: number;
+  total_maintenance_cost: number;
+  total_cost: number;
+  cost_per_delivery: number;
+  cost_per_item: number;
+  cost_per_km: number;
+}

@@ -46,7 +46,9 @@ export function VehicleCard({ vehicle, onView, onEdit, onDelete }: VehicleCardPr
         src={vehicle.thumbnail_url || vehicle.photo_url}
         alt={`${vehicle.make} ${vehicle.model}`}
         aiGenerated={vehicle.ai_generated || false}
-        vehicleType={vehicle.type}
+        vehicleType={vehicle.type || vehicle.vehicle_type}
+        make={vehicle.make}
+        model={vehicle.model}
         className="h-48 w-full rounded-t-lg overflow-hidden"
         fallbackClassName="h-48 rounded-t-lg"
       />

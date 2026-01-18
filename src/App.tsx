@@ -10,6 +10,24 @@ import { WorkspaceProvider, useWorkspace } from "./contexts/WorkspaceContext";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { FleetOpsLayout } from "./pages/fleetops/layout";
 import { StorefrontLayout } from "./pages/storefront/layout";
+import { Mod4Layout } from "./pages/mod4/layout";
+import { AdminLayout } from "./pages/admin/layout";
+import Mod4Dashboard from "./pages/mod4/page";
+import Mod4DriverPage from "./pages/mod4/driver/page";
+import Mod4ActiveDeliveryPage from "./pages/mod4/driver/delivery/page";
+import Mod4DispatcherPage from "./pages/mod4/dispatcher/page";
+import Mod4SessionsPage from "./pages/mod4/sessions/page";
+import AdminDashboard from "./pages/admin/page";
+import AdminUsersPage from "./pages/admin/users/page";
+import AdminUserDetailPage from "./pages/admin/users/[id]/page";
+import AdminUserEditPage from "./pages/admin/users/[id]/edit/page";
+import AdminUserCreatePage from "./pages/admin/users/create/page";
+import AdminWorkspacesPage from "./pages/admin/workspaces/page";
+import AdminWorkspaceDetailPage from "./pages/admin/workspaces/[id]/page";
+import AdminSessionsPage from "./pages/admin/sessions/page";
+import AdminSessionDetailPage from "./pages/admin/sessions/[id]/page";
+import AdminAuditPage from "./pages/admin/audit/page";
+import AdminLocationsPage from "./pages/admin/LocationManagement";
 import FleetOpsHome from "./pages/fleetops/page";
 import StorefrontHome from "./pages/storefront/page";
 import StorefrontFacilities from "./pages/storefront/facilities/page";
@@ -42,7 +60,9 @@ import OperationalMapPage from "./pages/fleetops/map/operational/page";
 import ForensicsMapPage from "./pages/fleetops/map/forensics/page";
 import VLMSDashboard from "./pages/fleetops/vlms/page";
 import VLMSVehicles from "./pages/fleetops/vlms/vehicles/page";
+import VLMSVehicleOnboard from "./pages/fleetops/vlms/vehicles/onboard/page";
 import VLMSVehicleDetail from "./pages/fleetops/vlms/vehicles/[id]/page";
+import VLMSVehicleEdit from "./pages/fleetops/vlms/vehicles/[id]/edit/page";
 import VLMSMaintenance from "./pages/fleetops/vlms/maintenance/page";
 import VLMSFuel from "./pages/fleetops/vlms/fuel/page";
 import VLMSAssignments from "./pages/fleetops/vlms/assignments/page";
@@ -111,7 +131,9 @@ const App = () => (
                     <Route path="vlms">
                       <Route index element={<VLMSDashboard />} />
                       <Route path="vehicles" element={<VLMSVehicles />} />
+                      <Route path="vehicles/onboard" element={<VLMSVehicleOnboard />} />
                       <Route path="vehicles/:id" element={<VLMSVehicleDetail />} />
+                      <Route path="vehicles/:id/edit" element={<VLMSVehicleEdit />} />
                       <Route path="maintenance" element={<VLMSMaintenance />} />
                       <Route path="fuel" element={<VLMSFuel />} />
                       <Route path="assignments" element={<VLMSAssignments />} />
@@ -135,6 +157,43 @@ const App = () => (
                     <Route path="lgas" element={<StorefrontLGAs />} />
                     <Route path="scheduler" element={<StorefrontScheduler />} />
                     <Route path="stock-reports" element={<StorefrontStockReports />} />
+                  </Route>
+
+                  {/* Mod4 Workspace - Mobile Driver Execution */}
+                  <Route path="/mod4" element={
+                    <ProtectedRoute>
+                      <Mod4Layout />
+                    </ProtectedRoute>
+                  }>
+                    <Route index element={<Mod4Dashboard />} />
+                    <Route path="driver" element={<Mod4DriverPage />} />
+                    <Route path="driver/delivery" element={<Mod4ActiveDeliveryPage />} />
+                    <Route path="driver/delivery/:batchId" element={
+                      React.createElement(
+                        React.lazy(() => import('./pages/mod4/driver/delivery/[id]/page'))
+                      )
+                    } />
+                    <Route path="dispatcher" element={<Mod4DispatcherPage />} />
+                    <Route path="sessions" element={<Mod4SessionsPage />} />
+                  </Route>
+
+                  {/* Admin Workspace - System Admin Only */}
+                  <Route path="/admin" element={
+                    <ProtectedRoute requiredRole="system_admin">
+                      <AdminLayout />
+                    </ProtectedRoute>
+                  }>
+                    <Route index element={<AdminDashboard />} />
+                    <Route path="users" element={<AdminUsersPage />} />
+                    <Route path="users/create" element={<AdminUserCreatePage />} />
+                    <Route path="users/:id" element={<AdminUserDetailPage />} />
+                    <Route path="users/:id/edit" element={<AdminUserEditPage />} />
+                    <Route path="workspaces" element={<AdminWorkspacesPage />} />
+                    <Route path="workspaces/:id" element={<AdminWorkspaceDetailPage />} />
+                    <Route path="sessions" element={<AdminSessionsPage />} />
+                    <Route path="sessions/:id" element={<AdminSessionDetailPage />} />
+                    <Route path="audit" element={<AdminAuditPage />} />
+                    <Route path="locations" element={<AdminLocationsPage />} />
                   </Route>
 
                   {/* Legacy routes - redirect to workspace structure */}

@@ -1,0 +1,156 @@
+{
+  "entity.vehicle.truck": {
+    "width": 256,
+    "height": 256,
+    "x": 0,
+    "y": 0,
+    "pixelRatio": 1
+  },
+  "entity.vehicle.van": {
+    "width": 256,
+    "height": 256,
+    "x": 260,
+    "y": 0,
+    "pixelRatio": 1
+  },
+  "entity.driver": {
+    "width": 256,
+    "height": 256,
+    "x": 520,
+    "y": 0,
+    "pixelRatio": 1
+  },
+  "entity.warehouse": {
+    "width": 256,
+    "height": 256,
+    "x": 780,
+    "y": 0,
+    "pixelRatio": 1
+  },
+  "entity.facility": {
+    "width": 256,
+    "height": 256,
+    "x": 1040,
+    "y": 0,
+    "pixelRatio": 1
+  },
+  "entity.facility.generic": {
+    "width": 256,
+    "height": 256,
+    "x": 0,
+    "y": 260,
+    "pixelRatio": 1
+  },
+  "entity.waypoint": {
+    "width": 256,
+    "height": 256,
+    "x": 260,
+    "y": 260,
+    "pixelRatio": 1
+  },
+  "badge.delayed": {
+    "width": 256,
+    "height": 256,
+    "x": 520,
+    "y": 260,
+    "pixelRatio": 1
+  },
+  "badge.over_capacity": {
+    "width": 256,
+    "height": 256,
+    "x": 780,
+    "y": 260,
+    "pixelRatio": 1
+  },
+  "badge.under_utilized": {
+    "width": 256,
+    "height": 256,
+    "x": 1040,
+    "y": 260,
+    "pixelRatio": 1
+  },
+  "badge.offline": {
+    "width": 256,
+    "height": 256,
+    "x": 0,
+    "y": 520,
+    "pixelRatio": 1
+  },
+  "badge.completed": {
+    "width": 256,
+    "height": 256,
+    "x": 260,
+    "y": 520,
+    "pixelRatio": 1
+  },
+  "state.alert.breakdown": {
+    "width": 256,
+    "height": 256,
+    "x": 520,
+    "y": 520,
+    "pixelRatio": 1
+  },
+  "state.alert.delay": {
+    "width": 256,
+    "height": 256,
+    "x": 780,
+    "y": 520,
+    "pixelRatio": 1
+  },
+  "state.alert.critical": {
+    "width": 256,
+    "height": 256,
+    "x": 1040,
+    "y": 520,
+    "pixelRatio": 1
+  },
+  "state.alert.fuel": {
+    "width": 256,
+    "height": 256,
+    "x": 0,
+    "y": 780,
+    "pixelRatio": 1
+  },
+  "route.arrow": {
+    "width": 256,
+    "height": 256,
+    "x": 260,
+    "y": 780,
+    "pixelRatio": 1
+  },
+  "route.waypoint": {
+    "width": 256,
+    "height": 256,
+    "x": 520,
+    "y": 780,
+    "pixelRatio": 1
+  },
+  "control.locate": {
+    "width": 256,
+    "height": 256,
+    "x": 780,
+    "y": 780,
+    "pixelRatio": 1
+  },
+  "control.layers": {
+    "width": 256,
+    "height": 256,
+    "x": 1040,
+    "y": 780,
+    "pixelRatio": 1
+  },
+  "control.recenter": {
+    "width": 256,
+    "height": 256,
+    "x": 0,
+    "y": 1040,
+    "pixelRatio": 1
+  },
+  "control.batches": {
+    "width": 256,
+    "height": 256,
+    "x": 260,
+    "y": 1040,
+    "pixelRatio": 1
+  }
+}

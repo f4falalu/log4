@@ -1,10 +1,11 @@
-import { Warehouse, Truck, Users as UsersIcon, LayoutDashboard, Settings } from 'lucide-react';
+import { Warehouse, Truck, Users as UsersIcon, LayoutDashboard, Smartphone } from 'lucide-react';
 import { useWorkspace } from '@/contexts/WorkspaceContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { UserMenu } from './UserMenu';
 import { useEffect, useCallback } from 'react';
+import { FEATURE_FLAGS } from '@/lib/featureFlags';
 
 type WorkspaceConfig = {
   id: 'fleetops' | 'storefront' | 'admin' | 'dashboard' | 'mod4';
@@ -34,7 +35,7 @@ const workspaces: WorkspaceConfig[] = [
     label: 'Admin',
     icon: UsersIcon,
     path: '/admin',
-    available: false,
+    available: true,
   },
   {
     id: 'dashboard',
@@ -46,9 +47,9 @@ const workspaces: WorkspaceConfig[] = [
   {
     id: 'mod4',
     label: 'Mod4',
-    icon: Settings,
+    icon: Smartphone,
     path: '/mod4',
-    available: false,
+    available: FEATURE_FLAGS.ENABLE_MOD4,
   },
 ];
 
@@ -59,7 +60,7 @@ export function PrimarySidebar() {
 
   const handleWorkspaceClick = useCallback((ws: WorkspaceConfig) => {
     if (!ws.available) return;
-    if (ws.id === 'fleetops' || ws.id === 'storefront') {
+    if (ws.id === 'fleetops' || ws.id === 'storefront' || ws.id === 'mod4') {
       setWorkspace(ws.id);
     }
     navigate(ws.path);

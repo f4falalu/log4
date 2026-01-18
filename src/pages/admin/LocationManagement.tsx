@@ -15,7 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { DEFAULT_COUNTRY_NIGERIA_ID, DEFAULT_WORKSPACE_KANO_PHARMA_ID } from '@/lib/constants';
 import { Download, MapPin, Plus, RefreshCw, AlertCircle, CheckCircle } from 'lucide-react';
@@ -30,7 +30,6 @@ interface ImportProgress {
 }
 
 export default function LocationManagement() {
-  const { toast } = useToast();
   const [importProgress, setImportProgress] = useState<ImportProgress>({
     status: 'idle',
     message: '',
@@ -65,8 +64,7 @@ export default function LocationManagement() {
 
       const { jobId } = data;
 
-      toast({
-        title: 'Import Started',
+      toast.info('Import Started', {
         description: 'Downloading and importing OSM boundaries. This may take a few minutes.',
       });
 
@@ -78,17 +76,14 @@ export default function LocationManagement() {
           setImportProgress(payload);
 
           if (payload.status === 'complete') {
-            toast({
-              title: 'Import Complete',
+            toast.success('Import Complete', {
               description: `Successfully imported ${payload.importedBoundaries} admin boundaries`,
             });
             setIsImporting(false);
             channel.unsubscribe();
           } else if (payload.status === 'error') {
-            toast({
-              title: 'Import Failed',
+            toast.error('Import Failed', {
               description: payload.error || 'Unknown error occurred',
-              variant: 'destructive',
             });
             setIsImporting(false);
             channel.unsubscribe();
@@ -97,10 +92,8 @@ export default function LocationManagement() {
         .subscribe();
     } catch (error) {
       console.error('Import error:', error);
-      toast({
-        title: 'Import Failed',
+      toast.error('Import Failed', {
         description: error instanceof Error ? error.message : 'Unknown error',
-        variant: 'destructive',
       });
       setIsImporting(false);
       setImportProgress({

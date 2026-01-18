@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test RPC Calls</title>
+</head>
+<body>
+    <h1>Testing Resource Utilization RPC Calls</h1>
+    <div id="results"></div>
+
+    <script>
+        const SUPABASE_URL = 'https://cenugzabuzglswikoewy.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNlbnVnemFidXpnbHN3aWtvZXd5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzA3MTcyNjgsImV4cCI6MjA0NjI5MzI2OH0.ePSOmedvYQHE3tUIhTdY42gMDa9_aPfNp7Md6IuJOWo';
+
+        async function testRPC(functionName, params = {}) {
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${functionName}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify(params)
+                });
+
+                const text = await response.text();
+                let data;
+                try {
+                    data = JSON.parse(text);
+                } catch {
+                    data = text;
+                }
+
+                return {
+                    function: functionName,
+                    status: response.status,
+                    ok: response.ok,
+                    data: data
+                };
+            } catch (error) {
+                return {
+                    function: functionName,
+                    status: 'ERROR',
+                    error: error.message
+                };
+            }
+        }
+
+        async function runTests() {
+            const results = document.getElementById('results');
+
+            const tests = [
+                { name: 'get_vehicle_payload_utilization', params: {} },
+                { name: 'get_program_performance', params: {} },
+                { name: 'get_driver_utilization', params: {} },
+                { name: 'get_route_efficiency', params: {} },
+                { name: 'get_facility_coverage', params: {} },
+                { name: 'get_cost_by_program', params: {} }
+            ];
+
+            for (const test of tests) {
+                const result = await testRPC(test.name, test.params);
+                const div = document.createElement('div');
+                div.style.marginBottom = '20px';
+                div.style.padding = '10px';
+                div.style.border = '1px solid #ccc';
+                div.style.backgroundColor = result.ok ? '#d4edda' : '#f8d7da';
+
+                div.innerHTML = `
+                    <h3>${result.function}</h3>
+                    <p><strong>Status:</strong> ${result.status}</p>
+                    <p><strong>Response:</strong></p>
+                    <pre>${JSON.stringify(result.data, null, 2)}</pre>
+                `;
+
+                results.appendChild(div);
+            }
+        }
+
+        runTests();
+    </script>
+</body>
+</html>

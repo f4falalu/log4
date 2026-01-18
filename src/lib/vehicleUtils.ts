@@ -17,12 +17,12 @@
  * - L2: Three-wheelers (keke, rickshaw)
  * - BIKO_*: Custom BIKO vehicle types
  */
-export function getVehicleSilhouette(vehicleType: string): string {
-  if (!vehicleType) {
-    return '/assets/vehicles/silhouettes/M1.webp'; // Default fallback
-  }
+export function getVehicleSilhouette(vehicleType?: string | null, make?: string | null, model?: string | null): string {
+  const type = vehicleType?.toLowerCase() || '';
+  const makeLower = make?.toLowerCase() || '';
+  const modelLower = model?.toLowerCase() || '';
 
-  const type = vehicleType.toLowerCase();
+  console.log('getVehicleSilhouette called:', { vehicleType, type, make, makeLower, model, modelLower });
 
   // Map vehicle types to silhouette files
   const typeMapping: Record<string, string> = {
@@ -32,23 +32,36 @@ export function getVehicleSilhouette(vehicleType: string): string {
     'hatchback': '/assets/vehicles/silhouettes/M1.webp',
     'car': '/assets/vehicles/silhouettes/M1.webp',
     'passenger': '/assets/vehicles/silhouettes/M1.webp',
+    'cr-v': '/assets/vehicles/silhouettes/M1.webp',
+    'crv': '/assets/vehicles/silhouettes/M1.webp',
+    'patrol': '/assets/vehicles/silhouettes/M1.webp',
+    'corolla': '/assets/vehicles/silhouettes/M1.webp',
+    'camry': '/assets/vehicles/silhouettes/M1.webp',
 
     // M2 - Large passenger vehicles
     'van': '/assets/vehicles/silhouettes/M2.webp',
     'minivan': '/assets/vehicles/silhouettes/M2.webp',
     'minibus': '/assets/vehicles/silhouettes/M2.webp',
     'bus': '/assets/vehicles/silhouettes/M2.webp',
+    'hiace': '/assets/vehicles/silhouettes/M2.webp',
+    'quantum': '/assets/vehicles/silhouettes/M2.webp',
     'biko_minivan': '/assets/vehicles/silhouettes/BIKO_MINIVAN.webp',
 
     // N1 - Light commercial
     'pickup': '/assets/vehicles/silhouettes/N1.webp',
     'light_truck': '/assets/vehicles/silhouettes/N1.webp',
     'small_truck': '/assets/vehicles/silhouettes/N1.webp',
+    'hilux': '/assets/vehicles/silhouettes/N1.webp',
+    'ranger': '/assets/vehicles/silhouettes/N1.webp',
+    'l200': '/assets/vehicles/silhouettes/N1.webp',
+    'navara': '/assets/vehicles/silhouettes/N1.webp',
 
     // N2 - Medium trucks
     'truck': '/assets/vehicles/silhouettes/N2.webp',
     'medium_truck': '/assets/vehicles/silhouettes/N2.webp',
     'delivery_truck': '/assets/vehicles/silhouettes/N2.webp',
+    'canter': '/assets/vehicles/silhouettes/N2.webp',
+    'dyna': '/assets/vehicles/silhouettes/N2.webp',
 
     // N3 - Heavy trucks
     'heavy_truck': '/assets/vehicles/silhouettes/N3.webp',
@@ -80,10 +93,33 @@ export function getVehicleSilhouette(vehicleType: string): string {
     return typeMapping[type];
   }
 
-  // Try partial match (contains)
+  // Try partial match on vehicle type
   for (const [key, path] of Object.entries(typeMapping)) {
     if (type.includes(key) || key.includes(type)) {
-      return typeMapping[key];
+      return path;
+    }
+  }
+
+  // Try matching on model name (e.g., "Hilux", "Hiace", "Patrol")
+  if (modelLower) {
+    console.log('Checking model name matching for:', modelLower);
+    for (const [key, path] of Object.entries(typeMapping)) {
+      if (modelLower.includes(key) || key.includes(modelLower)) {
+        console.log(`Model match found! ${modelLower} matched with ${key} -> ${path}`);
+        return path;
+      }
+    }
+    console.log('No model match found');
+  }
+
+  // Try matching on make (less reliable, but worth a shot)
+  // Known SUV/Truck makes
+  if (makeLower) {
+    if (['toyota', 'nissan', 'mitsubishi', 'ford', 'isuzu'].includes(makeLower)) {
+      // These brands are commonly trucks/pickups in fleet context
+      if (modelLower.includes('truck') || modelLower.includes('pickup')) {
+        return '/assets/vehicles/silhouettes/N1.webp';
+      }
     }
   }
 

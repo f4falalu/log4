@@ -3,37 +3,53 @@ import { format } from 'date-fns';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
-import { 
-  Package, 
-  MapPin, 
-  Clock, 
-  Route, 
-  User, 
+import {
+  Package,
+  MapPin,
+  Clock,
+  User,
   Truck,
   CheckCircle,
-  AlertCircle,
   Play,
   Square,
-  MoreHorizontal,
   Eye,
-  Loader2
+  Loader2,
+  UserPlus,
+  Trash2,
 } from 'lucide-react';
 import { DeliveryBatch } from '@/types';
 import { useDrivers } from '@/hooks/useDrivers';
 import { useVehicles } from '@/hooks/useVehicles';
+import { useDeleteDeliveryBatch } from '@/hooks/useDeliveryBatches';
 import { Skeleton } from '@/components/ui/skeleton';
+import { AssignmentDialog } from '@/components/batches/AssignmentDialog';
 
 interface BatchListProps {
   batches: DeliveryBatch[];
   onBatchUpdate: (batchId: string, updates: Partial<DeliveryBatch>) => void;
+  onBatchSelect?: (batchId: string) => void;
 }
 
-const BatchList = ({ batches, onBatchUpdate }: BatchListProps) => {
+const BatchList = ({ batches, onBatchUpdate, onBatchSelect }: BatchListProps) => {
   const { data: drivers = [], isLoading: driversLoading } = useDrivers();
   const { data: vehicles = [], isLoading: vehiclesLoading } = useVehicles();
+  const deleteBatch = useDeleteDeliveryBatch();
+
   const [expandedBatch, setExpandedBatch] = useState<string | null>(null);
   const [updatingBatches, setUpdatingBatches] = useState<Set<string>>(new Set());
+  const [assignmentBatch, setAssignmentBatch] = useState<DeliveryBatch | null>(null);
+  const [deletingBatchId, setDeletingBatchId] = useState<string | null>(null);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -190,7 +206,8 @@ const BatchList = ({ batches, onBatchUpdate }: BatchListProps) => {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => toggleExpanded(batch.id)}
+                    onClick={() => onBatchSelect ? onBatchSelect(batch.id) : toggleExpanded(batch.id)}
+                    title="View details"
                   >
                     <Eye className="w-4 h-4" />
                   </Button>
@@ -368,22 +385,20 @@ const BatchList = ({ batches, onBatchUpdate }: BatchListProps) => {
               )}
 
               {/* Action Buttons */}
-              <div className="flex gap-2 pt-2">
-                {batch.status === 'planned' && (
+              <div className="flex flex-wrap gap-2 pt-2">
+                {/* Assignment button - always show for planned/assigned batches */}
+                {(batch.status === 'planned' || batch.status === 'assigned') && (
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleStatusUpdate(batch.id, 'assigned')}
-                    disabled={isUpdating}
+                    onClick={() => setAssignmentBatch(batch)}
                   >
-                    {isUpdating ? (
-                      <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                    ) : (
-                      <CheckCircle className="w-4 h-4 mr-1" />
-                    )}
-                    Assign
+                    <UserPlus className="w-4 h-4 mr-1" />
+                    {batch.driverId && batch.vehicleId ? 'Reassign' : 'Assign'}
                   </Button>
                 )}
+
+                {/* Status transition buttons */}
                 {batch.status === 'assigned' && (
                   <Button
                     variant="default"
@@ -429,11 +444,57 @@ const BatchList = ({ batches, onBatchUpdate }: BatchListProps) => {
                     Cancel
                   </Button>
                 )}
+
+                {/* Delete button - only for planned/cancelled batches */}
+                {(batch.status === 'planned' || batch.status === 'cancelled') && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => setDeletingBatchId(batch.id)}
+                  >
+                    <Trash2 className="w-4 h-4 mr-1" />
+                    Delete
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>
         );
       })}
+
+      {/* Assignment Dialog */}
+      <AssignmentDialog
+        open={!!assignmentBatch}
+        onOpenChange={(open) => !open && setAssignmentBatch(null)}
+        batch={assignmentBatch}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deletingBatchId} onOpenChange={(open) => !open && setDeletingBatchId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Batch</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this batch? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (deletingBatchId) {
+                  deleteBatch.mutate(deletingBatchId);
+                  setDeletingBatchId(null);
+                }
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

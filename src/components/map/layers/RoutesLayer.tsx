@@ -16,7 +16,50 @@ export function RoutesLayer({ map, routes, warehouses }: RoutesLayerProps) {
   useEffect(() => {
     if (!MapUtils.isMapReady(map)) return;
 
-    // Initialize layer group if needed
+    const handleZoom = () => {
+      if (!layerRef.current) return;
+      if (map.getZoom() < 12) {
+        layerRef.current.clearLayers();
+      } else {
+        renderRoutes();
+      }
+    };
+
+    const renderRoutes = () => {
+      if (!layerRef.current) return;
+      layerRef.current.clearLayers();
+      linesRef.current = [];
+
+      routes.forEach((route, index) => {
+        if (!layerRef.current || route.facilities.length === 0) return;
+
+        const warehouse = warehouses.find(w => w.id === route.warehouseId);
+        if (!warehouse) return;
+
+        const routeCoords: [number, number][] = [[warehouse.lat, warehouse.lng]];
+        route.facilities.forEach(facility => {
+          routeCoords.push([facility.lat, facility.lng]);
+        });
+
+        const colors = ['hsl(195 100% 28%)', 'hsl(180 100% 25%)', 'hsl(140 60% 40%)'];
+        const color = colors[index % colors.length];
+
+        const polyline = L.polyline(routeCoords, {
+          color: color,
+          weight: 3,
+          opacity: 0.8,
+          dashArray: '10, 10'
+        });
+
+        try {
+          polyline.addTo(layerRef.current);
+          linesRef.current.push(polyline);
+        } catch (e) {
+          console.error('[RoutesLayer] Failed to add polyline:', e);
+        }
+      });
+    };
+
     if (!layerRef.current) {
       try {
         layerRef.current = L.layerGroup().addTo(map);
@@ -26,43 +69,11 @@ export function RoutesLayer({ map, routes, warehouses }: RoutesLayerProps) {
       }
     }
 
-    // Clear existing lines
-    layerRef.current.clearLayers();
-    linesRef.current = [];
-
-    // Add route lines
-    routes.forEach((route, index) => {
-      if (!layerRef.current || route.facilities.length === 0) return;
-
-      const warehouse = warehouses.find(w => w.id === route.warehouseId);
-      if (!warehouse) return;
-
-      // Create route path: warehouse -> facilities
-      const routeCoords: [number, number][] = [[warehouse.lat, warehouse.lng]];
-      route.facilities.forEach(facility => {
-        routeCoords.push([facility.lat, facility.lng]);
-      });
-
-      // Different colors for different routes
-      const colors = ['hsl(195 100% 28%)', 'hsl(180 100% 25%)', 'hsl(140 60% 40%)'];
-      const color = colors[index % colors.length];
-
-      const polyline = L.polyline(routeCoords, {
-        color: color,
-        weight: 3,
-        opacity: 0.8,
-        dashArray: '10, 10'
-      });
-
-      try {
-        polyline.addTo(layerRef.current);
-        linesRef.current.push(polyline);
-      } catch (e) {
-        console.error('[RoutesLayer] Failed to add polyline:', e);
-      }
-    });
+    map.on('zoomend', handleZoom);
+    handleZoom(); // Initial check
 
     return () => {
+      map.off('zoomend', handleZoom);
       layerRef.current?.clearLayers();
     };
   }, [map, routes, warehouses]);

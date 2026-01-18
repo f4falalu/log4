@@ -6,15 +6,17 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useDeliveryBatches, useCreateDeliveryBatch } from '@/hooks/useDeliveryBatches';
+import { useDeliveryBatches } from '@/hooks/useDeliveryBatches';
 import { useBatchUpdate } from '@/hooks/useBatchUpdate';
+import { useRealtimeBatches } from '@/hooks/useRealtimeBatches';
 import BatchList from '@/components/delivery/BatchList';
-import { 
-  Package, 
-  Plus, 
-  Search, 
+import { CreateBatchDialog } from '@/components/batches/CreateBatchDialog';
+import { BatchDetailsPanel } from '@/components/batches/BatchDetailsPanel';
+import {
+  Package,
+  Plus,
+  Search,
   Filter,
-  Calendar,
   Truck,
   MapPin,
   BarChart3
@@ -24,11 +26,19 @@ import { DeliveryBatch } from '@/types';
 export default function BatchManagement() {
   const { data: batches = [], isLoading } = useDeliveryBatches();
   const batchUpdate = useBatchUpdate();
-  
+
+  // Enable real-time updates for batch status changes
+  useRealtimeBatches();
+
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
   const [activeTab, setActiveTab] = useState('all');
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
+
+  // Get the selected batch object for the details panel
+  const selectedBatch = selectedBatchId ? batches.find(b => b.id === selectedBatchId) || null : null;
 
   const handleBatchUpdate = (batchId: string, updates: Partial<DeliveryBatch>) => {
     batchUpdate.mutate({ batchId, updates });
@@ -77,11 +87,17 @@ export default function BatchManagement() {
               Manage delivery batches, assignments, and route schedules
             </p>
           </div>
-          <Button size="lg" className="sm:w-auto w-full">
+          <Button size="lg" className="sm:w-auto w-full" onClick={() => setIsCreateDialogOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Create Batch
           </Button>
         </div>
+
+        {/* Create Batch Dialog */}
+        <CreateBatchDialog
+          open={isCreateDialogOpen}
+          onOpenChange={setIsCreateDialogOpen}
+        />
 
         {/* Statistics Cards */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -219,33 +235,44 @@ export default function BatchManagement() {
           </TabsList>
 
           <TabsContent value="all" className="mt-6">
-            <BatchList 
-              batches={filteredBatches} 
+            <BatchList
+              batches={filteredBatches}
               onBatchUpdate={handleBatchUpdate}
+              onBatchSelect={setSelectedBatchId}
             />
           </TabsContent>
 
           <TabsContent value="active" className="mt-6">
-            <BatchList 
-              batches={activeBatches} 
+            <BatchList
+              batches={activeBatches}
               onBatchUpdate={handleBatchUpdate}
+              onBatchSelect={setSelectedBatchId}
             />
           </TabsContent>
 
           <TabsContent value="completed" className="mt-6">
-            <BatchList 
-              batches={completedBatches} 
+            <BatchList
+              batches={completedBatches}
               onBatchUpdate={handleBatchUpdate}
+              onBatchSelect={setSelectedBatchId}
             />
           </TabsContent>
 
           <TabsContent value="cancelled" className="mt-6">
-            <BatchList 
-              batches={cancelledBatches} 
+            <BatchList
+              batches={cancelledBatches}
               onBatchUpdate={handleBatchUpdate}
+              onBatchSelect={setSelectedBatchId}
             />
           </TabsContent>
         </Tabs>
+
+        {/* Batch Details Panel */}
+        <BatchDetailsPanel
+          batch={selectedBatch}
+          open={!!selectedBatchId}
+          onOpenChange={(open) => !open && setSelectedBatchId(null)}
+        />
     </div>
   );
 }

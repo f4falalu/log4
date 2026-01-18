@@ -115,6 +115,25 @@
     --sidebar-accent-foreground: oklch(0.9850 0 0);
     --sidebar-border: oklch(0.2750 0 0);
     --sidebar-ring: oklch(0.4390 0 0);
+
+    /* Operational Map Palette (Dark Mode) */
+    --operational-bg-primary: oklch(0.1200 0.0080 165);    /* Black Emerald #122220 */
+    --operational-bg-secondary: oklch(0.2000 0.0120 210);  /* Charcoal #233d4d */
+    --operational-bg-tertiary: oklch(0.2050 0.0080 210);   /* Cadet Blue #313841 */
+
+    --operational-accent-primary: oklch(0.6500 0.1600 40); /* Pumpkin #fe7f2d */
+    --operational-accent-secondary: oklch(0.6200 0.1400 50); /* Yam #ea9216 */
+
+    --operational-text-primary: oklch(0.9500 0.0020 0);    /* Pebble #eeeeee */
+    --operational-text-secondary: oklch(0.9500 0.0020 0 / 0.7);
+    --operational-text-muted: oklch(0.9500 0.0020 0 / 0.5);
+
+    /* Map entity semantics (operational context) */
+    --map-vehicle-active: var(--operational-accent-primary);
+    --map-route-active: var(--operational-accent-primary);
+    --map-warehouse: oklch(0.7000 0.1200 165);             /* Teal #00ff9d */
+    --map-facility: var(--operational-accent-secondary);
+    --map-alert-critical: oklch(0.6000 0.2000 25);         /* Red #ff4d4f */
   }
 
   * {
@@ -232,6 +251,22 @@
 
   :global(.marker-highlighted) {
     animation: marker-pulse 1.5s ease-in-out infinite;
+  }
+
+  /* Vehicle Context Panel Slide Animation */
+  @keyframes slide-in-right {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  .animate-slide-in-right {
+    animation: slide-in-right 0.3s ease-out;
   }
 
   /* Sidebar Row Hover Effects */

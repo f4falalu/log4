@@ -28,6 +28,8 @@ import { useServiceZones } from '@/hooks/useServiceZones';
 import { useFacilities } from '@/hooks/useFacilities';
 import { useWarehouses } from '@/hooks/useWarehouses';
 import { UnifiedMapContainer } from '@/components/map/UnifiedMapContainer';
+import { ForensicMapLibre } from '@/components/map/ForensicMapLibre';
+import { ModeIndicator } from '@/components/map/ui/ModeIndicator';
 import { RouteComparisonOverlay } from '@/components/map/overlays/RouteComparisonOverlay';
 import { PerformanceHeatmapLayer } from '@/components/map/layers/PerformanceHeatmapLayer';
 import { TradeOffHistoryLayer } from '@/components/map/layers/TradeOffHistoryLayer';
@@ -50,11 +52,17 @@ import {
   Route,
   Activity,
   GitBranch,
+  Download,
 } from 'lucide-react';
+import { FEATURE_FLAGS } from '@/lib/featureFlags';
+import { toast } from 'sonner';
 import L from 'leaflet';
 
 export default function ForensicsMapPage() {
   const { setCapability, setTimeHorizon } = useMapContext();
+
+  // Feature flag check
+  const useMapLibre = FEATURE_FLAGS.ENABLE_MAPLIBRE_MAPS;
 
   // Set capability on mount
   useEffect(() => {
@@ -83,7 +91,12 @@ export default function ForensicsMapPage() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTimestamp, setCurrentTimestamp] = useState(new Date());
   const [timelinePosition, setTimelinePosition] = useState(50); // 0-100
+  const [playbackSpeed, setPlaybackSpeed] = useState<1 | 2 | 5>(1);
   const [mapInstance, setMapInstance] = useState<L.Map | null>(null);
+
+  // Forensic time range (24 hours ago to now)
+  const startTimestamp = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const endTimestamp = new Date();
 
   const handleMapCapture = useCallback((map: L.Map) => {
     setMapInstance(map);
@@ -94,6 +107,10 @@ export default function ForensicsMapPage() {
     setIsPlaying(!isPlaying);
   };
 
+  const handleSpeedChange = (speed: number) => {
+    setPlaybackSpeed(speed as 1 | 2 | 5);
+  };
+
   const handleStepBackward = () => {
     setTimelinePosition((prev) => Math.max(0, prev - 5));
   };
@@ -102,13 +119,14 @@ export default function ForensicsMapPage() {
     setTimelinePosition((prev) => Math.min(100, prev + 5));
   };
 
-  const handleTimelineChange = (value: number[]) => {
-    setTimelinePosition(value[0]);
-    // Convert timeline position to timestamp
-    const now = new Date();
-    const hoursAgo = ((100 - value[0]) / 100) * 24; // 24 hours range
-    const timestamp = new Date(now.getTime() - hoursAgo * 60 * 60 * 1000);
-    setCurrentTimestamp(timestamp);
+  const handleTimelineChange = (time: Date) => {
+    setCurrentTimestamp(time);
+    // Update timeline position based on time
+    const start = startTimestamp.getTime();
+    const end = endTimestamp.getTime();
+    const current = time.getTime();
+    const position = ((current - start) / (end - start)) * 100;
+    setTimelinePosition(Math.max(0, Math.min(100, position)));
   };
 
   // Auto-play effect
@@ -128,10 +146,52 @@ export default function ForensicsMapPage() {
     return () => clearInterval(interval);
   }, [isPlaying]);
 
+  // Export handlers for MapLibre
+  const handleExportPNG = useCallback(async () => {
+    toast.success('Exporting map as PNG', {
+      description: 'Map screenshot will download shortly.',
+    });
+    // TODO: Implement PNG export via map.getCanvas().toBlob()
+  }, []);
+
+  const handleExportGeoJSON = useCallback(async () => {
+    toast.success('Exporting data as GeoJSON', {
+      description: 'GeoJSON file will download shortly.',
+    });
+    // TODO: Implement GeoJSON export of visible features
+  }, []);
+
+  const handleExportCSV = useCallback(async () => {
+    toast.success('Exporting data as CSV', {
+      description: 'CSV file will download shortly.',
+    });
+    // TODO: Implement CSV export of performance metrics
+  }, []);
+
   return (
     <div className="h-full relative bg-background">
-      {/* Map Container */}
-      <UnifiedMapContainer
+      {/* Mode Indicator */}
+      <ModeIndicator mode="forensic" />
+
+      {/* Map Container - Conditional rendering based on feature flag */}
+      {useMapLibre ? (
+        <ForensicMapLibre
+          vehicles={[]} // TODO: Add historical vehicle positions
+          drivers={[]} // TODO: Add historical driver positions
+          routes={[]} // TODO: Add historical routes query
+          startTime={startTimestamp}
+          endTime={endTimestamp}
+          currentTime={currentTimestamp}
+          center={[8.6753, 9.082]} // [lng, lat] for MapLibre
+          zoom={6}
+          isPlaying={isPlaying}
+          playbackSpeed={playbackSpeed}
+          onTimeChange={handleTimelineChange}
+          onPlayPause={handlePlayPause}
+          onSpeedChange={handleSpeedChange}
+        />
+      ) : (
+        <UnifiedMapContainer
         mode="fullscreen"
         center={[9.082, 8.6753]} // Nigeria center
         zoom={6}
@@ -168,8 +228,10 @@ export default function ForensicsMapPage() {
           />
         )}
       </UnifiedMapContainer>
+      )}
 
-      {/* Analysis Tools Toolbar */}
+      {/* Analysis Tools Toolbar - Only show when NOT using MapLibre */}
+      {!useMapLibre && (
       <div className="absolute top-4 left-4 z-[1000] flex flex-col gap-2">
         <Button
           variant={activeAnalysis === 'route_comparison' ? 'default' : 'outline'}
@@ -209,9 +271,10 @@ export default function ForensicsMapPage() {
           <GitBranch className="h-4 w-4" />
         </Button>
       </div>
+      )}
 
-      {/* Route Comparison Overlay */}
-      {activeAnalysis === 'route_comparison' && (
+      {/* Route Comparison Overlay - Only show when NOT using MapLibre */}
+      {!useMapLibre && activeAnalysis === 'route_comparison' && (
         <RouteComparisonOverlay
           map={mapInstance}
           active={true}
@@ -221,8 +284,8 @@ export default function ForensicsMapPage() {
         />
       )}
 
-      {/* Heatmap Controls */}
-      {activeAnalysis === 'heatmap' && (
+      {/* Heatmap Controls - Only show when NOT using MapLibre */}
+      {!useMapLibre && activeAnalysis === 'heatmap' && (
         <Card className="absolute top-4 right-4 z-[1000] p-4 w-80 bg-card shadow-lg border">
           <div className="flex items-center gap-2 mb-3">
             <Activity className="h-4 w-4 text-primary" />
@@ -257,8 +320,8 @@ export default function ForensicsMapPage() {
         </Card>
       )}
 
-      {/* Trade-Off History Controls */}
-      {activeAnalysis === 'tradeoff_history' && (
+      {/* Trade-Off History Controls - Only show when NOT using MapLibre */}
+      {!useMapLibre && activeAnalysis === 'tradeoff_history' && (
         <Card className="absolute top-4 right-4 z-[1000] p-4 w-80 bg-card shadow-lg border">
           <div className="flex items-center gap-2 mb-3">
             <GitBranch className="h-4 w-4 text-purple-600" />
@@ -296,7 +359,8 @@ export default function ForensicsMapPage() {
         </Card>
       )}
 
-      {/* Timeline Scrubber */}
+      {/* Timeline Scrubber - Only show when NOT using MapLibre */}
+      {!useMapLibre && (
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[900] w-[600px]">
         <Card className="p-4 bg-card shadow-lg border">
           <div className="flex items-center gap-3 mb-3">
@@ -339,8 +403,10 @@ export default function ForensicsMapPage() {
           </div>
         </Card>
       </div>
+      )}
 
-      {/* Read-Only Reminder */}
+      {/* Read-Only Reminder - Only show when NOT using MapLibre */}
+      {!useMapLibre && (
       <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[900]">
         <div className="bg-purple-50 dark:bg-purple-950 border border-purple-200 dark:border-purple-800 rounded-lg px-4 py-2 shadow-lg">
           <p className="text-xs text-purple-600 dark:text-purple-400 font-medium">
@@ -348,6 +414,7 @@ export default function ForensicsMapPage() {
           </p>
         </div>
       </div>
+      )}
     </div>
   );
 }

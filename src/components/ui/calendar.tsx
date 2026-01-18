@@ -1,11 +1,76 @@
 import * as React from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { DayPicker } from "react-day-picker";
+import { DayPicker, CaptionProps, useNavigation } from "react-day-picker";
 
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export type CalendarProps = React.ComponentProps<typeof DayPicker>;
+
+// Custom caption component with month/year dropdowns
+function CustomCaption(props: CaptionProps) {
+  const { displayMonth } = props;
+
+  // Use react-day-picker's official navigation hook
+  const { goToMonth } = useNavigation();
+
+  const months = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 21 }, (_, i) => currentYear - 10 + i);
+
+  const handleMonthChange = (monthStr: string) => {
+    const newDate = new Date(displayMonth);
+    newDate.setMonth(parseInt(monthStr, 10));
+    goToMonth(newDate);
+  };
+
+  const handleYearChange = (yearStr: string) => {
+    const newDate = new Date(displayMonth);
+    newDate.setFullYear(parseInt(yearStr, 10));
+    goToMonth(newDate);
+  };
+
+  return (
+    <div className="flex justify-center gap-2 mb-4">
+      <Select
+        value={displayMonth.getMonth().toString()}
+        onValueChange={handleMonthChange}
+      >
+        <SelectTrigger className="w-[130px] h-8 text-sm">
+          <SelectValue>{months[displayMonth.getMonth()]}</SelectValue>
+        </SelectTrigger>
+        <SelectContent>
+          {months.map((month, idx) => (
+            <SelectItem key={idx} value={idx.toString()}>
+              {month}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Select
+        value={displayMonth.getFullYear().toString()}
+        onValueChange={handleYearChange}
+      >
+        <SelectTrigger className="w-[100px] h-8 text-sm">
+          <SelectValue>{displayMonth.getFullYear()}</SelectValue>
+        </SelectTrigger>
+        <SelectContent>
+          {years.map((year) => (
+            <SelectItem key={year} value={year.toString()}>
+              {year}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
 
 function Calendar({ className, classNames, showOutsideDays = true, ...props }: CalendarProps) {
   return (
@@ -44,6 +109,7 @@ function Calendar({ className, classNames, showOutsideDays = true, ...props }: C
       components={{
         IconLeft: ({ ..._props }) => <ChevronLeft className="h-4 w-4" />,
         IconRight: ({ ..._props }) => <ChevronRight className="h-4 w-4" />,
+        Caption: CustomCaption,
       }}
       {...props}
     />

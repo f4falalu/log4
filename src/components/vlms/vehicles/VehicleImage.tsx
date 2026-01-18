@@ -5,7 +5,6 @@
  */
 
 import React from 'react';
-import { Car } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { LazyImage } from '@/components/ui/lazy-image';
@@ -20,6 +19,8 @@ interface VehicleImageProps {
   showAiBadge?: boolean;
   loading?: 'eager' | 'lazy';
   vehicleType?: string | null;
+  make?: string | null;
+  model?: string | null;
 }
 
 export function VehicleImage({
@@ -31,37 +32,24 @@ export function VehicleImage({
   showAiBadge = true,
   loading = 'lazy',
   vehicleType,
+  make,
+  model,
 }: VehicleImageProps) {
   // Fallback component for missing/failed images
   const FallbackComponent = () => {
-    // Use silhouette if vehicle type is provided, otherwise use generic icon
-    if (vehicleType) {
-      return (
-        <div
-          className={cn(
-            'flex items-center justify-center bg-muted/30 rounded-lg overflow-hidden',
-            fallbackClassName,
-            className
-          )}
-        >
-          <img
-            src={getVehicleSilhouette(vehicleType)}
-            alt={`${vehicleType} silhouette`}
-            className="object-contain h-full w-full p-4"
-          />
-        </div>
-      );
-    }
-
     return (
       <div
         className={cn(
-          'flex items-center justify-center bg-muted/30 border border-border',
+          'flex items-center justify-center bg-muted/30 rounded-lg overflow-hidden',
           fallbackClassName,
           className
         )}
       >
-        <Car className="h-8 w-8 text-muted-foreground/40" />
+        <img
+          src={getVehicleSilhouette(vehicleType, make, model)}
+          alt={`${model || make || 'vehicle'} silhouette`}
+          className="object-contain h-full w-full p-4"
+        />
       </div>
     );
   };
