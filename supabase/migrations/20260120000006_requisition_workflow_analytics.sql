@@ -102,7 +102,7 @@ SELECT
   DATE_TRUNC('day', rp.computed_at) AS computed_date
 
 FROM public.requisition_packaging_items rpi
-JOIN public.requisition_packaging rp ON rp.id = rpi.packaging_id
+JOIN public.requisition_packaging rp ON rp.id = rpi.requisition_packaging_id
 WHERE rp.is_final = TRUE
 GROUP BY rpi.packaging_type, rpi.packaging_subtype, DATE_TRUNC('day', rp.computed_at);
 
