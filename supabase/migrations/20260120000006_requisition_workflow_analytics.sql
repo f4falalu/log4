@@ -67,7 +67,9 @@ SELECT
 FROM public.requisitions r
 LEFT JOIN public.requisition_packaging rp ON rp.requisition_id = r.id;
 
--- Index for performance
+-- Index for performance (UNIQUE index required for CONCURRENTLY refresh)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_requisition_workflow_id
+  ON analytics.mv_requisition_workflow_metrics(requisition_id);
 CREATE INDEX IF NOT EXISTS idx_mv_requisition_workflow_facility
   ON analytics.mv_requisition_workflow_metrics(facility_id);
 CREATE INDEX IF NOT EXISTS idx_mv_requisition_workflow_status
@@ -107,12 +109,13 @@ JOIN public.requisition_packaging rp ON rp.id = rpi.requisition_packaging_id
 WHERE rp.is_final = TRUE
 GROUP BY rpi.packaging_type, DATE_TRUNC('day', rp.computed_at);
 
+-- Index for performance (UNIQUE index required for CONCURRENTLY refresh)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_packaging_analytics_unique
+  ON analytics.mv_packaging_analytics(packaging_type, computed_date);
 CREATE INDEX IF NOT EXISTS idx_mv_packaging_analytics_type
   ON analytics.mv_packaging_analytics(packaging_type);
 CREATE INDEX IF NOT EXISTS idx_mv_packaging_analytics_date
   ON analytics.mv_packaging_analytics(computed_date);
-CREATE INDEX IF NOT EXISTS idx_mv_packaging_analytics_type_date
-  ON analytics.mv_packaging_analytics(packaging_type, computed_date);
 
 COMMENT ON MATERIALIZED VIEW analytics.mv_packaging_analytics IS
   'RFC-012 Phase 6: Packaging type distribution and slot demand analytics';
@@ -160,6 +163,9 @@ SELECT
 
 FROM public.delivery_batches db;
 
+-- Index for performance (UNIQUE index required for CONCURRENTLY refresh)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_batch_assembly_id
+  ON analytics.mv_batch_assembly_metrics(batch_id);
 CREATE INDEX IF NOT EXISTS idx_mv_batch_assembly_status
   ON analytics.mv_batch_assembly_metrics(status);
 CREATE INDEX IF NOT EXISTS idx_mv_batch_assembly_created
