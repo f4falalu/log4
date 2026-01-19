@@ -3,6 +3,10 @@
  * Wizard Step 3: Scheduling
  * =====================================================
  * Comprehensive schedule creation form
+ *
+ * RFC-012: Vehicle and driver assignment removed from Storefront.
+ * These are now FleetOps responsibilities. Storefront only handles
+ * demand readiness (requisitions → ready_for_dispatch).
  */
 
 import { useState } from 'react';
@@ -11,8 +15,7 @@ import { format } from 'date-fns';
 import { useSchedulerWizardStore } from '@/stores/schedulerWizardStore';
 import { useFacilities } from '@/hooks/useFacilities';
 import { useWarehouses } from '@/hooks/useWarehouses';
-import { useDrivers } from '@/hooks/useDrivers';
-import { useVehicles } from '@/hooks/useVehicles';
+// RFC-012: Removed useDrivers and useVehicles - these are FleetOps concerns
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -42,8 +45,7 @@ export function WizardStep3Scheduling() {
   const warehouseId = useSchedulerWizardStore((state) => state.warehouse_id);
   const plannedDate = useSchedulerWizardStore((state) => state.planned_date);
   const timeWindow = useSchedulerWizardStore((state) => state.time_window);
-  const vehicleId = useSchedulerWizardStore((state) => state.vehicle_id);
-  const driverId = useSchedulerWizardStore((state) => state.driver_id);
+  // RFC-012: Removed vehicleId and driverId - these are FleetOps concerns
   const notes = useSchedulerWizardStore((state) => state.notes);
   const selectedFacilities = useSchedulerWizardStore(
     (state) => state.selected_facilities
@@ -54,8 +56,7 @@ export function WizardStep3Scheduling() {
     setWarehouseId,
     setPlannedDate,
     setTimeWindow,
-    setVehicleId,
-    setDriverId,
+    // RFC-012: Removed setVehicleId and setDriverId - these are FleetOps concerns
     setNotes,
     addFacility,
     removeFacility,
@@ -63,8 +64,7 @@ export function WizardStep3Scheduling() {
 
   const { data: facilities } = useFacilities();
   const { data: warehouses } = useWarehouses();
-  const { data: drivers } = useDrivers();
-  const { data: vehicles } = useVehicles();
+  // RFC-012: Removed drivers and vehicles data - these are FleetOps concerns
 
   const [date, setDate] = useState<Date | undefined>(
     plannedDate ? new Date(plannedDate) : undefined
@@ -230,51 +230,9 @@ export function WizardStep3Scheduling() {
               )}
             </div>
 
-            {/* Vehicle (Optional) */}
-            <div className="space-y-2">
-              <Label>Vehicle (Optional)</Label>
-              <Select
-                value={vehicleId || 'none'}
-                onValueChange={(value) =>
-                  setVehicleId(value === 'none' ? null : value)
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Assign vehicle later" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Assign vehicle later</SelectItem>
-                  {vehicles?.map((v) => (
-                    <SelectItem key={v.id} value={v.id}>
-                      {v.model} ({v.plate_number})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Driver (Optional) */}
-            <div className="space-y-2">
-              <Label>Driver (Optional)</Label>
-              <Select
-                value={driverId || 'none'}
-                onValueChange={(value) =>
-                  setDriverId(value === 'none' ? null : value)
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Assign driver later" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Assign driver later</SelectItem>
-                  {drivers?.map((d) => (
-                    <SelectItem key={d.id} value={d.id}>
-                      {d.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {/* RFC-012: Vehicle and Driver assignment removed from Storefront
+                These are now FleetOps responsibilities during batch planning.
+                Storefront only declares demand readiness. */}
 
             {/* Notes */}
             <div className="space-y-2">

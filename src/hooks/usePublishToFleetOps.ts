@@ -3,6 +3,10 @@
  * Publish to FleetOps Hook
  * =====================================================
  * Publishes scheduler batches to delivery_batches table for dispatch
+ *
+ * RFC-012: Vehicle and driver assignment is NO LONGER required for publishing.
+ * Storefront publishes batches with status 'planned' (no assignment).
+ * FleetOps is responsible for vehicle/driver assignment during batch planning.
  */
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -55,14 +59,9 @@ export function usePublishToFleetOps() {
 
       // Validate batches are ready to publish
       for (const batch of schedulerBatches as SchedulerBatch[]) {
-        // Check if batch has required fields
-        if (!batch.driver_id || !batch.vehicle_id) {
-          errors.push({
-            scheduler_batch_id: batch.id,
-            error_message: 'Batch must have driver and vehicle assigned',
-          });
-          continue;
-        }
+        // RFC-012: Vehicle and driver are NO LONGER required for publishing
+        // These are FleetOps responsibilities during batch planning
+        // Storefront only validates facilities are present
 
         if (!batch.facility_ids || batch.facility_ids.length === 0) {
           errors.push({
@@ -83,6 +82,7 @@ export function usePublishToFleetOps() {
 
         try {
           // Create delivery batch in FleetOps
+          // RFC-012: driver_id and vehicle_id are null - FleetOps will assign during batch planning
           const { data: deliveryBatch, error: createError } = await supabase
             .from('delivery_batches')
             .insert([
@@ -91,13 +91,13 @@ export function usePublishToFleetOps() {
                 warehouse_id: batch.warehouse_id,
                 scheduled_date: batch.planned_date,
                 scheduled_time: batch.time_window,
-                driver_id: batch.driver_id,
-                vehicle_id: batch.vehicle_id,
+                driver_id: null, // RFC-012: FleetOps responsibility
+                vehicle_id: null, // RFC-012: FleetOps responsibility
                 facility_ids: batch.facility_ids,
-                optimized_route: batch.optimized_route,
-                total_distance: batch.total_distance_km,
-                estimated_duration: batch.estimated_duration_min,
-                status: 'planned', // Set to planned in FleetOps
+                optimized_route: batch.optimized_route || {},
+                total_distance: batch.total_distance_km || 0,
+                estimated_duration: batch.estimated_duration_min || 0,
+                status: 'planned', // Set to planned in FleetOps, awaiting vehicle/driver
                 priority: batch.priority,
                 medication_type: null, // Can be enhanced later
                 total_quantity: batch.total_consignments,

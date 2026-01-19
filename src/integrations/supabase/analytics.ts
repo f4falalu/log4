@@ -549,6 +549,139 @@ export async function getCostByProgram(
 }
 
 // ============================================================================
+// RFC-012 Phase 6: Requisition Workflow Analytics
+// ============================================================================
+
+export interface StorefrontRequisitionAnalytics {
+  approval_turnaround: {
+    avg_hours: number;
+    median_hours: number;
+    p95_hours: number;
+    count: number;
+  };
+  packaging_efficiency: {
+    avg_minutes: number;
+    median_minutes: number;
+    total_packaged: number;
+  };
+  ready_for_dispatch_queue: {
+    avg_wait_hours: number;
+    current_queue_depth: number;
+    total_processed: number;
+  };
+  slot_demand: {
+    avg_slot_demand: number;
+    total_slot_demand: number;
+    avg_rounded_slots: number;
+    total_requisitions: number;
+  };
+  fulfillment_rate: {
+    total_requisitions: number;
+    fulfilled: number;
+    failed: number;
+    in_progress: number;
+    fulfillment_percentage: number;
+  };
+}
+
+export interface FleetOpsDispatchAnalytics {
+  batch_assembly: {
+    avg_hours: number;
+    median_hours: number;
+    total_batches_assembled: number;
+  };
+  dispatch_efficiency: {
+    avg_dispatch_hours: number;
+    median_dispatch_hours: number;
+    total_dispatches_completed: number;
+  };
+  snapshot_lock_duration: {
+    avg_hours: number;
+    median_hours: number;
+    currently_locked: number;
+  };
+  batch_status_distribution: {
+    planned: number;
+    assigned: number;
+    in_progress: number;
+    completed: number;
+    cancelled: number;
+  };
+  slot_demand_per_batch: {
+    avg_slot_demand: number;
+    avg_requisitions_per_batch: number;
+  };
+}
+
+export interface PackagingTypeDistribution {
+  packaging_type: string;
+  packaging_subtype: string;
+  item_count: number;
+  total_quantity: number;
+  total_slot_cost: number;
+  avg_slot_cost_per_item: number;
+  requisition_count: number;
+  avg_slot_demand_per_requisition: number;
+}
+
+/**
+ * RFC-012 Phase 6: Get Storefront requisition workflow analytics
+ * @param startDate - Optional start date (ISO string)
+ * @param endDate - Optional end date (ISO string)
+ * @returns Storefront requisition analytics metrics
+ */
+export async function getStorefrontRequisitionAnalytics(
+  startDate?: string | null,
+  endDate?: string | null
+): Promise<StorefrontRequisitionAnalytics> {
+  const { data, error } = await supabase.rpc('get_storefront_requisition_analytics', {
+    p_start_date: startDate || null,
+    p_end_date: endDate || null,
+  });
+
+  if (error) handleSupabaseError(error, 'getStorefrontRequisitionAnalytics');
+  return (data || {}) as StorefrontRequisitionAnalytics;
+}
+
+/**
+ * RFC-012 Phase 6: Get FleetOps dispatch workflow analytics
+ * @param startDate - Optional start date (ISO string)
+ * @param endDate - Optional end date (ISO string)
+ * @returns FleetOps dispatch analytics metrics
+ */
+export async function getFleetOpsDispatchAnalytics(
+  startDate?: string | null,
+  endDate?: string | null
+): Promise<FleetOpsDispatchAnalytics> {
+  const { data, error } = await supabase.rpc('get_fleetops_dispatch_analytics', {
+    p_start_date: startDate || null,
+    p_end_date: endDate || null,
+  });
+
+  if (error) handleSupabaseError(error, 'getFleetOpsDispatchAnalytics');
+  return (data || {}) as FleetOpsDispatchAnalytics;
+}
+
+/**
+ * RFC-012 Phase 6: Get packaging type distribution and slot cost analysis
+ * @param startDate - Optional start date (ISO string)
+ * @param endDate - Optional end date (ISO string)
+ * @returns Array of packaging type distribution metrics
+ */
+export async function getPackagingTypeDistribution(
+  startDate?: string | null,
+  endDate?: string | null
+): Promise<PackagingTypeDistribution[]> {
+  const { data, error } = await supabase.rpc('get_packaging_type_distribution', {
+    p_start_date: startDate || null,
+    p_end_date: endDate || null,
+  });
+
+  if (error) handleSupabaseError(error, 'getPackagingTypeDistribution');
+  return (data || []) as PackagingTypeDistribution[];
+}
+
+// ============================================================================
 // EXPORTS
 // ============================================================================
 
@@ -587,4 +720,9 @@ export const analyticsAPI = {
   getRouteEfficiency,
   getFacilityCoverage,
   getCostByProgram,
+
+  // RFC-012 Phase 6: Requisition workflow analytics
+  getStorefrontRequisitionAnalytics,
+  getFleetOpsDispatchAnalytics,
+  getPackagingTypeDistribution,
 };

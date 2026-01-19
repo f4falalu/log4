@@ -1,3 +1,22 @@
+/**
+ * =====================================================
+ * DEPRECATED: useFinalizeBatch Hook
+ * =====================================================
+ * RFC-012: This hook is DEPRECATED and will be removed.
+ *
+ * VIOLATION: Storefront should NOT create delivery_batches directly.
+ * This hook bypasses the proper domain boundaries by:
+ * 1. Creating delivery_batches from Storefront (should be FleetOps only)
+ * 2. Selecting vehicles in Storefront (should be FleetOps only)
+ *
+ * MIGRATION PATH:
+ * - Use the Scheduler workflow instead (scheduler_batches → ready → published)
+ * - FleetOps will handle vehicle/driver assignment during batch planning
+ *
+ * This hook now throws an error to prevent usage.
+ * It will be deleted in the next release cycle.
+ */
+
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -13,12 +32,25 @@ interface FinalizeBatchData {
   notes?: string;
 }
 
+/**
+ * @deprecated RFC-012: Use Scheduler workflow instead.
+ * Storefront should not create delivery_batches directly.
+ */
 export function useFinalizeBatch() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
   return useMutation({
     mutationFn: async (data: FinalizeBatchData) => {
+      // RFC-012: Block usage of this deprecated hook
+      throw new Error(
+        'RFC-012: useFinalizeBatch is deprecated. ' +
+        'Storefront should not create delivery_batches directly. ' +
+        'Use the Scheduler workflow instead.'
+      );
+
+      // Original code below is preserved for reference but will never execute
+      /* eslint-disable no-unreachable */
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
@@ -104,6 +136,7 @@ export function useFinalizeBatch() {
         });
 
       return batch;
+      /* eslint-enable no-unreachable */
     },
     onSuccess: (batch) => {
       queryClient.invalidateQueries({ queryKey: ['delivery-batches'] });

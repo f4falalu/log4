@@ -1,3 +1,19 @@
+/**
+ * =====================================================
+ * Requisition to Payload Conversion Hook
+ * =====================================================
+ * Converts requisition items to payload items for batch planning.
+ *
+ * RFC-012: This hook no longer directly modifies requisition status.
+ * Status changes are handled by the database via RPC functions that
+ * enforce the proper state machine transitions.
+ *
+ * Flow:
+ * 1. Requisition must be in 'ready_for_dispatch' status
+ * 2. Call assign_requisitions_to_batch RPC to transition to 'assigned_to_batch'
+ * 3. Requisition status flows automatically via database triggers
+ */
+
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -7,6 +23,10 @@ interface ConvertRequisitionData {
   batchId: string;
 }
 
+/**
+ * Convert a single requisition to payload items and assign to batch.
+ * RFC-012: Uses RPC for status transition instead of direct update.
+ */
 export function useConvertRequisitionToPayload() {
   const queryClient = useQueryClient();
 
@@ -42,16 +62,22 @@ export function useConvertRequisitionToPayload() {
 
       if (insertError) throw insertError;
 
-      // Update requisition status to 'fulfilled'
-      const { error: updateError } = await supabase
-        .from('requisitions')
-        .update({ 
-          status: 'fulfilled',
-          fulfilled_at: new Date().toISOString()
-        })
-        .eq('id', requisitionId);
+      // RFC-012: Use RPC to assign requisition to batch with proper state transition
+      // This enforces the state machine: ready_for_dispatch → assigned_to_batch
+      const { error: assignError } = await supabase
+        .rpc('assign_requisitions_to_batch', {
+          p_requisition_ids: [requisitionId],
+          p_batch_id: batchId
+        });
 
-      if (updateError) throw updateError;
+      if (assignError) {
+        // If RPC fails, rollback payload items
+        await supabase
+          .from('payload_items')
+          .delete()
+          .in('id', insertedItems.map(item => item.id));
+        throw new Error(`Failed to assign requisition to batch: ${assignError.message}`);
+      }
 
       return insertedItems;
     },
@@ -68,12 +94,17 @@ export function useConvertRequisitionToPayload() {
   });
 }
 
+/**
+ * Convert multiple requisitions to payload items and assign to batch.
+ * RFC-012: Uses RPC for status transition instead of direct update.
+ */
 export function useBatchRequisitionConversion() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async ({ requisitionIds, batchId }: { requisitionIds: string[]; batchId: string }) => {
       const results = [];
+      const successfulRequisitionIds: string[] = [];
 
       for (const requisitionId of requisitionIds) {
         // Fetch requisition items
@@ -111,16 +142,27 @@ export function useBatchRequisitionConversion() {
           continue;
         }
 
-        // Update requisition status
-        await supabase
-          .from('requisitions')
-          .update({ 
-            status: 'fulfilled',
-            fulfilled_at: new Date().toISOString()
-          })
-          .eq('id', requisitionId);
-
         results.push(data);
+        successfulRequisitionIds.push(requisitionId);
+      }
+
+      // RFC-012: Use RPC to assign all successful requisitions to batch
+      // This enforces the state machine: ready_for_dispatch → assigned_to_batch
+      if (successfulRequisitionIds.length > 0) {
+        const { data: assignedCount, error: assignError } = await supabase
+          .rpc('assign_requisitions_to_batch', {
+            p_requisition_ids: successfulRequisitionIds,
+            p_batch_id: batchId
+          });
+
+        if (assignError) {
+          console.error('Error assigning requisitions to batch:', assignError);
+          // Note: Payload items are already inserted, but requisition status won't change
+          // This is a partial failure state - items are in batch but requisitions are not linked
+          toast.warning('Payload items created but requisition status update failed');
+        } else if (assignedCount !== undefined) {
+          console.log(`Successfully assigned ${assignedCount} requisitions to batch`);
+        }
       }
 
       return results;
