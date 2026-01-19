@@ -615,11 +615,11 @@ export interface FleetOpsDispatchAnalytics {
 
 export interface PackagingTypeDistribution {
   packaging_type: string;
-  packaging_subtype: string;
   item_count: number;
   total_quantity: number;
   total_slot_cost: number;
   avg_slot_cost_per_item: number;
+  total_package_count: number;
   requisition_count: number;
   avg_slot_demand_per_requisition: number;
 }

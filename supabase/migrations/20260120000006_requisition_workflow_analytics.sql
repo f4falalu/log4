@@ -87,11 +87,12 @@ COMMENT ON MATERIALIZED VIEW analytics.mv_requisition_workflow_metrics IS
 CREATE MATERIALIZED VIEW IF NOT EXISTS analytics.mv_packaging_analytics AS
 SELECT
   rpi.packaging_type,
-  rpi.packaging_subtype,
   COUNT(*) AS item_count,
   SUM(rpi.quantity) AS total_quantity,
   SUM(rpi.slot_cost) AS total_slot_cost,
   AVG(rpi.slot_cost) AS avg_slot_cost_per_item,
+  SUM(rpi.slot_demand) AS total_slot_demand_from_items,
+  SUM(rpi.package_count) AS total_package_count,
 
   -- Join to packaging to get requisition-level aggregation
   COUNT(DISTINCT rp.requisition_id) AS requisition_count,
@@ -104,12 +105,14 @@ SELECT
 FROM public.requisition_packaging_items rpi
 JOIN public.requisition_packaging rp ON rp.id = rpi.requisition_packaging_id
 WHERE rp.is_final = TRUE
-GROUP BY rpi.packaging_type, rpi.packaging_subtype, DATE_TRUNC('day', rp.computed_at);
+GROUP BY rpi.packaging_type, DATE_TRUNC('day', rp.computed_at);
 
 CREATE INDEX IF NOT EXISTS idx_mv_packaging_analytics_type
   ON analytics.mv_packaging_analytics(packaging_type);
 CREATE INDEX IF NOT EXISTS idx_mv_packaging_analytics_date
   ON analytics.mv_packaging_analytics(computed_date);
+CREATE INDEX IF NOT EXISTS idx_mv_packaging_analytics_type_date
+  ON analytics.mv_packaging_analytics(packaging_type, computed_date);
 
 COMMENT ON MATERIALIZED VIEW analytics.mv_packaging_analytics IS
   'RFC-012 Phase 6: Packaging type distribution and slot demand analytics';
@@ -299,11 +302,11 @@ CREATE OR REPLACE FUNCTION public.get_packaging_type_distribution(
 )
 RETURNS TABLE(
   packaging_type TEXT,
-  packaging_subtype TEXT,
   item_count BIGINT,
   total_quantity BIGINT,
   total_slot_cost NUMERIC,
   avg_slot_cost_per_item NUMERIC,
+  total_package_count BIGINT,
   requisition_count BIGINT,
   avg_slot_demand_per_requisition NUMERIC
 )
@@ -314,16 +317,16 @@ BEGIN
   RETURN QUERY
   SELECT
     pa.packaging_type,
-    pa.packaging_subtype,
     SUM(pa.item_count)::BIGINT,
     SUM(pa.total_quantity)::BIGINT,
     ROUND(SUM(pa.total_slot_cost)::numeric, 2),
     ROUND(AVG(pa.avg_slot_cost_per_item)::numeric, 2),
+    SUM(pa.total_package_count)::BIGINT,
     SUM(pa.requisition_count)::BIGINT,
     ROUND(AVG(pa.avg_slot_demand_per_requisition)::numeric, 2)
   FROM analytics.mv_packaging_analytics pa
   WHERE pa.computed_date >= p_start_date::DATE AND pa.computed_date <= p_end_date::DATE
-  GROUP BY pa.packaging_type, pa.packaging_subtype
+  GROUP BY pa.packaging_type
   ORDER BY SUM(pa.item_count) DESC;
 END;
 $$;
