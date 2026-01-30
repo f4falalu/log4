@@ -1,8 +1,8 @@
-import { useState } from 'react';
 import { Trash2, Plus, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Table,
   TableBody,
@@ -12,7 +12,6 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { ParsedRequisitionItem } from '@/lib/csvParser';
-import { Badge } from '@/components/ui/badge';
 
 interface ParsedItemsPreviewProps {
   items: ParsedRequisitionItem[];
@@ -43,8 +42,8 @@ export function ParsedItemsPreview({ items, warnings, onChange }: ParsedItemsPre
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 flex flex-col h-full">
+      <div className="flex items-center justify-between flex-shrink-0">
         <div>
           <h3 className="text-lg font-semibold">Parsed Items ({items.length})</h3>
           <p className="text-sm text-muted-foreground">
@@ -58,7 +57,7 @@ export function ParsedItemsPreview({ items, warnings, onChange }: ParsedItemsPre
       </div>
 
       {warnings.length > 0 && (
-        <div className="rounded-lg border border-warning/20 bg-warning/10 p-4">
+        <div className="rounded-lg border border-warning/20 bg-warning/10 p-4 flex-shrink-0">
           <div className="flex items-start gap-2">
             <AlertTriangle className="h-5 w-5 text-warning flex-shrink-0 mt-0.5" />
             <div className="flex-1">
@@ -78,8 +77,10 @@ export function ParsedItemsPreview({ items, warnings, onChange }: ParsedItemsPre
         </div>
       )}
 
-      <div className="border rounded-lg overflow-x-auto">
-        <Table>
+      <div className="border rounded-lg overflow-hidden flex-1 min-h-0">
+        <ScrollArea className="h-full max-h-[400px]">
+          <div className="overflow-x-auto">
+            <Table>
           <TableHeader>
             <TableRow>
               <TableHead className="w-[200px]">Item Name</TableHead>
@@ -187,10 +188,12 @@ export function ParsedItemsPreview({ items, warnings, onChange }: ParsedItemsPre
             )}
           </TableBody>
         </Table>
+          </div>
+        </ScrollArea>
       </div>
 
       {items.length > 0 && (
-        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+        <div className="flex items-center gap-4 text-sm text-muted-foreground flex-shrink-0">
           <span>Total items: {items.length}</span>
           <span>•</span>
           <span>

@@ -8,10 +8,87 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Search, MapPin, Building2, List, Map as MapIcon, X } from 'lucide-react';
+import { Search, MapPin, Building2, List, Map as MapIcon, X, Route } from 'lucide-react';
 import { useFacilities } from '@/hooks/useFacilities';
 import { MAP_CONFIG, getMapLibreStyle } from '@/lib/mapConfig';
-import type { Facility, Warehouse } from '@/types';
+import type { Facility } from '@/types';
+import type { Warehouse } from '@/types/warehouse';
+
+/**
+ * Calculate haversine distance between two coordinates in kilometers
+ */
+function haversineDistance(
+  lat1: number,
+  lng1: number,
+  lat2: number,
+  lng2: number
+): number {
+  const R = 6371; // Earth's radius in km
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLng / 2) *
+      Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+/**
+ * Calculate total route distance and inter-facility distances
+ */
+function calculateRouteMetrics(
+  warehouse: Warehouse | null | undefined,
+  facilities: Facility[]
+): {
+  totalDistance: number;
+  segmentDistances: { from: string; to: string; distance: number }[];
+  averageDistance: number;
+} {
+  const segmentDistances: { from: string; to: string; distance: number }[] = [];
+  let totalDistance = 0;
+
+  if (facilities.length === 0) {
+    return { totalDistance: 0, segmentDistances: [], averageDistance: 0 };
+  }
+
+  // Start from warehouse if available
+  let prevPoint = warehouse
+    ? { name: warehouse.name, lat: warehouse.lat, lng: warehouse.lng }
+    : null;
+
+  for (const facility of facilities) {
+    if (!facility.lat || !facility.lng) continue;
+
+    if (prevPoint) {
+      const distance = haversineDistance(
+        prevPoint.lat,
+        prevPoint.lng,
+        facility.lat,
+        facility.lng
+      );
+      segmentDistances.push({
+        from: prevPoint.name,
+        to: facility.name,
+        distance,
+      });
+      totalDistance += distance;
+    }
+
+    prevPoint = { name: facility.name, lat: facility.lat, lng: facility.lng };
+  }
+
+  return {
+    totalDistance,
+    segmentDistances,
+    averageDistance:
+      segmentDistances.length > 0
+        ? totalDistance / segmentDistances.length
+        : 0,
+  };
+}
 
 interface FacilityMapSelectorProps {
   selectedFacilityIds: string[];
@@ -26,14 +103,15 @@ export function FacilityMapSelector({
 }: FacilityMapSelectorProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'split' | 'list' | 'map'>('split');
-  const { data, isLoading } = useFacilities();
+  const { facilities: rawFacilities, loading: isLoading } = useFacilities();
   const { theme } = useTheme();
 
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<Map<string, maplibregl.Marker>>(new Map());
 
-  const facilities = data?.facilities || [];
+  // Cast facilities to the Facility type from types/index.ts
+  const facilities = rawFacilities as unknown as Facility[];
 
   // Filter facilities by search query
   const filteredFacilities = useMemo(() => {
@@ -237,6 +315,15 @@ export function FacilityMapSelector({
 
   const someFilteredSelected = filteredFacilities.some(f => selectedFacilityIds.includes(f.id));
 
+  // Calculate route metrics for selected facilities
+  const selectedFacilitiesForMetrics = useMemo(() => {
+    return facilities.filter(f => selectedFacilityIds.includes(f.id));
+  }, [facilities, selectedFacilityIds]);
+
+  const routeMetrics = useMemo(() => {
+    return calculateRouteMetrics(warehouse, selectedFacilitiesForMetrics);
+  }, [warehouse, selectedFacilitiesForMetrics]);
+
   if (isLoading) {
     return (
       <div className="space-y-3">
@@ -397,11 +484,45 @@ export function FacilityMapSelector({
         renderList()
       )}
 
-      {/* Route coherence hint */}
-      {selectedFacilityIds.length > 0 && warehouse && (
-        <div className="text-xs text-muted-foreground flex items-center gap-1">
-          <MapPin className="h-3 w-3" />
-          Selected facilities will form a route starting from {warehouse.name}
+      {/* Route metrics and coherence display */}
+      {selectedFacilityIds.length > 0 && (
+        <div className="bg-muted/50 rounded-md p-3 space-y-2">
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <Route className="h-4 w-4" />
+            Route Summary
+          </div>
+
+          <div className="grid grid-cols-3 gap-2 text-center">
+            <div className="bg-background rounded p-2">
+              <p className="text-lg font-bold">{routeMetrics.totalDistance.toFixed(1)}</p>
+              <p className="text-xs text-muted-foreground">Total km</p>
+            </div>
+            <div className="bg-background rounded p-2">
+              <p className="text-lg font-bold">{selectedFacilityIds.length}</p>
+              <p className="text-xs text-muted-foreground">Stops</p>
+            </div>
+            <div className="bg-background rounded p-2">
+              <p className="text-lg font-bold">{routeMetrics.averageDistance.toFixed(1)}</p>
+              <p className="text-xs text-muted-foreground">Avg km/stop</p>
+            </div>
+          </div>
+
+          {/* Show longest segment as route coherence indicator */}
+          {routeMetrics.segmentDistances.length > 0 && (
+            <div className="text-xs text-muted-foreground">
+              {warehouse && (
+                <div className="flex items-center gap-1">
+                  <MapPin className="h-3 w-3" />
+                  Route starts from {warehouse.name}
+                </div>
+              )}
+              {routeMetrics.segmentDistances.length > 1 && (
+                <div className="mt-1">
+                  Longest segment: {Math.max(...routeMetrics.segmentDistances.map(s => s.distance)).toFixed(1)} km
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>

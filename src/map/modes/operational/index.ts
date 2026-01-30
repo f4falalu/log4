@@ -30,3 +30,5 @@ export {
   createEventBridge,
   type EventBridgeConfig,
 } from './OperationalEventBridge';
+
+export { OperationalMap } from './OperationalMap';

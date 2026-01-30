@@ -1,0 +1,921 @@
+/**
+ * =====================================================
+ * Unified Scheduler-Batch Workflow Store (Zustand)
+ * =====================================================
+ * Manages the 5-step unified workflow state:
+ * 1. Source → 2. Schedule → 3. Batch → 4. Route → 5. Review
+ */
+
+import { useMemo } from 'react';
+import { create } from 'zustand';
+import { devtools, persist } from 'zustand/middleware';
+import { shallow } from 'zustand/shallow';
+import type {
+  UnifiedWorkflowStep,
+  UnifiedWorkflowState,
+  UnifiedWorkflowActions,
+  UnifiedWorkflowStore,
+  SourceMethod,
+  SourceSubOption,
+  StartLocationType,
+  WorkingSetItem,
+  AiOptimizationOptions,
+  SlotAssignment,
+  SlotAssignmentMap,
+  ParsedFacility,
+} from '@/types/unified-workflow';
+import type { TimeWindow, Priority, RoutePoint } from '@/types/scheduler';
+
+// =====================================================
+// INITIAL STATE
+// =====================================================
+
+const initialAiOptions: AiOptimizationOptions = {
+  shortest_distance: false,
+  fastest_route: false,
+  efficiency: false,
+  priority_complex: false,
+};
+
+const initialState: UnifiedWorkflowState = {
+  // Navigation
+  current_step: 1,
+  is_loading: false,
+  error: null,
+
+  // Step 1: Source
+  source_method: null,
+  source_sub_option: null,
+
+  // Step 2: Schedule Header
+  schedule_title: null,
+  start_location_id: null,
+  start_location_type: 'warehouse',
+  planned_date: null,
+  time_window: null,
+
+  // Step 2: Working Set
+  working_set: [],
+
+  // Step 2: Decision Support
+  ai_optimization_options: initialAiOptions,
+  suggested_vehicle_id: null,
+
+  // Step 2: Notes
+  schedule_notes: null,
+
+  // Step 3: Batch Details
+  batch_name: null,
+  priority: 'medium',
+  vehicle_id: null,
+  driver_id: null,
+
+  // Step 3: Slot Assignments
+  slot_assignments: {},
+
+  // Step 4: Route
+  optimized_route: [],
+  total_distance_km: null,
+  estimated_duration_min: null,
+
+  // Cross-domain References
+  pre_batch_id: null,
+  final_batch_id: null,
+
+  // File Upload
+  uploaded_file: null,
+  parsed_facilities: null,
+};
+
+// =====================================================
+// STORE CREATION
+// =====================================================
+
+export const useUnifiedWorkflowStore = create<UnifiedWorkflowStore>()(
+  devtools(
+    persist(
+      (set, get) => ({
+        ...initialState,
+
+        // =====================================================
+        // NAVIGATION ACTIONS
+        // =====================================================
+
+        nextStep: () => {
+          const { current_step, canProceedToNextStep } = get();
+          if (canProceedToNextStep() && current_step < 5) {
+            set(
+              { current_step: (current_step + 1) as UnifiedWorkflowStep },
+              false,
+              'unified/nextStep'
+            );
+          }
+        },
+
+        previousStep: () => {
+          const { current_step } = get();
+          if (current_step > 1) {
+            set(
+              { current_step: (current_step - 1) as UnifiedWorkflowStep },
+              false,
+              'unified/previousStep'
+            );
+          }
+        },
+
+        goToStep: (step: UnifiedWorkflowStep) => {
+          set({ current_step: step }, false, 'unified/goToStep');
+        },
+
+        resetWorkflow: () => {
+          set({ ...initialState }, false, 'unified/reset');
+        },
+
+        // =====================================================
+        // STEP 1: SOURCE SELECTION
+        // =====================================================
+
+        setSourceMethod: (method: SourceMethod) => {
+          set(
+            {
+              source_method: method,
+              // Reset sub-option when method changes
+              source_sub_option: null,
+            },
+            false,
+            'unified/setSourceMethod'
+          );
+        },
+
+        setSourceSubOption: (option: SourceSubOption | null) => {
+          set({ source_sub_option: option }, false, 'unified/setSourceSubOption');
+        },
+
+        // =====================================================
+        // STEP 2: SCHEDULE HEADER
+        // =====================================================
+
+        setScheduleTitle: (title: string) => {
+          set({ schedule_title: title }, false, 'unified/setScheduleTitle');
+        },
+
+        setStartLocation: (id: string, type: StartLocationType) => {
+          set(
+            {
+              start_location_id: id,
+              start_location_type: type,
+            },
+            false,
+            'unified/setStartLocation'
+          );
+        },
+
+        setPlannedDate: (date: string) => {
+          set({ planned_date: date }, false, 'unified/setPlannedDate');
+        },
+
+        setTimeWindow: (window: TimeWindow | null) => {
+          set({ time_window: window }, false, 'unified/setTimeWindow');
+        },
+
+        setScheduleNotes: (notes: string | null) => {
+          set({ schedule_notes: notes }, false, 'unified/setScheduleNotes');
+        },
+
+        // =====================================================
+        // STEP 2: WORKING SET (Middle Column)
+        // =====================================================
+
+        addToWorkingSet: (item: WorkingSetItem) => {
+          const { working_set } = get();
+          // Check if facility already exists
+          if (working_set.some((ws) => ws.facility_id === item.facility_id)) {
+            return;
+          }
+          // Add with correct sequence
+          const newItem: WorkingSetItem = {
+            ...item,
+            sequence: working_set.length + 1,
+          };
+          set(
+            { working_set: [...working_set, newItem] },
+            false,
+            'unified/addToWorkingSet'
+          );
+        },
+
+        removeFromWorkingSet: (facilityId: string) => {
+          const { working_set } = get();
+          const filtered = working_set.filter((ws) => ws.facility_id !== facilityId);
+          // Re-sequence
+          const resequenced = filtered.map((ws, idx) => ({
+            ...ws,
+            sequence: idx + 1,
+          }));
+          set({ working_set: resequenced }, false, 'unified/removeFromWorkingSet');
+        },
+
+        reorderWorkingSet: (fromIndex: number, toIndex: number) => {
+          const { working_set } = get();
+          if (
+            fromIndex < 0 ||
+            fromIndex >= working_set.length ||
+            toIndex < 0 ||
+            toIndex >= working_set.length
+          ) {
+            return;
+          }
+
+          const items = [...working_set];
+          const [movedItem] = items.splice(fromIndex, 1);
+          items.splice(toIndex, 0, movedItem);
+
+          // Re-sequence
+          const resequenced = items.map((ws, idx) => ({
+            ...ws,
+            sequence: idx + 1,
+          }));
+
+          set({ working_set: resequenced }, false, 'unified/reorderWorkingSet');
+        },
+
+        clearWorkingSet: () => {
+          set({ working_set: [] }, false, 'unified/clearWorkingSet');
+        },
+
+        setWorkingSet: (items: WorkingSetItem[]) => {
+          // Ensure proper sequencing
+          const sequenced = items.map((item, idx) => ({
+            ...item,
+            sequence: idx + 1,
+          }));
+          set({ working_set: sequenced }, false, 'unified/setWorkingSet');
+        },
+
+        // =====================================================
+        // STEP 2: AI OPTIMIZATION OPTIONS
+        // =====================================================
+
+        setAiOptimizationOptions: (options: Partial<AiOptimizationOptions>) => {
+          const { ai_optimization_options } = get();
+          set(
+            {
+              ai_optimization_options: {
+                ...ai_optimization_options,
+                ...options,
+              },
+            },
+            false,
+            'unified/setAiOptimizationOptions'
+          );
+        },
+
+        toggleAiOption: (option: keyof AiOptimizationOptions) => {
+          const { ai_optimization_options } = get();
+          set(
+            {
+              ai_optimization_options: {
+                ...ai_optimization_options,
+                [option]: !ai_optimization_options[option],
+              },
+            },
+            false,
+            'unified/toggleAiOption'
+          );
+        },
+
+        // =====================================================
+        // STEP 2: VEHICLE SUGGESTION
+        // =====================================================
+
+        setSuggestedVehicle: (vehicleId: string | null) => {
+          set({ suggested_vehicle_id: vehicleId }, false, 'unified/setSuggestedVehicle');
+        },
+
+        // =====================================================
+        // STEP 2: FILE UPLOAD
+        // =====================================================
+
+        setUploadedFile: (file: File | null) => {
+          set({ uploaded_file: file }, false, 'unified/setUploadedFile');
+        },
+
+        setParsedFacilities: (facilities: ParsedFacility[] | null) => {
+          set({ parsed_facilities: facilities }, false, 'unified/setParsedFacilities');
+        },
+
+        updateParsedFacility: (rowIndex: number, updates: Partial<ParsedFacility>) => {
+          const { parsed_facilities } = get();
+          if (!parsed_facilities) return;
+
+          const updated = parsed_facilities.map((f) =>
+            f.row_index === rowIndex ? { ...f, ...updates, user_corrected: true } : f
+          );
+          set({ parsed_facilities: updated }, false, 'unified/updateParsedFacility');
+        },
+
+        // =====================================================
+        // STEP 2 -> PRE-BATCH OPERATIONS
+        // =====================================================
+
+        savePreBatch: async (): Promise<string> => {
+          // This will be implemented with the actual API hook
+          // For now, return a placeholder
+          const state = get();
+
+          // Build facility_order and facility_requisition_map
+          const facility_order = state.working_set.map((ws) => ws.facility_id);
+          const facility_requisition_map: Record<string, string[]> = {};
+          state.working_set.forEach((ws) => {
+            facility_requisition_map[ws.facility_id] = ws.requisition_ids;
+          });
+
+          // The actual save will be done via the useCreatePreBatch hook
+          // This method prepares the data and updates the store
+          set({ is_loading: true, error: null }, false, 'unified/savePreBatch/start');
+
+          // Placeholder - actual implementation will use the hook
+          const preBatchId = crypto.randomUUID();
+          set(
+            {
+              pre_batch_id: preBatchId,
+              is_loading: false,
+            },
+            false,
+            'unified/savePreBatch/success'
+          );
+
+          return preBatchId;
+        },
+
+        loadPreBatch: async (id: string): Promise<void> => {
+          // This will be implemented with the actual API hook
+          set({ is_loading: true, error: null }, false, 'unified/loadPreBatch/start');
+
+          // Placeholder - actual implementation will use the hook
+          set(
+            {
+              pre_batch_id: id,
+              is_loading: false,
+            },
+            false,
+            'unified/loadPreBatch/success'
+          );
+        },
+
+        // =====================================================
+        // STEP 3: BATCH DETAILS
+        // =====================================================
+
+        setBatchName: (name: string) => {
+          set({ batch_name: name }, false, 'unified/setBatchName');
+        },
+
+        setPriority: (priority: Priority) => {
+          set({ priority }, false, 'unified/setPriority');
+        },
+
+        commitVehicle: (vehicleId: string) => {
+          set(
+            {
+              vehicle_id: vehicleId,
+              // Clear slot assignments when vehicle changes
+              slot_assignments: {},
+            },
+            false,
+            'unified/commitVehicle'
+          );
+        },
+
+        assignDriver: (driverId: string | null) => {
+          set({ driver_id: driverId }, false, 'unified/assignDriver');
+        },
+
+        // =====================================================
+        // STEP 3: SLOT ASSIGNMENTS
+        // =====================================================
+
+        assignFacilityToSlot: (
+          slotKey: string,
+          facilityId: string,
+          requisitionIds: string[]
+        ) => {
+          const { slot_assignments, working_set } = get();
+
+          // Find facility info from working set
+          const facility = working_set.find((ws) => ws.facility_id === facilityId);
+
+          const assignment: SlotAssignment = {
+            slot_key: slotKey,
+            facility_id: facilityId,
+            facility_name: facility?.facility_name,
+            requisition_ids: requisitionIds,
+            slot_demand: facility?.slot_demand ?? 1,
+            weight_kg: facility?.weight_kg,
+            volume_m3: facility?.volume_m3,
+          };
+
+          set(
+            {
+              slot_assignments: {
+                ...slot_assignments,
+                [slotKey]: assignment,
+              },
+            },
+            false,
+            'unified/assignFacilityToSlot'
+          );
+        },
+
+        unassignSlot: (slotKey: string) => {
+          const { slot_assignments } = get();
+          const { [slotKey]: _, ...rest } = slot_assignments;
+          set({ slot_assignments: rest }, false, 'unified/unassignSlot');
+        },
+
+        autoAssignSlots: () => {
+          // Auto-assign facilities to slots in sequence
+          // This will be enhanced with the actual slot assignment engine
+          const { working_set } = get();
+
+          const newAssignments: SlotAssignmentMap = {};
+          working_set.forEach((ws, index) => {
+            const slotKey = `slot_${index + 1}`;
+            newAssignments[slotKey] = {
+              slot_key: slotKey,
+              facility_id: ws.facility_id,
+              facility_name: ws.facility_name,
+              requisition_ids: ws.requisition_ids,
+              slot_demand: ws.slot_demand,
+              weight_kg: ws.weight_kg,
+              volume_m3: ws.volume_m3,
+            };
+          });
+
+          set({ slot_assignments: newAssignments }, false, 'unified/autoAssignSlots');
+        },
+
+        clearSlotAssignments: () => {
+          set({ slot_assignments: {} }, false, 'unified/clearSlotAssignments');
+        },
+
+        // =====================================================
+        // STEP 4: ROUTE OPTIMIZATION
+        // =====================================================
+
+        optimizeRoute: async (): Promise<void> => {
+          set({ is_loading: true, error: null }, false, 'unified/optimizeRoute/start');
+
+          // This will be implemented with the actual route optimizer
+          // For now, create a simple route from working set
+
+          const { working_set, start_location_id } = get();
+
+          // Placeholder route - actual implementation will use OSRM/route optimizer
+          const route: RoutePoint[] = working_set.map((ws, idx) => ({
+            lat: 0, // Will be populated from facility data
+            lng: 0,
+            facility_id: ws.facility_id,
+            sequence: idx + 1,
+          }));
+
+          set(
+            {
+              optimized_route: route,
+              total_distance_km: 0, // Will be calculated
+              estimated_duration_min: 0, // Will be calculated
+              is_loading: false,
+            },
+            false,
+            'unified/optimizeRoute/success'
+          );
+        },
+
+        setOptimizedRoute: (route: RoutePoint[], distance: number, duration: number) => {
+          set(
+            {
+              optimized_route: route,
+              total_distance_km: distance,
+              estimated_duration_min: duration,
+            },
+            false,
+            'unified/setOptimizedRoute'
+          );
+        },
+
+        // =====================================================
+        // STEP 5: FINALIZE
+        // =====================================================
+
+        confirmAndCreateBatch: async (): Promise<string> => {
+          set({ is_loading: true, error: null }, false, 'unified/confirmAndCreateBatch/start');
+
+          // This will be implemented with the actual API hook
+          // Placeholder - actual implementation will:
+          // 1. Create delivery_batch
+          // 2. Update pre_batch status to 'converted'
+          // 3. Link pre_batch to delivery_batch
+
+          const batchId = crypto.randomUUID();
+
+          set(
+            {
+              final_batch_id: batchId,
+              is_loading: false,
+            },
+            false,
+            'unified/confirmAndCreateBatch/success'
+          );
+
+          return batchId;
+        },
+
+        // =====================================================
+        // VALIDATION
+        // =====================================================
+
+        canProceedToNextStep: (): boolean => {
+          const state = get();
+
+          switch (state.current_step) {
+            case 1:
+              // Step 1: Must have source method selected
+              if (!state.source_method) return false;
+              // If 'ready' source, must have sub-option
+              if (state.source_method === 'ready' && !state.source_sub_option) {
+                return false;
+              }
+              return true;
+
+            case 2:
+              // Step 2: Must have schedule details and working set
+              const hasScheduleDetails =
+                state.schedule_title !== null &&
+                state.schedule_title.trim() !== '' &&
+                state.start_location_id !== null &&
+                state.planned_date !== null;
+
+              // For upload method, check parsed facilities
+              if (state.source_method === 'upload') {
+                return (
+                  hasScheduleDetails &&
+                  state.parsed_facilities !== null &&
+                  state.parsed_facilities.filter((f) => f.is_valid).length > 0
+                );
+              }
+
+              // For ready/manual, check working set
+              return hasScheduleDetails && state.working_set.length > 0;
+
+            case 3:
+              // Step 3: Must have batch name and vehicle committed
+              return (
+                state.batch_name !== null &&
+                state.batch_name.trim() !== '' &&
+                state.vehicle_id !== null
+              );
+
+            case 4:
+              // Step 4: Must have optimized route
+              return state.optimized_route.length > 0;
+
+            case 5:
+              // Step 5: Review step - always can proceed (to submit)
+              return true;
+
+            default:
+              return false;
+          }
+        },
+
+        getValidationErrors: (): string[] => {
+          const state = get();
+          const errors: string[] = [];
+
+          switch (state.current_step) {
+            case 1:
+              if (!state.source_method) {
+                errors.push('Please select a source method');
+              }
+              if (state.source_method === 'ready' && !state.source_sub_option) {
+                errors.push('Please select a scheduling option');
+              }
+              break;
+
+            case 2:
+              if (!state.schedule_title || state.schedule_title.trim() === '') {
+                errors.push('Schedule title is required');
+              }
+              if (!state.start_location_id) {
+                errors.push('Start location is required');
+              }
+              if (!state.planned_date) {
+                errors.push('Planned date is required');
+              }
+              if (state.source_method === 'upload') {
+                if (!state.parsed_facilities || state.parsed_facilities.length === 0) {
+                  errors.push('Please upload and verify facility file');
+                }
+                const validFacilities = state.parsed_facilities?.filter((f) => f.is_valid) ?? [];
+                if (validFacilities.length === 0) {
+                  errors.push('No valid facilities found in uploaded file');
+                }
+              } else {
+                if (state.working_set.length === 0) {
+                  errors.push('Please add at least one facility to the schedule');
+                }
+              }
+              break;
+
+            case 3:
+              if (!state.batch_name || state.batch_name.trim() === '') {
+                errors.push('Batch name is required');
+              }
+              if (!state.vehicle_id) {
+                errors.push('Vehicle selection is required');
+              }
+              break;
+
+            case 4:
+              if (state.optimized_route.length === 0) {
+                errors.push('Route optimization is required');
+              }
+              break;
+          }
+
+          return errors;
+        },
+
+        // =====================================================
+        // LOADING / ERROR
+        // =====================================================
+
+        setLoading: (loading: boolean) => {
+          set({ is_loading: loading }, false, 'unified/setLoading');
+        },
+
+        setError: (error: string | null) => {
+          set({ error }, false, 'unified/setError');
+        },
+      }),
+      {
+        name: 'unified-workflow-storage',
+        // Selectively persist (exclude files and loading state)
+        partialize: (state) => ({
+          current_step: state.current_step,
+          source_method: state.source_method,
+          source_sub_option: state.source_sub_option,
+          schedule_title: state.schedule_title,
+          start_location_id: state.start_location_id,
+          start_location_type: state.start_location_type,
+          planned_date: state.planned_date,
+          time_window: state.time_window,
+          working_set: state.working_set,
+          ai_optimization_options: state.ai_optimization_options,
+          suggested_vehicle_id: state.suggested_vehicle_id,
+          schedule_notes: state.schedule_notes,
+          batch_name: state.batch_name,
+          priority: state.priority,
+          vehicle_id: state.vehicle_id,
+          driver_id: state.driver_id,
+          slot_assignments: state.slot_assignments,
+          optimized_route: state.optimized_route,
+          total_distance_km: state.total_distance_km,
+          estimated_duration_min: state.estimated_duration_min,
+          pre_batch_id: state.pre_batch_id,
+          final_batch_id: state.final_batch_id,
+        }),
+      }
+    ),
+    { name: 'UnifiedWorkflow' }
+  )
+);
+
+// =====================================================
+// SELECTOR HOOKS
+// =====================================================
+
+/** Get current step */
+export const useCurrentStep = () =>
+  useUnifiedWorkflowStore((state) => state.current_step);
+
+/** Get source method */
+export const useSourceMethod = () =>
+  useUnifiedWorkflowStore((state) => state.source_method);
+
+/** Get source sub-option */
+export const useSourceSubOption = () =>
+  useUnifiedWorkflowStore((state) => state.source_sub_option);
+
+/** Get schedule details */
+export const useScheduleDetails = () =>
+  useUnifiedWorkflowStore((state) => ({
+    title: state.schedule_title,
+    startLocationId: state.start_location_id,
+    startLocationType: state.start_location_type,
+    plannedDate: state.planned_date,
+    timeWindow: state.time_window,
+    notes: state.schedule_notes,
+  }), shallow);
+
+/** Get working set */
+export const useWorkingSet = () =>
+  useUnifiedWorkflowStore((state) => state.working_set);
+
+/** Get AI optimization options */
+export const useAiOptions = () =>
+  useUnifiedWorkflowStore((state) => state.ai_optimization_options);
+
+/** Get batch details */
+export const useBatchDetails = () =>
+  useUnifiedWorkflowStore((state) => ({
+    name: state.batch_name,
+    priority: state.priority,
+    vehicleId: state.vehicle_id,
+    driverId: state.driver_id,
+  }), shallow);
+
+/** Get slot assignments */
+export const useSlotAssignments = () =>
+  useUnifiedWorkflowStore((state) => state.slot_assignments);
+
+/** Get route info */
+export const useRouteInfo = () =>
+  useUnifiedWorkflowStore((state) => ({
+    route: state.optimized_route,
+    distanceKm: state.total_distance_km,
+    durationMin: state.estimated_duration_min,
+  }), shallow);
+
+/** Get loading state */
+export const useWorkflowLoading = () =>
+  useUnifiedWorkflowStore((state) => state.is_loading);
+
+/** Get error state */
+export const useWorkflowError = () =>
+  useUnifiedWorkflowStore((state) => state.error);
+
+/** Check if can proceed */
+export const useCanProceed = () =>
+  useUnifiedWorkflowStore((state) => {
+    // Inline validation logic to avoid calling get() which can cause loops
+    switch (state.current_step) {
+      case 1:
+        if (!state.source_method) return false;
+        if (state.source_method === 'ready' && !state.source_sub_option) {
+          return false;
+        }
+        return true;
+
+      case 2:
+        const hasScheduleDetails =
+          state.schedule_title !== null &&
+          state.schedule_title.trim() !== '' &&
+          state.start_location_id !== null &&
+          state.planned_date !== null;
+
+        if (state.source_method === 'upload') {
+          return (
+            hasScheduleDetails &&
+            state.parsed_facilities !== null &&
+            state.parsed_facilities.filter((f) => f.is_valid).length > 0
+          );
+        }
+
+        return hasScheduleDetails && state.working_set.length > 0;
+
+      case 3:
+        return (
+          state.batch_name !== null &&
+          state.batch_name.trim() !== '' &&
+          state.vehicle_id !== null
+        );
+
+      case 4:
+        return state.optimized_route.length > 0;
+
+      case 5:
+        return true;
+
+      default:
+        return false;
+    }
+  });
+
+/** Get validation errors */
+export const useValidationErrors = () =>
+  useUnifiedWorkflowStore((state) => {
+    // Inline validation logic to avoid calling get() which can cause loops
+    const errors: string[] = [];
+
+    switch (state.current_step) {
+      case 1:
+        if (!state.source_method) {
+          errors.push('Please select a source method');
+        }
+        if (state.source_method === 'ready' && !state.source_sub_option) {
+          errors.push('Please select a scheduling option');
+        }
+        break;
+
+      case 2:
+        if (!state.schedule_title || state.schedule_title.trim() === '') {
+          errors.push('Schedule title is required');
+        }
+        if (!state.start_location_id) {
+          errors.push('Start location is required');
+        }
+        if (!state.planned_date) {
+          errors.push('Planned date is required');
+        }
+        if (state.source_method === 'upload') {
+          if (!state.parsed_facilities || state.parsed_facilities.length === 0) {
+            errors.push('Please upload and verify facility file');
+          }
+          const validFacilities = state.parsed_facilities?.filter((f) => f.is_valid) ?? [];
+          if (validFacilities.length === 0) {
+            errors.push('No valid facilities found in uploaded file');
+          }
+        } else {
+          if (state.working_set.length === 0) {
+            errors.push('Please add at least one facility to the schedule');
+          }
+        }
+        break;
+
+      case 3:
+        if (!state.batch_name || state.batch_name.trim() === '') {
+          errors.push('Batch name is required');
+        }
+        if (!state.vehicle_id) {
+          errors.push('Vehicle selection is required');
+        }
+        break;
+
+      case 4:
+        if (state.optimized_route.length === 0) {
+          errors.push('Route optimization is required');
+        }
+        break;
+    }
+
+    return errors;
+  });
+
+/**
+ * Get workflow actions - actions are stable and don't need reactive subscription.
+ * Using getState() instead of a selector avoids infinite loop issues with useSyncExternalStore.
+ */
+export const useWorkflowActions = () => {
+  // Actions are defined in the store and never change, so we can safely
+  // memoize with empty deps. Using getState() avoids useSyncExternalStore issues.
+  return useMemo(() => {
+    const state = useUnifiedWorkflowStore.getState();
+    return {
+      // Navigation
+      nextStep: state.nextStep,
+      previousStep: state.previousStep,
+      goToStep: state.goToStep,
+      resetWorkflow: state.resetWorkflow,
+      // Step 1
+      setSourceMethod: state.setSourceMethod,
+      setSourceSubOption: state.setSourceSubOption,
+      // Step 2
+      setScheduleTitle: state.setScheduleTitle,
+      setStartLocation: state.setStartLocation,
+      setPlannedDate: state.setPlannedDate,
+      setTimeWindow: state.setTimeWindow,
+      setScheduleNotes: state.setScheduleNotes,
+      addToWorkingSet: state.addToWorkingSet,
+      removeFromWorkingSet: state.removeFromWorkingSet,
+      reorderWorkingSet: state.reorderWorkingSet,
+      clearWorkingSet: state.clearWorkingSet,
+      setWorkingSet: state.setWorkingSet,
+      setAiOptimizationOptions: state.setAiOptimizationOptions,
+      toggleAiOption: state.toggleAiOption,
+      setSuggestedVehicle: state.setSuggestedVehicle,
+      setUploadedFile: state.setUploadedFile,
+      setParsedFacilities: state.setParsedFacilities,
+      updateParsedFacility: state.updateParsedFacility,
+      savePreBatch: state.savePreBatch,
+      loadPreBatch: state.loadPreBatch,
+      // Step 3
+      setBatchName: state.setBatchName,
+      setPriority: state.setPriority,
+      commitVehicle: state.commitVehicle,
+      assignDriver: state.assignDriver,
+      assignFacilityToSlot: state.assignFacilityToSlot,
+      unassignSlot: state.unassignSlot,
+      autoAssignSlots: state.autoAssignSlots,
+      clearSlotAssignments: state.clearSlotAssignments,
+      // Step 4
+      optimizeRoute: state.optimizeRoute,
+      setOptimizedRoute: state.setOptimizedRoute,
+      // Step 5
+      confirmAndCreateBatch: state.confirmAndCreateBatch,
+      // Utils
+      setLoading: state.setLoading,
+      setError: state.setError,
+    };
+  }, []);
+};

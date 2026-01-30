@@ -33,7 +33,7 @@ export default function MapLayout() {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-background">
+    <div className="h-full flex flex-col bg-background">
       {/* Top Bar with Mode Switcher */}
       <div className="border-b border-border bg-card px-6 py-4 flex-shrink-0">
         <div className="flex items-center justify-between">

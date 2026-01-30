@@ -69,7 +69,7 @@ export function StatusTabs({
   counts,
 }: StatusTabsProps) {
   return (
-    <div className="flex w-48 flex-col gap-1 border-r bg-white p-4">
+    <div className="flex w-48 flex-col gap-1 border-r bg-white p-4 min-h-0">
       <h3 className="mb-2 px-3 text-sm font-semibold text-gray-700">
         Status
       </h3>

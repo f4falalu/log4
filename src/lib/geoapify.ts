@@ -28,32 +28,54 @@ export interface GeoapifyRoute {
 }
 
 export async function searchAddress(query: string): Promise<GeoapifyPlace[]> {
-  if (!GEOAPIFY_API_KEY) {
-    console.warn('Geoapify API key not configured');
-    return [];
+  if (GEOAPIFY_API_KEY) {
+    try {
+      const response = await fetch(
+        `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(query)}&apiKey=${GEOAPIFY_API_KEY}&limit=5`
+      );
+
+      if (!response.ok) throw new Error('Failed to search address');
+
+      const data = await response.json();
+      return data.features.map((feature: any) => ({
+        formatted: feature.properties.formatted,
+        lat: feature.properties.lat,
+        lon: feature.properties.lon,
+        address_line1: feature.properties.address_line1 || '',
+        address_line2: feature.properties.address_line2,
+        city: feature.properties.city,
+        state: feature.properties.state,
+        postcode: feature.properties.postcode,
+        country: feature.properties.country
+      }));
+    } catch (error) {
+      console.error('Geoapify search error:', error);
+    }
   }
 
+  // Fallback to Nominatim (OpenStreetMap) — no API key required
   try {
     const response = await fetch(
-      `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(query)}&apiKey=${GEOAPIFY_API_KEY}&limit=5`
+      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5&addressdetails=1`,
+      { headers: { 'Accept-Language': 'en' } }
     );
-    
-    if (!response.ok) throw new Error('Failed to search address');
-    
+
+    if (!response.ok) throw new Error('Nominatim search failed');
+
     const data = await response.json();
-    return data.features.map((feature: any) => ({
-      formatted: feature.properties.formatted,
-      lat: feature.properties.lat,
-      lon: feature.properties.lon,
-      address_line1: feature.properties.address_line1 || '',
-      address_line2: feature.properties.address_line2,
-      city: feature.properties.city,
-      state: feature.properties.state,
-      postcode: feature.properties.postcode,
-      country: feature.properties.country
+    return data.map((item: any) => ({
+      formatted: item.display_name,
+      lat: parseFloat(item.lat),
+      lon: parseFloat(item.lon),
+      address_line1: item.address?.road || item.name || item.display_name.split(',')[0],
+      address_line2: undefined,
+      city: item.address?.city || item.address?.town || item.address?.village,
+      state: item.address?.state,
+      postcode: item.address?.postcode,
+      country: item.address?.country,
     }));
   } catch (error) {
-    console.error('Geoapify search error:', error);
+    console.error('Nominatim search error:', error);
     return [];
   }
 }

@@ -81,7 +81,7 @@ export {
   getZonesForCell,
   getZoneObjectsForCell,
   isCellInAnyZone,
-  isCellInZone,
+  isCellInZone as isCellInZoneIndex,
   getCellsForZone,
   getZoneById,
   getAllZones,

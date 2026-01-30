@@ -5,6 +5,7 @@ import { Users, Radio, FileText, Building2, Loader2 } from 'lucide-react';
 import { UserGrowthChart } from '@/components/admin/analytics/UserGrowthChart';
 import { SessionActivityChart } from '@/components/admin/analytics/SessionActivityChart';
 import { EventDistributionChart } from '@/components/admin/analytics/EventDistributionChart';
+import { PageShell } from '@/components/layout/PageShell';
 
 interface DashboardMetrics {
   total_users: number;
@@ -81,7 +82,8 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-8">
+    <PageShell maxWidth="7xl">
+      <div className="space-y-8">
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
@@ -144,6 +146,7 @@ export default function AdminDashboard() {
           )}
         </CardContent>
       </Card>
-    </div>
+      </div>
+    </PageShell>
   );
 }

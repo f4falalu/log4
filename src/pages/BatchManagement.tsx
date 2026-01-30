@@ -10,7 +10,7 @@ import { useDeliveryBatches } from '@/hooks/useDeliveryBatches';
 import { useBatchUpdate } from '@/hooks/useBatchUpdate';
 import { useRealtimeBatches } from '@/hooks/useRealtimeBatches';
 import BatchList from '@/components/delivery/BatchList';
-import { CreateBatchDialog } from '@/components/batches/CreateBatchDialog';
+import { UnifiedWorkflowDialog } from '@/components/unified-workflow';
 import { BatchDetailsPanel } from '@/components/batches/BatchDetailsPanel';
 import {
   Package,
@@ -93,10 +93,11 @@ export default function BatchManagement() {
           </Button>
         </div>
 
-        {/* Create Batch Dialog */}
-        <CreateBatchDialog
+        {/* Create Batch Dialog - Unified Workflow */}
+        <UnifiedWorkflowDialog
           open={isCreateDialogOpen}
           onOpenChange={setIsCreateDialogOpen}
+          startStep={1}
         />
 
         {/* Statistics Cards */}

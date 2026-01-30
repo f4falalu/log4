@@ -266,11 +266,15 @@ export interface DeliveryBatch {
   estimatedDuration: number; // in minutes
   actualStartTime?: string;
   actualEndTime?: string;
-  medicationType: string;
-  totalQuantity: number;
+  // NOTE: medicationType and totalQuantity are now optional per RFC-012
+  // These values are derived from requisitions, not set at batch creation
+  medicationType?: string;
+  totalQuantity?: number;
   optimizedRoute: [number, number][]; // lat, lng coordinates
   notes?: string;
   createdAt: string;
+  // Batch integrity indicator
+  hasIntegrity?: boolean;
 }
 
 export interface RouteOptimization {

@@ -1,0 +1,246 @@
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import type { Warehouse, WarehouseFilters, WarehouseFormData, WarehouseStats } from '@/types/warehouse';
+import { toast } from 'sonner';
+
+// ========================================
+// Helper Functions
+// ========================================
+
+function mapDbToWarehouse(dbWarehouse: any): Warehouse {
+  return {
+    id: dbWarehouse.id,
+    name: dbWarehouse.name,
+    code: dbWarehouse.code || '',
+    address: dbWarehouse.address || undefined,
+    city: dbWarehouse.city || undefined,
+    state: dbWarehouse.state || undefined,
+    country: dbWarehouse.country || undefined,
+    lat: dbWarehouse.lat ? Number(dbWarehouse.lat) : undefined,
+    lng: dbWarehouse.lng ? Number(dbWarehouse.lng) : undefined,
+    contact_name: dbWarehouse.contact_name || undefined,
+    contact_phone: dbWarehouse.contact_phone || undefined,
+    contact_email: dbWarehouse.contact_email || undefined,
+    operating_hours: dbWarehouse.operating_hours || undefined,
+    total_capacity_m3: dbWarehouse.total_capacity_m3 ? Number(dbWarehouse.total_capacity_m3) : undefined,
+    used_capacity_m3: dbWarehouse.used_capacity_m3 ? Number(dbWarehouse.used_capacity_m3) : undefined,
+    storage_zones: dbWarehouse.storage_zones || [],
+    is_active: dbWarehouse.is_active ?? true,
+    created_at: dbWarehouse.created_at,
+    updated_at: dbWarehouse.updated_at,
+    created_by: dbWarehouse.created_by || undefined,
+  };
+}
+
+function mapWarehouseToDb(warehouse: WarehouseFormData) {
+  return {
+    name: warehouse.name,
+    code: warehouse.code,
+    address: warehouse.address || null,
+    city: warehouse.city || null,
+    state: warehouse.state || null,
+    country: warehouse.country || null,
+    lat: warehouse.lat || null,
+    lng: warehouse.lng || null,
+    contact_name: warehouse.contact_name || null,
+    contact_phone: warehouse.contact_phone || null,
+    contact_email: warehouse.contact_email || null,
+    operating_hours: warehouse.operating_hours || null,
+    total_capacity_m3: warehouse.total_capacity_m3 || null,
+    storage_zones: warehouse.storage_zones || [],
+  };
+}
+
+// ========================================
+// Core CRUD Hooks
+// ========================================
+
+export function useWarehouses(filters?: WarehouseFilters, page?: number, pageSize: number = 50) {
+  return useQuery({
+    queryKey: ['warehouses', filters, page, pageSize],
+    staleTime: 30000,
+    gcTime: 300000,
+    queryFn: async () => {
+      let query = supabase
+        .from('warehouses')
+        .select('*', { count: 'exact' })
+        .order('name');
+
+      // Apply filters
+      if (filters?.search) {
+        query = query.or(
+          `name.ilike.%${filters.search}%,code.ilike.%${filters.search}%,address.ilike.%${filters.search}%`
+        );
+      }
+
+      if (filters?.state) {
+        query = query.eq('state', filters.state);
+      }
+
+      if (filters?.is_active !== undefined) {
+        query = query.eq('is_active', filters.is_active);
+      }
+
+      // Pagination
+      if (page !== undefined && pageSize) {
+        const from = page * pageSize;
+        query = query.range(from, from + pageSize - 1);
+      }
+
+      const { data, error, count } = await query;
+
+      if (error) throw error;
+
+      return {
+        warehouses: (data || []).map(mapDbToWarehouse),
+        total: count || 0,
+      };
+    },
+  });
+}
+
+export function useWarehouse(id: string | undefined) {
+  return useQuery({
+    queryKey: ['warehouses', id],
+    enabled: !!id,
+    queryFn: async () => {
+      if (!id) return null;
+
+      const { data, error } = await supabase
+        .from('warehouses')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error) throw error;
+      return data ? mapDbToWarehouse(data) : null;
+    },
+  });
+}
+
+export function useCreateWarehouse() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (warehouse: WarehouseFormData) => {
+      const { data, error } = await supabase
+        .from('warehouses')
+        .insert(mapWarehouseToDb(warehouse))
+        .select()
+        .single();
+
+      if (error) throw error;
+      return mapDbToWarehouse(data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['warehouses'] });
+      toast.success('Warehouse created successfully');
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to create warehouse: ${error.message}`);
+    },
+  });
+}
+
+export function useUpdateWarehouse() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: Partial<WarehouseFormData> }) => {
+      const { data: updated, error } = await supabase
+        .from('warehouses')
+        .update({
+          ...mapWarehouseToDb(data as WarehouseFormData),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return mapDbToWarehouse(updated);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['warehouses'] });
+      toast.success('Warehouse updated successfully');
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to update warehouse: ${error.message}`);
+    },
+  });
+}
+
+export function useDeleteWarehouse() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('warehouses').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['warehouses'] });
+      toast.success('Warehouse deleted successfully');
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to delete warehouse: ${error.message}`);
+    },
+  });
+}
+
+// ========================================
+// Stats Hook
+// ========================================
+
+export function useWarehousesStats(): { data: WarehouseStats | undefined; isLoading: boolean } {
+  return useQuery({
+    queryKey: ['warehouses', 'stats'],
+    queryFn: async (): Promise<WarehouseStats> => {
+      const { data, error, count } = await supabase
+        .from('warehouses')
+        .select('is_active, total_capacity_m3, used_capacity_m3', { count: 'exact' });
+
+      if (error) throw error;
+
+      const warehouses = data || [];
+      const active = warehouses.filter(w => w.is_active).length;
+      const totalCapacity = warehouses.reduce((sum, w) => sum + (Number(w.total_capacity_m3) || 0), 0);
+      const usedCapacity = warehouses.reduce((sum, w) => sum + (Number(w.used_capacity_m3) || 0), 0);
+
+      return {
+        total_warehouses: count || 0,
+        active_warehouses: active,
+        total_capacity_m3: totalCapacity,
+        used_capacity_m3: usedCapacity,
+        utilization_pct: totalCapacity > 0 ? (usedCapacity / totalCapacity) * 100 : 0,
+      };
+    },
+  });
+}
+
+// ========================================
+// Warehouse Inventory Hook
+// ========================================
+
+export function useWarehouseInventory(warehouseId: string | undefined) {
+  return useQuery({
+    queryKey: ['warehouses', warehouseId, 'inventory'],
+    enabled: !!warehouseId,
+    queryFn: async () => {
+      if (!warehouseId) return { items: [], total: 0 };
+
+      const { data, error, count } = await supabase
+        .from('items')
+        .select('*', { count: 'exact' })
+        .eq('warehouse_id', warehouseId)
+        .order('description');
+
+      if (error) throw error;
+
+      return {
+        items: data || [],
+        total: count || 0,
+      };
+    },
+  });
+}

@@ -12,6 +12,7 @@ import { FleetOpsLayout } from "./pages/fleetops/layout";
 import { StorefrontLayout } from "./pages/storefront/layout";
 import { Mod4Layout } from "./pages/mod4/layout";
 import { AdminLayout } from "./pages/admin/layout";
+import { MapLayout } from "./pages/map/layout";
 import Mod4Dashboard from "./pages/mod4/page";
 import Mod4DriverPage from "./pages/mod4/driver/page";
 import Mod4ActiveDeliveryPage from "./pages/mod4/driver/delivery/page";
@@ -28,16 +29,25 @@ import AdminSessionsPage from "./pages/admin/sessions/page";
 import AdminSessionDetailPage from "./pages/admin/sessions/[id]/page";
 import AdminAuditPage from "./pages/admin/audit/page";
 import AdminLocationsPage from "./pages/admin/LocationManagement";
+import LiveMapPage from "./pages/map/live/page";
+import PlaybackMapPage from "./pages/map/playback/page";
+
+// Onboarding Pages
+import WorkspaceSetupWizard from "./components/onboarding/WorkspaceSetupWizard";
+import AcceptInvitationPage from "./pages/invite/AcceptInvitationPage";
 import FleetOpsHome from "./pages/fleetops/page";
 import StorefrontHome from "./pages/storefront/page";
 import StorefrontFacilities from "./pages/storefront/facilities/page";
-import StorefrontPayloads from "./pages/storefront/payloads/page";
+import FleetOpsPayloads from "./pages/fleetops/payloads/page";
 import StorefrontRequisitions from "./pages/storefront/requisitions/page";
-import SchedulePlanner from "./pages/storefront/schedule-planner/page";
 import StorefrontZones from "./pages/storefront/zones/page";
-import StorefrontLGAs from "./pages/storefront/lgas/page";
 import StorefrontScheduler from "./pages/storefront/scheduler/page";
 import StorefrontStockReports from "./pages/storefront/stock-reports/page";
+
+// Lazy load new storefront pages
+const StorefrontItems = lazy(() => import("./pages/storefront/items/page"));
+const StorefrontInvoice = lazy(() => import("./pages/storefront/invoice/page"));
+const StorefrontWarehouse = lazy(() => import("./pages/storefront/warehouse/page"));
 import FleetManagement from "./pages/fleetops/fleet-management/page";
 import VehicleRegistry from "./pages/fleetops/vehicles/registry/page";
 import Index from "./pages/Index";
@@ -54,6 +64,10 @@ import BatchManagement from "./pages/BatchManagement";
 
 // Lazy load Reports page (includes Recharts - ~300 kB uncompressed / 77 kB gzipped)
 const ReportsPageWrapper = lazy(() => import("./pages/ReportsPageWrapper"));
+// Maps-V2 Pages (lazy loaded - separate chunk)
+const MapV2PlanningPage = lazy(() => import("./maps-v2/ui/MapV2PlanningPage"));
+const MapV2OperationalPage = lazy(() => import("./maps-v2/ui/MapV2OperationalPage"));
+const MapV2ForensicPage = lazy(() => import("./maps-v2/ui/MapV2ForensicPage"));
 import MapLayout from "./pages/fleetops/map/layout";
 import PlanningMapPage from "./pages/fleetops/map/planning/page";
 import OperationalMapPage from "./pages/fleetops/map/operational/page";
@@ -99,7 +113,11 @@ const App = () => (
                 <Routes>
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/auth/callback" element={<AuthCallback />} />
-                  
+
+                  {/* Onboarding Routes */}
+                  <Route path="/onboarding" element={<WorkspaceSetupWizard />} />
+                  <Route path="/invite/:token" element={<AcceptInvitationPage />} />
+
                   {/* FleetOps Workspace */}
                   <Route path="/fleetops" element={
                     <ProtectedRoute>
@@ -110,6 +128,7 @@ const App = () => (
                     <Route path="drivers" element={<DriverManagement />} />
                     <Route path="dispatch" element={<DispatchPage />} />
                     <Route path="batches" element={<BatchManagement />} />
+                    <Route path="payloads" element={<FleetOpsPayloads />} />
                     <Route path="tactical" element={<Navigate to="/fleetops/map/operational" replace />} />
                     <Route path="vehicles" element={<VehicleRegistry />} />
                     <Route path="vehicles/:id" element={
@@ -128,6 +147,22 @@ const App = () => (
                       <Route path="operational" element={<OperationalMapPage />} />
                       <Route path="forensics" element={<ForensicsMapPage />} />
                     </Route>
+                    <Route path="map-v2" element={<Navigate to="/fleetops/map-v2/operational" replace />} />
+                    <Route path="map-v2/planning" element={
+                      <Suspense fallback={<div className="flex items-center justify-center h-screen"><Loader2 className="h-8 w-8 animate-spin" /></div>}>
+                        <MapV2PlanningPage />
+                      </Suspense>
+                    } />
+                    <Route path="map-v2/operational" element={
+                      <Suspense fallback={<div className="flex items-center justify-center h-screen"><Loader2 className="h-8 w-8 animate-spin" /></div>}>
+                        <MapV2OperationalPage />
+                      </Suspense>
+                    } />
+                    <Route path="map-v2/forensics" element={
+                      <Suspense fallback={<div className="flex items-center justify-center h-screen"><Loader2 className="h-8 w-8 animate-spin" /></div>}>
+                        <MapV2ForensicPage />
+                      </Suspense>
+                    } />
                     <Route path="vlms">
                       <Route index element={<VLMSDashboard />} />
                       <Route path="vehicles" element={<VLMSVehicles />} />
@@ -149,14 +184,34 @@ const App = () => (
                     </ProtectedRoute>
                   }>
                     <Route index element={<StorefrontHome />} />
-                    <Route path="facilities" element={<StorefrontFacilities />} />
+                    {/* Order Management */}
+                    <Route path="items" element={
+                      <Suspense fallback={<div className="flex items-center justify-center h-screen"><Loader2 className="h-8 w-8 animate-spin" /></div>}>
+                        <StorefrontItems />
+                      </Suspense>
+                    } />
                     <Route path="requisitions" element={<StorefrontRequisitions />} />
-                    <Route path="payloads" element={<StorefrontPayloads />} />
-                    <Route path="schedule-planner" element={<SchedulePlanner />} />
-                    <Route path="zones" element={<StorefrontZones />} />
-                    <Route path="lgas" element={<StorefrontLGAs />} />
+                    <Route path="invoice" element={
+                      <Suspense fallback={<div className="flex items-center justify-center h-screen"><Loader2 className="h-8 w-8 animate-spin" /></div>}>
+                        <StorefrontInvoice />
+                      </Suspense>
+                    } />
+                    {/* Planning */}
                     <Route path="scheduler" element={<StorefrontScheduler />} />
+                    {/* Resources */}
+                    <Route path="zones" element={<StorefrontZones />} />
+                    <Route path="facilities" element={<StorefrontFacilities />} />
+                    <Route path="warehouse" element={
+                      <Suspense fallback={<div className="flex items-center justify-center h-screen"><Loader2 className="h-8 w-8 animate-spin" /></div>}>
+                        <StorefrontWarehouse />
+                      </Suspense>
+                    } />
+                    {/* Analytics */}
                     <Route path="stock-reports" element={<StorefrontStockReports />} />
+                    {/* Legacy redirects */}
+                    <Route path="payloads" element={<Navigate to="/fleetops/payloads" replace />} />
+                    <Route path="schedule-planner" element={<Navigate to="/storefront/scheduler" replace />} />
+                    <Route path="lgas" element={<Navigate to="/storefront/zones" replace />} />
                   </Route>
 
                   {/* Mod4 Workspace - Mobile Driver Execution */}
@@ -194,6 +249,17 @@ const App = () => (
                     <Route path="sessions/:id" element={<AdminSessionDetailPage />} />
                     <Route path="audit" element={<AdminAuditPage />} />
                     <Route path="locations" element={<AdminLocationsPage />} />
+                  </Route>
+
+                  {/* Map Workspace - Live Tracking & Playback */}
+                  <Route path="/map" element={
+                    <ProtectedRoute>
+                      <MapLayout />
+                    </ProtectedRoute>
+                  }>
+                    <Route index element={<Navigate to="/map/live" replace />} />
+                    <Route path="live" element={<LiveMapPage />} />
+                    <Route path="playback" element={<PlaybackMapPage />} />
                   </Route>
 
                   {/* Legacy routes - redirect to workspace structure */}

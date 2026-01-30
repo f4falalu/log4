@@ -24,6 +24,37 @@ export type RequisitionStatus =
 
 export type RequisitionPriority = 'low' | 'medium' | 'high' | 'urgent';
 
+// Purpose types for enhanced requisition workflow
+export type RequisitionPurpose =
+  | 'requisition'
+  | 'receive_purchase_items'
+  | 'issue_to_loss_register'
+  | 'return_expiry'
+  | 'issue_to_inter_market';
+
+export const REQUISITION_PURPOSES: { value: RequisitionPurpose; label: string; qtyColumn: string }[] = [
+  { value: 'requisition', label: 'Requisition', qtyColumn: 'Quantity' },
+  { value: 'receive_purchase_items', label: 'Receive Purchase Items', qtyColumn: 'Qty Received' },
+  { value: 'issue_to_loss_register', label: 'Issue to Loss Register', qtyColumn: 'Qty Issued' },
+  { value: 'return_expiry', label: 'Return Expiry', qtyColumn: 'Qty Returned' },
+  { value: 'issue_to_inter_market', label: 'Issue to Inter Market', qtyColumn: 'Qty Issued' },
+];
+
+// Status configuration for UI
+export const REQUISITION_STATUS_CONFIG: Record<RequisitionStatus, { label: string; color: string }> = {
+  pending: { label: 'Pending', color: 'bg-yellow-100 text-yellow-800' },
+  approved: { label: 'Approved', color: 'bg-blue-100 text-blue-800' },
+  packaged: { label: 'Packaged', color: 'bg-purple-100 text-purple-800' },
+  ready_for_dispatch: { label: 'Ready for Dispatch', color: 'bg-indigo-100 text-indigo-800' },
+  assigned_to_batch: { label: 'Assigned to Batch', color: 'bg-cyan-100 text-cyan-800' },
+  in_transit: { label: 'In Transit', color: 'bg-orange-100 text-orange-800' },
+  fulfilled: { label: 'Fulfilled', color: 'bg-green-100 text-green-800' },
+  partially_delivered: { label: 'Partially Delivered', color: 'bg-lime-100 text-lime-800' },
+  failed: { label: 'Failed', color: 'bg-red-100 text-red-800' },
+  rejected: { label: 'Rejected', color: 'bg-red-100 text-red-800' },
+  cancelled: { label: 'Cancelled', color: 'bg-gray-100 text-gray-800' },
+};
+
 export interface Requisition {
   id: string;
   requisition_number: string;
@@ -48,10 +79,21 @@ export interface Requisition {
   delivered_at?: string;
   // RFC-012: Batch assignment reference
   batch_id?: string;
+  // Enhanced requisition fields
+  sriv_number?: string;
+  purpose?: RequisitionPurpose;
+  program?: string;
+  received_from?: string;
+  issued_to?: string;
+  pharmacy_incharge?: string;
+  facility_incharge?: string;
+  submission_date?: string;
   facility?: {
     id: string;
     name: string;
     address: string;
+    lga?: string;
+    zone?: string;
   };
   warehouse?: {
     id: string;
@@ -73,6 +115,12 @@ export interface RequisitionItem {
   temperature_required: boolean;
   handling_instructions?: string;
   created_at: string;
+  // Enhanced fields for conditional quantity columns
+  qty_received?: number;
+  qty_issued?: number;
+  qty_returned?: number;
+  unit_price?: number;
+  total_price?: number;
 }
 
 export interface CreateRequisitionData {

@@ -23,46 +23,16 @@
  */
 
 import { useState, useCallback, useEffect } from 'react';
+import { useTheme } from 'next-themes';
 import { useMapContext } from '@/hooks/useMapContext';
-import { useServiceZones } from '@/hooks/useServiceZones';
-import { useFacilities } from '@/hooks/useFacilities';
-import { useWarehouses } from '@/hooks/useWarehouses';
-import { UnifiedMapContainer } from '@/components/map/UnifiedMapContainer';
-import { ForensicMapLibre } from '@/components/map/ForensicMapLibre';
+import { ForensicMap } from '@/map/modes/forensic';
 import { ModeIndicator } from '@/components/map/ui/ModeIndicator';
-import { RouteComparisonOverlay } from '@/components/map/overlays/RouteComparisonOverlay';
-import { PerformanceHeatmapLayer } from '@/components/map/layers/PerformanceHeatmapLayer';
-import { TradeOffHistoryLayer } from '@/components/map/layers/TradeOffHistoryLayer';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Slider } from '@/components/ui/slider';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  History,
-  Play,
-  Pause,
-  SkipBack,
-  SkipForward,
-  Route,
-  Activity,
-  GitBranch,
-  Download,
-} from 'lucide-react';
-import { FEATURE_FLAGS } from '@/lib/featureFlags';
 import { toast } from 'sonner';
-import L from 'leaflet';
 
 export default function ForensicsMapPage() {
   const { setCapability, setTimeHorizon } = useMapContext();
-
-  // Feature flag check
-  const useMapLibre = FEATURE_FLAGS.ENABLE_MAPLIBRE_MAPS;
+  const { resolvedTheme } = useTheme();
+  const isDarkMode = resolvedTheme === 'dark';
 
   // Set capability on mount
   useEffect(() => {
@@ -70,63 +40,17 @@ export default function ForensicsMapPage() {
     setTimeHorizon('past');
   }, [setCapability, setTimeHorizon]);
 
-  // Data hooks (read-only historical data)
-  const { data: zones = [] } = useServiceZones();
-  const { data: facilities = [] } = useFacilities();
-  const { data: warehouses = [] } = useWarehouses();
-
-  // UI state
-  const [activeAnalysis, setActiveAnalysis] = useState<
-    'route_comparison' | 'heatmap' | 'tradeoff_history' | null
-  >(null);
-  const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
-  const [heatmapMetric, setHeatmapMetric] = useState<
-    'on_time' | 'delays' | 'exceptions' | 'tradeoffs'
-  >('on_time');
-  const [tradeOffStatusFilter, setTradeOffStatusFilter] = useState<
-    'all' | 'completed' | 'rejected' | 'cancelled'
-  >('all');
-
   // Timeline state
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTimestamp, setCurrentTimestamp] = useState(new Date());
-  const [timelinePosition, setTimelinePosition] = useState(50); // 0-100
   const [playbackSpeed, setPlaybackSpeed] = useState<1 | 2 | 5>(1);
-  const [mapInstance, setMapInstance] = useState<L.Map | null>(null);
 
   // Forensic time range (24 hours ago to now)
   const startTimestamp = new Date(Date.now() - 24 * 60 * 60 * 1000);
   const endTimestamp = new Date();
 
-  const handleMapCapture = useCallback((map: L.Map) => {
-    setMapInstance(map);
-  }, []);
-
-  // Timeline controls
-  const handlePlayPause = () => {
-    setIsPlaying(!isPlaying);
-  };
-
-  const handleSpeedChange = (speed: number) => {
-    setPlaybackSpeed(speed as 1 | 2 | 5);
-  };
-
-  const handleStepBackward = () => {
-    setTimelinePosition((prev) => Math.max(0, prev - 5));
-  };
-
-  const handleStepForward = () => {
-    setTimelinePosition((prev) => Math.min(100, prev + 5));
-  };
-
   const handleTimelineChange = (time: Date) => {
     setCurrentTimestamp(time);
-    // Update timeline position based on time
-    const start = startTimestamp.getTime();
-    const end = endTimestamp.getTime();
-    const current = time.getTime();
-    const position = ((current - start) / (end - start)) * 100;
-    setTimelinePosition(Math.max(0, Math.min(100, position)));
   };
 
   // Auto-play effect
@@ -134,17 +58,18 @@ export default function ForensicsMapPage() {
     if (!isPlaying) return;
 
     const interval = setInterval(() => {
-      setTimelinePosition((prev) => {
-        if (prev >= 100) {
+      setCurrentTimestamp((prev) => {
+        const next = new Date(prev.getTime() + 60000);
+        if (next >= endTimestamp) {
           setIsPlaying(false);
-          return 100;
+          return endTimestamp;
         }
-        return prev + 1;
+        return next;
       });
     }, 200);
 
     return () => clearInterval(interval);
-  }, [isPlaying]);
+  }, [isPlaying, endTimestamp]);
 
   // Export handlers for MapLibre
   const handleExportPNG = useCallback(async () => {
@@ -173,248 +98,31 @@ export default function ForensicsMapPage() {
       {/* Mode Indicator */}
       <ModeIndicator mode="forensic" />
 
-      {/* Map Container - Conditional rendering based on feature flag */}
-      {useMapLibre ? (
-        <ForensicMapLibre
-          vehicles={[]} // TODO: Add historical vehicle positions
-          drivers={[]} // TODO: Add historical driver positions
-          routes={[]} // TODO: Add historical routes query
-          startTime={startTimestamp}
-          endTime={endTimestamp}
-          currentTime={currentTimestamp}
-          center={[8.6753, 9.082]} // [lng, lat] for MapLibre
-          zoom={6}
-          isPlaying={isPlaying}
-          playbackSpeed={playbackSpeed}
-          onTimeChange={handleTimelineChange}
-          onPlayPause={handlePlayPause}
-          onSpeedChange={handleSpeedChange}
-        />
-      ) : (
-        <UnifiedMapContainer
-        mode="fullscreen"
-        center={[9.082, 8.6753]} // Nigeria center
+      {/* Map Container */}
+      <ForensicMap
+        startTime={startTimestamp}
+        endTime={endTimestamp}
+        center={[8.6753, 9.082]}
         zoom={6}
-        zones={zones}
-        facilities={facilities}
-        warehouses={warehouses}
-        drivers={[]}
-        vehicles={[]}
-        batches={[]}
-        onMapReady={handleMapCapture}
-      >
-        {/* Conditional Forensics Layers */}
-        {activeAnalysis === 'heatmap' && (
-          <PerformanceHeatmapLayer
-            map={mapInstance}
-            active={true}
-            metric={heatmapMetric}
-            timeRange={{
-              start: new Date(currentTimestamp.getTime() - 24 * 60 * 60 * 1000),
-              end: currentTimestamp,
-            }}
-          />
-        )}
+        isDarkMode={isDarkMode}
+        currentTime={currentTimestamp}
+        isPlaying={isPlaying}
+        playbackSpeed={playbackSpeed}
+        onTimeChange={handleTimelineChange}
+      />
 
-        {activeAnalysis === 'tradeoff_history' && (
-          <TradeOffHistoryLayer
-            map={mapInstance}
-            active={true}
-            statusFilter={tradeOffStatusFilter}
-            timeRange={{
-              start: new Date(currentTimestamp.getTime() - 24 * 60 * 60 * 1000),
-              end: currentTimestamp,
-            }}
-          />
-        )}
-      </UnifiedMapContainer>
-      )}
-
-      {/* Analysis Tools Toolbar - Only show when NOT using MapLibre */}
-      {!useMapLibre && (
-      <div className="absolute top-4 left-4 z-[1000] flex flex-col gap-2">
-        <Button
-          variant={activeAnalysis === 'route_comparison' ? 'default' : 'outline'}
-          size="icon"
-          onClick={() =>
-            setActiveAnalysis(
-              activeAnalysis === 'route_comparison' ? null : 'route_comparison'
-            )
-          }
-          title="Route Comparison"
-          className="bg-card shadow-lg border"
-        >
-          <Route className="h-4 w-4" />
-        </Button>
-
-        <Button
-          variant={activeAnalysis === 'heatmap' ? 'default' : 'outline'}
-          size="icon"
-          onClick={() => setActiveAnalysis(activeAnalysis === 'heatmap' ? null : 'heatmap')}
-          title="Performance Heatmap"
-          className="bg-card shadow-lg border"
-        >
-          <Activity className="h-4 w-4" />
-        </Button>
-
-        <Button
-          variant={activeAnalysis === 'tradeoff_history' ? 'default' : 'outline'}
-          size="icon"
-          onClick={() =>
-            setActiveAnalysis(
-              activeAnalysis === 'tradeoff_history' ? null : 'tradeoff_history'
-            )
-          }
-          title="Trade-Off History"
-          className="bg-card shadow-lg border"
-        >
-          <GitBranch className="h-4 w-4" />
-        </Button>
+      {/* Export Controls */}
+      <div className="absolute top-4 right-4 z-[1000] flex gap-2">
+        <button className="text-xs px-2 py-1 bg-card border rounded" onClick={handleExportPNG}>
+          Export PNG
+        </button>
+        <button className="text-xs px-2 py-1 bg-card border rounded" onClick={handleExportGeoJSON}>
+          Export GeoJSON
+        </button>
+        <button className="text-xs px-2 py-1 bg-card border rounded" onClick={handleExportCSV}>
+          Export CSV
+        </button>
       </div>
-      )}
-
-      {/* Route Comparison Overlay - Only show when NOT using MapLibre */}
-      {!useMapLibre && activeAnalysis === 'route_comparison' && (
-        <RouteComparisonOverlay
-          map={mapInstance}
-          active={true}
-          batchId={selectedBatchId || undefined}
-          timestamp={currentTimestamp}
-          onClose={() => setActiveAnalysis(null)}
-        />
-      )}
-
-      {/* Heatmap Controls - Only show when NOT using MapLibre */}
-      {!useMapLibre && activeAnalysis === 'heatmap' && (
-        <Card className="absolute top-4 right-4 z-[1000] p-4 w-80 bg-card shadow-lg border">
-          <div className="flex items-center gap-2 mb-3">
-            <Activity className="h-4 w-4 text-primary" />
-            <h3 className="font-semibold text-sm">Performance Heatmap</h3>
-          </div>
-
-          <div className="space-y-3">
-            <div>
-              <label className="text-xs font-medium text-muted-foreground mb-2 block">
-                Metric
-              </label>
-              <Select value={heatmapMetric} onValueChange={(v: any) => setHeatmapMetric(v)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="on_time">On-Time Delivery Rate</SelectItem>
-                  <SelectItem value="delays">Delay Hotspots</SelectItem>
-                  <SelectItem value="exceptions">Exception Density</SelectItem>
-                  <SelectItem value="tradeoffs">Trade-Off Density</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="pt-2 border-t">
-              <p className="text-xs text-muted-foreground">
-                Heatmap visualizes {heatmapMetric.replace(/_/g, ' ')} across service areas during
-                selected time range.
-              </p>
-            </div>
-          </div>
-        </Card>
-      )}
-
-      {/* Trade-Off History Controls - Only show when NOT using MapLibre */}
-      {!useMapLibre && activeAnalysis === 'tradeoff_history' && (
-        <Card className="absolute top-4 right-4 z-[1000] p-4 w-80 bg-card shadow-lg border">
-          <div className="flex items-center gap-2 mb-3">
-            <GitBranch className="h-4 w-4 text-purple-600" />
-            <h3 className="font-semibold text-sm">Trade-Off History</h3>
-          </div>
-
-          <div className="space-y-3">
-            <div>
-              <label className="text-xs font-medium text-muted-foreground mb-2 block">
-                Status Filter
-              </label>
-              <Select
-                value={tradeOffStatusFilter}
-                onValueChange={(v: any) => setTradeOffStatusFilter(v)}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Trade-Offs</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                  <SelectItem value="rejected">Rejected</SelectItem>
-                  <SelectItem value="cancelled">Cancelled</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="pt-2 border-t">
-              <p className="text-xs text-muted-foreground">
-                Historical Trade-Off events with routes, handover points, and outcomes. Click
-                markers for details.
-              </p>
-            </div>
-          </div>
-        </Card>
-      )}
-
-      {/* Timeline Scrubber - Only show when NOT using MapLibre */}
-      {!useMapLibre && (
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[900] w-[600px]">
-        <Card className="p-4 bg-card shadow-lg border">
-          <div className="flex items-center gap-3 mb-3">
-            <History className="h-4 w-4 text-purple-600" />
-            <h3 className="font-semibold text-sm">Timeline Playback</h3>
-            <div className="ml-auto text-xs text-muted-foreground">
-              {currentTimestamp.toLocaleString()}
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            {/* Timeline Slider */}
-            <Slider
-              value={[timelinePosition]}
-              onValueChange={handleTimelineChange}
-              max={100}
-              step={1}
-              className="w-full"
-            />
-
-            {/* Playback Controls */}
-            <div className="flex items-center justify-center gap-2">
-              <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleStepBackward}>
-                <SkipBack className="h-3 w-3" />
-              </Button>
-
-              <Button variant="outline" size="icon" className="h-8 w-8" onClick={handlePlayPause}>
-                {isPlaying ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
-              </Button>
-
-              <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleStepForward}>
-                <SkipForward className="h-3 w-3" />
-              </Button>
-            </div>
-
-            <div className="flex justify-between text-xs text-muted-foreground">
-              <span>24h ago</span>
-              <span>Now</span>
-            </div>
-          </div>
-        </Card>
-      </div>
-      )}
-
-      {/* Read-Only Reminder - Only show when NOT using MapLibre */}
-      {!useMapLibre && (
-      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[900]">
-        <div className="bg-purple-50 dark:bg-purple-950 border border-purple-200 dark:border-purple-800 rounded-lg px-4 py-2 shadow-lg">
-          <p className="text-xs text-purple-600 dark:text-purple-400 font-medium">
-            Read-Only Mode: Historical data is immutable
-          </p>
-        </div>
-      </div>
-      )}
     </div>
   );
 }

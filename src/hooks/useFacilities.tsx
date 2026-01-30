@@ -146,6 +146,26 @@ export function useFacilities(filters?: FacilityFilters, page?: number, pageSize
         query = query.eq('cd4_service', filters.cd4_service);
       }
 
+      // New map-specific filters
+      if (filters?.ward) {
+        query = query.eq('ward', filters.ward);
+      }
+      if (filters?.warehouseCodeSearch) {
+        query = query.ilike('warehouse_code', `%${filters.warehouseCodeSearch}%`);
+      }
+      if (filters?.storageCapacityMin !== undefined) {
+        query = query.gte('storage_capacity', filters.storageCapacityMin);
+      }
+      if (filters?.storageCapacityMax !== undefined) {
+        query = query.lte('storage_capacity', filters.storageCapacityMax);
+      }
+      if (filters?.capacityMin !== undefined) {
+        query = query.gte('capacity', filters.capacityMin);
+      }
+      if (filters?.capacityMax !== undefined) {
+        query = query.lte('capacity', filters.capacityMax);
+      }
+
       // Apply pagination
       if (page !== undefined) {
         const from = page * pageSize;

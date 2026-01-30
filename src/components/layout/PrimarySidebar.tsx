@@ -1,4 +1,4 @@
-import { Warehouse, Truck, Users as UsersIcon, LayoutDashboard, Smartphone } from 'lucide-react';
+import { Warehouse, Truck, Users as UsersIcon, LayoutDashboard, Smartphone, Map } from 'lucide-react';
 import { useWorkspace } from '@/contexts/WorkspaceContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -8,7 +8,7 @@ import { useEffect, useCallback } from 'react';
 import { FEATURE_FLAGS } from '@/lib/featureFlags';
 
 type WorkspaceConfig = {
-  id: 'fleetops' | 'storefront' | 'admin' | 'dashboard' | 'mod4';
+  id: 'fleetops' | 'storefront' | 'admin' | 'dashboard' | 'mod4' | 'map';
   label: string;
   icon: React.ComponentType<{ className?: string }>;
   path: string;
@@ -38,6 +38,13 @@ const workspaces: WorkspaceConfig[] = [
     available: true,
   },
   {
+    id: 'map',
+    label: 'Map',
+    icon: Map,
+    path: '/map',
+    available: true,
+  },
+  {
     id: 'dashboard',
     label: 'Dashboard',
     icon: LayoutDashboard,
@@ -60,7 +67,7 @@ export function PrimarySidebar() {
 
   const handleWorkspaceClick = useCallback((ws: WorkspaceConfig) => {
     if (!ws.available) return;
-    if (ws.id === 'fleetops' || ws.id === 'storefront' || ws.id === 'mod4') {
+    if (ws.id === 'fleetops' || ws.id === 'storefront' || ws.id === 'mod4' || ws.id === 'map') {
       setWorkspace(ws.id);
     }
     navigate(ws.path);

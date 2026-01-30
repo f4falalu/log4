@@ -1,5 +1,15 @@
 import { Outlet, useLocation } from 'react-router-dom';
-import { Home, Building2, Package, ShoppingCart, Calendar, CalendarClock, Layers, MapPin, BarChart3 } from 'lucide-react';
+import {
+  Home,
+  Building2,
+  ShoppingCart,
+  CalendarClock,
+  Layers,
+  BarChart3,
+  Package,
+  FileText,
+  Warehouse
+} from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { SecondarySidebar, NavigationGroup } from '@/components/layout/SecondarySidebar';
 import { useMemo } from 'react';
@@ -17,22 +27,32 @@ const navigationGroups: NavigationGroup[] = [
     ],
   },
   {
-    label: 'PLANNING',
+    label: 'ORDER MANAGEMENT',
     items: [
+      {
+        label: 'Items',
+        href: '/storefront/items',
+        icon: Package
+      },
       {
         label: 'Requisitions',
         href: '/storefront/requisitions',
         icon: ShoppingCart
       },
       {
+        label: 'Invoice',
+        href: '/storefront/invoice',
+        icon: FileText
+      },
+    ],
+  },
+  {
+    label: 'PLANNING',
+    items: [
+      {
         label: 'Scheduler',
         href: '/storefront/scheduler',
         icon: CalendarClock
-      },
-      {
-        label: 'Schedule Planner',
-        href: '/storefront/schedule-planner',
-        icon: Calendar
       },
     ],
   },
@@ -45,19 +65,14 @@ const navigationGroups: NavigationGroup[] = [
         icon: Layers
       },
       {
-        label: 'LGAs',
-        href: '/storefront/lgas',
-        icon: MapPin
-      },
-      {
         label: 'Facilities',
         href: '/storefront/facilities',
         icon: Building2
       },
       {
-        label: 'Payloads',
-        href: '/storefront/payloads',
-        icon: Package
+        label: 'Warehouse',
+        href: '/storefront/warehouse',
+        icon: Warehouse
       },
     ],
   },

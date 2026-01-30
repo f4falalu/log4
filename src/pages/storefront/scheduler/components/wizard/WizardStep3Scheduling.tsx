@@ -121,7 +121,7 @@ export function WizardStep3Scheduling() {
                   <SelectValue placeholder="Select warehouse" />
                 </SelectTrigger>
                 <SelectContent>
-                  {warehouses?.map((w) => (
+                  {Array.isArray(warehouses) && warehouses.map((w) => (
                     <SelectItem key={w.id} value={w.id}>
                       {w.name}
                     </SelectItem>
@@ -196,7 +196,7 @@ export function WizardStep3Scheduling() {
                   <SelectValue placeholder="Add facilities to schedule" />
                 </SelectTrigger>
                 <SelectContent>
-                  {facilities?.map((f) => (
+                  {Array.isArray(facilities?.facilities) && facilities.facilities.map((f) => (
                     <SelectItem
                       key={f.id}
                       value={f.id}

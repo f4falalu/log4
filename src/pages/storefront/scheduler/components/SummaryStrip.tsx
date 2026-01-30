@@ -6,7 +6,6 @@
  */
 
 import { Package, MapPin, Truck, Clock } from 'lucide-react';
-import { Separator } from '@/components/ui/separator';
 import type { SchedulerBatch } from '@/types/scheduler';
 import { calculateBatchTotals, formatDistance, formatDuration } from '@/lib/schedulerUtils';
 
@@ -20,46 +19,39 @@ export function SummaryStrip({ batches }: SummaryStripProps) {
   const stats = [
     {
       icon: Package,
-      label: 'Batches',
+      label: 'batches',
       value: batches.length,
     },
     {
       icon: MapPin,
-      label: 'Facilities',
+      label: 'facilities',
       value: totals.totalFacilities,
     },
     {
       icon: Truck,
-      label: 'Distance',
+      label: 'km',
       value: formatDistance(totals.totalDistance),
     },
     {
       icon: Clock,
-      label: 'Duration',
+      label: 'duration',
       value: formatDuration(totals.totalDuration),
     },
   ];
 
   return (
-    <div className="flex h-16 items-center gap-6 border-t bg-white px-6">
-      {stats.map((stat, index) => {
+    <div className="flex h-14 items-center gap-8 border-t bg-white px-6">
+      {stats.map((stat) => {
         const Icon = stat.icon;
         return (
-          <div key={stat.label}>
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-                <Icon className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">{stat.label}</p>
-                <p className="text-lg font-semibold text-gray-900">
-                  {stat.value}
-                </p>
-              </div>
+          <div key={stat.label} className="flex items-center gap-2">
+            <Icon className="h-4 w-4 text-muted-foreground" />
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-lg font-semibold text-foreground">
+                {stat.value}
+              </span>
+              <span className="text-sm text-muted-foreground">{stat.label}</span>
             </div>
-            {index < stats.length - 1 && (
-              <Separator orientation="vertical" className="ml-6 h-10" />
-            )}
           </div>
         );
       })}

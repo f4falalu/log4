@@ -48,30 +48,30 @@ export type H3CellHoverHandler = (h3Index: string | null) => void;
  * Semantic colors - not metrics-driven
  */
 export const RISK_LEVEL_COLORS: Record<RiskLevel, string> = {
-  none: 'transparent',
-  low: '#22c55e',     // Green
-  medium: '#f59e0b',  // Amber
-  high: '#ef4444',    // Red
+  none: 'rgba(0, 150, 255, 0.25)',
+  low: 'rgba(0, 150, 255, 0.25)',
+  medium: 'rgba(0, 150, 255, 0.25)',
+  high: 'rgba(0, 150, 255, 0.25)',
 };
 
 /**
  * Risk level to opacity mapping
  */
 export const RISK_LEVEL_OPACITY: Record<RiskLevel, number> = {
-  none: 0,
-  low: 0.35,
-  medium: 0.45,
-  high: 0.6,
+  none: 1,
+  low: 1,
+  medium: 1,
+  high: 1,
 };
 
 /**
  * Risk level to stroke color mapping
  */
 export const RISK_LEVEL_STROKE: Record<RiskLevel, string> = {
-  none: 'transparent',
-  low: '#16a34a',     // Darker green
-  medium: '#d97706',  // Darker amber
-  high: '#dc2626',    // Darker red
+  none: '#0096ff',
+  low: '#0096ff',
+  medium: '#0096ff',
+  high: '#0096ff',
 };
 
 /**

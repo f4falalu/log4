@@ -7,10 +7,12 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Select,
   SelectContent,
@@ -96,208 +98,210 @@ export function CreateRequisitionDialog({ open, onOpenChange }: CreateRequisitio
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>Create New Requisition</DialogTitle>
           <DialogDescription>
             Create a new delivery requisition request
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="facility">Facility *</Label>
-              <Select value={facilityId} onValueChange={setFacilityId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select facility" />
-                </SelectTrigger>
-                <SelectContent>
-                  {facilities.map((facility) => (
-                    <SelectItem key={facility.id} value={facility.id}>
-                      {facility.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+        <ScrollArea className="flex-1 pr-4">
+          <div className="space-y-6 pb-2">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="facility">Facility *</Label>
+                <Select value={facilityId} onValueChange={setFacilityId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select facility" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {facilities.map((facility) => (
+                      <SelectItem key={facility.id} value={facility.id}>
+                        {facility.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="warehouse">Warehouse *</Label>
+                <Select value={warehouseId} onValueChange={setWarehouseId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select warehouse" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {warehouses.map((warehouse) => (
+                      <SelectItem key={warehouse.id} value={warehouse.id}>
+                        {warehouse.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="priority">Priority</Label>
+                <Select value={priority} onValueChange={(value) => setPriority(value as RequisitionPriority)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="urgent">Urgent</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="date">Requested Delivery Date *</Label>
+                <Input
+                  id="date"
+                  type="date"
+                  value={requestedDate}
+                  onChange={(e) => setRequestedDate(e.target.value)}
+                  min={new Date().toISOString().split('T')[0]}
+                />
+              </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="warehouse">Warehouse *</Label>
-              <Select value={warehouseId} onValueChange={setWarehouseId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select warehouse" />
-                </SelectTrigger>
-                <SelectContent>
-                  {warehouses.map((warehouse) => (
-                    <SelectItem key={warehouse.id} value={warehouse.id}>
-                      {warehouse.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="priority">Priority</Label>
-              <Select value={priority} onValueChange={(value) => setPriority(value as RequisitionPriority)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="low">Low</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="high">High</SelectItem>
-                  <SelectItem value="urgent">Urgent</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="date">Requested Delivery Date *</Label>
-              <Input
-                id="date"
-                type="date"
-                value={requestedDate}
-                onChange={(e) => setRequestedDate(e.target.value)}
-                min={new Date().toISOString().split('T')[0]}
+              <Label htmlFor="notes">Notes</Label>
+              <Textarea
+                id="notes"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Additional notes or special instructions..."
+                rows={3}
               />
             </div>
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="notes">Notes</Label>
-            <Textarea
-              id="notes"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Additional notes or special instructions..."
-              rows={3}
-            />
-          </div>
-
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <Label>Requisition Items *</Label>
-              <Button type="button" variant="outline" size="sm" onClick={handleAddItem}>
-                <Plus className="mr-2 h-4 w-4" />
-                Add Item
-              </Button>
-            </div>
-
-            {items.map((item, index) => (
-              <div key={index} className="border rounded-lg p-4 space-y-3">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 grid grid-cols-2 gap-3">
-                    <div className="col-span-2">
-                      <Label htmlFor={`item-name-${index}`}>Item Name *</Label>
-                      <Input
-                        id={`item-name-${index}`}
-                        value={item.item_name}
-                        onChange={(e) => handleItemChange(index, 'item_name', e.target.value)}
-                        placeholder="e.g., Medical Supplies"
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor={`quantity-${index}`}>Quantity *</Label>
-                      <Input
-                        id={`quantity-${index}`}
-                        type="number"
-                        min="1"
-                        value={item.quantity}
-                        onChange={(e) => handleItemChange(index, 'quantity', parseInt(e.target.value) || 1)}
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor={`unit-${index}`}>Unit</Label>
-                      <Input
-                        id={`unit-${index}`}
-                        value={item.unit}
-                        onChange={(e) => handleItemChange(index, 'unit', e.target.value)}
-                        placeholder="units, boxes, etc."
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor={`weight-${index}`}>Weight (kg)</Label>
-                      <Input
-                        id={`weight-${index}`}
-                        type="number"
-                        step="0.1"
-                        min="0"
-                        value={item.weight_kg || ''}
-                        onChange={(e) => handleItemChange(index, 'weight_kg', parseFloat(e.target.value) || undefined)}
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor={`volume-${index}`}>Volume (m³)</Label>
-                      <Input
-                        id={`volume-${index}`}
-                        type="number"
-                        step="0.1"
-                        min="0"
-                        value={item.volume_m3 || ''}
-                        onChange={(e) => handleItemChange(index, 'volume_m3', parseFloat(e.target.value) || undefined)}
-                      />
-                    </div>
-
-                    <div className="col-span-2">
-                      <Label htmlFor={`instructions-${index}`}>Handling Instructions</Label>
-                      <Textarea
-                        id={`instructions-${index}`}
-                        value={item.handling_instructions || ''}
-                        onChange={(e) => handleItemChange(index, 'handling_instructions', e.target.value)}
-                        placeholder="Special handling instructions..."
-                        rows={2}
-                      />
-                    </div>
-
-                    <div className="col-span-2 flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        id={`temp-${index}`}
-                        checked={item.temperature_required}
-                        onChange={(e) => handleItemChange(index, 'temperature_required', e.target.checked)}
-                        className="rounded"
-                      />
-                      <Label htmlFor={`temp-${index}`} className="cursor-pointer">
-                        Temperature controlled required
-                      </Label>
-                    </div>
-                  </div>
-
-                  {items.length > 1 && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleRemoveItem(index)}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  )}
-                </div>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Label>Requisition Items *</Label>
+                <Button type="button" variant="outline" size="sm" onClick={handleAddItem}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Item
+                </Button>
               </div>
-            ))}
-          </div>
 
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSubmit}
-              disabled={!facilityId || !warehouseId || !requestedDate || items.every(i => !i.item_name.trim())}
-            >
-              Create Requisition
-            </Button>
+              {items.map((item, index) => (
+                <div key={index} className="border rounded-lg p-4 space-y-3">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 grid grid-cols-2 gap-3">
+                      <div className="col-span-2">
+                        <Label htmlFor={`item-name-${index}`}>Item Name *</Label>
+                        <Input
+                          id={`item-name-${index}`}
+                          value={item.item_name}
+                          onChange={(e) => handleItemChange(index, 'item_name', e.target.value)}
+                          placeholder="e.g., Medical Supplies"
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor={`quantity-${index}`}>Quantity *</Label>
+                        <Input
+                          id={`quantity-${index}`}
+                          type="number"
+                          min="1"
+                          value={item.quantity}
+                          onChange={(e) => handleItemChange(index, 'quantity', parseInt(e.target.value) || 1)}
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor={`unit-${index}`}>Unit</Label>
+                        <Input
+                          id={`unit-${index}`}
+                          value={item.unit}
+                          onChange={(e) => handleItemChange(index, 'unit', e.target.value)}
+                          placeholder="units, boxes, etc."
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor={`weight-${index}`}>Weight (kg)</Label>
+                        <Input
+                          id={`weight-${index}`}
+                          type="number"
+                          step="0.1"
+                          min="0"
+                          value={item.weight_kg || ''}
+                          onChange={(e) => handleItemChange(index, 'weight_kg', parseFloat(e.target.value) || undefined)}
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor={`volume-${index}`}>Volume (m³)</Label>
+                        <Input
+                          id={`volume-${index}`}
+                          type="number"
+                          step="0.1"
+                          min="0"
+                          value={item.volume_m3 || ''}
+                          onChange={(e) => handleItemChange(index, 'volume_m3', parseFloat(e.target.value) || undefined)}
+                        />
+                      </div>
+
+                      <div className="col-span-2">
+                        <Label htmlFor={`instructions-${index}`}>Handling Instructions</Label>
+                        <Textarea
+                          id={`instructions-${index}`}
+                          value={item.handling_instructions || ''}
+                          onChange={(e) => handleItemChange(index, 'handling_instructions', e.target.value)}
+                          placeholder="Special handling instructions..."
+                          rows={2}
+                        />
+                      </div>
+
+                      <div className="col-span-2 flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id={`temp-${index}`}
+                          checked={item.temperature_required}
+                          onChange={(e) => handleItemChange(index, 'temperature_required', e.target.checked)}
+                          className="rounded"
+                        />
+                        <Label htmlFor={`temp-${index}`} className="cursor-pointer">
+                          Temperature controlled required
+                        </Label>
+                      </div>
+                    </div>
+
+                    {items.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleRemoveItem(index)}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        </ScrollArea>
+
+        <DialogFooter className="flex-shrink-0 border-t pt-4 mt-4">
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            disabled={!facilityId || !warehouseId || !requestedDate || items.every(i => !i.item_name.trim())}
+          >
+            Create Requisition
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

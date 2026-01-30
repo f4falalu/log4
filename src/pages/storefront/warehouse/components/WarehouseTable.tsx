@@ -1,0 +1,256 @@
+import { MoreHorizontal, Edit, Trash, Eye, MapPin, Phone, Mail } from 'lucide-react';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
+import type { Warehouse } from '@/types/warehouse';
+import { useDeleteWarehouse } from '@/hooks/useWarehouses';
+
+interface WarehouseTableProps {
+  warehouses: Warehouse[];
+  isLoading: boolean;
+  onWarehouseClick: (warehouse: Warehouse) => void;
+  onEdit: (warehouse: Warehouse) => void;
+  selectedWarehouseId?: string;
+  page: number;
+  totalPages: number;
+  totalWarehouses: number;
+  onPageChange: (page: number) => void;
+}
+
+export function WarehouseTable({
+  warehouses,
+  isLoading,
+  onWarehouseClick,
+  onEdit,
+  selectedWarehouseId,
+  page,
+  totalPages,
+  totalWarehouses,
+  onPageChange,
+}: WarehouseTableProps) {
+  const deleteWarehouse = useDeleteWarehouse();
+
+  const handleDelete = (warehouse: Warehouse) => {
+    if (confirm(`Are you sure you want to delete "${warehouse.name}"?`)) {
+      deleteWarehouse.mutate(warehouse.id);
+    }
+  };
+
+  const getUtilization = (warehouse: Warehouse) => {
+    if (!warehouse.total_capacity_m3 || warehouse.total_capacity_m3 === 0) return 0;
+    return ((warehouse.used_capacity_m3 || 0) / warehouse.total_capacity_m3) * 100;
+  };
+
+  if (isLoading) {
+    return (
+      <div className="p-4 space-y-4">
+        {Array.from({ length: 10 }).map((_, i) => (
+          <Skeleton key={i} className="h-16 w-full" />
+        ))}
+      </div>
+    );
+  }
+
+  if (warehouses.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
+        <p>No warehouses found</p>
+        <p className="text-sm">Add a new warehouse to get started</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col h-full">
+      <div className="flex-1 overflow-auto">
+        <Table>
+          <TableHeader className="sticky top-0 bg-background z-10">
+            <TableRow>
+              <TableHead className="min-w-[200px]">Warehouse</TableHead>
+              <TableHead>Code</TableHead>
+              <TableHead>Location</TableHead>
+              <TableHead>Contact</TableHead>
+              <TableHead className="text-right">Capacity</TableHead>
+              <TableHead className="min-w-[150px]">Utilization</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="w-12"></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {warehouses.map((warehouse) => {
+              const utilization = getUtilization(warehouse);
+
+              return (
+                <TableRow
+                  key={warehouse.id}
+                  className={cn(
+                    'cursor-pointer hover:bg-muted/50',
+                    selectedWarehouseId === warehouse.id && 'bg-blue-50'
+                  )}
+                  onClick={() => onWarehouseClick(warehouse)}
+                >
+                  <TableCell>
+                    <div>
+                      <p className="font-medium">{warehouse.name}</p>
+                      {warehouse.address && (
+                        <p className="text-sm text-muted-foreground truncate max-w-[200px]">
+                          {warehouse.address}
+                        </p>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="font-mono">
+                      {warehouse.code}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                      <MapPin className="h-3.5 w-3.5" />
+                      <span>{warehouse.city || warehouse.state || '-'}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {warehouse.contact_name ? (
+                      <div className="space-y-1">
+                        <p className="text-sm">{warehouse.contact_name}</p>
+                        {warehouse.contact_phone && (
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <Phone className="h-3 w-3" />
+                            <span>{warehouse.contact_phone}</span>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground">-</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {warehouse.total_capacity_m3 ? (
+                      <span className="font-mono">
+                        {warehouse.total_capacity_m3.toLocaleString()} m³
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">-</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {warehouse.total_capacity_m3 ? (
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between text-xs">
+                          <span>{utilization.toFixed(1)}%</span>
+                          <span className="text-muted-foreground">
+                            {(warehouse.used_capacity_m3 || 0).toLocaleString()} / {warehouse.total_capacity_m3.toLocaleString()}
+                          </span>
+                        </div>
+                        <Progress
+                          value={utilization}
+                          className={cn(
+                            'h-2',
+                            utilization > 90 && '[&>div]:bg-red-500',
+                            utilization > 70 && utilization <= 90 && '[&>div]:bg-yellow-500'
+                          )}
+                        />
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground">-</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <Badge
+                      variant={warehouse.is_active ? 'default' : 'secondary'}
+                      className={warehouse.is_active ? 'bg-green-100 text-green-800' : ''}
+                    >
+                      {warehouse.is_active ? 'Active' : 'Inactive'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={(e) => {
+                          e.stopPropagation();
+                          onWarehouseClick(warehouse);
+                        }}>
+                          <Eye className="h-4 w-4 mr-2" />
+                          View Details
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={(e) => {
+                          e.stopPropagation();
+                          onEdit(warehouse);
+                        }}>
+                          <Edit className="h-4 w-4 mr-2" />
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="text-destructive"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(warehouse);
+                          }}
+                        >
+                          <Trash className="h-4 w-4 mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* Pagination */}
+      <div className="flex-shrink-0 border-t p-4 flex items-center justify-between bg-background">
+        <p className="text-sm text-muted-foreground">
+          Showing {page * 50 + 1} to {Math.min((page + 1) * 50, totalWarehouses)} of {totalWarehouses} warehouses
+        </p>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onPageChange(page - 1)}
+            disabled={page === 0}
+          >
+            Previous
+          </Button>
+          <span className="text-sm text-muted-foreground">
+            Page {page + 1} of {totalPages || 1}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onPageChange(page + 1)}
+            disabled={page >= totalPages - 1}
+          >
+            Next
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -171,6 +171,13 @@ export const facilityFilterSchema = z.object({
   type: facilityTypeSchema.optional(),
   pcr_service: z.boolean().optional(),
   cd4_service: z.boolean().optional(),
+  // New map-specific filters
+  ward: z.string().optional(),
+  warehouseCodeSearch: z.string().optional(),
+  storageCapacityMin: z.number().optional(),
+  storageCapacityMax: z.number().optional(),
+  capacityMin: z.number().optional(),
+  capacityMax: z.number().optional(),
 });
 
 export type FacilityFilters = z.infer<typeof facilityFilterSchema>;

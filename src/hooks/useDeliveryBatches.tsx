@@ -3,6 +3,29 @@ import { supabase } from '@/integrations/supabase/client';
 import { DeliveryBatch, Facility } from '@/types';
 import { toast } from 'sonner';
 
+/**
+ * Check if a batch has integrity based on RFC-012 requirements.
+ * A batch has integrity if it has: vehicle, facilities, warehouse, and no slot overflow.
+ */
+function checkBatchHasIntegrity(
+  batch: {
+    vehicleId?: string;
+    facilities: Facility[];
+    warehouseId?: string;
+  },
+  vehicleTotalSlots?: number
+): boolean {
+  const hasVehicle = Boolean(batch.vehicleId);
+  const hasFacilities = batch.facilities.length > 0;
+  const hasWarehouse = Boolean(batch.warehouseId);
+
+  // If vehicle has slot config, check for overflow
+  const facilityCount = batch.facilities.length;
+  const noSlotOverflow = vehicleTotalSlots === undefined || facilityCount <= vehicleTotalSlots;
+
+  return hasVehicle && hasFacilities && hasWarehouse && noSlotOverflow;
+}
+
 export function useDeliveryBatches() {
   return useQuery({
     queryKey: ['delivery-batches'],
@@ -67,6 +90,13 @@ export function useDeliveryBatches() {
           });
         }
 
+        // Build batch object for integrity check
+        const batchData = {
+          vehicleId: b.vehicle_id || undefined,
+          facilities: batchFacilities,
+          warehouseId: b.warehouse_id,
+        };
+
         return {
           id: b.id,
           name: b.name,
@@ -87,7 +117,9 @@ export function useDeliveryBatches() {
           totalQuantity: b.total_quantity,
           optimizedRoute: b.optimized_route as [number, number][],
           notes: b.notes || undefined,
-          createdAt: b.created_at
+          createdAt: b.created_at,
+          // RFC-012: Batch integrity indicator
+          hasIntegrity: checkBatchHasIntegrity(batchData),
         };
       }) as DeliveryBatch[];
     }
@@ -114,8 +146,8 @@ export function useCreateDeliveryBatch() {
           estimated_duration: batch.estimatedDuration,
           actual_start_time: batch.actualStartTime,
           actual_end_time: batch.actualEndTime,
-          medication_type: batch.medicationType,
-          total_quantity: batch.totalQuantity,
+          // NOTE: medication_type and total_quantity removed per RFC-012
+          // These are derived from requisitions, not set at batch creation
           optimized_route: batch.optimizedRoute,
           facility_ids: batch.facilities.map(f => f.id),
           notes: batch.notes

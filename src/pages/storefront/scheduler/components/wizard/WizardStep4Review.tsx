@@ -34,10 +34,10 @@ export function WizardStep4Review() {
   const { data: vehicles } = useVehicles();
 
   // Lookup names from IDs
-  const warehouse = warehouses?.find((w) => w.id === warehouseId);
-  const driver = drivers?.find((d) => d.id === driverId);
-  const vehicle = vehicles?.find((v) => v.id === vehicleId);
-  const selectedFacilityObjects = facilities?.filter((f) => selectedFacilities.includes(f.id));
+  const warehouse = Array.isArray(warehouses) ? warehouses.find((w) => w.id === warehouseId) : undefined;
+  const driver = Array.isArray(drivers) ? drivers.find((d) => d.id === driverId) : undefined;
+  const vehicle = Array.isArray(vehicles) ? vehicles.find((v) => v.id === vehicleId) : undefined;
+  const selectedFacilityObjects = Array.isArray(facilities?.facilities) ? facilities.facilities.filter((f) => selectedFacilities.includes(f.id)) : [];
 
   return (
     <div className="space-y-6">

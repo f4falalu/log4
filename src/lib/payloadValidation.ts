@@ -1,5 +1,18 @@
+/**
+ * =====================================================
+ * @deprecated - Use @/fleetops/payload instead
+ * =====================================================
+ *
+ * This file is deprecated and will be removed in a future version.
+ * All payload validation logic has been moved to the FleetOps Payload module.
+ *
+ * Migration:
+ *   import { validatePayload, suggestVehicleForPayload } from '@/fleetops/payload';
+ */
+
 import { Vehicle } from '@/types';
 
+// Re-export PayloadItem type (compatible interface)
 export interface PayloadItem {
   id?: string;
   name: string;
@@ -20,34 +33,40 @@ export interface PayloadValidationResult {
   suggestedVehicle?: string;
 }
 
+/**
+ * @deprecated Use validatePayload from @/fleetops/payload
+ *
+ * Validate payload against vehicle capacity.
+ * This function is kept for backward compatibility.
+ * New code should use the FleetOps payload module.
+ */
 export function validatePayload(
   items: PayloadItem[],
   vehicle: Vehicle
 ): PayloadValidationResult {
   const totalWeight = items.reduce((sum, item) => sum + (item.weight_kg * item.quantity), 0);
   const totalVolume = items.reduce((sum, item) => sum + (item.volume_m3 * item.quantity), 0);
-  
+
   const weightUtilization = (totalWeight / vehicle.maxWeight) * 100;
   const volumeUtilization = (totalVolume / vehicle.capacity) * 100;
-  
+
   const overloadWarnings: string[] = [];
-  
+
   if (totalWeight > vehicle.maxWeight) {
     overloadWarnings.push(
       `Weight exceeds capacity by ${(totalWeight - vehicle.maxWeight).toFixed(1)} kg`
     );
   }
-  
+
   if (totalVolume > vehicle.capacity) {
     overloadWarnings.push(
       `Volume exceeds capacity by ${(totalVolume - vehicle.capacity).toFixed(2)} m³`
     );
   }
-  
-  if (weightUtilization > 95 || volumeUtilization > 95) {
-    overloadWarnings.push('Near capacity limit - consider load distribution');
-  }
-  
+
+  // Removed "near capacity" warning - only real errors
+  // No "proceed anyway" logic
+
   return {
     isValid: overloadWarnings.length === 0,
     totalWeight,
@@ -58,22 +77,25 @@ export function validatePayload(
   };
 }
 
+/**
+ * @deprecated Use suggestVehicleForPayload from @/fleetops/payload
+ */
 export function suggestVehicle(
   items: PayloadItem[],
   vehicles: Vehicle[]
 ): Vehicle | null {
   const totalWeight = items.reduce((sum, item) => sum + (item.weight_kg * item.quantity), 0);
   const totalVolume = items.reduce((sum, item) => sum + (item.volume_m3 * item.quantity), 0);
-  
+
   // Filter available vehicles that can handle the payload
-  const suitableVehicles = vehicles.filter(v => 
+  const suitableVehicles = vehicles.filter(v =>
     v.status === 'available' &&
     v.maxWeight >= totalWeight &&
     v.capacity >= totalVolume
   );
-  
+
   if (suitableVehicles.length === 0) return null;
-  
+
   // Find vehicle with best utilization (closest to full without overloading)
   return suitableVehicles.reduce((best, current) => {
     const bestUtil = Math.max(
@@ -84,15 +106,18 @@ export function suggestVehicle(
       totalWeight / current.maxWeight,
       totalVolume / current.capacity
     );
-    
-    // Prefer 70-85% utilization
+
+    // Prefer 70-90% utilization (target 80%)
     const bestScore = Math.abs(0.8 - bestUtil);
     const currentScore = Math.abs(0.8 - currentUtil);
-    
+
     return currentScore < bestScore ? current : best;
   });
 }
 
+/**
+ * @deprecated Use calculatePayloadUtilization from @/fleetops/payload
+ */
 export function calculatePayloadUtilization(
   totalWeight: number,
   totalVolume: number,
@@ -100,7 +125,7 @@ export function calculatePayloadUtilization(
 ): number {
   const weightUtil = (totalWeight / vehicle.maxWeight) * 100;
   const volumeUtil = (totalVolume / vehicle.capacity) * 100;
-  
+
   // Return the higher utilization (limiting factor)
   return Math.max(weightUtil, volumeUtil);
 }

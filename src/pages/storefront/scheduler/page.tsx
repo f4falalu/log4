@@ -1,85 +1,182 @@
-/**
- * =====================================================
- * Scheduler - The Planning Cockpit (Main Page)
- * =====================================================
- * MVP Implementation: Manual Scheduling Flow
- */
-
-import { useState } from 'react';
-import { Plus } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { useEffect, useMemo, useState } from 'react';
 import { useSchedulerBatches } from '@/hooks/useSchedulerBatches';
 import { useRealtimeScheduler } from '@/hooks/useRealtimeScheduler';
+import { useWarehouses } from '@/hooks/useWarehouses';
 import { SchedulerLayout } from './components/SchedulerLayout';
-import { SchedulerControlBar } from './components/SchedulerControlBar';
-import { StatusTabs } from './components/StatusTabs';
+import { UnifiedHeader, type StatusFilterExtras, type ViewMode } from './components/UnifiedHeader';
 import { SchedulerListView } from './components/SchedulerListView';
 import { SchedulePreviewPanel } from './components/SchedulePreviewPanel';
 import { SummaryStrip } from './components/SummaryStrip';
-import { ScheduleWizardDialog } from './components/ScheduleWizardDialog';
-import type { SchedulerFilters, SchedulerBatchStatus } from '@/types/scheduler';
+import { UnifiedWorkflowDialog } from '@/components/unified-workflow';
+import { CalendarView } from './components/CalendarView';
+import type { SchedulerFilters } from '@/types/scheduler';
+import { useDrivers } from '@/hooks/useDrivers';
+import { useVehicles } from '@/hooks/useVehicles';
+import { useFacilities } from '@/hooks/useFacilities.tsx';
 
 export default function SchedulerPage() {
-  const [activeStatus, setActiveStatus] = useState<SchedulerBatchStatus>('ready');
-  const [filters, setFilters] = useState<SchedulerFilters>({});
+  // View state
+  const [activeView, setActiveView] = useState<ViewMode>('status');
+  
+  // Status view state
+  const [statusFilters, setStatusFilters] = useState<SchedulerFilters>({});
   const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
+  
+  // Calendar view state
+  const [selectedWarehouse, setSelectedWarehouse] = useState<string>('');
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [calendarViewMode, setCalendarViewMode] = useState<'day' | 'week' | 'month'>('week');
+  
+  // Common state
   const [wizardOpen, setWizardOpen] = useState(false);
 
-  // Fetch batches with filters
+  // Data hooks
+  const { data: warehouses = [] } = useWarehouses();
+  const { data: drivers = [] } = useDrivers();
+  const { data: vehicles = [] } = useVehicles();
+  const { data: facilitiesData } = useFacilities();
+  const facilities = facilitiesData?.facilities ?? [];
+  
+  // Fetch batches with filters - only for status view
   const { data: batches = [], isLoading } = useSchedulerBatches({
-    filters: {
-      ...filters,
-      status: [activeStatus],
-    },
+    filters: statusFilters,
   });
+
+  const [statusExtras, setStatusExtras] = useState<StatusFilterExtras>({
+    assignment: 'any',
+    program: 'all',
+    zone: 'all',
+  });
+
+  const filteredBatches = useMemo(() => {
+    return batches.filter((batch) => {
+      if (statusExtras.assignment === 'assigned' && !batch.driver_id) return false;
+      if (statusExtras.assignment === 'unassigned' && batch.driver_id) return false;
+
+      if (statusExtras.zone && statusExtras.zone !== 'all') {
+        if (!batch.zone || batch.zone !== statusExtras.zone) {
+          return false;
+        }
+      }
+
+      const payload = batch.total_weight_kg ?? 0;
+      if (statusExtras.payloadMin !== undefined && payload < statusExtras.payloadMin) {
+        return false;
+      }
+      if (statusExtras.payloadMax !== undefined && payload > statusExtras.payloadMax) {
+        return false;
+      }
+
+      if (statusExtras.program !== 'all') {
+        const programs = batch.tags || [];
+        if (!programs.includes(statusExtras.program)) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [batches, statusExtras]);
+
+  useEffect(() => {
+    if (selectedBatchId && !filteredBatches.some((batch) => batch.id === selectedBatchId)) {
+      setSelectedBatchId(null);
+    }
+  }, [filteredBatches, selectedBatchId]);
+
+  const availablePrograms = useMemo(() => {
+    const programSet = new Set<string>();
+    batches.forEach((batch) => {
+      batch.tags?.forEach((tag) => {
+        if (tag) {
+          programSet.add(tag);
+        }
+      });
+    });
+    return Array.from(programSet).sort();
+  }, [batches]);
+
+  const availableZones = useMemo(() => {
+    const zoneSet = new Set<string>();
+    batches.forEach((batch) => {
+      if (batch.zone) {
+        zoneSet.add(batch.zone);
+      }
+    });
+    return Array.from(zoneSet).sort();
+  }, [batches]);
 
   // Subscribe to real-time updates
   useRealtimeScheduler({
     showToasts: true,
   });
 
-  return (
-    <SchedulerLayout>
-      {/* Top Control Bar */}
-      <SchedulerControlBar
-        filters={filters}
-        onFiltersChange={setFilters}
-        onNewSchedule={() => setWizardOpen(true)}
-      />
+  const handleScheduleClick = (schedule: any) => {
+    setSelectedBatchId(schedule.id);
+  };
 
-      {/* Main Content Area */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Left: Status Tabs */}
-        <StatusTabs
-          activeStatus={activeStatus}
-          onStatusChange={setActiveStatus}
-        />
+  const header = (
+    <UnifiedHeader
+      activeView={activeView}
+      onViewChange={setActiveView}
+      statusFilters={statusFilters}
+      onStatusFiltersChange={setStatusFilters}
+      statusExtras={statusExtras}
+      onStatusExtrasChange={setStatusExtras}
+      selectedWarehouse={selectedWarehouse}
+      onWarehouseChange={setSelectedWarehouse}
+      selectedDate={selectedDate}
+      onDateChange={setSelectedDate}
+      calendarViewMode={calendarViewMode}
+      onCalendarViewModeChange={setCalendarViewMode}
+      warehouses={Array.isArray(warehouses) ? warehouses.map((w) => ({ id: w.id, name: w.name })) : []}
+      availablePrograms={availablePrograms}
+      availableZones={availableZones}
+      onNewSchedule={() => setWizardOpen(true)}
+    />
+  );
 
-        {/* Center: Workspace (List View) */}
+  const content = activeView === 'status' ? (
+    <div className="flex h-full min-h-0">
+      <div className="flex-1 min-w-0">
         <SchedulerListView
-          batches={batches}
+          batches={filteredBatches}
           isLoading={isLoading}
           selectedBatchId={selectedBatchId}
           onBatchSelect={setSelectedBatchId}
+          warehouses={warehouses}
+          drivers={drivers}
+          vehicles={vehicles}
+          facilities={facilities}
         />
-
-        {/* Right: Preview Drawer */}
-        {selectedBatchId && (
-          <SchedulePreviewPanel
-            batchId={selectedBatchId}
-            onClose={() => setSelectedBatchId(null)}
-          />
-        )}
       </div>
+      {selectedBatchId && (
+        <SchedulePreviewPanel
+          batchId={selectedBatchId}
+          onClose={() => setSelectedBatchId(null)}
+        />
+      )}
+    </div>
+  ) : (
+    <CalendarView
+      selectedDate={selectedDate}
+      onDateChange={setSelectedDate}
+      viewMode={calendarViewMode}
+      onViewModeChange={setCalendarViewMode}
+      schedules={batches}
+      onScheduleClick={handleScheduleClick}
+    />
+  );
 
-      {/* Bottom: Summary Bar */}
-      <SummaryStrip batches={batches} />
+  const summary = activeView === 'status' ? (
+    <SummaryStrip batches={filteredBatches} />
+  ) : (
+    <div className="px-6 py-4 text-sm text-muted-foreground">Summary unavailable in calendar view.</div>
+  );
 
-      {/* Schedule Assistant Wizard */}
-      <ScheduleWizardDialog
-        open={wizardOpen}
-        onOpenChange={setWizardOpen}
-      />
+  return (
+    <SchedulerLayout header={header} content={content} summary={summary}>
+      <UnifiedWorkflowDialog open={wizardOpen} onOpenChange={setWizardOpen} startStep={1} />
     </SchedulerLayout>
   );
 }

@@ -77,7 +77,7 @@ export default function DriverManagement() {
   };
 
   return (
-    <div className="flex h-screen w-full overflow-hidden flex-col">
+    <div className="flex h-full w-full overflow-hidden flex-col">
       {/* Page Header - Only show in table view */}
       {viewMode === 'table' && (
         <div className="border-b border-border bg-card px-6 py-5 flex items-center justify-between flex-shrink-0">

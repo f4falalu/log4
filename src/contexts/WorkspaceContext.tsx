@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 
-// Updated to support all 5 workspaces (3 are coming soon)
-type WorkspaceType = 'fleetops' | 'storefront' | 'admin' | 'dashboard' | 'mod4';
+// Updated to support all 6 workspaces (3 are coming soon)
+type WorkspaceType = 'fleetops' | 'storefront' | 'admin' | 'dashboard' | 'mod4' | 'map';
 
 interface WorkspaceContextType {
   workspace: WorkspaceType;
@@ -14,7 +14,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [workspace, setWorkspaceState] = useState<WorkspaceType>(() => {
     const saved = localStorage.getItem('biko_workspace') as WorkspaceType;
     // Default to fleetops if saved workspace is not available yet
-    if (saved && ['fleetops', 'storefront'].includes(saved)) {
+    if (saved && ['fleetops', 'storefront', 'map'].includes(saved)) {
       return saved;
     }
     return 'fleetops';

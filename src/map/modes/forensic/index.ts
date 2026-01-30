@@ -37,3 +37,6 @@ export {
   type TimelineListener,
   type TimelineControllerConfig,
 } from './ForensicTimelineController';
+
+export { ForensicMap } from './ForensicMap';
+export { ForensicTimelineBar } from './ForensicTimelineBar';

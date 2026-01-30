@@ -111,7 +111,7 @@ export default function VehiclesPage() {
   );
 
   return (
-    <div className="h-screen flex flex-col bg-background">
+    <div className="h-full flex flex-col bg-background">
       {/* Page Header */}
       <div className="border-b border-border bg-card px-6 py-5 flex-shrink-0">
         <div className="flex items-center justify-between">
