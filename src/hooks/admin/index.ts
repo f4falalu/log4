@@ -49,3 +49,16 @@ export {
   type SessionActivityData,
   type EventDistributionData,
 } from './useAnalytics';
+
+// Integration
+export {
+  useLinkedUsers,
+  usePendingOTPs,
+  useLinkUserDirect,
+  useGenerateOTP,
+  useSuspendLink,
+  useRevokeLink,
+  useRevokeOTP,
+  type Mod4DriverLink,
+  type Mod4OTPCode,
+} from './useIntegration';

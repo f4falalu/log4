@@ -84,6 +84,7 @@ export function useSessions(filters: SessionFilters = {}) {
       if (error) throw error;
       return (data || []) as DriverSession[];
     },
+    retry: 1,
     refetchInterval: 30000,
   });
 }
@@ -95,11 +96,12 @@ export function useActiveSessionsCount() {
       const { count, error } = await supabase
         .from('driver_sessions')
         .select('*', { count: 'exact', head: true })
-        .eq('status', 'active');
+        .eq('status', 'ACTIVE');
 
       if (error) throw error;
       return count || 0;
     },
+    retry: 1,
     refetchInterval: 15000,
   });
 }
@@ -175,7 +177,7 @@ export function useForceEndSession() {
           },
         })
         .eq('id', sessionId)
-        .eq('status', 'active')
+        .eq('status', 'ACTIVE')
         .select()
         .single();
 

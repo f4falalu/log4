@@ -19,6 +19,7 @@ import Mod4ActiveDeliveryPage from "./pages/mod4/driver/delivery/page";
 import Mod4DispatcherPage from "./pages/mod4/dispatcher/page";
 import Mod4SessionsPage from "./pages/mod4/sessions/page";
 import AdminDashboard from "./pages/admin/page";
+import AdminGeneralSettings from "./pages/admin/general/page";
 import AdminUsersPage from "./pages/admin/users/page";
 import AdminUserDetailPage from "./pages/admin/users/[id]/page";
 import AdminUserEditPage from "./pages/admin/users/[id]/edit/page";
@@ -29,6 +30,7 @@ import AdminSessionsPage from "./pages/admin/sessions/page";
 import AdminSessionDetailPage from "./pages/admin/sessions/[id]/page";
 import AdminAuditPage from "./pages/admin/audit/page";
 import AdminLocationsPage from "./pages/admin/LocationManagement";
+import AdminIntegrationPage from "./pages/admin/integration/page";
 import LiveMapPage from "./pages/map/live/page";
 import PlaybackMapPage from "./pages/map/playback/page";
 
@@ -68,7 +70,7 @@ const ReportsPageWrapper = lazy(() => import("./pages/ReportsPageWrapper"));
 const MapV2PlanningPage = lazy(() => import("./maps-v2/ui/MapV2PlanningPage"));
 const MapV2OperationalPage = lazy(() => import("./maps-v2/ui/MapV2OperationalPage"));
 const MapV2ForensicPage = lazy(() => import("./maps-v2/ui/MapV2ForensicPage"));
-import MapLayout from "./pages/fleetops/map/layout";
+import FleetOpsMapLayout from "./pages/fleetops/map/layout";
 import PlanningMapPage from "./pages/fleetops/map/planning/page";
 import OperationalMapPage from "./pages/fleetops/map/operational/page";
 import ForensicsMapPage from "./pages/fleetops/map/forensics/page";
@@ -142,7 +144,7 @@ const App = () => (
                         <ReportsPageWrapper />
                       </Suspense>
                     } />
-                    <Route path="map" element={<MapLayout />}>
+                    <Route path="map" element={<FleetOpsMapLayout />}>
                       <Route path="planning" element={<PlanningMapPage />} />
                       <Route path="operational" element={<OperationalMapPage />} />
                       <Route path="forensics" element={<ForensicsMapPage />} />
@@ -238,17 +240,43 @@ const App = () => (
                       <AdminLayout />
                     </ProtectedRoute>
                   }>
-                    <Route index element={<AdminDashboard />} />
-                    <Route path="users" element={<AdminUsersPage />} />
-                    <Route path="users/create" element={<AdminUserCreatePage />} />
+                    {/* Redirect index to general settings */}
+                    <Route index element={<Navigate to="/admin/general" replace />} />
+
+                    {/* General Tab */}
+                    <Route path="general" element={<AdminGeneralSettings />} />
+                    <Route path="locations" element={<AdminLocationsPage />} />
+
+                    {/* Members Tab */}
+                    <Route path="members" element={<AdminUsersPage />} />
+                    <Route path="members/create" element={<AdminUserCreatePage />} />
+                    <Route path="members/:id" element={<AdminUserDetailPage />} />
+                    <Route path="members/:id/edit" element={<AdminUserEditPage />} />
+
+                    {/* Legacy user routes - redirect to members */}
+                    <Route path="users" element={<Navigate to="/admin/members" replace />} />
+                    <Route path="users/create" element={<Navigate to="/admin/members/create" replace />} />
                     <Route path="users/:id" element={<AdminUserDetailPage />} />
                     <Route path="users/:id/edit" element={<AdminUserEditPage />} />
-                    <Route path="workspaces" element={<AdminWorkspacesPage />} />
+
+                    {/* Permissions Tab */}
+                    <Route path="permissions" element={<AdminWorkspacesPage />} />
+                    <Route path="permissions/:id" element={<AdminWorkspaceDetailPage />} />
+
+                    {/* Legacy workspace routes - redirect to permissions */}
+                    <Route path="workspaces" element={<Navigate to="/admin/permissions" replace />} />
                     <Route path="workspaces/:id" element={<AdminWorkspaceDetailPage />} />
+
+                    {/* Sessions Tab */}
                     <Route path="sessions" element={<AdminSessionsPage />} />
                     <Route path="sessions/:id" element={<AdminSessionDetailPage />} />
                     <Route path="audit" element={<AdminAuditPage />} />
-                    <Route path="locations" element={<AdminLocationsPage />} />
+
+                    {/* Analytics Tab */}
+                    <Route path="analytics" element={<AdminDashboard />} />
+
+                    {/* Integration Tab */}
+                    <Route path="integration" element={<AdminIntegrationPage />} />
                   </Route>
 
                   {/* Map Workspace - Live Tracking & Playback */}

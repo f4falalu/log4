@@ -1,13 +1,12 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { AuditLogTable } from '@/components/admin/audit/AuditLogTable';
 import { useEventStats } from '@/hooks/admin/useAuditLogs';
 import { Badge } from '@/components/ui/badge';
-import { FileSearch, Activity } from 'lucide-react';
+import { Activity } from 'lucide-react';
 
 export default function AuditPage() {
   const { data: eventStats = [] } = useEventStats();
 
-  // Get top 5 event types
   const topEvents = eventStats
     .sort((a, b) => b.count - a.count)
     .slice(0, 5);
@@ -15,11 +14,11 @@ export default function AuditPage() {
   const totalEvents = eventStats.reduce((sum, e) => sum + e.count, 0);
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="max-w-6xl space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Audit Logs</h1>
+        <h1 className="text-2xl font-semibold">Audit Logs</h1>
         <p className="text-muted-foreground">
-          View and export mod4 events for auditing and compliance
+          View and export mod4 events for auditing and compliance.
         </p>
       </div>
 
@@ -52,20 +51,9 @@ export default function AuditPage() {
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileSearch className="h-5 w-5" />
-            Event Logs
-          </CardTitle>
-          <CardDescription>
-            Filter, search, and export mod4 events. Click the eye icon to view full event details.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <AuditLogTable />
-        </CardContent>
-      </Card>
+      <div className="border rounded-lg bg-card">
+        <AuditLogTable />
+      </div>
     </div>
   );
 }

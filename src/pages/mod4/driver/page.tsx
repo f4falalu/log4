@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Trip {
   id: string;
@@ -31,10 +32,12 @@ interface Trip {
 
 export default function DriverTripsPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [trips, setTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(true);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [syncing, setSyncing] = useState(false);
+  const [driverId, setDriverId] = useState<string | null>(null);
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -49,36 +52,77 @@ export default function DriverTripsPage() {
     };
   }, []);
 
+  // Fetch driver ID for current user
+  useEffect(() => {
+    async function fetchDriverId() {
+      if (!user) return;
+
+      try {
+        // Check mod4_driver_links for user-to-driver mapping
+        const { data: link } = await supabase
+          .from('mod4_driver_links')
+          .select('driver_id')
+          .eq('user_id', user.id)
+          .eq('status', 'active')
+          .maybeSingle();
+
+        if (link?.driver_id) {
+          setDriverId(link.driver_id);
+        }
+      } catch (error) {
+        console.error('Failed to fetch driver link:', error);
+      }
+    }
+
+    fetchDriverId();
+  }, [user]);
+
   useEffect(() => {
     async function fetchTrips() {
       try {
-        // Fetch batches assigned to current driver
-        // For now, fetch all draft/ready batches as demo
-        const { data: batches, error } = await supabase
+        // Build query - filter by assigned driver if we have one
+        let query = supabase
           .from('delivery_batches')
           .select(`
             id,
             name,
             status,
             delivery_date,
-            facilities:batch_facilities(count),
-            items:batch_items(count)
+            assigned_driver_id,
+            warehouse:warehouses(name),
+            facilities:delivery_batch_facilities(count)
           `)
-          .in('status', ['draft', 'ready', 'scheduled'])
+          .in('status', ['assigned', 'in-progress', 'ready', 'scheduled'])
           .order('delivery_date', { ascending: true })
-          .limit(10);
+          .limit(20);
+
+        // Filter by driver if available
+        if (driverId) {
+          query = query.eq('assigned_driver_id', driverId);
+        }
+
+        const { data: batches, error } = await query;
 
         if (error) throw error;
 
-        const mappedTrips: Trip[] = (batches || []).map((batch: any) => ({
-          id: batch.id,
-          name: batch.name || `Batch ${batch.id.slice(0, 8)}`,
-          status: batch.status === 'scheduled' ? 'pending' : batch.status === 'ready' ? 'pending' : 'pending',
-          facilityCount: batch.facilities?.[0]?.count || 0,
-          itemCount: batch.items?.[0]?.count || 0,
-          estimatedDuration: '~2 hrs',
-          startLocation: 'Warehouse A',
-        }));
+        const mappedTrips: Trip[] = (batches || []).map((batch: any) => {
+          let tripStatus: Trip['status'] = 'pending';
+          if (batch.status === 'in-progress') {
+            tripStatus = 'in_progress';
+          } else if (batch.status === 'completed') {
+            tripStatus = 'completed';
+          }
+
+          return {
+            id: batch.id,
+            name: batch.name || `Batch ${batch.id.slice(0, 8)}`,
+            status: tripStatus,
+            facilityCount: batch.facilities?.[0]?.count || 0,
+            itemCount: 0,
+            estimatedDuration: '~2 hrs',
+            startLocation: batch.warehouse?.name || 'Warehouse',
+          };
+        });
 
         setTrips(mappedTrips);
       } catch (error) {
@@ -94,7 +138,7 @@ export default function DriverTripsPage() {
     }
 
     fetchTrips();
-  }, []);
+  }, [driverId]);
 
   // Cache trips for offline access
   useEffect(() => {
@@ -105,9 +149,55 @@ export default function DriverTripsPage() {
 
   const handleSync = async () => {
     setSyncing(true);
-    // Simulate sync delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setSyncing(false);
+    try {
+      // Re-fetch trips
+      const query = supabase
+        .from('delivery_batches')
+        .select(`
+          id,
+          name,
+          status,
+          delivery_date,
+          assigned_driver_id,
+          warehouse:warehouses(name),
+          facilities:delivery_batch_facilities(count)
+        `)
+        .in('status', ['assigned', 'in-progress', 'ready', 'scheduled'])
+        .order('delivery_date', { ascending: true })
+        .limit(20);
+
+      if (driverId) {
+        query.eq('assigned_driver_id', driverId);
+      }
+
+      const { data: batches } = await query;
+
+      if (batches) {
+        const mappedTrips: Trip[] = batches.map((batch: any) => {
+          let tripStatus: Trip['status'] = 'pending';
+          if (batch.status === 'in-progress') {
+            tripStatus = 'in_progress';
+          } else if (batch.status === 'completed') {
+            tripStatus = 'completed';
+          }
+
+          return {
+            id: batch.id,
+            name: batch.name || `Batch ${batch.id.slice(0, 8)}`,
+            status: tripStatus,
+            facilityCount: batch.facilities?.[0]?.count || 0,
+            itemCount: 0,
+            estimatedDuration: '~2 hrs',
+            startLocation: batch.warehouse?.name || 'Warehouse',
+          };
+        });
+        setTrips(mappedTrips);
+      }
+    } catch (error) {
+      console.error('Sync failed:', error);
+    } finally {
+      setSyncing(false);
+    }
   };
 
   const handleStartTrip = (tripId: string) => {

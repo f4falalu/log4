@@ -32,7 +32,13 @@ import {
   Loader2,
   Eye,
   EyeOff,
+  Shield,
 } from 'lucide-react';
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot,
+} from '@/components/ui/input-otp';
 
 // Validation schemas
 const emailPasswordSchema = z.object({
@@ -45,8 +51,9 @@ const profileSchema = z.object({
   phone: z.string().optional(),
 });
 
-type AuthMode = 'login' | 'signup';
+type AuthMode = 'login' | 'signup' | 'otp-login';
 type SignupStep = 'credentials' | 'profile' | 'complete';
+type OtpStep = 'email' | 'verify';
 
 interface FormData {
   email: string;
@@ -115,15 +122,18 @@ function GradientOrb() {
 }
 
 export default function Auth() {
-  const { signIn, signUp, signInWithGoogle, user } = useAuth();
+  const { signIn, signUp, signInWithGoogle, user, sendDriverOtp, verifyDriverOtp } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
   const [mode, setMode] = useState<AuthMode>('signup');
   const [step, setStep] = useState<SignupStep>('credentials');
+  const [otpStep, setOtpStep] = useState<OtpStep>('email');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [otpValue, setOtpValue] = useState('');
+  const [otpEmail, setOtpEmail] = useState('');
 
   const [formData, setFormData] = useState<FormData>({
     email: '',
@@ -284,6 +294,83 @@ export default function Auth() {
     setErrors({});
   };
 
+  const switchToOtpLogin = () => {
+    setMode('otp-login');
+    setOtpStep('email');
+    setOtpEmail('');
+    setOtpValue('');
+    setErrors({});
+  };
+
+  const handleOtpEmailSubmit = async () => {
+    if (!otpEmail) {
+      setErrors({ email: 'Please enter your email address' });
+      return;
+    }
+
+    // Validate email format
+    try {
+      z.string().email().parse(otpEmail);
+    } catch {
+      setErrors({ email: 'Please enter a valid email address' });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // For now, we'll use a default workspace ID
+      // In a production app, you might want to allow users to select a workspace
+      // or retrieve it based on the email
+      const { data, error } = await sendDriverOtp(otpEmail, '00000000-0000-0000-0000-000000000000');
+
+      if (error) {
+        toast.error('Failed to send OTP', {
+          description: error.message || 'Please try again or contact support.'
+        });
+      } else {
+        setOtpStep('verify');
+        toast.success('OTP Sent', {
+          description: `A 6-digit code has been sent to ${otpEmail}. Code: ${data}`,
+        });
+      }
+    } catch (err) {
+      toast.error('An error occurred while sending OTP');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOtpVerify = async () => {
+    if (otpValue.length !== 6) {
+      toast.error('Invalid OTP', { description: 'Please enter the complete 6-digit code' });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { success, error } = await verifyDriverOtp(otpEmail, otpValue);
+
+      if (success) {
+        toast.success('Login Successful', { description: 'Welcome back!' });
+        if (inviteToken) {
+          navigate(`/invite/${inviteToken}`);
+        } else {
+          navigate('/');
+        }
+      } else {
+        toast.error('Verification Failed', {
+          description: error?.message || 'Invalid or expired OTP code'
+        });
+        setOtpValue('');
+      }
+    } catch (err) {
+      toast.error('An error occurred during verification');
+      setOtpValue('');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Render login form
   const renderLogin = () => (
     <div className="space-y-6">
@@ -389,12 +476,26 @@ export default function Auth() {
         )}
       </Button>
 
-      <p className="text-center text-sm text-zinc-500">
-        Don&apos;t have an account?{' '}
-        <button onClick={switchToSignup} className="text-emerald-400 hover:text-emerald-300 font-medium">
-          Sign up
+      <div className="space-y-3">
+        <p className="text-center text-sm text-zinc-500">
+          Don&apos;t have an account?{' '}
+          <button onClick={switchToSignup} className="text-emerald-400 hover:text-emerald-300 font-medium">
+            Sign up
+          </button>
+        </p>
+
+        <div className="relative">
+          <Separator className="bg-zinc-800" />
+        </div>
+
+        <button
+          onClick={switchToOtpLogin}
+          className="w-full flex items-center justify-center gap-2 text-sm text-cyan-400 hover:text-cyan-300 py-2"
+        >
+          <Shield className="w-4 h-4" />
+          Driver Login with Code
         </button>
-      </p>
+      </div>
     </div>
   );
 
@@ -682,10 +783,170 @@ export default function Auth() {
     </div>
   );
 
+  // Render OTP login - email input
+  const renderOtpEmailStep = () => (
+    <div className="space-y-6">
+      <div className="space-y-2">
+        <button
+          onClick={switchToLogin}
+          className="flex items-center text-zinc-400 hover:text-zinc-200 text-sm mb-4"
+        >
+          <ArrowLeft className="w-4 h-4 mr-1" />
+          Back to login
+        </button>
+        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-400 to-cyan-500 flex items-center justify-center mb-4">
+          <Shield className="w-6 h-6 text-white" />
+        </div>
+        <h1 className="text-3xl font-semibold text-white">Driver Login</h1>
+        <p className="text-zinc-400">Enter your email to receive a one-time code.</p>
+      </div>
+
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="otp-email" className="text-zinc-300">
+            Email Address
+          </Label>
+          <div className="relative">
+            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
+            <Input
+              id="otp-email"
+              type="email"
+              placeholder="driver@example.com"
+              value={otpEmail}
+              onChange={(e) => {
+                setOtpEmail(e.target.value);
+                if (errors.email) {
+                  setErrors({});
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handleOtpEmailSubmit();
+                }
+              }}
+              className={cn(
+                'h-12 pl-11 bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-600 focus:border-cyan-500 focus:ring-cyan-500/20',
+                errors.email && 'border-red-500'
+              )}
+            />
+          </div>
+          {errors.email && <p className="text-sm text-red-400">{errors.email}</p>}
+        </div>
+      </div>
+
+      <Button
+        onClick={handleOtpEmailSubmit}
+        disabled={loading}
+        className="w-full h-12 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-medium"
+      >
+        {loading ? (
+          <>
+            <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+            Sending code...
+          </>
+        ) : (
+          <>
+            Send Code
+            <ArrowRight className="w-5 h-5 ml-2" />
+          </>
+        )}
+      </Button>
+
+      <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
+        <p className="text-sm text-blue-300">
+          <strong>Driver Access Only:</strong> This login method is for authorized drivers. A 6-digit code will be sent to your email.
+        </p>
+      </div>
+    </div>
+  );
+
+  // Render OTP verification step
+  const renderOtpVerifyStep = () => (
+    <div className="space-y-6">
+      <div className="space-y-2">
+        <button
+          onClick={() => setOtpStep('email')}
+          className="flex items-center text-zinc-400 hover:text-zinc-200 text-sm mb-4"
+          disabled={loading}
+        >
+          <ArrowLeft className="w-4 h-4 mr-1" />
+          Change email
+        </button>
+        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-400 to-cyan-500 flex items-center justify-center mb-4">
+          <Shield className="w-6 h-6 text-white" />
+        </div>
+        <h1 className="text-3xl font-semibold text-white">Enter verification code</h1>
+        <p className="text-zinc-400">
+          We sent a 6-digit code to <strong className="text-white">{otpEmail}</strong>
+        </p>
+      </div>
+
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <Label className="text-zinc-300">Verification Code</Label>
+          <div className="flex justify-center">
+            <InputOTP
+              maxLength={6}
+              value={otpValue}
+              onChange={(value) => {
+                setOtpValue(value);
+                // Auto-submit when 6 digits are entered
+                if (value.length === 6) {
+                  setTimeout(() => {
+                    handleOtpVerify();
+                  }, 100);
+                }
+              }}
+            >
+              <InputOTPGroup>
+                <InputOTPSlot index={0} className="w-12 h-12 text-lg bg-zinc-900 border-zinc-800 text-white" />
+                <InputOTPSlot index={1} className="w-12 h-12 text-lg bg-zinc-900 border-zinc-800 text-white" />
+                <InputOTPSlot index={2} className="w-12 h-12 text-lg bg-zinc-900 border-zinc-800 text-white" />
+                <InputOTPSlot index={3} className="w-12 h-12 text-lg bg-zinc-900 border-zinc-800 text-white" />
+                <InputOTPSlot index={4} className="w-12 h-12 text-lg bg-zinc-900 border-zinc-800 text-white" />
+                <InputOTPSlot index={5} className="w-12 h-12 text-lg bg-zinc-900 border-zinc-800 text-white" />
+              </InputOTPGroup>
+            </InputOTP>
+          </div>
+          <p className="text-xs text-center text-zinc-500">
+            Code will auto-submit when complete
+          </p>
+        </div>
+      </div>
+
+      <Button
+        onClick={handleOtpVerify}
+        disabled={loading || otpValue.length !== 6}
+        className="w-full h-12 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-medium disabled:opacity-50"
+      >
+        {loading ? (
+          <>
+            <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+            Verifying...
+          </>
+        ) : (
+          'Verify Code'
+        )}
+      </Button>
+
+      <button
+        onClick={handleOtpEmailSubmit}
+        disabled={loading}
+        className="w-full text-sm text-cyan-400 hover:text-cyan-300 disabled:opacity-50"
+      >
+        Didn&apos;t receive the code? Resend
+      </button>
+    </div>
+  );
+
   // Render current step
   const renderStep = () => {
     if (mode === 'login') {
       return renderLogin();
+    }
+
+    if (mode === 'otp-login') {
+      return otpStep === 'email' ? renderOtpEmailStep() : renderOtpVerifyStep();
     }
 
     switch (step) {

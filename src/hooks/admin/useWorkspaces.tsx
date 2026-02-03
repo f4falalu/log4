@@ -44,6 +44,7 @@ export function useWorkspaces() {
         member_count: ws.workspace_members?.[0]?.count || 0,
       })) as Workspace[];
     },
+    retry: 1,
     staleTime: 30000,
   });
 }

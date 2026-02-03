@@ -35,22 +35,26 @@ CREATE INDEX IF NOT EXISTS idx_items_serial ON public.items(serial_number);
 -- Enable RLS
 ALTER TABLE public.items ENABLE ROW LEVEL SECURITY;
 
--- Create policies
+-- Create policies (drop first if they exist for idempotency)
+DROP POLICY IF EXISTS "Items are viewable by authenticated users" ON public.items;
 CREATE POLICY "Items are viewable by authenticated users"
   ON public.items FOR SELECT
   TO authenticated
   USING (true);
 
+DROP POLICY IF EXISTS "Items can be created by authenticated users" ON public.items;
 CREATE POLICY "Items can be created by authenticated users"
   ON public.items FOR INSERT
   TO authenticated
   WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Items can be updated by authenticated users" ON public.items;
 CREATE POLICY "Items can be updated by authenticated users"
   ON public.items FOR UPDATE
   TO authenticated
   USING (true);
 
+DROP POLICY IF EXISTS "Items can be deleted by authenticated users" ON public.items;
 CREATE POLICY "Items can be deleted by authenticated users"
   ON public.items FOR DELETE
   TO authenticated

@@ -5,7 +5,6 @@ import { Users, Radio, FileText, Building2, Loader2 } from 'lucide-react';
 import { UserGrowthChart } from '@/components/admin/analytics/UserGrowthChart';
 import { SessionActivityChart } from '@/components/admin/analytics/SessionActivityChart';
 import { EventDistributionChart } from '@/components/admin/analytics/EventDistributionChart';
-import { PageShell } from '@/components/layout/PageShell';
 
 interface DashboardMetrics {
   total_users: number;
@@ -58,12 +57,13 @@ export default function AdminDashboard() {
       if (error) throw error;
       return data as DashboardMetrics;
     },
-    refetchInterval: 30000, // Refresh every 30 seconds
+    retry: 1,
+    refetchInterval: 30000,
   });
 
   if (error) {
     return (
-      <div className="container mx-auto p-6">
+      <div className="max-w-6xl">
         <Card className="border-destructive">
           <CardHeader>
             <CardTitle className="text-destructive">Error Loading Dashboard</CardTitle>
@@ -82,13 +82,12 @@ export default function AdminDashboard() {
   }
 
   return (
-    <PageShell maxWidth="7xl">
-      <div className="space-y-8">
+    <div className="max-w-6xl space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
+        <h1 className="text-2xl font-semibold">Analytics</h1>
         <p className="text-muted-foreground">
-          System administration and monitoring
+          System metrics, user growth, and session activity.
         </p>
       </div>
 
@@ -103,13 +102,13 @@ export default function AdminDashboard() {
         <StatsCard
           title="Active Sessions"
           value={metrics?.active_sessions}
-          description="Currently active driver sessions"
+          description="Currently active"
           icon={Radio}
         />
         <StatsCard
           title="Events Today"
           value={metrics?.events_today}
-          description="Mod4 events recorded today"
+          description="Mod4 events"
           icon={FileText}
         />
         <StatsCard
@@ -146,7 +145,6 @@ export default function AdminDashboard() {
           )}
         </CardContent>
       </Card>
-      </div>
-    </PageShell>
+    </div>
   );
 }

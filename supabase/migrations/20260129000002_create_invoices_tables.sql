@@ -76,85 +76,101 @@ ALTER TABLE public.invoice_line_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.invoice_packaging ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.package_items ENABLE ROW LEVEL SECURITY;
 
--- Create policies for invoices
+-- Create policies for invoices (drop first for idempotency)
+DROP POLICY IF EXISTS "Invoices are viewable by authenticated users" ON public.invoices;
 CREATE POLICY "Invoices are viewable by authenticated users"
   ON public.invoices FOR SELECT
   TO authenticated
   USING (true);
 
+DROP POLICY IF EXISTS "Invoices can be created by authenticated users" ON public.invoices;
 CREATE POLICY "Invoices can be created by authenticated users"
   ON public.invoices FOR INSERT
   TO authenticated
   WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Invoices can be updated by authenticated users" ON public.invoices;
 CREATE POLICY "Invoices can be updated by authenticated users"
   ON public.invoices FOR UPDATE
   TO authenticated
   USING (true);
 
+DROP POLICY IF EXISTS "Invoices can be deleted by authenticated users" ON public.invoices;
 CREATE POLICY "Invoices can be deleted by authenticated users"
   ON public.invoices FOR DELETE
   TO authenticated
   USING (true);
 
 -- Create policies for invoice_line_items
+DROP POLICY IF EXISTS "Invoice line items are viewable by authenticated users" ON public.invoice_line_items;
 CREATE POLICY "Invoice line items are viewable by authenticated users"
   ON public.invoice_line_items FOR SELECT
   TO authenticated
   USING (true);
 
+DROP POLICY IF EXISTS "Invoice line items can be created by authenticated users" ON public.invoice_line_items;
 CREATE POLICY "Invoice line items can be created by authenticated users"
   ON public.invoice_line_items FOR INSERT
   TO authenticated
   WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Invoice line items can be updated by authenticated users" ON public.invoice_line_items;
 CREATE POLICY "Invoice line items can be updated by authenticated users"
   ON public.invoice_line_items FOR UPDATE
   TO authenticated
   USING (true);
 
+DROP POLICY IF EXISTS "Invoice line items can be deleted by authenticated users" ON public.invoice_line_items;
 CREATE POLICY "Invoice line items can be deleted by authenticated users"
   ON public.invoice_line_items FOR DELETE
   TO authenticated
   USING (true);
 
 -- Create policies for invoice_packaging
+DROP POLICY IF EXISTS "Invoice packaging is viewable by authenticated users" ON public.invoice_packaging;
 CREATE POLICY "Invoice packaging is viewable by authenticated users"
   ON public.invoice_packaging FOR SELECT
   TO authenticated
   USING (true);
 
+DROP POLICY IF EXISTS "Invoice packaging can be created by authenticated users" ON public.invoice_packaging;
 CREATE POLICY "Invoice packaging can be created by authenticated users"
   ON public.invoice_packaging FOR INSERT
   TO authenticated
   WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Invoice packaging can be updated by authenticated users" ON public.invoice_packaging;
 CREATE POLICY "Invoice packaging can be updated by authenticated users"
   ON public.invoice_packaging FOR UPDATE
   TO authenticated
   USING (true);
 
+DROP POLICY IF EXISTS "Invoice packaging can be deleted by authenticated users" ON public.invoice_packaging;
 CREATE POLICY "Invoice packaging can be deleted by authenticated users"
   ON public.invoice_packaging FOR DELETE
   TO authenticated
   USING (true);
 
 -- Create policies for package_items
+DROP POLICY IF EXISTS "Package items are viewable by authenticated users" ON public.package_items;
 CREATE POLICY "Package items are viewable by authenticated users"
   ON public.package_items FOR SELECT
   TO authenticated
   USING (true);
 
+DROP POLICY IF EXISTS "Package items can be created by authenticated users" ON public.package_items;
 CREATE POLICY "Package items can be created by authenticated users"
   ON public.package_items FOR INSERT
   TO authenticated
   WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Package items can be updated by authenticated users" ON public.package_items;
 CREATE POLICY "Package items can be updated by authenticated users"
   ON public.package_items FOR UPDATE
   TO authenticated
   USING (true);
 
+DROP POLICY IF EXISTS "Package items can be deleted by authenticated users" ON public.package_items;
 CREATE POLICY "Package items can be deleted by authenticated users"
   ON public.package_items FOR DELETE
   TO authenticated

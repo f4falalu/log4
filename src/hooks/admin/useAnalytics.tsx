@@ -28,7 +28,8 @@ export function useUserGrowth(days: number = 30) {
       if (error) throw error;
       return (data || []) as UserGrowthData[];
     },
-    staleTime: 300000, // 5 minutes
+    retry: 1,
+    staleTime: 300000,
   });
 }
 
@@ -43,6 +44,7 @@ export function useSessionActivity(days: number = 30) {
       if (error) throw error;
       return (data || []) as SessionActivityData[];
     },
+    retry: 1,
     staleTime: 300000,
   });
 }
@@ -58,6 +60,7 @@ export function useEventDistribution(days: number = 7) {
       if (error) throw error;
       return (data || []) as EventDistributionData[];
     },
+    retry: 1,
     staleTime: 300000,
   });
 }

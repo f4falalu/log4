@@ -16,6 +16,7 @@ import {
   Navigation,
   Phone,
   Mail,
+  CheckCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -361,22 +362,20 @@ function DeliveryDetails({ delivery }: { delivery: LiveDelivery }) {
           {delivery.facilities.map((facility, index) => (
             <div
               key={facility.id}
-              className={`flex items-start gap-2 p-2 rounded ${
-                index === delivery.currentStopIndex
+              className={`flex items-start gap-2 p-2 rounded ${index === delivery.currentStopIndex
                   ? 'bg-blue-50 border border-blue-200'
                   : facility.status === 'completed'
                     ? 'bg-green-50'
                     : 'bg-muted/30'
-              }`}
+                }`}
             >
               <div
-                className={`h-5 w-5 rounded-full flex items-center justify-center text-xs font-medium ${
-                  facility.status === 'completed'
+                className={`h-5 w-5 rounded-full flex items-center justify-center text-xs font-medium ${facility.status === 'completed'
                     ? 'bg-green-500 text-white'
                     : index === delivery.currentStopIndex
                       ? 'bg-blue-500 text-white'
                       : 'bg-gray-300 text-gray-600'
-                }`}
+                  }`}
               >
                 {index + 1}
               </div>
@@ -388,6 +387,12 @@ function DeliveryDetails({ delivery }: { delivery: LiveDelivery }) {
                   </div>
                 )}
               </div>
+              {facility.proofCaptured && (
+                <div className="flex items-center gap-1 text-xs text-green-600 font-medium whitespace-nowrap">
+                  <CheckCircle className="h-3 w-3" />
+                  POD
+                </div>
+              )}
             </div>
           ))}
         </div>

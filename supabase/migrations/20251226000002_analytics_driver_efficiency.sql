@@ -21,7 +21,7 @@ SELECT
   d.name as driver_name,
   d.phone,
   d.license_type::text,
-  d.status::text as driver_status,
+  'available'::text as driver_status,  -- Note: drivers.status column may not exist in all deployments
 
   -- Pre-calculated metrics from drivers table
   d.performance_score,
@@ -129,7 +129,6 @@ GROUP BY
   d.name,
   d.phone,
   d.license_type,
-  d.status,
   d.performance_score,
   d.total_deliveries,
   d.on_time_percentage,

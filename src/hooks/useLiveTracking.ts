@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useDriverGPS } from './useDriverGPS';
 import { useDriverEvents } from './useDriverEvents';
 import { useLiveMapStore } from '@/stores/liveMapStore';
+import { useRealtimeBatches } from './useRealtimeBatches';
 import type {
   LiveDriver,
   LiveVehicle,
@@ -34,14 +35,9 @@ async function fetchActiveBatches() {
     .select(`
       *,
       driver:drivers!delivery_batches_assigned_driver_id_fkey(id, name, email, phone),
-      vehicle:vehicles(id, plate_number, type, make, model, capacity_units),
+      vehicle:vehicles(id, plate_number, type, make, model, capacity),
       warehouse:warehouses(id, name, address, lat, lng),
-      facilities:delivery_batch_facilities(
-        id,
-        facility_id,
-        facilities(id, name, address, lat, lng),
-        slot_index
-      )
+      facilities:delivery_batch_facilities(id, facility_id, facilities(id, name, address, lat, lng), slot_index)
     `)
     .in('status', ['assigned', 'in-progress'])
     .order('created_at', { ascending: false });
@@ -50,23 +46,23 @@ async function fetchActiveBatches() {
   return data || [];
 }
 
-// Fetch active drivers
+// Fetch active drivers (available or busy, not offline)
 async function fetchActiveDrivers() {
   const { data, error } = await supabase
     .from('drivers')
     .select('*')
-    .eq('status', 'active');
+    .in('status', ['available', 'busy']);
 
   if (error) throw error;
   return data || [];
 }
 
-// Fetch active vehicles
+// Fetch active vehicles (available or in-use, not in maintenance)
 async function fetchActiveVehicles() {
   const { data, error } = await supabase
     .from('vehicles')
     .select('*')
-    .eq('status', 'active');
+    .in('status', ['available', 'in-use']);
 
   if (error) throw error;
   return data || [];
@@ -76,9 +72,12 @@ export function useLiveTracking(options: UseLiveTrackingOptions = {}) {
   const { enabled = true } = options;
   const filters = useLiveMapStore((s) => s.filters);
 
+  // Real-time subscriptions
+  useRealtimeBatches();
+
   // Fetch base data
   const batchesQuery = useQuery({
-    queryKey: ['active-batches'],
+    queryKey: ['delivery-batches', 'active'],
     queryFn: fetchActiveBatches,
     enabled,
     refetchInterval: 30000,
@@ -117,23 +116,21 @@ export function useLiveTracking(options: UseLiveTrackingOptions = {}) {
 
       // Find batch this driver is assigned to
       const batch = (batchesQuery.data || []).find(
-        (b) => b.assigned_driver_id === driver.id
+        (b) => b.driver_id === driver.id
       );
 
       return {
         id: driver.id,
         name: driver.name || 'Unknown Driver',
-        email: driver.email,
         phone: driver.phone,
-        avatarUrl: driver.avatar_url,
-        status: (latestEvent?.driverStatus || batch?.driver_status || 'INACTIVE') as DriverStatus,
+        status: (latestEvent?.driverStatus || 'INACTIVE') as DriverStatus,
         position: gps
           ? [gps.lng, gps.lat]
-          : [driver.last_lng || 0, driver.last_lat || 0],
+          : [driver.current_lng || 0, driver.current_lat || 0],
         batchId: batch?.id || null,
-        vehicleId: batch?.vehicle_id || driver.assigned_vehicle_id || null,
+        vehicleId: batch?.vehicle_id || null,
         sessionId: gps?.sessionId || null,
-        lastUpdate: gps?.capturedAt || new Date(driver.updated_at),
+        lastUpdate: gps?.capturedAt || new Date(driver.updated_at || ''),
         speed: gps?.speed || 0,
         heading: gps?.heading || 0,
         accuracy: gps?.accuracy || 0,
@@ -163,16 +160,16 @@ export function useLiveTracking(options: UseLiveTrackingOptions = {}) {
         model: vehicle.model,
         position: gps
           ? [gps.lng, gps.lat]
-          : [vehicle.last_lng || 0, vehicle.last_lat || 0],
-        capacity: vehicle.capacity_units || 100,
-        utilization: batch ? calculateBatchUtilization(batch) : 0,
-        driverId: driver?.id || null,
-        driverName: driver?.name,
+          : [0, 0],
+        capacity: vehicle.capacity || 100,
+        utilization: batch ? calculateBatchUtilization(batch as any) : 0,
+        driverId: driver?.[0]?.id || null,
+        driverName: driver?.[0]?.name,
         batchId: batch?.id || null,
-        lastUpdate: gps?.capturedAt || new Date(vehicle.updated_at),
+        lastUpdate: gps?.capturedAt || new Date(vehicle.updated_at || ''),
         speed: gps?.speed || 0,
         heading: gps?.heading || 0,
-        fuelLevel: vehicle.fuel_level,
+        fuelLevel: (vehicle as any).fuel_level,
         isActive: !!batch,
       };
     });
@@ -184,22 +181,29 @@ export function useLiveTracking(options: UseLiveTrackingOptions = {}) {
 
     return batches.map((batch): LiveDelivery => {
       const latestEvent = eventsData.latestByBatch[batch.id];
-      const facilities = (batch.facilities || []).map(
-        (f: Record<string, unknown>, index: number): LiveFacility => ({
-          id: (f.facility_id as string) || `facility-${index}`,
-          name: (f.facilities as Record<string, unknown>)?.name as string || `Stop ${index + 1}`,
-          position: [
-            ((f.facilities as Record<string, unknown>)?.lng as number) || 0,
-            ((f.facilities as Record<string, unknown>)?.lat as number) || 0,
-          ],
-          address: (f.facilities as Record<string, unknown>)?.address as string,
-          stopIndex: (f.slot_index as number) || index,
-          status: getStopStatus(index, batch.current_stop_index || 0, batch.status),
-          proofCaptured: false, // Would need to check events
-        })
+      const facilities: LiveFacility[] = (batch.facility_ids || []).map(
+        (id: string, index: number): LiveFacility => {
+          // Try to find stop info in optimized_route
+          const stopInfo = batch.optimized_route?.stops?.find((s: any) => s.id === id);
+
+          return {
+            id,
+            name: stopInfo?.name || `Stop ${index + 1}`,
+            position: stopInfo?.lng && stopInfo?.lat ? [stopInfo.lng, stopInfo.lat] : [0, 0],
+            address: stopInfo?.address,
+            stopIndex: index,
+            status: getStopStatus(index, 0, batch.status),
+            proofCaptured: eventsData.events.some(
+              (e) =>
+                e.batchId === batch.id &&
+                e.eventType === 'PROOF_CAPTURED' &&
+                e.metadata?.facilityId === id
+            ),
+          };
+        }
       );
 
-      const currentStopIndex = batch.current_stop_index || 0;
+      const currentStopIndex = 0;
       const totalStops = facilities.length;
       const completedStops = Math.min(currentStopIndex, totalStops);
 
@@ -207,20 +211,20 @@ export function useLiveTracking(options: UseLiveTrackingOptions = {}) {
         id: batch.id,
         batchId: batch.id,
         name: batch.name || `Batch ${batch.id.slice(0, 8)}`,
-        driverId: batch.assigned_driver_id,
-        driverName: batch.driver?.name,
+        driverId: batch.driver_id,
+        driverName: (batch.driver as any)?.name,
         vehicleId: batch.vehicle_id,
         status: batch.status,
-        driverStatus: (latestEvent?.driverStatus || batch.driver_status || 'INACTIVE') as DriverStatus,
+        driverStatus: (latestEvent?.driverStatus || 'INACTIVE') as DriverStatus,
         currentStopIndex,
         totalStops,
         completedStops,
-        route: buildRouteFromFacilities(batch.warehouse, facilities),
+        progress: totalStops > 0 ? (completedStops / totalStops) * 100 : 0,
         facilities,
+        route: extractRoutePath(batch as any, facilities),
         warehouseId: batch.warehouse_id,
         startTime: batch.actual_start_time ? new Date(batch.actual_start_time) : null,
         endTime: batch.actual_end_time ? new Date(batch.actual_end_time) : null,
-        progress: totalStops > 0 ? (completedStops / totalStops) * 100 : 0,
       };
     });
   }, [batchesQuery.data, eventsData.latestByBatch]);
@@ -248,6 +252,9 @@ export function useLiveTracking(options: UseLiveTrackingOptions = {}) {
     if (!filters.showVehicles) return [];
 
     return liveVehicles.filter((vehicle) => {
+      if (filters.vehicleTypeFilter !== 'all' && vehicle.type !== filters.vehicleTypeFilter) {
+        return false;
+      }
       if (filters.searchQuery) {
         const query = filters.searchQuery.toLowerCase();
         return (
@@ -265,6 +272,12 @@ export function useLiveTracking(options: UseLiveTrackingOptions = {}) {
     return liveDeliveries.filter((delivery) => {
       if (filters.statusFilter !== 'all' && delivery.driverStatus !== filters.statusFilter) {
         return false;
+      }
+      if (filters.priorityFilter !== 'all') {
+        const batch = (batchesQuery.data || []).find(b => b.id === delivery.id);
+        if (batch && batch.priority?.toLowerCase() !== filters.priorityFilter.toLowerCase()) {
+          return false;
+        }
       }
       if (filters.searchQuery) {
         const query = filters.searchQuery.toLowerCase();
@@ -454,29 +467,57 @@ function getStopStatus(
   return 'pending';
 }
 
-function calculateBatchUtilization(batch: Record<string, unknown>): number {
-  // Simple calculation - would need actual item counts
-  const facilities = batch.facilities as Array<unknown>;
+function calculateBatchUtilization(batch: {
+  payload_utilization_pct?: number | null;
+  facilities?: any[];
+}): number {
+  if (batch.payload_utilization_pct !== undefined && batch.payload_utilization_pct !== null) {
+    return batch.payload_utilization_pct;
+  }
+  // Fallback to rough estimate based on facilities
+  const facilities = batch.facilities;
   if (!facilities?.length) return 0;
-  return Math.min(facilities.length * 15, 100); // Rough estimate
+  return Math.min(facilities.length * 15, 100);
+}
+
+function extractRoutePath(batch: any, facilities: LiveFacility[] = []): [number, number][] {
+  // 1. Try to get detailed road path from optimized_route (if available)
+  if (batch.optimized_route) {
+    const routeData = batch.optimized_route;
+
+    // Check if it's a GeoJSON LineString
+    if (routeData.type === 'LineString' && Array.isArray(routeData.coordinates)) {
+      return routeData.coordinates;
+    }
+
+    // Check if it's a nested structure like { geometry: { coordinates: [...] } }
+    if (routeData.geometry?.type === 'LineString' && Array.isArray(routeData.geometry.coordinates)) {
+      return routeData.geometry.coordinates;
+    }
+  }
+
+  // 2. Fallback: Build straight-line route from components
+  return buildRouteFromFacilities(batch.warehouse, facilities);
 }
 
 function buildRouteFromFacilities(
-  warehouse: Record<string, unknown> | null,
+  warehouse: any,
   facilities: LiveFacility[]
 ): [number, number][] {
   const route: [number, number][] = [];
 
   // Start from warehouse
   if (warehouse && warehouse.lng && warehouse.lat) {
-    route.push([warehouse.lng as number, warehouse.lat as number]);
+    route.push([warehouse.lng, warehouse.lat]);
   }
 
-  // Add facility positions in order
-  const sortedFacilities = [...facilities].sort((a, b) => a.stopIndex - b.stopIndex);
-  for (const facility of sortedFacilities) {
-    if (facility.position[0] !== 0 && facility.position[1] !== 0) {
-      route.push(facility.position);
+  // If we have facilities with positions, add them
+  if (facilities.length > 0) {
+    const sortedFacilities = [...facilities].sort((a, b) => a.stopIndex - b.stopIndex);
+    for (const facility of sortedFacilities) {
+      if (facility.position[0] !== 0 && facility.position[1] !== 0) {
+        route.push(facility.position);
+      }
     }
   }
 

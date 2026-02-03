@@ -9,7 +9,7 @@
 import { useMemo } from 'react';
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
-import { shallow } from 'zustand/shallow';
+import { useShallow } from 'zustand/react/shallow';
 import type {
   UnifiedWorkflowStep,
   UnifiedWorkflowState,
@@ -709,14 +709,14 @@ export const useSourceSubOption = () =>
 
 /** Get schedule details */
 export const useScheduleDetails = () =>
-  useUnifiedWorkflowStore((state) => ({
+  useUnifiedWorkflowStore(useShallow((state) => ({
     title: state.schedule_title,
     startLocationId: state.start_location_id,
     startLocationType: state.start_location_type,
     plannedDate: state.planned_date,
     timeWindow: state.time_window,
     notes: state.schedule_notes,
-  }), shallow);
+  })));
 
 /** Get working set */
 export const useWorkingSet = () =>
@@ -728,12 +728,12 @@ export const useAiOptions = () =>
 
 /** Get batch details */
 export const useBatchDetails = () =>
-  useUnifiedWorkflowStore((state) => ({
+  useUnifiedWorkflowStore(useShallow((state) => ({
     name: state.batch_name,
     priority: state.priority,
     vehicleId: state.vehicle_id,
     driverId: state.driver_id,
-  }), shallow);
+  })));
 
 /** Get slot assignments */
 export const useSlotAssignments = () =>
@@ -741,11 +741,11 @@ export const useSlotAssignments = () =>
 
 /** Get route info */
 export const useRouteInfo = () =>
-  useUnifiedWorkflowStore((state) => ({
+  useUnifiedWorkflowStore(useShallow((state) => ({
     route: state.optimized_route,
     distanceKm: state.total_distance_km,
     durationMin: state.estimated_duration_min,
-  }), shallow);
+  })));
 
 /** Get loading state */
 export const useWorkflowLoading = () =>

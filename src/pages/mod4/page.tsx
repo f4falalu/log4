@@ -54,7 +54,7 @@ export default function Mod4Dashboard() {
         const { count: sessionsCount } = await supabase
           .from('driver_sessions')
           .select('*', { count: 'exact', head: true })
-          .eq('status', 'active');
+          .eq('status', 'ACTIVE');
 
         // Fetch today's completed deliveries from mod4_events
         const today = new Date().toISOString().split('T')[0];

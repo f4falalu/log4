@@ -114,7 +114,7 @@ export class DeliveryMarkerLayer extends BaseLayer<MapFeatureCollection<Delivery
       source: SOURCE_ID,
       minzoom: 10,
       layout: {
-        'text-field': ['+', ['get', 'currentStopIndex'], 1],
+        'text-field': ['to-string', ['+', ['coalesce', ['get', 'currentStopIndex'], 0], 1]],
         'text-font': ['Open Sans Bold'],
         'text-size': [
           'interpolate',

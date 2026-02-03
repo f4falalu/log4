@@ -17,7 +17,7 @@ import {
   DropdownMenuCheckboxItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Search, Filter, Loader2, Radio, Download } from 'lucide-react';
+import { Search, Filter, Loader2, Radio, Download, AlertCircle } from 'lucide-react';
 import { useSessions, DriverSession } from '@/hooks/admin/useSessions';
 import { toCSV, downloadCSV } from '@/lib/csvExport';
 
@@ -33,7 +33,7 @@ const STATUS_COLORS: Record<string, string> = {
 export function SessionTable() {
   const navigate = useNavigate();
   const [statusFilter, setStatusFilter] = useState<string[]>(['active']);
-  const { data: sessions = [], isLoading } = useSessions({ status: statusFilter });
+  const { data: sessions = [], isLoading, error } = useSessions({ status: statusFilter });
 
   const exportToCSV = () => {
     const csv = toCSV(
@@ -66,9 +66,9 @@ export function SessionTable() {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="p-4 space-y-4">
       {/* Toolbar */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-wrap">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline">
@@ -113,7 +113,15 @@ export function SessionTable() {
       )}
 
       {/* Table */}
-      {isLoading ? (
+      {error ? (
+        <div className="text-center py-12 border rounded-lg">
+          <AlertCircle className="h-8 w-8 text-destructive mx-auto mb-2" />
+          <p className="font-medium mb-1">Failed to load sessions</p>
+          <p className="text-sm text-muted-foreground">
+            {(error as { message?: string })?.message || 'Could not fetch session data.'}
+          </p>
+        </div>
+      ) : isLoading ? (
         <div className="flex items-center justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
@@ -122,7 +130,7 @@ export function SessionTable() {
           <p className="text-muted-foreground">No sessions found</p>
         </div>
       ) : (
-        <div className="border rounded-lg">
+        <div className="overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>

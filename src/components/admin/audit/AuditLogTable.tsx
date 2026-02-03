@@ -29,7 +29,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { Filter, Loader2, Download, Calendar as CalendarIcon, Eye } from 'lucide-react';
+import { Filter, Loader2, Download, Calendar as CalendarIcon, Eye, AlertCircle } from 'lucide-react';
 import {
   useAuditLogs,
   AuditEvent,
@@ -45,7 +45,7 @@ export function AuditLogTable() {
   const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
   const [selectedEvent, setSelectedEvent] = useState<AuditEvent | null>(null);
 
-  const { data: events = [], isLoading } = useAuditLogs({
+  const { data: events = [], isLoading, error } = useAuditLogs({
     eventTypes: eventTypeFilter.length > 0 ? eventTypeFilter : undefined,
     dateFrom: dateFrom?.toISOString(),
     dateTo: dateTo?.toISOString(),
@@ -84,7 +84,7 @@ export function AuditLogTable() {
   const hasFilters = eventTypeFilter.length > 0 || dateFrom || dateTo;
 
   return (
-    <div className="space-y-4">
+    <div className="p-4 space-y-4">
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-2">
         <DropdownMenu>
@@ -168,7 +168,15 @@ export function AuditLogTable() {
       </p>
 
       {/* Table */}
-      {isLoading ? (
+      {error ? (
+        <div className="text-center py-12 border rounded-lg">
+          <AlertCircle className="h-8 w-8 text-destructive mx-auto mb-2" />
+          <p className="font-medium mb-1">Failed to load audit logs</p>
+          <p className="text-sm text-muted-foreground">
+            {(error as { message?: string })?.message || 'Could not fetch audit data.'}
+          </p>
+        </div>
+      ) : isLoading ? (
         <div className="flex items-center justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
@@ -177,7 +185,7 @@ export function AuditLogTable() {
           <p className="text-muted-foreground">No events found</p>
         </div>
       ) : (
-        <div className="border rounded-lg max-h-[600px] overflow-auto">
+        <div className="max-h-[600px] overflow-auto">
           <Table>
             <TableHeader className="sticky top-0 bg-background">
               <TableRow>

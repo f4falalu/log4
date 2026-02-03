@@ -249,19 +249,24 @@ export const useZoneSummary = (zoneId: string) => {
 
       if (zoneError) throw zoneError;
 
-      // Get facilities count in this zone
+      // Get facilities count in this zone (using soft delete pattern - no is_active column)
       const { count: facilitiesCount } = await supabase
         .from('facilities')
         .select('*', { count: 'exact', head: true })
         .eq('zone_id', zoneId)
-        .eq('is_active', true);
+        .is('deleted_at', null);
 
-      // Get LGAs count
-      const { count: lgasCount } = await supabase
-        .from('lgas')
-        .select('*', { count: 'exact', head: true })
-        .eq('zone_id', zoneId)
-        .eq('is_active', true);
+      // Note: lgas table may not exist in all deployments
+      let lgasCount = 0;
+      try {
+        const { count } = await supabase
+          .from('lgas')
+          .select('*', { count: 'exact', head: true })
+          .eq('zone_id', zoneId);
+        lgasCount = count || 0;
+      } catch {
+        // lgas table doesn't exist, skip
+      }
 
       return {
         zone,
@@ -285,17 +290,22 @@ export const useZoneMetrics = () => {
 
       if (zonesError) throw zonesError;
 
-      // Get total facilities
+      // Get total facilities (using soft delete pattern - no is_active column)
       const { count: totalFacilities } = await supabase
         .from('facilities')
         .select('*', { count: 'exact', head: true })
-        .eq('is_active', true);
+        .is('deleted_at', null);
 
-      // Get total LGAs
-      const { count: totalLGAs } = await supabase
-        .from('lgas')
-        .select('*', { count: 'exact', head: true })
-        .eq('is_active', true);
+      // Note: lgas table may not exist in all deployments
+      let totalLGAs = 0;
+      try {
+        const { count } = await supabase
+          .from('lgas')
+          .select('*', { count: 'exact', head: true });
+        totalLGAs = count || 0;
+      } catch {
+        // lgas table doesn't exist, skip
+      }
 
       return {
         totalZones: zones?.length || 0,

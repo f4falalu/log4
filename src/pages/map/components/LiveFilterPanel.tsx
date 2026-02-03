@@ -35,6 +35,7 @@ export function LiveFilterPanel() {
   const toggleFilter = useLiveMapStore((s) => s.toggleFilter);
   const setStatusFilter = useLiveMapStore((s) => s.setStatusFilter);
   const setSearchQuery = useLiveMapStore((s) => s.setSearchQuery);
+  const setFilter = useLiveMapStore((s) => s.setFilter);
   const resetFilters = useLiveMapStore((s) => s.resetFilters);
 
   const { counts } = useLiveTracking();
@@ -189,6 +190,52 @@ export function LiveFilterPanel() {
             <span>{counts.delayedDrivers} delayed</span>
           </div>
         )}
+      </div>
+
+      <Separator />
+
+      {/* Vehicle Type Filter */}
+      <div className="p-4 space-y-3">
+        <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+          Vehicle Type
+        </h3>
+        <Select
+          value={filters.vehicleTypeFilter}
+          onValueChange={(value) => setFilter('vehicleTypeFilter', value)}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="All Vehicles" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Vehicle Types</SelectItem>
+            <SelectItem value="truck">Trucks</SelectItem>
+            <SelectItem value="van">Vans</SelectItem>
+            <SelectItem value="bike">Bikes</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <Separator />
+
+      {/* Priority Filter */}
+      <div className="p-4 space-y-3">
+        <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+          Priority
+        </h3>
+        <Select
+          value={filters.priorityFilter}
+          onValueChange={(value) => setFilter('priorityFilter', value)}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="All Priorities" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Priorities</SelectItem>
+            <SelectItem value="high">High Priority</SelectItem>
+            <SelectItem value="medium">Medium Priority</SelectItem>
+            <SelectItem value="low">Low Priority</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Spacer */}

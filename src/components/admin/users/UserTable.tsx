@@ -17,7 +17,7 @@ import {
   DropdownMenuCheckboxItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Search, Filter, UserPlus, Loader2, Download } from 'lucide-react';
+import { Search, Filter, UserPlus, Loader2, Download, AlertCircle } from 'lucide-react';
 import { useUsers, User } from '@/hooks/admin/useUsers';
 import { AppRole } from '@/types';
 import { toCSV, downloadCSV } from '@/lib/csvExport';
@@ -50,7 +50,7 @@ export function UserTable() {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<string[]>([]);
-  const { data: users = [], isLoading } = useUsers({ search, roleFilter });
+  const { data: users = [], isLoading, error } = useUsers({ search, roleFilter });
 
   const exportToCSV = () => {
     const csv = toCSV(
@@ -73,9 +73,9 @@ export function UserTable() {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="p-4 space-y-4">
       {/* Toolbar */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-wrap">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -113,14 +113,22 @@ export function UserTable() {
           <Download className="h-4 w-4 mr-2" />
           Export CSV
         </Button>
-        <Button onClick={() => navigate('/admin/users/create')}>
+        <Button onClick={() => navigate('/admin/members/create')}>
           <UserPlus className="h-4 w-4 mr-2" />
           Add User
         </Button>
       </div>
 
       {/* Table */}
-      {isLoading ? (
+      {error ? (
+        <div className="text-center py-12 border rounded-lg">
+          <AlertCircle className="h-8 w-8 text-destructive mx-auto mb-2" />
+          <p className="font-medium mb-1">Failed to load users</p>
+          <p className="text-sm text-muted-foreground">
+            {(error as { message?: string })?.message || 'Could not fetch user data.'}
+          </p>
+        </div>
+      ) : isLoading ? (
         <div className="flex items-center justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
@@ -129,7 +137,7 @@ export function UserTable() {
           <p className="text-muted-foreground">No users found</p>
         </div>
       ) : (
-        <div className="border rounded-lg">
+        <div className="overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
@@ -146,7 +154,7 @@ export function UserTable() {
                 <TableRow
                   key={user.user_id}
                   className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => navigate(`/admin/users/${user.user_id}`)}
+                  onClick={() => navigate(`/admin/members/${user.user_id}`)}
                 >
                   <TableCell className="font-medium">{user.full_name}</TableCell>
                   <TableCell>{user.email}</TableCell>

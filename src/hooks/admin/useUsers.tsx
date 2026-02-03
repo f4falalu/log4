@@ -35,6 +35,7 @@ export function useUsers(params: UseUsersParams = {}) {
       if (error) throw error;
       return data as User[];
     },
-    refetchInterval: 30000, // Refresh every 30 seconds
+    retry: 1,
+    refetchInterval: 30000,
   });
 }

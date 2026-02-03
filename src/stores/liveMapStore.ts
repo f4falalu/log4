@@ -70,6 +70,8 @@ const defaultFilters: LiveMapFilters = {
   showDeliveries: true,
   showRoutes: true,
   statusFilter: 'all',
+  vehicleTypeFilter: 'all',
+  priorityFilter: 'all',
   searchQuery: '',
 };
 

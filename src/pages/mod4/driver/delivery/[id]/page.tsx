@@ -1,10 +1,20 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Package,
   MapPin,
@@ -16,17 +26,25 @@ import {
   PenTool,
   AlertCircle,
   Wifi,
-  WifiOff
+  WifiOff,
+  Loader2,
+  X,
+  Upload,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
+import { useMod4Events } from '@/hooks/useMod4Events';
+import { useCurrentPosition } from '@/hooks/useGeolocation';
 
 interface DeliveryStop {
   id: string;
+  facility_id: string;
   facility_name: string;
   address: string;
   status: 'pending' | 'in_progress' | 'completed';
   items_count: number;
+  completed_at?: string;
 }
 
 interface BatchDetails {
@@ -35,18 +53,63 @@ interface BatchDetails {
   status: string;
   delivery_date: string;
   stops: DeliveryStop[];
+  driver_id: string | null;
+}
+
+interface DriverContext {
+  driverId: string;
+  sessionId: string;
+  deviceId: string;
+}
+
+function generateDeviceId(): string {
+  const stored = localStorage.getItem('mod4_device_id');
+  if (stored) return stored;
+  const newId = `device_${crypto.randomUUID()}`;
+  localStorage.setItem('mod4_device_id', newId);
+  return newId;
 }
 
 export default function DeliveryExecutionPage() {
-  const { batchId } = useParams<{ batchId: string }>();
+  const { id: batchId } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [batch, setBatch] = useState<BatchDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [currentStop, setCurrentStop] = useState<number>(0);
+  const [driverContext, setDriverContext] = useState<DriverContext | null>(null);
+  const [showPhotoDialog, setShowPhotoDialog] = useState(false);
+  const [showSignatureDialog, setShowSignatureDialog] = useState(false);
+  const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
+  const [isCapturing, setIsCapturing] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
+  const { position, getPosition } = useCurrentPosition();
+  const {
+    recordDeliveryStarted,
+    recordDeliveryCompleted,
+    recordBatchStarted,
+    recordBatchCompleted,
+    recordPhotoCaptured,
+    isRecording,
+    offlineQueueSize,
+    syncOfflineEvents,
+  } = useMod4Events({
+    driverId: driverContext?.driverId,
+    batchId,
+  });
+
+  // Online/offline detection
   useEffect(() => {
-    const handleOnline = () => setIsOnline(true);
+    const handleOnline = () => {
+      setIsOnline(true);
+      // Sync offline events when back online
+      if (offlineQueueSize > 0) {
+        syncOfflineEvents();
+      }
+    };
     const handleOffline = () => setIsOnline(false);
 
     window.addEventListener('online', handleOnline);
@@ -56,8 +119,50 @@ export default function DeliveryExecutionPage() {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, []);
+  }, [offlineQueueSize, syncOfflineEvents]);
 
+  // Fetch driver context (driver_id linked to current user)
+  useEffect(() => {
+    async function fetchDriverContext() {
+      if (!user) return;
+
+      try {
+        // Find driver record linked to this user
+        const { data: driver, error } = await supabase
+          .from('drivers')
+          .select('id')
+          .eq('user_id', user.id)
+          .single();
+
+        if (error && error.code !== 'PGRST116') {
+          console.error('Error fetching driver:', error);
+          return;
+        }
+
+        if (driver) {
+          // Check for active session
+          const { data: session } = await supabase
+            .from('driver_sessions')
+            .select('id')
+            .eq('driver_id', driver.id)
+            .eq('status', 'active')
+            .single();
+
+          setDriverContext({
+            driverId: driver.id,
+            sessionId: session?.id || `session_${Date.now()}`,
+            deviceId: generateDeviceId(),
+          });
+        }
+      } catch (error) {
+        console.error('Failed to fetch driver context:', error);
+      }
+    }
+
+    fetchDriverContext();
+  }, [user]);
+
+  // Fetch batch details
   useEffect(() => {
     async function fetchBatchDetails() {
       if (!batchId) return;
@@ -69,7 +174,8 @@ export default function DeliveryExecutionPage() {
             id,
             name,
             status,
-            delivery_date
+            delivery_date,
+            assigned_driver_id
           `)
           .eq('id', batchId)
           .single();
@@ -77,27 +183,58 @@ export default function DeliveryExecutionPage() {
         if (batchError) throw batchError;
 
         // Fetch facilities for this batch
-        const { data: facilities, error: facilityError } = await supabase
-          .from('batch_facilities')
+        const { data: batchFacilities, error: facilityError } = await supabase
+          .from('delivery_batch_facilities')
           .select(`
             id,
-            facility:facilities(
+            facility_id,
+            slot_index,
+            status,
+            completed_at,
+            facilities (
               id,
               name,
               address
             )
           `)
-          .eq('batch_id', batchId);
+          .eq('batch_id', batchId)
+          .order('slot_index');
 
         if (facilityError) throw facilityError;
 
-        const stops: DeliveryStop[] = (facilities || []).map((bf: any, index: number) => ({
-          id: bf.id,
-          facility_name: bf.facility?.name || 'Unknown Facility',
-          address: bf.facility?.address || '',
-          status: index === 0 ? 'in_progress' : 'pending',
-          items_count: 0, // Will be populated when batch_items integration is complete
-        }));
+        // Get item counts per facility
+        const { data: itemCounts } = await supabase
+          .from('batch_items')
+          .select('facility_id')
+          .eq('batch_id', batchId);
+
+        const facilityCounts: Record<string, number> = {};
+        (itemCounts || []).forEach((item: any) => {
+          facilityCounts[item.facility_id] = (facilityCounts[item.facility_id] || 0) + 1;
+        });
+
+        const stops: DeliveryStop[] = (batchFacilities || []).map((bf: any, index: number) => {
+          const facility = bf.facilities;
+          const isCompleted = bf.status === 'completed';
+          const isFirst = index === 0;
+
+          return {
+            id: bf.id,
+            facility_id: bf.facility_id,
+            facility_name: facility?.name || 'Unknown Facility',
+            address: facility?.address || '',
+            status: isCompleted ? 'completed' : (isFirst ? 'in_progress' : 'pending'),
+            items_count: facilityCounts[bf.facility_id] || 0,
+            completed_at: bf.completed_at,
+          };
+        });
+
+        // Find first non-completed stop
+        const firstPendingIndex = stops.findIndex(s => s.status !== 'completed');
+        if (firstPendingIndex >= 0) {
+          stops[firstPendingIndex].status = 'in_progress';
+          setCurrentStop(firstPendingIndex);
+        }
 
         setBatch({
           id: batchData.id,
@@ -105,7 +242,24 @@ export default function DeliveryExecutionPage() {
           status: batchData.status,
           delivery_date: batchData.delivery_date,
           stops,
+          driver_id: batchData.assigned_driver_id,
         });
+
+        // Record batch started if this is the first time opening
+        if (driverContext && batchData.status === 'assigned') {
+          await recordBatchStarted({
+            ...driverContext,
+            batchId: batchData.id,
+            batchName: batchData.name,
+            totalStops: stops.length,
+          });
+
+          // Update batch status to in-progress
+          await supabase
+            .from('delivery_batches')
+            .update({ status: 'in-progress' })
+            .eq('id', batchId);
+        }
       } catch (error) {
         console.error('Failed to fetch batch details:', error);
       } finally {
@@ -114,33 +268,223 @@ export default function DeliveryExecutionPage() {
     }
 
     fetchBatchDetails();
-  }, [batchId]);
+  }, [batchId, driverContext]);
 
-  const handleCompleteStop = (stopIndex: number) => {
-    if (!batch) return;
+  const handleStartStop = async (stopIndex: number) => {
+    if (!batch || !driverContext) return;
 
-    const updatedStops = [...batch.stops];
-    updatedStops[stopIndex].status = 'completed';
+    const stop = batch.stops[stopIndex];
 
-    // Move to next stop if available
-    if (stopIndex + 1 < batch.stops.length) {
-      updatedStops[stopIndex + 1].status = 'in_progress';
-      setCurrentStop(stopIndex + 1);
+    try {
+      // Get current position
+      const pos = await getPosition();
+
+      // Record delivery started event
+      await recordDeliveryStarted({
+        ...driverContext,
+        batchId: batch.id,
+        facilityId: stop.facility_id,
+        facilityName: stop.facility_name,
+        stopIndex,
+      }, pos ? { lat: pos.lat, lng: pos.lng } : undefined);
+
+      // Update local state
+      const updatedStops = [...batch.stops];
+      updatedStops[stopIndex].status = 'in_progress';
+      setBatch({ ...batch, stops: updatedStops });
+    } catch (error) {
+      console.error('Failed to start stop:', error);
     }
+  };
 
-    setBatch({ ...batch, stops: updatedStops });
+  const handleCompleteStop = async (stopIndex: number) => {
+    if (!batch || !driverContext) return;
 
-    // TODO: Persist to database via mod4_events
+    const stop = batch.stops[stopIndex];
+
+    try {
+      // Get current position
+      const pos = await getPosition();
+
+      // Record delivery completed event
+      await recordDeliveryCompleted({
+        ...driverContext,
+        batchId: batch.id,
+        facilityId: stop.facility_id,
+        facilityName: stop.facility_name,
+        stopIndex,
+        itemsDelivered: stop.items_count,
+        proofCaptured: !!capturedPhoto,
+      }, pos ? { lat: pos.lat, lng: pos.lng } : undefined);
+
+      // Update database
+      await supabase
+        .from('delivery_batch_facilities')
+        .update({
+          status: 'completed',
+          completed_at: new Date().toISOString(),
+        })
+        .eq('id', stop.id);
+
+      // Update local state
+      const updatedStops = [...batch.stops];
+      updatedStops[stopIndex].status = 'completed';
+      updatedStops[stopIndex].completed_at = new Date().toISOString();
+
+      // Move to next stop if available
+      if (stopIndex + 1 < batch.stops.length) {
+        updatedStops[stopIndex + 1].status = 'in_progress';
+        setCurrentStop(stopIndex + 1);
+      } else {
+        // All stops completed - record batch completed
+        await recordBatchCompleted({
+          ...driverContext,
+          batchId: batch.id,
+          batchName: batch.name,
+          totalStops: batch.stops.length,
+          completedStops: batch.stops.length,
+        });
+
+        // Update batch status
+        await supabase
+          .from('delivery_batches')
+          .update({ status: 'completed' })
+          .eq('id', batch.id);
+      }
+
+      setBatch({ ...batch, stops: updatedStops });
+      setCapturedPhoto(null);
+    } catch (error) {
+      console.error('Failed to complete stop:', error);
+    }
   };
 
   const handleNavigate = (stopIndex: number) => {
     const stop = batch?.stops[stopIndex];
     if (!stop) return;
 
-    // Open in maps app (works on mobile)
     const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(stop.address || stop.facility_name)}`;
     window.open(mapsUrl, '_blank');
   };
+
+  const handlePhotoCapture = async () => {
+    if (!fileInputRef.current) return;
+    fileInputRef.current.click();
+  };
+
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !batch || !driverContext) return;
+
+    setIsCapturing(true);
+
+    try {
+      // Read file as data URL for preview
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const photoData = e.target?.result as string;
+        setCapturedPhoto(photoData);
+
+        // Get current position
+        const pos = await getPosition();
+
+        // Record photo captured event
+        const currentStopData = batch.stops[currentStop];
+        await recordPhotoCaptured({
+          ...driverContext,
+          batchId: batch.id,
+          facilityId: currentStopData.facility_id,
+          photoType: 'proof_of_delivery',
+        }, pos ? { lat: pos.lat, lng: pos.lng } : undefined);
+
+        setShowPhotoDialog(false);
+        setIsCapturing(false);
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error('Failed to capture photo:', error);
+      setIsCapturing(false);
+    }
+  };
+
+  const handleSignatureCapture = useCallback(() => {
+    // Simple signature capture using canvas touch/mouse events
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let isDrawing = false;
+    let lastX = 0;
+    let lastY = 0;
+
+    const getCoords = (e: MouseEvent | TouchEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      if ('touches' in e) {
+        return {
+          x: e.touches[0].clientX - rect.left,
+          y: e.touches[0].clientY - rect.top,
+        };
+      }
+      return {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+      };
+    };
+
+    const startDrawing = (e: MouseEvent | TouchEvent) => {
+      isDrawing = true;
+      const { x, y } = getCoords(e);
+      lastX = x;
+      lastY = y;
+    };
+
+    const draw = (e: MouseEvent | TouchEvent) => {
+      if (!isDrawing) return;
+      e.preventDefault();
+
+      const { x, y } = getCoords(e);
+      ctx.beginPath();
+      ctx.moveTo(lastX, lastY);
+      ctx.lineTo(x, y);
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 2;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+      lastX = x;
+      lastY = y;
+    };
+
+    const stopDrawing = () => {
+      isDrawing = false;
+    };
+
+    canvas.addEventListener('mousedown', startDrawing);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('mouseup', stopDrawing);
+    canvas.addEventListener('mouseout', stopDrawing);
+    canvas.addEventListener('touchstart', startDrawing);
+    canvas.addEventListener('touchmove', draw);
+    canvas.addEventListener('touchend', stopDrawing);
+
+    return () => {
+      canvas.removeEventListener('mousedown', startDrawing);
+      canvas.removeEventListener('mousemove', draw);
+      canvas.removeEventListener('mouseup', stopDrawing);
+      canvas.removeEventListener('mouseout', stopDrawing);
+      canvas.removeEventListener('touchstart', startDrawing);
+      canvas.removeEventListener('touchmove', draw);
+      canvas.removeEventListener('touchend', stopDrawing);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (showSignatureDialog) {
+      const cleanup = handleSignatureCapture();
+      return cleanup;
+    }
+  }, [showSignatureDialog, handleSignatureCapture]);
 
   if (loading) {
     return (
@@ -185,6 +529,16 @@ export default function DeliveryExecutionPage() {
 
   return (
     <div className="space-y-6 p-6 max-w-4xl mx-auto">
+      {/* Hidden file input for photo capture */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={handleFileSelect}
+      />
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -193,22 +547,29 @@ export default function DeliveryExecutionPage() {
             {completedStops} of {batch.stops.length} stops completed
           </p>
         </div>
-        <Badge
-          variant={isOnline ? 'default' : 'secondary'}
-          className="flex items-center gap-1.5"
-        >
-          {isOnline ? (
-            <>
-              <Wifi className="h-3 w-3" />
-              Online
-            </>
-          ) : (
-            <>
-              <WifiOff className="h-3 w-3" />
-              Offline
-            </>
+        <div className="flex items-center gap-2">
+          {offlineQueueSize > 0 && (
+            <Badge variant="outline" className="text-amber-600">
+              {offlineQueueSize} pending sync
+            </Badge>
           )}
-        </Badge>
+          <Badge
+            variant={isOnline ? 'default' : 'secondary'}
+            className="flex items-center gap-1.5"
+          >
+            {isOnline ? (
+              <>
+                <Wifi className="h-3 w-3" />
+                Online
+              </>
+            ) : (
+              <>
+                <WifiOff className="h-3 w-3" />
+                Offline
+              </>
+            )}
+          </Badge>
+        </div>
       </div>
 
       {/* Progress */}
@@ -285,19 +646,38 @@ export default function DeliveryExecutionPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      disabled
+                      onClick={() => setShowPhotoDialog(true)}
                     >
                       <Camera className="h-4 w-4 mr-2" />
                       Photo
                     </Button>
                   </div>
 
+                  {/* Captured Photo Preview */}
+                  {capturedPhoto && (
+                    <div className="relative">
+                      <img
+                        src={capturedPhoto}
+                        alt="Captured proof"
+                        className="w-full h-32 object-cover rounded-md"
+                      />
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-2 right-2 h-6 w-6"
+                        onClick={() => setCapturedPhoto(null)}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  )}
+
                   {/* Delivery Actions */}
                   <div className="space-y-2">
                     <Button
                       variant="outline"
                       className="w-full justify-start"
-                      disabled
+                      onClick={() => setShowSignatureDialog(true)}
                     >
                       <PenTool className="h-4 w-4 mr-2" />
                       Capture Signature
@@ -305,7 +685,11 @@ export default function DeliveryExecutionPage() {
                     <Button
                       className="w-full"
                       onClick={() => handleCompleteStop(index)}
+                      disabled={isRecording}
                     >
+                      {isRecording ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : null}
                       Complete Stop
                       <ArrowRight className="h-4 w-4 ml-2" />
                     </Button>
@@ -325,6 +709,11 @@ export default function DeliveryExecutionPage() {
                   <div className="flex items-center gap-2 text-sm text-green-600">
                     <CheckCircle2 className="h-4 w-4" />
                     Delivery completed
+                    {stop.completed_at && (
+                      <span className="text-muted-foreground text-xs">
+                        at {new Date(stop.completed_at).toLocaleTimeString()}
+                      </span>
+                    )}
                   </div>
                 </CardContent>
               )}
@@ -359,6 +748,88 @@ export default function DeliveryExecutionPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Photo Capture Dialog */}
+      <Dialog open={showPhotoDialog} onOpenChange={setShowPhotoDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Capture Photo</DialogTitle>
+            <DialogDescription>
+              Take a photo as proof of delivery
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Button
+              className="w-full h-32 border-dashed border-2"
+              variant="outline"
+              onClick={handlePhotoCapture}
+              disabled={isCapturing}
+            >
+              {isCapturing ? (
+                <Loader2 className="h-8 w-8 animate-spin" />
+              ) : (
+                <div className="flex flex-col items-center gap-2">
+                  <Camera className="h-8 w-8" />
+                  <span>Tap to take photo</span>
+                </div>
+              )}
+            </Button>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowPhotoDialog(false)}>
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Signature Capture Dialog */}
+      <Dialog open={showSignatureDialog} onOpenChange={setShowSignatureDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Capture Signature</DialogTitle>
+            <DialogDescription>
+              Have the recipient sign below
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="recipient-name">Recipient Name</Label>
+              <Input id="recipient-name" placeholder="Enter recipient name" />
+            </div>
+            <div className="border rounded-md p-2 bg-white">
+              <canvas
+                ref={canvasRef}
+                width={350}
+                height={150}
+                className="w-full touch-none cursor-crosshair"
+                style={{ touchAction: 'none' }}
+              />
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const canvas = canvasRef.current;
+                if (canvas) {
+                  const ctx = canvas.getContext('2d');
+                  ctx?.clearRect(0, 0, canvas.width, canvas.height);
+                }
+              }}
+            >
+              Clear
+            </Button>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowSignatureDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={() => setShowSignatureDialog(false)}>
+              Save Signature
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

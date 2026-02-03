@@ -109,6 +109,7 @@ export function useAuditLogs(filters: AuditFilters = {}) {
         driver: event.session?.driver,
       })) as AuditEvent[];
     },
+    retry: 1,
     staleTime: 30000,
   });
 }
@@ -124,6 +125,7 @@ export function useEventStats() {
       if (error) throw error;
       return data as Array<{ event_type: string; count: number }>;
     },
+    retry: 1,
     staleTime: 60000,
   });
 }

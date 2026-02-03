@@ -100,7 +100,78 @@ export function useMapPlayback({
         return points.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
       }
 
-      // TODO: Implement playback for driver/vehicle using GPS tracking data
+      // Fetch GPS tracking data for driver or vehicle
+      if (entityType === 'driver') {
+        const query = supabase
+          .from('driver_gps_events')
+          .select('*')
+          .eq('driver_id', entityId)
+          .order('captured_at', { ascending: true });
+
+        // Apply time range filter if provided
+        if (startTime) {
+          query.gte('captured_at', startTime.toISOString());
+        }
+        if (endTime) {
+          query.lte('captured_at', endTime.toISOString());
+        }
+
+        const { data, error } = await query.limit(1000);
+
+        if (error) throw error;
+
+        // Convert GPS events to playback points
+        const points: PlaybackPoint[] = (data || []).map((gps, index) => ({
+          timestamp: new Date(gps.captured_at),
+          lat: gps.lat,
+          lng: gps.lng,
+          sequence: index,
+          status: 'in_transit' as const,
+        }));
+
+        return points;
+      }
+
+      if (entityType === 'vehicle') {
+        // For vehicle, find the associated driver(s) and get their GPS data
+        const { data: batches } = await supabase
+          .from('delivery_batches')
+          .select('assigned_driver_id')
+          .eq('vehicle_id', entityId)
+          .in('status', ['in-progress', 'completed']);
+
+        const driverIds = [...new Set((batches || []).map(b => b.assigned_driver_id).filter(Boolean))];
+
+        if (driverIds.length === 0) return [];
+
+        const query = supabase
+          .from('driver_gps_events')
+          .select('*')
+          .in('driver_id', driverIds)
+          .order('captured_at', { ascending: true });
+
+        if (startTime) {
+          query.gte('captured_at', startTime.toISOString());
+        }
+        if (endTime) {
+          query.lte('captured_at', endTime.toISOString());
+        }
+
+        const { data, error } = await query.limit(1000);
+
+        if (error) throw error;
+
+        const points: PlaybackPoint[] = (data || []).map((gps, index) => ({
+          timestamp: new Date(gps.captured_at),
+          lat: gps.lat,
+          lng: gps.lng,
+          sequence: index,
+          status: 'in_transit' as const,
+        }));
+
+        return points;
+      }
+
       return [];
     },
     enabled: !!entityId && !!entityType,

@@ -14,6 +14,8 @@ interface AuthContextType {
   signInWithGoogle: () => Promise<{ error: any }>;
   signUp: (email: string, password: string, fullName: string, phone?: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
+  sendDriverOtp: (email: string, workspaceId: string) => Promise<{ data?: string; error: any }>;
+  verifyDriverOtp: (email: string, otp: string) => Promise<{ success: boolean; error: any }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -97,8 +99,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     navigate('/auth');
   };
 
+  const sendDriverOtp = async (email: string, workspaceId: string) => {
+    const { data, error } = await supabase.rpc('generate_mod4_otp', {
+      p_email: email,
+      p_workspace_id: workspaceId,
+    });
+    return { data, error };
+  };
+
+  const verifyDriverOtp = async (email: string, otp: string) => {
+    const { data, error } = await supabase.rpc('verify_mod4_otp', {
+      p_email: email,
+      p_otp: otp,
+    });
+
+    if (error) {
+      return { success: false, error };
+    }
+
+    // After successful OTP verification, the user is linked via the RPC function
+    // Now we need to sign them in
+    if (data === true) {
+      // Refresh the session to get the updated user state
+      const { data: { session }, error: sessionError } = await supabase.auth.refreshSession();
+      if (sessionError) {
+        return { success: false, error: sessionError };
+      }
+      setSession(session);
+      setUser(session?.user ?? null);
+      return { success: true, error: null };
+    }
+
+    return { success: false, error: new Error('Invalid OTP code') };
+  };
+
   return (
-    <AuthContext.Provider value={{ user, session, loading, activeRole, setActiveRole, signIn, signInWithGoogle, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, activeRole, setActiveRole, signIn, signInWithGoogle, signUp, signOut, sendDriverOtp, verifyDriverOtp }}>
       {children}
     </AuthContext.Provider>
   );
