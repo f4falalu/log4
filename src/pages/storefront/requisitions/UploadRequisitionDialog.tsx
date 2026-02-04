@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Loader2, FileText, CheckCircle, XCircle, ChevronLeft, ArrowRight, AlertTriangle, FileSpreadsheet } from 'lucide-react';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import {
   Dialog,
   DialogContent,
@@ -153,23 +153,20 @@ export function UploadRequisitionDialog({ open, onOpenChange }: UploadRequisitio
   // Parse Excel to raw data
   const parseExcelToRaw = async (file: File): Promise<string[][]> => {
     const arrayBuffer = await file.arrayBuffer();
-    const workbook = XLSX.read(arrayBuffer, { type: 'array' });
-    const firstSheetName = workbook.SheetNames[0];
-    const worksheet = workbook.Sheets[firstSheetName];
-    const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
-    const colCount = range.e.c - range.s.c + 1;
-    const rawData: any[][] = XLSX.utils.sheet_to_json(worksheet, {
-      header: 1,
-      defval: '',
-      blankrows: false
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(arrayBuffer);
+
+    const worksheet = workbook.worksheets[0];
+    const rawData: string[][] = [];
+
+    worksheet.eachRow((row) => {
+      const rowValues = row.values as any[];
+      // ExcelJS row.values is 1-indexed with undefined at 0, so we slice from index 1
+      const normalizedRow = rowValues.slice(1).map(cell => String(cell ?? '').trim());
+      rawData.push(normalizedRow);
     });
-    return rawData.map(row => {
-      const normalizedRow = new Array(colCount).fill('');
-      for (let i = 0; i < Math.min(row.length, colCount); i++) {
-        normalizedRow[i] = String(row[i] ?? '').trim();
-      }
-      return normalizedRow;
-    });
+
+    return rawData;
   };
 
   const handleFileSelect = async (file: File) => {

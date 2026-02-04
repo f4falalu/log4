@@ -1,8 +1,16 @@
 // Lazy load heavy export libraries to reduce initial bundle size
 export async function exportToCSV(data: any[], filename: string) {
-  const XLSX = await import('xlsx');
-  const worksheet = XLSX.utils.json_to_sheet(data);
-  const csv = XLSX.utils.sheet_to_csv(worksheet);
+  const ExcelJS = await import('exceljs');
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet('Data');
+
+  if (data.length > 0) {
+    const headers = Object.keys(data[0]);
+    worksheet.addRow(headers);
+    data.forEach(row => worksheet.addRow(Object.values(row)));
+  }
+
+  const csv = await workbook.csv.writeBuffer();
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
   const url = URL.createObjectURL(blob);
@@ -37,7 +45,7 @@ export async function exportToPDF(data: any[], filename: string, title: string) 
 import { DeliveryBatch, Facility, Driver, Vehicle } from '@/types';
 
 export async function exportBatchesToExcel(batches: DeliveryBatch[]) {
-  const XLSX = await import('xlsx');
+  const ExcelJS = await import('exceljs');
 
   const data = batches.map(b => ({
     'Batch Name': b.name,
@@ -53,11 +61,24 @@ export async function exportBatchesToExcel(batches: DeliveryBatch[]) {
     'Warehouse': b.warehouseName || b.warehouseId
   }));
 
-  const worksheet = XLSX.utils.json_to_sheet(data);
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'Delivery Batches');
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet('Delivery Batches');
 
-  XLSX.writeFile(workbook, 'delivery-batches.xlsx');
+  if (data.length > 0) {
+    worksheet.columns = Object.keys(data[0]).map(key => ({ header: key, key }));
+    data.forEach(row => worksheet.addRow(row));
+  }
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'delivery-batches.xlsx';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }
 
 export async function exportReportToPDF(

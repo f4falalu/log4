@@ -322,49 +322,58 @@ function parseCSVFile(file: File): Promise<ParsedFile> {
 }
 
 /**
- * Parse Excel file (.xlsx, .xls) using SheetJS
- * Lazy loads XLSX library only when needed
+ * Parse Excel file (.xlsx, .xls) using ExcelJS
+ * Lazy loads ExcelJS library only when needed
  */
 async function parseExcelFile(file: File): Promise<ParsedFile> {
-  // Lazy load XLSX library only when parsing Excel files
-  const XLSX = await import('xlsx');
+  // Lazy load ExcelJS library only when parsing Excel files
+  const ExcelJS = await import('exceljs');
 
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
 
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
-        const data = e.target?.result;
-        if (!data) {
+        const buffer = e.target?.result as ArrayBuffer;
+        if (!buffer) {
           reject(new Error('Failed to read file'));
           return;
         }
 
         // Read workbook
-        const workbook = XLSX.read(data, { type: 'binary' });
+        const workbook = new ExcelJS.Workbook();
+        await workbook.xlsx.load(buffer);
 
         // Get first sheet
-        const firstSheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[firstSheetName];
+        const worksheet = workbook.worksheets[0];
 
-        // Convert to JSON
-        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+        if (!worksheet) {
+          reject(new Error('Excel file is empty'));
+          return;
+        }
+
+        const jsonData: any[][] = [];
+        worksheet.eachRow((row) => {
+          jsonData.push(row.values as any[]);
+        });
 
         if (jsonData.length === 0) {
           reject(new Error('Excel file is empty'));
           return;
         }
 
-        // First row is headers
-        const headers = (jsonData[0] as any[]).map(h => String(h || '').trim());
+        // First row is headers (skip index 0 due to ExcelJS 1-based indexing)
+        const headers = (jsonData[0] as any[]).slice(1).map(h => String(h || '').trim());
 
         // Remaining rows are data, generate diagnostics from first row only
         let columnMappings: ColumnMappingDiagnostic[] | undefined;
         const rows = jsonData.slice(1).map((row: any, index) => {
           const obj: any = {};
+          // Skip index 0 due to ExcelJS 1-based indexing
+          const rowData = row.slice(1);
           headers.forEach((header, idx) => {
             if (header) {
-              obj[header] = row[idx] !== undefined ? String(row[idx]).trim() : '';
+              obj[header] = rowData[idx] !== undefined ? String(rowData[idx]).trim() : '';
             }
           });
           // Normalize column names for consistent field access
@@ -390,7 +399,7 @@ async function parseExcelFile(file: File): Promise<ParsedFile> {
       reject(new Error('Failed to read file'));
     };
 
-    reader.readAsBinaryString(file);
+    reader.readAsArrayBuffer(file);
   });
 }
 

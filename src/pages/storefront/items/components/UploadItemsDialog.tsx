@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo } from 'react';
 import { Upload, FileText, Check, AlertTriangle, X, Download, FileSpreadsheet, FileType2, ArrowRight, ChevronLeft } from 'lucide-react';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import mammoth from 'mammoth';
 import * as pdfjsLib from 'pdfjs-dist';
 import {
@@ -310,29 +310,20 @@ export function UploadItemsDialog({ open, onOpenChange, onSuccess }: UploadItems
   // Parse Excel file
   const parseExcel = async (file: File): Promise<string[][]> => {
     const arrayBuffer = await file.arrayBuffer();
-    const workbook = XLSX.read(arrayBuffer, { type: 'array' });
-    const firstSheetName = workbook.SheetNames[0];
-    const worksheet = workbook.Sheets[firstSheetName];
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(arrayBuffer);
 
-    // Get the range of the worksheet to know column count
-    const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
-    const colCount = range.e.c - range.s.c + 1;
+    const worksheet = workbook.worksheets[0];
+    const rawData: string[][] = [];
 
-    // Use sheet_to_json with header: 1 to get raw array data
-    const rawData: any[][] = XLSX.utils.sheet_to_json(worksheet, {
-      header: 1,
-      defval: '', // Default value for empty cells
-      blankrows: false // Skip blank rows
+    worksheet.eachRow((row) => {
+      const rowValues = row.values as any[];
+      // ExcelJS row.values is 1-indexed with undefined at 0, so we slice from index 1
+      const normalizedRow = rowValues.slice(1).map(cell => String(cell ?? '').trim());
+      rawData.push(normalizedRow);
     });
 
-    // Ensure each row has the same number of columns
-    return rawData.map(row => {
-      const normalizedRow = new Array(colCount).fill('');
-      for (let i = 0; i < Math.min(row.length, colCount); i++) {
-        normalizedRow[i] = String(row[i] ?? '').trim();
-      }
-      return normalizedRow;
-    });
+    return rawData;
   };
 
   // Parse DOCX file - looks for tables

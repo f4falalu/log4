@@ -109,7 +109,10 @@ export default function StockReportsPage() {
 
     setIsExporting(true);
     try {
-      const XLSX = await import('xlsx');
+      const ExcelJS = await import('exceljs');
+
+      // Create workbook
+      const wb = new ExcelJS.Workbook();
 
       // Summary sheet
       const summaryData = [
@@ -124,9 +127,8 @@ export default function StockReportsPage() {
         ['Out of Stock Count', status.out_of_stock_count ?? 0],
       ];
 
-      const wb = XLSX.utils.book_new();
-      const ws = XLSX.utils.aoa_to_sheet(summaryData);
-      XLSX.utils.book_append_sheet(wb, ws, 'Summary');
+      const ws = wb.addWorksheet('Summary');
+      summaryData.forEach(row => ws.addRow(row));
 
       // Stock Balance sheet
       if (balance && balance.length > 0) {
@@ -142,8 +144,8 @@ export default function StockReportsPage() {
             b.facilities_count
           ])
         ];
-        const wsBalance = XLSX.utils.aoa_to_sheet(balanceData);
-        XLSX.utils.book_append_sheet(wb, wsBalance, 'Stock Balance');
+        const wsBalance = wb.addWorksheet('Stock Balance');
+        balanceData.forEach(row => wsBalance.addRow(row));
       }
 
       // Low Stock Alerts sheet
@@ -160,11 +162,20 @@ export default function StockReportsPage() {
             a.days_supply_remaining?.toFixed(1) ?? 'N/A'
           ])
         ];
-        const wsAlerts = XLSX.utils.aoa_to_sheet(alertsData);
-        XLSX.utils.book_append_sheet(wb, wsAlerts, 'Low Stock Alerts');
+        const wsAlerts = wb.addWorksheet('Low Stock Alerts');
+        alertsData.forEach(row => wsAlerts.addRow(row));
       }
 
-      XLSX.writeFile(wb, `stock-analytics-${new Date().toISOString().split('T')[0]}.xlsx`);
+      const buffer = await wb.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `stock-analytics-${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Export failed:', error);
     } finally {

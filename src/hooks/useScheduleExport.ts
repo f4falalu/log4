@@ -36,7 +36,7 @@ export function useScheduleExport() {
 
   const exportToExcel = async (schedule: DeliverySchedule) => {
     // Lazy load Excel library only when needed
-    const XLSX = await import('xlsx');
+    const ExcelJS = await import('exceljs');
 
     // Summary Sheet
     const summaryData = [
@@ -52,13 +52,22 @@ export function useScheduleExport() {
       ['Facilities Count', schedule.facility_ids.length]
     ];
 
-    const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
-
     // Create Workbook
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, summarySheet, 'Summary');
+    const workbook = new ExcelJS.Workbook();
+    const summarySheet = workbook.addWorksheet('Summary');
 
-    XLSX.writeFile(workbook, `schedule-${schedule.title}-${schedule.planned_date}.xlsx`);
+    summaryData.forEach(row => summarySheet.addRow(row));
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `schedule-${schedule.title}-${schedule.planned_date}.xlsx`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   return { exportToPDF, exportToExcel };

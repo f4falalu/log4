@@ -21,27 +21,32 @@ export interface ParsedData {
 }
 
 export async function parseExcelFile(file: File): Promise<ParsedData> {
-  // Lazy load XLSX library only when parsing files
-  const XLSX = await import('xlsx');
+  // Lazy load ExcelJS library only when parsing files
+  const ExcelJS = await import('exceljs');
 
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
 
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
-        const data = e.target?.result;
-        const workbook = XLSX.read(data, { type: 'binary' });
-        const sheetName = workbook.SheetNames[0];
-        const sheet = workbook.Sheets[sheetName];
-        const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as any[][];
+        const buffer = e.target?.result as ArrayBuffer;
+        const workbook = new ExcelJS.Workbook();
+        await workbook.xlsx.load(buffer);
 
-        // Skip header row
-        const rows: ParsedRow[] = jsonData.slice(1).map((row, index) => ({
-          facilityId: row[0]?.toString(),
-          facilityName: row[1]?.toString(),
-          address: row[2]?.toString() || '',
-          orderVolume: row[3] ? Number(row[3]) : undefined,
-          timeWindow: row[4]?.toString(),
+        const worksheet = workbook.worksheets[0];
+        const jsonData: any[][] = [];
+
+        worksheet.eachRow((row) => {
+          jsonData.push(row.values as any[]);
+        });
+
+        // Skip header row and adjust for ExcelJS 1-based indexing
+        const rows: ParsedRow[] = jsonData.slice(2).map((row, index) => ({
+          facilityId: row[1]?.toString(),
+          facilityName: row[2]?.toString(),
+          address: row[3]?.toString() || '',
+          orderVolume: row[4] ? Number(row[4]) : undefined,
+          timeWindow: row[5]?.toString(),
           rowIndex: index + 2, // +2 because we skipped header and arrays are 0-indexed
         }));
 
@@ -61,7 +66,7 @@ export async function parseExcelFile(file: File): Promise<ParsedData> {
       reject(new Error('Failed to read file'));
     };
 
-    reader.readAsBinaryString(file);
+    reader.readAsArrayBuffer(file);
   });
 }
 
@@ -125,16 +130,28 @@ function isValidTimeWindow(timeWindow: string): boolean {
   return timeWindowRegex.test(timeWindow);
 }
 
-export function generateTemplate(): void {
+export async function generateTemplate(): Promise<void> {
+  const ExcelJS = await import('exceljs');
+
   const template = [
     ['Facility ID', 'Facility Name', 'Address', 'Order Volume', 'Time Window'],
     ['FAC-001', 'Example Clinic', '123 Main St, City, State', '50', '09:00-12:00'],
     ['FAC-002', 'Sample Hospital', '456 Oak Ave, City, State', '100', '13:00-17:00'],
   ];
 
-  const worksheet = XLSX.utils.aoa_to_sheet(template);
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'Schedule Template');
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet('Schedule Template');
 
-  XLSX.writeFile(workbook, 'schedule_template.xlsx');
+  template.forEach(row => worksheet.addRow(row));
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'schedule_template.xlsx';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }

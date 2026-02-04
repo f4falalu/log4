@@ -639,7 +639,10 @@ export default function AnalyticsDashboard() {
 
     setIsExporting(true);
     try {
-      const XLSX = await import('xlsx');
+      const ExcelJS = await import('exceljs');
+
+      // Create workbook
+      const wb = new ExcelJS.Workbook();
 
       // Summary sheet
       const summaryData = [
@@ -663,9 +666,8 @@ export default function AnalyticsDashboard() {
         ['Cost Per KM', `$${summary.cost_per_km?.toFixed(2) ?? '0.00'}`],
       ];
 
-      const wb = XLSX.utils.book_new();
-      const ws = XLSX.utils.aoa_to_sheet(summaryData);
-      XLSX.utils.book_append_sheet(wb, ws, 'Summary');
+      const ws = wb.addWorksheet('Summary');
+      summaryData.forEach(row => ws.addRow(row));
 
       // Top Vehicles sheet
       if (topVehicles && topVehicles.length > 0) {
@@ -682,8 +684,8 @@ export default function AnalyticsDashboard() {
             v.total_batches
           ])
         ];
-        const wsVehicles = XLSX.utils.aoa_to_sheet(vehiclesData);
-        XLSX.utils.book_append_sheet(wb, wsVehicles, 'Top Vehicles');
+        const wsVehicles = wb.addWorksheet('Top Vehicles');
+        vehiclesData.forEach(row => wsVehicles.addRow(row));
       }
 
       // Top Drivers sheet
@@ -700,11 +702,20 @@ export default function AnalyticsDashboard() {
             d.fuel_efficiency_km_per_liter?.toFixed(1) ?? 'N/A'
           ])
         ];
-        const wsDrivers = XLSX.utils.aoa_to_sheet(driversData);
-        XLSX.utils.book_append_sheet(wb, wsDrivers, 'Top Drivers');
+        const wsDrivers = wb.addWorksheet('Top Drivers');
+        driversData.forEach(row => wsDrivers.addRow(row));
       }
 
-      XLSX.writeFile(wb, `analytics-dashboard-${new Date().toISOString().split('T')[0]}.xlsx`);
+      const buffer = await wb.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `analytics-dashboard-${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Export failed:', error);
     } finally {
