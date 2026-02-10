@@ -37,7 +37,7 @@ interface LiveMapState {
 
   // Actions - Filters
   setFilter: <K extends keyof LiveMapFilters>(key: K, value: LiveMapFilters[K]) => void;
-  toggleFilter: (key: 'showDrivers' | 'showVehicles' | 'showDeliveries' | 'showRoutes') => void;
+  toggleFilter: (key: 'showDrivers' | 'showVehicles' | 'showDeliveries' | 'showRoutes' | 'showFacilities' | 'showWarehouses' | 'showZones') => void;
   setStatusFilter: (status: DriverStatus | 'all') => void;
   setSearchQuery: (query: string) => void;
   resetFilters: () => void;
@@ -69,6 +69,9 @@ const defaultFilters: LiveMapFilters = {
   showVehicles: true,
   showDeliveries: true,
   showRoutes: true,
+  showFacilities: true,
+  showWarehouses: true,
+  showZones: true,
   statusFilter: 'all',
   vehicleTypeFilter: 'all',
   priorityFilter: 'all',

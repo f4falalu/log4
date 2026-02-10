@@ -23,6 +23,9 @@ import type {
   DeliveryMarkerProperties,
   RouteLineProperties,
 } from '@/types/live-map';
+import type { FacilityMarkerProperties } from '@/maps-v3/layers/FacilityMarkerLayer';
+import type { WarehouseMarkerProperties } from '@/maps-v3/layers/WarehouseMarkerLayer';
+import type { ZoneMarkerProperties } from '@/maps-v3/layers/ZoneMarkerLayer';
 
 interface UseLiveTrackingOptions {
   enabled?: boolean;
@@ -67,6 +70,42 @@ async function fetchActiveVehicles() {
   return data || [];
 }
 
+// Fetch all facilities with coordinates
+async function fetchFacilitiesForMap() {
+  const { data, error } = await supabase
+    .from('facilities')
+    .select('id, name, lat, lng, type, lga')
+    .is('deleted_at', null)
+    .not('lat', 'is', null)
+    .not('lng', 'is', null);
+
+  if (error) throw error;
+  return data || [];
+}
+
+// Fetch all warehouses with coordinates
+async function fetchWarehousesForMap() {
+  const { data, error } = await supabase
+    .from('warehouses')
+    .select('id, name, code, lat, lng, is_active')
+    .not('lat', 'is', null)
+    .not('lng', 'is', null);
+
+  if (error) throw error;
+  return data || [];
+}
+
+// Fetch operational zones with region centers
+async function fetchZonesForMap() {
+  const { data, error } = await supabase
+    .from('zones' as any)
+    .select('id, name, code, region_center, is_active')
+    .not('region_center', 'is', null);
+
+  if (error) throw error;
+  return (data || []) as { id: string; name: string; code: string | null; region_center: { lat: number; lng: number }; is_active: boolean }[];
+}
+
 export function useLiveTracking(options: UseLiveTrackingOptions = {}) {
   const { enabled = true } = options;
   const filters = useLiveMapStore((s) => s.filters);
@@ -97,6 +136,30 @@ export function useLiveTracking(options: UseLiveTrackingOptions = {}) {
     enabled,
     refetchInterval: 30000,
     staleTime: 10000,
+  });
+
+  const facilitiesQuery = useQuery({
+    queryKey: ['map-facilities'],
+    queryFn: fetchFacilitiesForMap,
+    enabled,
+    staleTime: 60000,
+    gcTime: 300000,
+  });
+
+  const warehousesQuery = useQuery({
+    queryKey: ['map-warehouses'],
+    queryFn: fetchWarehousesForMap,
+    enabled,
+    staleTime: 60000,
+    gcTime: 300000,
+  });
+
+  const zonesQuery = useQuery({
+    queryKey: ['map-zones'],
+    queryFn: fetchZonesForMap,
+    enabled,
+    staleTime: 60000,
+    gcTime: 300000,
   });
 
   // Real-time GPS positions
@@ -395,6 +458,78 @@ export function useLiveTracking(options: UseLiveTrackingOptions = {}) {
     [filteredDeliveries, filters.showRoutes]
   );
 
+  // Facility GeoJSON
+  const facilityGeoJSON = useMemo(
+    (): MapFeatureCollection<FacilityMarkerProperties> => {
+      if (!filters.showFacilities) return { type: 'FeatureCollection', features: [] };
+      const facilities = facilitiesQuery.data || [];
+      return {
+        type: 'FeatureCollection',
+        features: facilities
+          .filter((f) => f.lat && f.lng)
+          .map((f) => ({
+            type: 'Feature',
+            geometry: { type: 'Point', coordinates: [Number(f.lng), Number(f.lat)] },
+            properties: {
+              id: f.id,
+              name: f.name,
+              type: f.type || 'facility',
+              lga: f.lga || undefined,
+            },
+          })),
+      };
+    },
+    [facilitiesQuery.data, filters.showFacilities]
+  );
+
+  // Warehouse GeoJSON
+  const warehouseGeoJSON = useMemo(
+    (): MapFeatureCollection<WarehouseMarkerProperties> => {
+      if (!filters.showWarehouses) return { type: 'FeatureCollection', features: [] };
+      const warehouses = warehousesQuery.data || [];
+      return {
+        type: 'FeatureCollection',
+        features: warehouses
+          .filter((w) => w.lat && w.lng)
+          .map((w) => ({
+            type: 'Feature',
+            geometry: { type: 'Point', coordinates: [Number(w.lng), Number(w.lat)] },
+            properties: {
+              id: w.id,
+              name: w.name,
+              code: w.code || '',
+              isActive: w.is_active ?? true,
+            },
+          })),
+      };
+    },
+    [warehousesQuery.data, filters.showWarehouses]
+  );
+
+  // Zone GeoJSON
+  const zoneGeoJSON = useMemo(
+    (): MapFeatureCollection<ZoneMarkerProperties> => {
+      if (!filters.showZones) return { type: 'FeatureCollection', features: [] };
+      const zones = zonesQuery.data || [];
+      return {
+        type: 'FeatureCollection',
+        features: zones
+          .filter((z) => z.region_center?.lng && z.region_center?.lat)
+          .map((z) => ({
+            type: 'Feature',
+            geometry: { type: 'Point', coordinates: [z.region_center.lng, z.region_center.lat] },
+            properties: {
+              id: z.id,
+              name: z.name,
+              code: z.code,
+              isActive: z.is_active,
+            },
+          })),
+      };
+    },
+    [zonesQuery.data, filters.showZones]
+  );
+
   // Get entity by ID
   const getDriver = useCallback(
     (id: string) => liveDrivers.find((d) => d.id === id),
@@ -434,6 +569,9 @@ export function useLiveTracking(options: UseLiveTrackingOptions = {}) {
     vehicleGeoJSON,
     deliveryGeoJSON,
     routeGeoJSON,
+    facilityGeoJSON,
+    warehouseGeoJSON,
+    zoneGeoJSON,
 
     // Getters
     getDriver,
@@ -449,6 +587,9 @@ export function useLiveTracking(options: UseLiveTrackingOptions = {}) {
       drivers: filteredDrivers.length,
       vehicles: filteredVehicles.length,
       deliveries: filteredDeliveries.length,
+      facilities: (facilitiesQuery.data || []).length,
+      warehouses: (warehousesQuery.data || []).length,
+      zones: (zonesQuery.data || []).length,
       activeDrivers: filteredDrivers.filter((d) => d.status === 'EN_ROUTE' || d.status === 'AT_STOP').length,
       delayedDrivers: filteredDrivers.filter((d) => d.status === 'DELAYED').length,
     },

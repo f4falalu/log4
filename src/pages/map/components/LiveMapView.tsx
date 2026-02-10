@@ -9,6 +9,9 @@ import { DriverMarkerLayer } from '@/maps-v3/layers/DriverMarkerLayer';
 import { VehicleMarkerLayer } from '@/maps-v3/layers/VehicleMarkerLayer';
 import { RouteLineLayer } from '@/maps-v3/layers/RouteLineLayer';
 import { DeliveryMarkerLayer } from '@/maps-v3/layers/DeliveryMarkerLayer';
+import { FacilityMarkerLayer } from '@/maps-v3/layers/FacilityMarkerLayer';
+import { WarehouseMarkerLayer } from '@/maps-v3/layers/WarehouseMarkerLayer';
+import { ZoneMarkerLayer } from '@/maps-v3/layers/ZoneMarkerLayer';
 import { useLiveTracking } from '@/hooks/useLiveTracking';
 import { useLiveMapStore } from '@/stores/liveMapStore';
 import { useDebouncedCallback } from 'use-debounce';
@@ -34,6 +37,9 @@ export function LiveMapView({ onEntitySelect }: LiveMapViewProps) {
     vehicle: VehicleMarkerLayer;
     route: RouteLineLayer;
     delivery: DeliveryMarkerLayer;
+    facility: FacilityMarkerLayer;
+    warehouse: WarehouseMarkerLayer;
+    zone: ZoneMarkerLayer;
   } | null>(null);
 
   // Get live tracking data
@@ -42,6 +48,9 @@ export function LiveMapView({ onEntitySelect }: LiveMapViewProps) {
     vehicleGeoJSON,
     routeGeoJSON,
     deliveryGeoJSON,
+    facilityGeoJSON,
+    warehouseGeoJSON,
+    zoneGeoJSON,
     isLoading,
     counts,
   } = useLiveTracking({ enabled: true });
@@ -63,6 +72,18 @@ export function LiveMapView({ onEntitySelect }: LiveMapViewProps) {
     layersRef.current?.delivery.update(data);
   }, 300);
 
+  const updateFacilityLayer = useDebouncedCallback((data) => {
+    layersRef.current?.facility.update(data);
+  }, 500);
+
+  const updateWarehouseLayer = useDebouncedCallback((data) => {
+    layersRef.current?.warehouse.update(data);
+  }, 500);
+
+  const updateZoneLayer = useDebouncedCallback((data) => {
+    layersRef.current?.zone.update(data);
+  }, 500);
+
   // Initialize map kernel
   useEffect(() => {
     if (!containerRef.current) return;
@@ -83,13 +104,19 @@ export function LiveMapView({ onEntitySelect }: LiveMapViewProps) {
       vehicle: new VehicleMarkerLayer(),
       route: new RouteLineLayer(),
       delivery: new DeliveryMarkerLayer(),
+      facility: new FacilityMarkerLayer(),
+      warehouse: new WarehouseMarkerLayer(),
+      zone: new ZoneMarkerLayer(),
     };
 
-    // Register layers
-    kernel.registerLayer('driver', layers.driver);
-    kernel.registerLayer('vehicle', layers.vehicle);
+    // Register layers (zones first so they render below other markers)
+    kernel.registerLayer('zone', layers.zone);
+    kernel.registerLayer('facility', layers.facility);
+    kernel.registerLayer('warehouse', layers.warehouse);
     kernel.registerLayer('route', layers.route);
     kernel.registerLayer('delivery', layers.delivery);
+    kernel.registerLayer('driver', layers.driver);
+    kernel.registerLayer('vehicle', layers.vehicle);
 
     // Initialize map
     kernel.init({
@@ -130,6 +157,21 @@ export function LiveMapView({ onEntitySelect }: LiveMapViewProps) {
     updateDeliveryLayer(deliveryGeoJSON);
   }, [deliveryGeoJSON, mapReady, updateDeliveryLayer]);
 
+  useEffect(() => {
+    if (!mapReady) return;
+    updateFacilityLayer(facilityGeoJSON);
+  }, [facilityGeoJSON, mapReady, updateFacilityLayer]);
+
+  useEffect(() => {
+    if (!mapReady) return;
+    updateWarehouseLayer(warehouseGeoJSON);
+  }, [warehouseGeoJSON, mapReady, updateWarehouseLayer]);
+
+  useEffect(() => {
+    if (!mapReady) return;
+    updateZoneLayer(zoneGeoJSON);
+  }, [zoneGeoJSON, mapReady, updateZoneLayer]);
+
   // Update layer visibility when filters change
   useEffect(() => {
     if (!mapReady || !layersRef.current) return;
@@ -138,6 +180,9 @@ export function LiveMapView({ onEntitySelect }: LiveMapViewProps) {
     layersRef.current.vehicle.setVisibility(filters.showVehicles);
     layersRef.current.route.setVisibility(filters.showRoutes);
     layersRef.current.delivery.setVisibility(filters.showDeliveries);
+    layersRef.current.facility.setVisibility(filters.showFacilities);
+    layersRef.current.warehouse.setVisibility(filters.showWarehouses);
+    layersRef.current.zone.setVisibility(filters.showZones);
   }, [filters, mapReady]);
 
   // Handle entity click events from layers
@@ -213,6 +258,21 @@ export function LiveMapView({ onEntitySelect }: LiveMapViewProps) {
           {filters.showDeliveries && (
             <span>
               <span className="font-medium">{counts.deliveries}</span> Deliveries
+            </span>
+          )}
+          {filters.showFacilities && (
+            <span>
+              <span className="font-medium">{counts.facilities}</span> Facilities
+            </span>
+          )}
+          {filters.showWarehouses && (
+            <span>
+              <span className="font-medium">{counts.warehouses}</span> Warehouses
+            </span>
+          )}
+          {filters.showZones && (
+            <span>
+              <span className="font-medium">{counts.zones}</span> Zones
             </span>
           )}
         </div>

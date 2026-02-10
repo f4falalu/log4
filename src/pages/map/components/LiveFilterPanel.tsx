@@ -2,7 +2,7 @@
  * LiveFilterPanel - Multi-select filter sidebar for Live Map
  */
 
-import { Users, Truck, Package, Route, AlertTriangle, Search } from 'lucide-react';
+import { Users, Truck, Package, Route, AlertTriangle, Search, Building2, Warehouse, MapPin } from 'lucide-react';
 import { useLiveMapStore } from '@/stores/liveMapStore';
 import { useLiveTracking } from '@/hooks/useLiveTracking';
 import { Input } from '@/components/ui/input';
@@ -149,6 +149,69 @@ export function LiveFilterPanel() {
                 Routes
               </Label>
             </div>
+          </div>
+
+          {/* Facilities toggle */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="show-facilities"
+                checked={filters.showFacilities}
+                onCheckedChange={() => toggleFilter('showFacilities')}
+              />
+              <Label
+                htmlFor="show-facilities"
+                className="flex items-center gap-2 cursor-pointer"
+              >
+                <Building2 className="h-4 w-4 text-emerald-500" />
+                Facilities
+              </Label>
+            </div>
+            <Badge variant="secondary" className="text-xs">
+              {counts.facilities}
+            </Badge>
+          </div>
+
+          {/* Warehouses toggle */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="show-warehouses"
+                checked={filters.showWarehouses}
+                onCheckedChange={() => toggleFilter('showWarehouses')}
+              />
+              <Label
+                htmlFor="show-warehouses"
+                className="flex items-center gap-2 cursor-pointer"
+              >
+                <Warehouse className="h-4 w-4 text-violet-500" />
+                Warehouses
+              </Label>
+            </div>
+            <Badge variant="secondary" className="text-xs">
+              {counts.warehouses}
+            </Badge>
+          </div>
+
+          {/* Zones toggle */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="show-zones"
+                checked={filters.showZones}
+                onCheckedChange={() => toggleFilter('showZones')}
+              />
+              <Label
+                htmlFor="show-zones"
+                className="flex items-center gap-2 cursor-pointer"
+              >
+                <MapPin className="h-4 w-4 text-amber-500" />
+                Zones
+              </Label>
+            </div>
+            <Badge variant="secondary" className="text-xs">
+              {counts.zones}
+            </Badge>
           </div>
         </div>
       </div>

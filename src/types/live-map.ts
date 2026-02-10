@@ -192,6 +192,9 @@ export interface LiveMapFilters {
   showVehicles: boolean;
   showDeliveries: boolean;
   showRoutes: boolean;
+  showFacilities: boolean;
+  showWarehouses: boolean;
+  showZones: boolean;
   statusFilter: DriverStatus | 'all';
   vehicleTypeFilter: string | 'all';
   priorityFilter: string | 'all';
