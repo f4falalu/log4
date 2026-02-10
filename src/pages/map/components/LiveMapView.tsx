@@ -234,14 +234,14 @@ export function LiveMapView({ onEntitySelect }: LiveMapViewProps) {
 
       {/* Loading indicator */}
       {isLoading && (
-        <div className="absolute top-4 left-4 bg-background/80 px-3 py-2 rounded-md shadow-sm">
+        <div className="absolute top-4 left-4 bg-card border px-3 py-2 rounded-md shadow-md">
           <span className="text-sm text-muted-foreground">Loading...</span>
         </div>
       )}
 
       {/* Stats badge */}
       {mapReady && (
-        <div className="absolute bottom-4 left-4 bg-background/90 px-3 py-2 rounded-md shadow-sm space-x-3 text-xs">
+        <div className="absolute bottom-4 left-4 bg-card border px-3 py-2 rounded-md shadow-md space-x-3 text-xs">
           {filters.showDrivers && (
             <span>
               <span className="font-medium">{counts.drivers}</span> Drivers
