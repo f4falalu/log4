@@ -43,7 +43,6 @@ const routePrefetchMap: Record<string, () => Promise<any>> = {
   '/fleetops/fleet-management': () => import('@/pages/fleetops/fleet-management/page'),
   '/fleetops/reports': () => import('@/pages/ReportsPageWrapper'),
   '/fleetops/vlms': () => import('@/pages/fleetops/vlms/page'),
-  '/fleetops/payloads': () => import('@/pages/fleetops/payloads/page'),
   '/storefront': () => import('@/pages/storefront/page'),
   '/storefront/items': () => import('@/pages/storefront/items/page'),
   '/storefront/requisitions': () => import('@/pages/storefront/requisitions/page'),

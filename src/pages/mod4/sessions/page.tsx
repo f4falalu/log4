@@ -29,12 +29,14 @@ interface Session {
   device_id: string;
   vehicle_id: string | null;
   started_at: string;
-  last_heartbeat_at: string;
-  status: 'active' | 'idle' | 'ended' | 'expired';
-  device_model: string | null;
-  app_version: string | null;
-  driver?: {
-    name: string;
+  last_active_at: string;
+  last_heartbeat_at: string | null;
+  invalidated_at: string | null;
+  invalidation_reason: string | null;
+  status: string;
+  device_metadata: Record<string, unknown> | null;
+  profile?: {
+    full_name: string | null;
   };
   vehicle?: {
     license_plate: string;
@@ -52,14 +54,34 @@ export default function SessionsPage() {
         .from('driver_sessions')
         .select(`
           *,
-          driver:drivers(name),
           vehicle:vehicles(license_plate)
         `)
         .order('started_at', { ascending: false })
         .limit(50);
 
       if (error) throw error;
-      setSessions(data || []);
+
+      // Fetch profile names for driver_ids (which reference auth.users)
+      const driverIds = [...new Set((data || []).map((s: any) => s.driver_id))];
+      let profileMap: Record<string, string> = {};
+      if (driverIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, full_name')
+          .in('id', driverIds);
+        profileMap = (profiles || []).reduce((acc: Record<string, string>, p: any) => {
+          acc[p.id] = p.full_name || 'Unknown';
+          return acc;
+        }, {});
+      }
+
+      // Merge profile data into sessions
+      const sessionsWithProfiles = (data || []).map((s: any) => ({
+        ...s,
+        profile: { full_name: profileMap[s.driver_id] || null },
+      }));
+
+      setSessions(sessionsWithProfiles);
     } catch (error) {
       console.error('Failed to fetch sessions:', error);
     } finally {
@@ -112,21 +134,19 @@ export default function SessionsPage() {
     }
   };
 
-  const getStatusBadge = (status: Session['status']) => {
+  const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'active':
+      case 'ACTIVE':
         return <Badge variant="default" className="bg-green-500">Active</Badge>;
-      case 'idle':
-        return <Badge variant="secondary">Idle</Badge>;
-      case 'ended':
+      case 'INVALIDATED':
         return <Badge variant="outline">Ended</Badge>;
-      case 'expired':
-        return <Badge variant="destructive">Expired</Badge>;
+      default:
+        return <Badge variant="secondary">{status}</Badge>;
     }
   };
 
-  const activeSessions = sessions.filter(s => s.status === 'active');
-  const recentSessions = sessions.filter(s => s.status !== 'active');
+  const activeSessions = sessions.filter(s => s.status === 'ACTIVE');
+  const recentSessions = sessions.filter(s => s.status !== 'ACTIVE');
 
   if (loading) {
     return (
@@ -179,12 +199,12 @@ export default function SessionsPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Expired Sessions</CardTitle>
+            <CardTitle className="text-sm font-medium">Ended Sessions</CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-amber-600">
-              {sessions.filter(s => s.status === 'expired').length}
+              {sessions.filter(s => s.status === 'INVALIDATED').length}
             </div>
           </CardContent>
         </Card>
@@ -224,21 +244,21 @@ export default function SessionsPage() {
                 {activeSessions.map((session) => (
                   <TableRow key={session.id}>
                     <TableCell className="font-medium">
-                      {session.driver?.name || 'Unknown'}
+                      {session.profile?.full_name || 'Unknown'}
                     </TableCell>
                     <TableCell>
                       {session.vehicle?.license_plate || '--'}
                     </TableCell>
                     <TableCell>
                       <span className="text-xs text-muted-foreground">
-                        {session.device_model || session.device_id.slice(0, 8)}
+                        {(session.device_metadata as any)?.device_model || session.device_id.slice(0, 8)}
                       </span>
                     </TableCell>
                     <TableCell>
                       {format(new Date(session.started_at), 'HH:mm')}
                     </TableCell>
                     <TableCell>
-                      {formatDistanceToNow(new Date(session.last_heartbeat_at), { addSuffix: true })}
+                      {formatDistanceToNow(new Date(session.last_heartbeat_at || session.last_active_at), { addSuffix: true })}
                     </TableCell>
                     <TableCell>{getStatusBadge(session.status)}</TableCell>
                     <TableCell>
@@ -283,14 +303,14 @@ export default function SessionsPage() {
                 {recentSessions.slice(0, 10).map((session) => (
                   <TableRow key={session.id}>
                     <TableCell className="font-medium">
-                      {session.driver?.name || 'Unknown'}
+                      {session.profile?.full_name || 'Unknown'}
                     </TableCell>
                     <TableCell>
                       {format(new Date(session.started_at), 'MMM d, HH:mm')}
                     </TableCell>
                     <TableCell>
-                      {session.last_heartbeat_at
-                        ? format(new Date(session.last_heartbeat_at), 'HH:mm')
+                      {session.invalidated_at
+                        ? format(new Date(session.invalidated_at), 'HH:mm')
                         : '--'}
                     </TableCell>
                     <TableCell>

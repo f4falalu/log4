@@ -2,13 +2,15 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, AlertCircle, Link2, Clock, Users } from 'lucide-react';
+import { Loader2, AlertCircle, Link2, Clock, Users, UserPlus } from 'lucide-react';
 import {
   LinkedUsersTable,
   LinkByEmailDialog,
   GenerateOTPDialog,
+  OnboardingRequestsTable,
 } from '@/components/admin/integration';
 import { useLinkedUsers, usePendingOTPs } from '@/hooks/admin/useIntegration';
+import { useOnboardingRequests } from '@/hooks/admin/useOnboardingRequests';
 
 export default function AdminIntegrationPage() {
   // Get workspace ID for dialogs
@@ -43,8 +45,10 @@ export default function AdminIntegrationPage() {
 
   const { data: links = [] } = useLinkedUsers();
   const { data: pendingOTPs = [] } = usePendingOTPs();
+  const { data: requests = [] } = useOnboardingRequests();
 
   const activeLinks = links.filter((l) => l.status === 'active').length;
+  const pendingRequests = requests.filter((r) => r.status === 'pending').length;
 
   return (
     <div className="max-w-6xl space-y-6">
@@ -57,7 +61,7 @@ export default function AdminIntegrationPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
@@ -93,6 +97,19 @@ export default function AdminIntegrationPage() {
               <div>
                 <p className="text-sm text-muted-foreground">Pending OTPs</p>
                 <p className="text-2xl font-bold">{pendingOTPs.length}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-lg bg-purple-500/10">
+                <UserPlus className="h-5 w-5 text-purple-600" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Pending Requests</p>
+                <p className="text-2xl font-bold">{pendingRequests}</p>
               </div>
             </div>
           </CardContent>
@@ -157,6 +174,21 @@ export default function AdminIntegrationPage() {
           </div>
         </div>
       )}
+
+      {/* Onboarding Requests */}
+      <div>
+        <h2 className="text-lg font-medium mb-3">
+          Onboarding Requests
+          {pendingRequests > 0 && (
+            <Badge variant="secondary" className="ml-2 bg-purple-500/10 text-purple-600">
+              {pendingRequests} pending
+            </Badge>
+          )}
+        </h2>
+        <div className="border rounded-lg bg-card">
+          <OnboardingRequestsTable />
+        </div>
+      </div>
     </div>
   );
 }

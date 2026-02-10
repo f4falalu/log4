@@ -54,15 +54,24 @@ export function CreateZoneDialog({ open, onOpenChange }: CreateZoneDialogProps) 
   const handleGeometryChange = useCallback((geometry: GeoJSON.Polygon | null, summary: GeometrySummary | null) => {
     setGeometrySummary(summary);
 
-    if (summary) {
-      // Set region_center from polygon centroid
+    if (summary && geometry) {
+      // Set region_center from polygon centroid + persist geometry and summary in metadata
       setFormData(prev => ({
         ...prev,
         region_center: { lat: summary.center.lat, lng: summary.center.lng },
+        metadata: {
+          ...prev.metadata,
+          geometry,
+          geometry_summary: {
+            areaKm2: summary.areaKm2,
+            vertices: summary.vertices,
+            center: summary.center,
+          },
+        },
       }));
     } else {
       setFormData(prev => {
-        const { region_center, ...rest } = prev;
+        const { region_center, metadata, ...rest } = prev;
         return rest;
       });
     }

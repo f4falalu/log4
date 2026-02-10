@@ -127,6 +127,9 @@ export function useFacilities(filters?: FacilityFilters, page?: number, pageSize
       if (filters?.programme) {
         query = query.eq('programme', filters.programme);
       }
+      if (filters?.zone_id) {
+        query = query.eq('zone_id', filters.zone_id);
+      }
       if (filters?.service_zone) {
         query = query.eq('service_zone', filters.service_zone);
       }

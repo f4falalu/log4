@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Building2, MapPin, Users, Edit, Trash2, TrendingUp } from 'lucide-react';
+import { Building2, MapPin, Users, Edit, Trash2, TrendingUp, Globe } from 'lucide-react';
 import { OperationalZone } from '@/types/zones';
 import { useZoneSummary } from '@/hooks/useOperationalZones';
 import { useLGAs } from '@/hooks/useLGAs';
@@ -27,12 +27,12 @@ export function ZoneDetailDialog({ zone, open, onOpenChange }: ZoneDetailDialogP
   
   const { data: summary, isLoading: summaryLoading } = useZoneSummary(zone.id);
   const { data: lgas, isLoading: lgasLoading } = useLGAs(zone.id);
-  const { data: warehouses } = useWarehouses();
+  const { data: warehousesData } = useWarehouses();
   const { data: facilitiesData } = useFacilities();
   
   const deleteZone = useDeleteZone();
 
-  const zoneWarehouses = warehouses?.filter((w: any) => w.zone_id === zone.id) || [];
+  const zoneWarehouses = warehousesData?.warehouses?.filter((w: any) => w.zone_id === zone.id) || [];
   const zoneFacilities = facilitiesData?.facilities?.filter((f: any) => f.zone_id === zone.id) || [];
 
   const handleDelete = async () => {
@@ -171,6 +171,41 @@ export function ZoneDetailDialog({ zone, open, onOpenChange }: ZoneDetailDialogP
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Geometry Summary */}
+              {zone.metadata?.geometry_summary && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Globe className="h-5 w-5" />
+                      Geometry Summary
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-muted-foreground">Area</span>
+                        <span className="text-lg font-semibold">
+                          {(zone.metadata.geometry_summary as any).areaKm2} km<sup>2</sup>
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-muted-foreground">Vertices</span>
+                        <span className="text-lg font-semibold">
+                          {(zone.metadata.geometry_summary as any).vertices}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-muted-foreground">Center</span>
+                        <span className="text-lg font-semibold">
+                          {(zone.metadata.geometry_summary as any).center?.lat},{' '}
+                          {(zone.metadata.geometry_summary as any).center?.lng}
+                        </span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </TabsContent>
 
             <TabsContent value="warehouses" className="mt-4">

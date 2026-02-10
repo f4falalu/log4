@@ -100,6 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const sendDriverOtp = async (email: string, workspaceId: string) => {
+    // Called by admins to generate an OTP for a driver
     const { data, error } = await supabase.rpc('generate_mod4_otp', {
       p_email: email,
       p_workspace_id: workspaceId,
@@ -107,9 +108,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { data, error };
   };
 
-  const verifyDriverOtp = async (email: string, otp: string) => {
+  const verifyDriverOtp = async (identifier: string, otp: string) => {
+    // Clean identifier (strip spaces/dashes for phone, trim for email)
+    const isPhone = /^\+?\d[\d\s-]{6,}$/.test(identifier.trim());
+    const cleanIdentifier = isPhone
+      ? identifier.replace(/[^\d+]/g, '')
+      : identifier.trim();
+
+    // Step 1: Verify OTP via RPC (anon-accessible, sets user password to OTP)
+    // Returns the resolved email on success, null on failure
     const { data, error } = await supabase.rpc('verify_mod4_otp', {
-      p_email: email,
+      p_email: cleanIdentifier,
       p_otp: otp,
     });
 
@@ -117,20 +126,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { success: false, error };
     }
 
-    // After successful OTP verification, the user is linked via the RPC function
-    // Now we need to sign them in
-    if (data === true) {
-      // Refresh the session to get the updated user state
-      const { data: { session }, error: sessionError } = await supabase.auth.refreshSession();
-      if (sessionError) {
-        return { success: false, error: sessionError };
-      }
-      setSession(session);
-      setUser(session?.user ?? null);
+    if (!data) {
+      return { success: false, error: new Error('Invalid or expired OTP code') };
+    }
+
+    // Step 2: Sign in with the resolved email (RPC returns email even for phone input)
+    const resolvedEmail = data as string;
+    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+      email: resolvedEmail,
+      password: otp,
+    });
+
+    if (signInError) {
+      return { success: false, error: signInError };
+    }
+
+    if (signInData.session) {
+      setSession(signInData.session);
+      setUser(signInData.session.user);
       return { success: true, error: null };
     }
 
-    return { success: false, error: new Error('Invalid OTP code') };
+    return { success: false, error: new Error('Failed to create session') };
   };
 
   return (

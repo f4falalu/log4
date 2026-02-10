@@ -6,6 +6,7 @@ import * as pdfjsLib from 'pdfjs-dist';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -626,6 +627,7 @@ export function UploadItemsDialog({ open, onOpenChange, onSuccess }: UploadItems
               </Badge>
             )}
           </DialogTitle>
+          <DialogDescription className="sr-only">Upload and import items from a file</DialogDescription>
         </DialogHeader>
 
         <div className="flex-1 overflow-hidden">

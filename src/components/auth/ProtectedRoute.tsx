@@ -67,9 +67,10 @@ export function ProtectedRoute({
     );
   }
 
-  // Check authentication
+  // Check authentication - redirect mod4 (driver PWA) routes to /login
   if (!user) {
-    return <Navigate to="/auth" state={{ from: location }} replace />;
+    const redirectTo = location.pathname.startsWith('/mod4') ? '/login' : '/auth';
+    return <Navigate to={redirectTo} state={{ from: location }} replace />;
   }
 
   // Check role requirement

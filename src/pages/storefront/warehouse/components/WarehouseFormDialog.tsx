@@ -5,6 +5,7 @@ import { z } from 'zod';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -13,14 +14,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import type { Warehouse, WarehouseFormData } from '@/types/warehouse';
 import { useCreateWarehouse, useUpdateWarehouse } from '@/hooks/useWarehouses';
 
 const warehouseSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   code: z.string().min(1, 'Code is required'),
-  address: z.string().optional(),
+  address: z.string().min(1, 'Address is required'),
   city: z.string().optional(),
   state: z.string().optional(),
   country: z.string().optional(),
@@ -29,7 +29,7 @@ const warehouseSchema = z.object({
   contact_name: z.string().optional(),
   contact_phone: z.string().optional(),
   contact_email: z.string().email().optional().or(z.literal('')),
-  operating_hours: z.string().optional(),
+  operating_hours: z.string().min(1, 'Operating hours are required'),
   total_capacity_m3: z.coerce.number().min(0).optional(),
   is_active: z.boolean().default(true),
 });
@@ -138,13 +138,16 @@ export function WarehouseFormDialog({ open, onOpenChange, warehouse }: Warehouse
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
-        <DialogHeader>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>{isEditing ? 'Edit Warehouse' : 'Add New Warehouse'}</DialogTitle>
+          <DialogDescription className="sr-only">
+            {isEditing ? 'Update warehouse details' : 'Fill in the details to add a new warehouse'}
+          </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 pr-4">
-          <form id="warehouse-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <div className="flex-1 overflow-y-auto pr-4">
+          <form id="warehouse-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pb-4">
             {/* Basic Information */}
             <div className="space-y-4">
               <h3 className="text-sm font-semibold text-muted-foreground">Basic Information</h3>
@@ -198,12 +201,17 @@ export function WarehouseFormDialog({ open, onOpenChange, warehouse }: Warehouse
               <h3 className="text-sm font-semibold text-muted-foreground">Location</h3>
 
               <div className="space-y-2">
-                <Label htmlFor="address">Address</Label>
+                <Label htmlFor="address">Address *</Label>
                 <Input
                   id="address"
                   {...form.register('address')}
                   placeholder="Street address"
                 />
+                {form.formState.errors.address && (
+                  <p className="text-xs text-destructive">
+                    {form.formState.errors.address.message}
+                  </p>
+                )}
               </div>
 
               <div className="grid grid-cols-3 gap-4">
@@ -301,12 +309,17 @@ export function WarehouseFormDialog({ open, onOpenChange, warehouse }: Warehouse
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="operating_hours">Operating Hours</Label>
+                  <Label htmlFor="operating_hours">Operating Hours *</Label>
                   <Input
                     id="operating_hours"
                     {...form.register('operating_hours')}
                     placeholder="e.g., Mon-Fri 8am-6pm"
                   />
+                  {form.formState.errors.operating_hours && (
+                    <p className="text-xs text-destructive">
+                      {form.formState.errors.operating_hours.message}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -327,9 +340,9 @@ export function WarehouseFormDialog({ open, onOpenChange, warehouse }: Warehouse
               </div>
             </div>
           </form>
-        </ScrollArea>
+        </div>
 
-        <DialogFooter>
+        <DialogFooter className="flex-shrink-0 pt-4">
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>

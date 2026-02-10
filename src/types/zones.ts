@@ -111,6 +111,7 @@ export interface CreateZoneInput {
   };
   zone_manager_id?: string;
   is_active?: boolean;
+  metadata?: Record<string, any>;
 }
 
 export interface UpdateZoneInput extends Partial<CreateZoneInput> {

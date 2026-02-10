@@ -132,7 +132,11 @@ export function useDriverGPS(options: UseDriverGPSOptions = {}) {
           console.log('[useDriverGPS] Subscribed to real-time GPS updates');
         }
         if (status === 'CHANNEL_ERROR') {
-          console.error('[useDriverGPS] Channel error');
+          console.warn('[useDriverGPS] Channel error - falling back to polling only');
+          // Don't throw error, just continue with polling fallback
+        }
+        if (status === 'TIMED_OUT' || status === 'CLOSED') {
+          console.warn('[useDriverGPS] Channel disconnected - will retry on next effect');
         }
       });
 

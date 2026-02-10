@@ -40,7 +40,6 @@ import AcceptInvitationPage from "./pages/invite/AcceptInvitationPage";
 import FleetOpsHome from "./pages/fleetops/page";
 import StorefrontHome from "./pages/storefront/page";
 import StorefrontFacilities from "./pages/storefront/facilities/page";
-import FleetOpsPayloads from "./pages/fleetops/payloads/page";
 import StorefrontRequisitions from "./pages/storefront/requisitions/page";
 import StorefrontZones from "./pages/storefront/zones/page";
 import StorefrontScheduler from "./pages/storefront/scheduler/page";
@@ -114,6 +113,7 @@ const App = () => (
               <MapStateProvider>
                 <Routes>
                   <Route path="/auth" element={<Auth />} />
+                  <Route path="/login" element={<Auth />} />
                   <Route path="/auth/callback" element={<AuthCallback />} />
 
                   {/* Onboarding Routes */}
@@ -130,7 +130,6 @@ const App = () => (
                     <Route path="drivers" element={<DriverManagement />} />
                     <Route path="dispatch" element={<DispatchPage />} />
                     <Route path="batches" element={<BatchManagement />} />
-                    <Route path="payloads" element={<FleetOpsPayloads />} />
                     <Route path="tactical" element={<Navigate to="/fleetops/map/operational" replace />} />
                     <Route path="vehicles" element={<VehicleRegistry />} />
                     <Route path="vehicles/:id" element={
@@ -211,7 +210,6 @@ const App = () => (
                     {/* Analytics */}
                     <Route path="stock-reports" element={<StorefrontStockReports />} />
                     {/* Legacy redirects */}
-                    <Route path="payloads" element={<Navigate to="/fleetops/payloads" replace />} />
                     <Route path="schedule-planner" element={<Navigate to="/storefront/scheduler" replace />} />
                     <Route path="lgas" element={<Navigate to="/storefront/zones" replace />} />
                   </Route>

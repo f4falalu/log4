@@ -72,6 +72,8 @@ import {
 import { useVehicles } from '@/hooks/useVehicles';
 import { FleetHierarchyVisualization } from '@/components/fleet/FleetHierarchyVisualization';
 import FleetManagementSkeleton from '@/components/fleet/FleetManagementSkeleton';
+import { VendorRegistrationForm } from '@/components/vendors/VendorRegistrationForm';
+import type { VendorRegistrationInput } from '@/lib/validations/vendor';
 
 // Add error boundary to catch and display errors
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean }> {
@@ -271,28 +273,15 @@ export default function FleetManagementPage() {
     }
   };
 
-  const handleVendorSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleVendorSubmit = async (data: VendorRegistrationInput) => {
     try {
       if (editingVendor) {
         await updateVendorMutation.mutateAsync({
           id: editingVendor.id,
-          data: {
-            name: vendorFormData.name,
-            contact_name: vendorFormData.contactName,
-            contact_phone: vendorFormData.contactPhone,
-            email: vendorFormData.email,
-            address: vendorFormData.address
-          }
+          data: data as any
         });
       } else {
-        await createVendorMutation.mutateAsync({
-          name: vendorFormData.name,
-          contact_name: vendorFormData.contactName,
-          contact_phone: vendorFormData.contactPhone,
-          email: vendorFormData.email,
-          address: vendorFormData.address
-        });
+        await createVendorMutation.mutateAsync(data as any);
       }
       setIsVendorDialogOpen(false);
       resetVendorForm();
@@ -596,67 +585,20 @@ export default function FleetManagementPage() {
                     Add Vendor
                   </Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle>{editingVendor ? 'Edit Vendor' : 'Create New Vendor'}</DialogTitle>
                     <DialogDescription>
-                      {editingVendor ? 'Update vendor information' : 'Enter vendor details'}
+                      {editingVendor
+                        ? 'Update vendor information and role classification'
+                        : 'Register a new organization with role-based capabilities'}
                     </DialogDescription>
                   </DialogHeader>
-                  <form onSubmit={handleVendorSubmit}>
-                    <div className="space-y-4 py-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="vendor-name">Vendor Name</Label>
-                        <Input
-                          id="vendor-name"
-                          value={vendorFormData.name}
-                          onChange={(e) => setVendorFormData({ ...vendorFormData, name: e.target.value })}
-                          required
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="contact-name">Contact Name</Label>
-                        <Input
-                          id="contact-name"
-                          value={vendorFormData.contactName}
-                          onChange={(e) => setVendorFormData({ ...vendorFormData, contactName: e.target.value })}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="contact-phone">Contact Phone</Label>
-                        <Input
-                          id="contact-phone"
-                          value={vendorFormData.contactPhone}
-                          onChange={(e) => setVendorFormData({ ...vendorFormData, contactPhone: e.target.value })}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="email">Email</Label>
-                        <Input
-                          id="email"
-                          type="email"
-                          value={vendorFormData.email}
-                          onChange={(e) => setVendorFormData({ ...vendorFormData, email: e.target.value })}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="address">Address</Label>
-                        <Input
-                          id="address"
-                          value={vendorFormData.address}
-                          onChange={(e) => setVendorFormData({ ...vendorFormData, address: e.target.value })}
-                        />
-                      </div>
-                    </div>
-                    <DialogFooter>
-                      <Button type="button" variant="outline" onClick={() => setIsVendorDialogOpen(false)}>
-                        Cancel
-                      </Button>
-                      <Button type="submit">
-                        {editingVendor ? 'Update' : 'Create'}
-                      </Button>
-                    </DialogFooter>
-                  </form>
+                  <VendorRegistrationForm
+                    vendor={editingVendor}
+                    onSubmit={handleVendorSubmit}
+                    onCancel={() => setIsVendorDialogOpen(false)}
+                  />
                 </DialogContent>
               </Dialog>
             </div>
@@ -670,10 +612,11 @@ export default function FleetManagementPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Vendor Name</TableHead>
-                      <TableHead>Contact</TableHead>
-                      <TableHead>Phone</TableHead>
-                      <TableHead>Email</TableHead>
+                      <TableHead>Organization Name</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Roles</TableHead>
+                      <TableHead>Primary Contact</TableHead>
+                      <TableHead>Status</TableHead>
                       <TableHead>Fleets</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
@@ -682,9 +625,55 @@ export default function FleetManagementPage() {
                     {vendors.map((vendor) => (
                       <TableRow key={vendor.id}>
                         <TableCell className="font-medium">{vendor.name}</TableCell>
-                        <TableCell>{vendor.contact_name || 'N/A'}</TableCell>
-                        <TableCell>{vendor.contact_phone || 'N/A'}</TableCell>
-                        <TableCell>{vendor.email || 'N/A'}</TableCell>
+                        <TableCell>
+                          {vendor.organization_type ? (
+                            <Badge variant="outline">
+                              {vendor.organization_type.replace(/_/g, ' ')}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground text-sm">Not set</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-wrap gap-1">
+                            {vendor.vendor_roles && vendor.vendor_roles.length > 0 ? (
+                              vendor.vendor_roles.map((role) => (
+                                <Badge key={role} variant="secondary" className="text-xs">
+                                  {role === 'service_vendor' ? 'Service Vendor' : role}
+                                </Badge>
+                              ))
+                            ) : (
+                              <span className="text-muted-foreground text-sm">No roles</span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm">
+                            <div className="font-medium">
+                              {vendor.organization_lead_name || vendor.contact_name || 'N/A'}
+                            </div>
+                            <div className="text-muted-foreground text-xs">
+                              {vendor.primary_email || vendor.email || vendor.primary_phone || vendor.contact_phone || ''}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {vendor.vendor_status ? (
+                            <Badge
+                              variant={
+                                vendor.vendor_status === 'active'
+                                  ? 'default'
+                                  : vendor.vendor_status === 'suspended'
+                                  ? 'destructive'
+                                  : 'secondary'
+                              }
+                            >
+                              {vendor.vendor_status}
+                            </Badge>
+                          ) : (
+                            <Badge variant="default">active</Badge>
+                          )}
+                        </TableCell>
                         <TableCell>{vendor.fleet_count || 0}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">

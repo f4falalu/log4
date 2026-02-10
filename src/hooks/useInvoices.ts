@@ -27,7 +27,6 @@ function mapDbToInvoice(dbInvoice: any): Invoice {
     warehouse: dbInvoice.warehouses ? {
       id: dbInvoice.warehouses.id,
       name: dbInvoice.warehouses.name,
-      code: dbInvoice.warehouses.code,
     } : undefined,
     facility: dbInvoice.facilities ? {
       id: dbInvoice.facilities.id,
@@ -58,7 +57,7 @@ export function useInvoices(filters?: InvoiceFilters, page?: number, pageSize: n
     queryFn: async () => {
       let query = supabase
         .from('invoices')
-        .select('*, warehouses(id, name, code), facilities(id, name, address, lga)', { count: 'exact' })
+        .select('*, warehouses(id, name), facilities(id, name, address, lga)', { count: 'exact' })
         .order('created_at', { ascending: false });
 
       // Apply filters
@@ -115,7 +114,7 @@ export function useInvoice(id: string | undefined) {
 
       const { data, error } = await supabase
         .from('invoices')
-        .select('*, warehouses(id, name, code), facilities(id, name, address, lga)')
+        .select('*, warehouses(id, name), facilities(id, name, address, lga)')
         .eq('id', id)
         .single();
 
@@ -310,14 +309,28 @@ export function useReadyRequisitions() {
   return useQuery({
     queryKey: ['requisitions', 'ready'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: requisitions, error } = await supabase
         .from('requisitions')
-        .select('*, facilities(id, name, address, lga)')
+        .select('*')
         .eq('status', 'approved')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data || [];
+      if (!requisitions?.length) return [];
+
+      // Fetch facilities separately (no FK relationship on requisitions table)
+      const facilityIds = [...new Set(requisitions.map(r => r.facility_id))];
+      const { data: facilities } = await supabase
+        .from('facilities')
+        .select('id, name, address, lga')
+        .in('id', facilityIds);
+
+      const facilitiesMap = new Map(facilities?.map(f => [f.id, f]));
+
+      return requisitions.map(req => ({
+        ...req,
+        facility: facilitiesMap.get(req.facility_id) || null,
+      }));
     },
   });
 }

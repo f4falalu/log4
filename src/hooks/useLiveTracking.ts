@@ -34,10 +34,9 @@ async function fetchActiveBatches() {
     .from('delivery_batches')
     .select(`
       *,
-      driver:drivers!delivery_batches_assigned_driver_id_fkey(id, name, email, phone),
+      driver:drivers!delivery_batches_driver_id_fkey(id, name, phone),
       vehicle:vehicles(id, plate_number, type, make, model, capacity),
-      warehouse:warehouses(id, name, address, lat, lng),
-      facilities:delivery_batch_facilities(id, facility_id, facilities(id, name, address, lat, lng), slot_index)
+      warehouse:warehouses(id, name, address, lat, lng)
     `)
     .in('status', ['assigned', 'in-progress'])
     .order('created_at', { ascending: false });

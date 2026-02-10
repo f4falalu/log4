@@ -5,6 +5,7 @@ import { z } from 'zod';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -149,6 +150,9 @@ export function ItemFormDialog({ open, onOpenChange, item }: ItemFormDialogProps
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle>{isEditing ? 'Edit Item' : 'Add New Item'}</DialogTitle>
+          <DialogDescription className="sr-only">
+            {isEditing ? 'Update item details' : 'Fill in the details to add a new item'}
+          </DialogDescription>
         </DialogHeader>
 
         <ScrollArea className="flex-1 max-h-[calc(90vh-140px)]">

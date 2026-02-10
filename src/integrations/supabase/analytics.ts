@@ -340,7 +340,24 @@ export async function getDashboardSummary(
     throw new AnalyticsAPIError('No dashboard summary data returned');
   }
 
-  return data[0] as DashboardSummary;
+  const result = data[0];
+  
+  // Convert BIGINT and NUMERIC values to proper JavaScript numbers
+  return {
+    total_deliveries: Number(result.total_deliveries) || 0,
+    on_time_rate: Number(result.on_time_rate) || 0,
+    avg_completion_hours: Number(result.avg_completion_hours) || 0,
+    total_items: Number(result.total_items) || 0,
+    active_vehicles: Number(result.active_vehicles) || 0,
+    vehicle_utilization_rate: Number(result.vehicle_utilization_rate) || 0,
+    vehicles_in_maintenance: Number(result.vehicles_in_maintenance) || 0,
+    active_drivers: Number(result.active_drivers) || 0,
+    driver_on_time_rate: Number(result.driver_on_time_rate) || 0,
+    total_incidents: Number(result.total_incidents) || 0,
+    total_cost: Number(result.total_cost) || 0,
+    cost_per_item: Number(result.cost_per_item) || 0,
+    cost_per_km: Number(result.cost_per_km) || 0,
+  };
 }
 
 // ============================================================================

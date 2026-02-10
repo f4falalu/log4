@@ -93,29 +93,41 @@ ALTER TABLE public.mod4_driver_links ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.mod4_otp_codes ENABLE ROW LEVEL SECURITY;
 
 -- mod4_driver_links: users can read their own link
-CREATE POLICY "Users can view own driver link"
-  ON public.mod4_driver_links FOR SELECT
-  USING (user_id = auth.uid());
+DO $$ BEGIN
+  CREATE POLICY "Users can view own driver link"
+    ON public.mod4_driver_links FOR SELECT
+    USING (user_id = auth.uid());
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
 
 -- mod4_driver_links: system admins have full access
-CREATE POLICY "System admins manage driver links"
-  ON public.mod4_driver_links FOR ALL
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.user_roles
-      WHERE user_id = auth.uid() AND role = 'system_admin'
-    )
-  );
+DO $$ BEGIN
+  CREATE POLICY "System admins manage driver links"
+    ON public.mod4_driver_links FOR ALL
+    USING (
+      EXISTS (
+        SELECT 1 FROM public.user_roles
+        WHERE user_id = auth.uid() AND role = 'system_admin'
+      )
+    );
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
 
 -- mod4_otp_codes: system admins have full access
-CREATE POLICY "System admins manage OTP codes"
-  ON public.mod4_otp_codes FOR ALL
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.user_roles
-      WHERE user_id = auth.uid() AND role = 'system_admin'
-    )
-  );
+DO $$ BEGIN
+  CREATE POLICY "System admins manage OTP codes"
+    ON public.mod4_otp_codes FOR ALL
+    USING (
+      EXISTS (
+        SELECT 1 FROM public.user_roles
+        WHERE user_id = auth.uid() AND role = 'system_admin'
+      )
+    );
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
 
 -- =====================================================
 -- 4. RPC FUNCTIONS

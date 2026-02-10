@@ -87,18 +87,18 @@ export default function DriverTripsPage() {
             id,
             name,
             status,
-            delivery_date,
-            assigned_driver_id,
+            scheduled_date,
+            driver_id,
             warehouse:warehouses(name),
-            facilities:delivery_batch_facilities(count)
+            facility_ids
           `)
           .in('status', ['assigned', 'in-progress', 'ready', 'scheduled'])
-          .order('delivery_date', { ascending: true })
+          .order('scheduled_date', { ascending: true })
           .limit(20);
 
         // Filter by driver if available
         if (driverId) {
-          query = query.eq('assigned_driver_id', driverId);
+          query = query.eq('driver_id', driverId);
         }
 
         const { data: batches, error } = await query;
@@ -117,7 +117,7 @@ export default function DriverTripsPage() {
             id: batch.id,
             name: batch.name || `Batch ${batch.id.slice(0, 8)}`,
             status: tripStatus,
-            facilityCount: batch.facilities?.[0]?.count || 0,
+            facilityCount: batch.facility_ids?.length || 0,
             itemCount: 0,
             estimatedDuration: '~2 hrs',
             startLocation: batch.warehouse?.name || 'Warehouse',
@@ -157,17 +157,17 @@ export default function DriverTripsPage() {
           id,
           name,
           status,
-          delivery_date,
-          assigned_driver_id,
+          scheduled_date,
+          driver_id,
           warehouse:warehouses(name),
-          facilities:delivery_batch_facilities(count)
+          facility_ids
         `)
         .in('status', ['assigned', 'in-progress', 'ready', 'scheduled'])
-        .order('delivery_date', { ascending: true })
+        .order('scheduled_date', { ascending: true })
         .limit(20);
 
       if (driverId) {
-        query.eq('assigned_driver_id', driverId);
+        query.eq('driver_id', driverId);
       }
 
       const { data: batches } = await query;
@@ -185,7 +185,7 @@ export default function DriverTripsPage() {
             id: batch.id,
             name: batch.name || `Batch ${batch.id.slice(0, 8)}`,
             status: tripStatus,
-            facilityCount: batch.facilities?.[0]?.count || 0,
+            facilityCount: batch.facility_ids?.length || 0,
             itemCount: 0,
             estimatedDuration: '~2 hrs',
             startLocation: batch.warehouse?.name || 'Warehouse',

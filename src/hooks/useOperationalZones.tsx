@@ -1,16 +1,15 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { 
-  OperationalZone, 
-  CreateZoneInput, 
+import {
+  OperationalZone,
+  CreateZoneInput,
   UpdateZoneInput,
-  ZoneMetrics,
-  ZoneSummary 
+  ZoneSummary
 } from '@/types/zones';
 import { toast } from 'sonner';
 
 export function useOperationalZones(options?: { enabled?: boolean }) {
-  return useQuery({
+  const query = useQuery({
     queryKey: ['operational-zones'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -22,6 +21,12 @@ export function useOperationalZones(options?: { enabled?: boolean }) {
       return data as unknown as OperationalZone[];
     },
     enabled: options?.enabled ?? true,
+  });
+
+  // Expose `zones` and `loading` aliases for backward-compatible destructuring
+  return Object.assign(query, {
+    zones: query.data ?? [] as OperationalZone[],
+    loading: query.isLoading,
   });
 }
 
@@ -48,13 +53,33 @@ export function useZoneMetrics() {
   return useQuery({
     queryKey: ['zone-metrics'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('zone_metrics' as any)
-        .select('*')
-        .order('zone_name', { ascending: true });
+      const { data: zones, error: zonesError } = await supabase
+        .from('zones' as any)
+        .select('*');
 
-      if (error) throw error;
-      return data as unknown as ZoneMetrics[];
+      if (zonesError) throw zonesError;
+
+      const { count: totalFacilities } = await supabase
+        .from('facilities')
+        .select('*', { count: 'exact', head: true })
+        .is('deleted_at', null);
+
+      let totalLGAs = 0;
+      try {
+        const { count } = await supabase
+          .from('lgas' as any)
+          .select('*', { count: 'exact', head: true });
+        totalLGAs = count || 0;
+      } catch {
+        // lgas table may not exist
+      }
+
+      return {
+        totalZones: zones?.length || 0,
+        activeZones: zones?.filter((z: any) => z.is_active).length || 0,
+        totalFacilities: totalFacilities || 0,
+        totalLGAs,
+      };
     },
   });
 }
@@ -90,6 +115,7 @@ export function useCreateZone() {
           region_center: input.region_center,
           zone_manager_id: input.zone_manager_id,
           is_active: input.is_active ?? true,
+          metadata: input.metadata ?? {},
         }])
         .select()
         .single();

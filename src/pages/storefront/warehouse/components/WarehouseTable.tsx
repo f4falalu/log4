@@ -32,6 +32,7 @@ interface WarehouseTableProps {
   totalPages: number;
   totalWarehouses: number;
   onPageChange: (page: number) => void;
+  pageSize?: number;
 }
 
 export function WarehouseTable({
@@ -44,6 +45,7 @@ export function WarehouseTable({
   totalPages,
   totalWarehouses,
   onPageChange,
+  pageSize = 50,
 }: WarehouseTableProps) {
   const deleteWarehouse = useDeleteWarehouse();
 
@@ -79,21 +81,22 @@ export function WarehouseTable({
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-auto">
-        <Table>
-          <TableHeader className="sticky top-0 bg-background z-10">
-            <TableRow>
-              <TableHead className="min-w-[200px]">Warehouse</TableHead>
-              <TableHead>Code</TableHead>
-              <TableHead>Location</TableHead>
-              <TableHead>Contact</TableHead>
-              <TableHead className="text-right">Capacity</TableHead>
-              <TableHead className="min-w-[150px]">Utilization</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="w-12"></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
+      <div className="flex-1 overflow-x-auto overflow-y-auto">
+        <div className="inline-block min-w-full align-middle">
+          <Table>
+            <TableHeader className="sticky top-0 bg-background z-10 border-b">
+              <TableRow>
+                <TableHead className="min-w-[200px]">Warehouse</TableHead>
+                <TableHead className="min-w-[100px]">Code</TableHead>
+                <TableHead className="min-w-[120px]">Location</TableHead>
+                <TableHead className="min-w-[140px]">Contact</TableHead>
+                <TableHead className="text-right min-w-[110px]">Capacity</TableHead>
+                <TableHead className="min-w-[180px]">Utilization</TableHead>
+                <TableHead className="min-w-[90px]">Status</TableHead>
+                <TableHead className="w-[50px]"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
             {warehouses.map((warehouse) => {
               const utilization = getUtilization(warehouse);
 
@@ -220,14 +223,15 @@ export function WarehouseTable({
                 </TableRow>
               );
             })}
-          </TableBody>
-        </Table>
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
       {/* Pagination */}
       <div className="flex-shrink-0 border-t p-4 flex items-center justify-between bg-background">
         <p className="text-sm text-muted-foreground">
-          Showing {page * 50 + 1} to {Math.min((page + 1) * 50, totalWarehouses)} of {totalWarehouses} warehouses
+          Showing {page * pageSize + 1} to {Math.min((page + 1) * pageSize, totalWarehouses)} of {totalWarehouses} warehouses
         </p>
         <div className="flex items-center gap-2">
           <Button

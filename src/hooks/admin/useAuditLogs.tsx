@@ -75,7 +75,7 @@ export function useAuditLogs(filters: AuditFilters = {}) {
           session:driver_sessions (
             id,
             driver_id,
-            driver:profiles!driver_sessions_driver_id_fkey (
+            driver:profiles!driver_sessions_driver_id_profiles_fkey (
               full_name
             )
           )

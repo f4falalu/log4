@@ -25,11 +25,6 @@ const navigationGroups: NavigationGroup[] = [
         icon: Package
       },
       {
-        label: 'Payloads',
-        href: '/fleetops/payloads',
-        icon: Package
-      },
-      {
         label: 'Dispatch',
         href: '/fleetops/dispatch',
         icon: Truck

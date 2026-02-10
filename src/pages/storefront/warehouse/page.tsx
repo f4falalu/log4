@@ -71,9 +71,9 @@ export default function WarehousePage() {
   };
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col overflow-x-auto">
       {/* Header */}
-      <div className="flex-shrink-0 border-b bg-background">
+      <div className="flex-shrink-0 border-b bg-background min-w-fit">
         <div className="p-4">
           <div className="flex items-center justify-between mb-4">
             <div>
@@ -186,9 +186,9 @@ export default function WarehousePage() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex min-h-0 min-w-fit">
         {/* Table */}
-        <div className="flex-1 overflow-auto">
+        <div className="flex-1 min-w-[800px] overflow-auto">
           <WarehouseTable
             warehouses={warehouses}
             isLoading={isLoading}
@@ -199,6 +199,7 @@ export default function WarehousePage() {
             totalPages={totalPages}
             totalWarehouses={totalWarehouses}
             onPageChange={setPage}
+            pageSize={pageSize}
           />
         </div>
 

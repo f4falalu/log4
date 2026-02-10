@@ -166,7 +166,11 @@ export function useDriverEvents(options: UseDriverEventsOptions = {}) {
           console.log('[useDriverEvents] Subscribed to real-time driver events');
         }
         if (status === 'CHANNEL_ERROR') {
-          console.error('[useDriverEvents] Channel error');
+          console.warn('[useDriverEvents] Channel error - falling back to polling only');
+          // Don't throw error, just continue with polling fallback
+        }
+        if (status === 'TIMED_OUT' || status === 'CLOSED') {
+          console.warn('[useDriverEvents] Channel disconnected - will retry on next effect');
         }
       });
 

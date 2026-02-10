@@ -63,32 +63,32 @@ const KPIMetrics = ({ startDate, endDate }: KPIMetricsProps) => {
   // ✅ CORRECT: All values come from server-side pre-computed summary
   const kpis: KPICard[] = [
     {
-      label: 'Active Routes',
-      value: summary.active_routes || 0,
-      trend: (summary.active_routes || 0) > 2 ? 'up' : 'neutral',
-      trendValue: `${summary.assigned_routes || 0} assigned`,
-      status: (summary.active_routes || 0) > 3 ? 'warning' : 'success'
+      label: 'Active Deliveries',
+      value: summary.total_deliveries || 0,
+      trend: (summary.total_deliveries || 0) > 2 ? 'up' : 'neutral',
+      trendValue: `${Math.round(summary.on_time_rate || 0)}% on-time`,
+      status: (summary.total_deliveries || 0) > 3 ? 'warning' : 'success'
     },
     {
       label: 'Fleet Utilization',
-      value: `${Math.round(summary.fleet_utilization_percent || 0)}%`,
-      trend: (summary.fleet_utilization_percent || 0) > 75 ? 'up' : (summary.fleet_utilization_percent || 0) > 50 ? 'neutral' : 'down',
-      trendValue: `${summary.vehicles_in_use || 0}/${summary.total_vehicles || 0} vehicles`,
-      status: (summary.fleet_utilization_percent || 0) > 80 ? 'success' : (summary.fleet_utilization_percent || 0) > 50 ? 'warning' : 'danger'
+      value: `${Math.round(summary.vehicle_utilization_rate || 0)}%`,
+      trend: (summary.vehicle_utilization_rate || 0) > 75 ? 'up' : (summary.vehicle_utilization_rate || 0) > 50 ? 'neutral' : 'down',
+      trendValue: `${summary.active_vehicles || 0} active vehicles`,
+      status: (summary.vehicle_utilization_rate || 0) > 80 ? 'success' : (summary.vehicle_utilization_rate || 0) > 50 ? 'warning' : 'danger'
     },
     {
       label: 'On-Time Performance',
-      value: `${Math.round(summary.on_time_percent || 0)}%`,
-      trend: (summary.on_time_percent || 0) >= 90 ? 'up' : (summary.on_time_percent || 0) >= 70 ? 'neutral' : 'down',
-      trendValue: `${summary.completed_routes || 0} completed`,
-      status: (summary.on_time_percent || 0) >= 90 ? 'success' : (summary.on_time_percent || 0) >= 70 ? 'warning' : 'danger'
+      value: `${Math.round(summary.on_time_rate || 0)}%`,
+      trend: (summary.on_time_rate || 0) >= 90 ? 'up' : (summary.on_time_rate || 0) >= 70 ? 'neutral' : 'down',
+      trendValue: `${summary.total_deliveries || 0} deliveries`,
+      status: (summary.on_time_rate || 0) >= 90 ? 'success' : (summary.on_time_rate || 0) >= 70 ? 'warning' : 'danger'
     },
     {
       label: "Today's Completion",
-      value: `${Math.round(summary.completion_rate_percent || 0)}%`,
-      trend: (summary.completion_rate_percent || 0) > 50 ? 'up' : 'neutral',
-      trendValue: `${summary.completed_routes || 0}/${summary.total_routes || 0} routes`,
-      status: (summary.completion_rate_percent || 0) > 75 ? 'success' : (summary.completion_rate_percent || 0) > 50 ? 'warning' : 'neutral'
+      value: `${Math.round(summary.avg_completion_hours || 0)}h`,
+      trend: (summary.avg_completion_hours || 0) < 4 ? 'up' : 'neutral',
+      trendValue: `${summary.total_items || 0} items`,
+      status: (summary.avg_completion_hours || 0) < 4 ? 'success' : (summary.avg_completion_hours || 0) < 8 ? 'warning' : 'neutral'
     }
   ];
 

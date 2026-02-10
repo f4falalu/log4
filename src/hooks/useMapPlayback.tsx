@@ -136,11 +136,11 @@ export function useMapPlayback({
         // For vehicle, find the associated driver(s) and get their GPS data
         const { data: batches } = await supabase
           .from('delivery_batches')
-          .select('assigned_driver_id')
+          .select('driver_id')
           .eq('vehicle_id', entityId)
           .in('status', ['in-progress', 'completed']);
 
-        const driverIds = [...new Set((batches || []).map(b => b.assigned_driver_id).filter(Boolean))];
+        const driverIds = [...new Set((batches || []).map(b => b.driver_id).filter(Boolean))];
 
         if (driverIds.length === 0) return [];
 

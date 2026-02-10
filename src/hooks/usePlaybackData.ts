@@ -345,7 +345,7 @@ export function usePlaybackBatches(enabled = true) {
           status,
           actual_start_time,
           actual_end_time,
-          driver:drivers!delivery_batches_assigned_driver_id_fkey(name)
+          driver:drivers!delivery_batches_driver_id_fkey(name)
         `)
         .not('actual_start_time', 'is', null)
         .order('actual_start_time', { ascending: false })

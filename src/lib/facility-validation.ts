@@ -165,6 +165,7 @@ export const facilityFilterSchema = z.object({
   ip_name: ipNameSchema.optional(),
   funding_source: fundingSourceSchema.optional(),
   programme: programmeSchema.optional(),
+  zone_id: z.string().optional(),
   service_zone: serviceZoneSchema.optional(),
   level_of_care: levelOfCareSchema.optional(),
   lga: z.string().optional(),

@@ -14,6 +14,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Switch } from '@/components/ui/switch';
 import {
   Upload,
   FileUp,
@@ -25,9 +26,11 @@ import {
   AlertTriangle,
   ArrowRight,
   ArrowLeft,
+  ShieldOff,
 } from 'lucide-react';
-import { useCreateFacility } from '@/hooks/useFacilities';
-import { transformCsvToFacility } from '@/lib/facility-validation';
+import { useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { parseCsvBoolean, parseCsvNumber } from '@/lib/facility-validation';
 import { toast } from 'sonner';
 import {
   parseFile,
@@ -72,8 +75,9 @@ export function EnhancedCSVImportDialog({ open, onOpenChange }: EnhancedCSVImpor
   const [editedRows, setEditedRows] = useState<Record<number, any>>({});
   const [importProgress, setImportProgress] = useState(0);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
+  const [skipValidation, setSkipValidation] = useState(false);
 
-  const createFacility = useCreateFacility();
+  const queryClient = useQueryClient();
 
   // Fetch DB reference data for normalization and validation
   const { data: facilityTypes = [] } = useFacilityTypes();
@@ -201,6 +205,46 @@ export function EnhancedCSVImportDialog({ open, onOpenChange }: EnhancedCSVImpor
     return parsedData?.rows[rowIndex] || {};
   };
 
+  /**
+   * Build a DB-ready insert object from a CSV row.
+   * Only includes columns that exist in the facilities table (all snake_case).
+   */
+  const buildDbFacility = (row: any, normalizedRow?: NormalizedRow) => {
+    const lat = parseFloat(String(row.latitude ?? ''));
+    const lng = parseFloat(String(row.longitude ?? ''));
+
+    return {
+      name: String(row.name || '').trim(),
+      address: String(row.address || '').trim() || null,
+      lat: isNaN(lat) ? 0 : lat,
+      lng: isNaN(lng) ? 0 : lng,
+      type: row.type || null,
+      phone: row.phone || null,
+      contact_person: row.contactPerson || row.contact_person || null,
+      capacity: parseCsvNumber(String(row.capacity ?? '')) || null,
+      operating_hours: row.operatingHours || row.operating_hours || null,
+      warehouse_code: row.warehouse_code || null,
+      state: row.state || 'kano',
+      ip_name: row.ip_name || null,
+      funding_source: row.funding_source || null,
+      programme: row.programme || null,
+      pcr_service: parseCsvBoolean(String(row.pcr_service ?? '')),
+      cd4_service: parseCsvBoolean(String(row.cd4_service ?? '')),
+      type_of_service: row.type_of_service || null,
+      service_zone: row.service_zone || null,
+      level_of_care: row.level_of_care || null,
+      lga: row.lga || null,
+      ward: row.ward || null,
+      contact_name_pharmacy: row.contact_name_pharmacy || null,
+      designation: row.designation || null,
+      phone_pharmacy: row.phone_pharmacy || null,
+      email: row.email || null,
+      storage_capacity: parseCsvNumber(String(row.storage_capacity ?? '')) || null,
+      // DB-linked foreign keys from normalization
+      zone_id: normalizedRow?.dbMatches?.zone?.id || null,
+    };
+  };
+
   const handleImport = async () => {
     if (!parsedData) return;
 
@@ -218,28 +262,30 @@ export function EnhancedCSVImportDialog({ open, onOpenChange }: EnhancedCSVImpor
       try {
         const row = getMergedRow(i);
 
+        // Skip rows that have no name (minimum viable field)
+        if (!row.name || String(row.name).trim() === '') {
+          result.failed++;
+          result.errors.push({
+            row: i + 1,
+            error: 'Skipped: facility name is required',
+          });
+          setImportProgress(Math.round(((i + 1) / parsedData.rows.length) * 100));
+          continue;
+        }
+
         // Handle warehouse code auto-generation
         if (autoGenerateWarehouseCode || !row.warehouse_code) {
           row.warehouse_code = await generateWarehouseCode(row.service_zone);
         }
 
-        // Get normalized DB IDs from cleaned data
-        const normalizedRow = normalizedRows[i];
-        if (normalizedRow?.dbMatches) {
-          // Use DB IDs for foreign key relationships
-          if (normalizedRow.dbMatches.zone?.id) {
-            row.zone_id = normalizedRow.dbMatches.zone.id;
-          }
-          if (normalizedRow.dbMatches.facilityType?.id) {
-            row.facility_type_id = normalizedRow.dbMatches.facilityType.id;
-          }
-          if (normalizedRow.dbMatches.levelOfCare?.id) {
-            row.level_of_care_id = normalizedRow.dbMatches.levelOfCare.id;
-          }
-        }
+        // Build DB-ready object (snake_case only, no camelCase fields)
+        const dbFacility = buildDbFacility(row, normalizedRows[i]);
 
-        const facilityData = transformCsvToFacility(row);
-        await createFacility.mutateAsync(facilityData);
+        const { error } = await supabase
+          .from('facilities')
+          .insert(dbFacility);
+
+        if (error) throw error;
         result.success++;
       } catch (error: any) {
         result.failed++;
@@ -251,6 +297,9 @@ export function EnhancedCSVImportDialog({ open, onOpenChange }: EnhancedCSVImpor
 
       setImportProgress(Math.round(((i + 1) / parsedData.rows.length) * 100));
     }
+
+    // Invalidate facilities cache so the table refreshes
+    queryClient.invalidateQueries({ queryKey: ['facilities'] });
 
     setImportResult(result);
     setStep('complete');
@@ -275,6 +324,7 @@ export function EnhancedCSVImportDialog({ open, onOpenChange }: EnhancedCSVImpor
     setEditedRows({});
     setImportProgress(0);
     setImportResult(null);
+    setSkipValidation(false);
     onOpenChange(false);
   };
 
@@ -407,16 +457,17 @@ export function EnhancedCSVImportDialog({ open, onOpenChange }: EnhancedCSVImpor
                   ? (validationSummary.errors / parsedData.rows.length) * 100
                   : 0;
                 const highErrorRate = errorRate > 20;
+                const hasIssues = validationSummary.hasBlockingErrors || highErrorRate;
 
                 return (
-                  <Alert variant={validationSummary.hasBlockingErrors || highErrorRate ? 'destructive' : 'default'}>
-                    {validationSummary.hasBlockingErrors || highErrorRate ? (
+                  <Alert variant={hasIssues && !skipValidation ? 'destructive' : 'default'}>
+                    {hasIssues && !skipValidation ? (
                       <AlertCircle className="h-4 w-4" />
                     ) : (
                       <CheckCircle className="h-4 w-4" />
                     )}
                     <AlertTitle>
-                      {validationSummary.hasBlockingErrors || highErrorRate ? 'Validation Issues Detected' : 'Validation Complete'}
+                      {hasIssues && !skipValidation ? 'Validation Issues Detected' : skipValidation ? 'Validation Skipped' : 'Validation Complete'}
                     </AlertTitle>
                     <AlertDescription>
                       <div className="flex flex-wrap gap-2 mt-2">
@@ -424,8 +475,8 @@ export function EnhancedCSVImportDialog({ open, onOpenChange }: EnhancedCSVImpor
                           {parsedData.rows.length} rows
                         </Badge>
                         {validationSummary.errors > 0 && (
-                          <Badge variant="destructive" className="font-medium">
-                            {validationSummary.errors} errors (block import)
+                          <Badge variant={skipValidation ? 'secondary' : 'destructive'} className="font-medium">
+                            {validationSummary.errors} errors {skipValidation ? '(skipped)' : '(block import)'}
                           </Badge>
                         )}
                         {validationSummary.warnings > 0 && (
@@ -434,26 +485,45 @@ export function EnhancedCSVImportDialog({ open, onOpenChange }: EnhancedCSVImpor
                           </Badge>
                         )}
                         {errorRate > 0 && (
-                          <Badge variant={highErrorRate ? 'destructive' : 'outline'} className="font-medium">
+                          <Badge variant={highErrorRate && !skipValidation ? 'destructive' : 'outline'} className="font-medium">
                             {errorRate.toFixed(1)}% error rate
                           </Badge>
                         )}
                       </div>
-                      {highErrorRate && (
-                        <p className="text-sm mt-2 font-medium">
-                          ⚠️ High error rate detected ({errorRate.toFixed(1)}%). Please review and fix critical issues before importing.
-                          Import is disabled when error rate exceeds 20%.
-                        </p>
-                      )}
-                      {validationSummary.hasBlockingErrors && !highErrorRate && (
+                      {hasIssues && !skipValidation && (
                         <p className="text-sm mt-2">
-                          Please fix all errors before importing. You can edit values in the table below or go back to adjust column mappings.
+                          Fix errors below, or enable "Skip Validation" to import with available data. Missing fields can be added later.
                         </p>
                       )}
-                      {!validationSummary.hasBlockingErrors && validationSummary.warnings > 0 && (
+                      {skipValidation && validationSummary.errors > 0 && (
+                        <p className="text-sm mt-2 text-muted-foreground">
+                          Rows with missing required fields (name) will be skipped. Other missing data can be filled in later.
+                        </p>
+                      )}
+                      {!hasIssues && validationSummary.warnings > 0 && (
                         <p className="text-sm mt-2 text-muted-foreground">
                           Warnings won't block import, but it's recommended to review them for data quality.
                         </p>
+                      )}
+
+                      {/* Skip Validation Toggle */}
+                      {hasIssues && (
+                        <div className="flex items-center gap-3 mt-3 p-3 rounded-md border bg-muted/50">
+                          <ShieldOff className="h-4 w-4 text-muted-foreground shrink-0" />
+                          <div className="flex-1">
+                            <Label htmlFor="skip-validation" className="text-sm font-medium cursor-pointer">
+                              Skip Validation
+                            </Label>
+                            <p className="text-xs text-muted-foreground">
+                              Import facilities with available data. Missing info can be added later by editing each facility.
+                            </p>
+                          </div>
+                          <Switch
+                            id="skip-validation"
+                            checked={skipValidation}
+                            onCheckedChange={setSkipValidation}
+                          />
+                        </div>
                       )}
                     </AlertDescription>
                   </Alert>
@@ -639,7 +709,7 @@ export function EnhancedCSVImportDialog({ open, onOpenChange }: EnhancedCSVImpor
               ? (validationSummary.errors / parsedData.rows.length) * 100
               : 0;
             const highErrorRate = errorRate > 20;
-            const importDisabled = validationSummary?.hasBlockingErrors || highErrorRate;
+            const importDisabled = !skipValidation && (validationSummary?.hasBlockingErrors || highErrorRate);
 
             return (
               <>
@@ -650,9 +720,13 @@ export function EnhancedCSVImportDialog({ open, onOpenChange }: EnhancedCSVImpor
                 <Button
                   onClick={handleImport}
                   disabled={importDisabled}
+                  variant={skipValidation && validationSummary?.hasBlockingErrors ? 'secondary' : 'default'}
                 >
                   <FileUp className="h-4 w-4 mr-2" />
-                  Import {parsedData?.rows.length} Facilities
+                  {skipValidation && validationSummary?.hasBlockingErrors
+                    ? `Import Anyway (${parsedData?.rows.length} rows)`
+                    : `Import ${parsedData?.rows.length} Facilities`
+                  }
                 </Button>
               </>
             );

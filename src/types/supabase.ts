@@ -151,91 +151,121 @@ export type Database = {
         Row: {
           actual_end_time: string | null
           actual_start_time: string | null
+          batch_snapshot: Json | null
           created_at: string | null
+          current_stop_index: number | null
           driver_id: string | null
+          driver_status: Database["public"]["Enums"]["driver_status"] | null
           estimated_distance_km: number | null
           estimated_duration: number
           estimated_duration_min: number | null
+          execution_metadata: Json | null
           external_route_data: Json | null
           facility_ids: string[]
           id: string
+          is_snapshot_locked: boolean | null
           medication_type: string
           name: string
           notes: string | null
           optimized_route: Json
           payload_utilization_pct: number | null
+          pre_batch_id: string | null
           priority: Database["public"]["Enums"]["delivery_priority"]
           route_constraints: Json | null
           route_optimization_method: string | null
           scheduled_date: string
           scheduled_time: string
+          slot_assignments: Json | null
+          snapshot_locked_at: string | null
           status: Database["public"]["Enums"]["batch_status"]
           total_distance: number
           total_quantity: number
+          total_slot_demand: number | null
           total_volume: number | null
           total_weight: number | null
           updated_at: string | null
           vehicle_id: string | null
+          vehicle_total_slots: number | null
           warehouse_id: string
         }
         Insert: {
           actual_end_time?: string | null
           actual_start_time?: string | null
+          batch_snapshot?: Json | null
           created_at?: string | null
+          current_stop_index?: number | null
           driver_id?: string | null
+          driver_status?: Database["public"]["Enums"]["driver_status"] | null
           estimated_distance_km?: number | null
           estimated_duration: number
           estimated_duration_min?: number | null
+          execution_metadata?: Json | null
           external_route_data?: Json | null
           facility_ids: string[]
           id?: string
+          is_snapshot_locked?: boolean | null
           medication_type: string
           name: string
           notes?: string | null
           optimized_route: Json
           payload_utilization_pct?: number | null
+          pre_batch_id?: string | null
           priority?: Database["public"]["Enums"]["delivery_priority"]
           route_constraints?: Json | null
           route_optimization_method?: string | null
           scheduled_date: string
           scheduled_time: string
+          slot_assignments?: Json | null
+          snapshot_locked_at?: string | null
           status?: Database["public"]["Enums"]["batch_status"]
           total_distance: number
           total_quantity: number
+          total_slot_demand?: number | null
           total_volume?: number | null
           total_weight?: number | null
           updated_at?: string | null
           vehicle_id?: string | null
+          vehicle_total_slots?: number | null
           warehouse_id: string
         }
         Update: {
           actual_end_time?: string | null
           actual_start_time?: string | null
+          batch_snapshot?: Json | null
           created_at?: string | null
+          current_stop_index?: number | null
           driver_id?: string | null
+          driver_status?: Database["public"]["Enums"]["driver_status"] | null
           estimated_distance_km?: number | null
           estimated_duration?: number
           estimated_duration_min?: number | null
+          execution_metadata?: Json | null
           external_route_data?: Json | null
           facility_ids?: string[]
           id?: string
+          is_snapshot_locked?: boolean | null
           medication_type?: string
           name?: string
           notes?: string | null
           optimized_route?: Json
           payload_utilization_pct?: number | null
+          pre_batch_id?: string | null
           priority?: Database["public"]["Enums"]["delivery_priority"]
           route_constraints?: Json | null
           route_optimization_method?: string | null
           scheduled_date?: string
           scheduled_time?: string
+          slot_assignments?: Json | null
+          snapshot_locked_at?: string | null
           status?: Database["public"]["Enums"]["batch_status"]
           total_distance?: number
           total_quantity?: number
+          total_slot_demand?: number | null
           total_volume?: number | null
           total_weight?: number | null
           updated_at?: string | null
           vehicle_id?: string | null
+          vehicle_total_slots?: number | null
           warehouse_id?: string
         }
         Relationships: [
@@ -244,6 +274,13 @@ export type Database = {
             columns: ["driver_id"]
             isOneToOne: false
             referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_batches_pre_batch_id_fkey"
+            columns: ["pre_batch_id"]
+            isOneToOne: false
+            referencedRelation: "scheduler_pre_batches"
             referencedColumns: ["id"]
           },
           {
@@ -469,6 +506,370 @@ export type Database = {
           },
         ]
       }
+      driver_devices: {
+        Row: {
+          created_at: string
+          device_id: string
+          device_name: string | null
+          id: string
+          is_trusted: boolean
+          last_seen_at: string
+          platform: string | null
+          registered_at: string
+          revoked_at: string | null
+          revoked_by: string | null
+          updated_at: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          device_id: string
+          device_name?: string | null
+          id?: string
+          is_trusted?: boolean
+          last_seen_at?: string
+          platform?: string | null
+          registered_at?: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          updated_at?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          device_id?: string
+          device_name?: string | null
+          id?: string
+          is_trusted?: boolean
+          last_seen_at?: string
+          platform?: string | null
+          registered_at?: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          updated_at?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      driver_events: {
+        Row: {
+          batch_id: string
+          created_at: string
+          driver_id: string
+          driver_status: Database["public"]["Enums"]["driver_status"]
+          event_type: Database["public"]["Enums"]["event_type"]
+          flagged_for_review: boolean | null
+          id: string
+          location: unknown
+          metadata: Json | null
+          recorded_at: string
+          review_status: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          session_id: string | null
+          synced_at: string
+        }
+        Insert: {
+          batch_id: string
+          created_at?: string
+          driver_id: string
+          driver_status: Database["public"]["Enums"]["driver_status"]
+          event_type: Database["public"]["Enums"]["event_type"]
+          flagged_for_review?: boolean | null
+          id?: string
+          location?: unknown
+          metadata?: Json | null
+          recorded_at: string
+          review_status?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          session_id?: string | null
+          synced_at?: string
+        }
+        Update: {
+          batch_id?: string
+          created_at?: string
+          driver_id?: string
+          driver_status?: Database["public"]["Enums"]["driver_status"]
+          event_type?: Database["public"]["Enums"]["event_type"]
+          flagged_for_review?: boolean | null
+          id?: string
+          location?: unknown
+          metadata?: Json | null
+          recorded_at?: string
+          review_status?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          session_id?: string | null
+          synced_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_events_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_events_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "driver_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      driver_gps_events: {
+        Row: {
+          accuracy_m: number | null
+          altitude_m: number | null
+          batch_id: string | null
+          battery_level: number | null
+          captured_at: string
+          created_at: string | null
+          device_id: string
+          driver_id: string
+          heading: number | null
+          id: string
+          is_background: boolean | null
+          lat: number
+          lng: number
+          network_type: string | null
+          received_at: string | null
+          session_id: string
+          speed_mps: number | null
+          trip_id: string | null
+          vehicle_id: string | null
+        }
+        Insert: {
+          accuracy_m?: number | null
+          altitude_m?: number | null
+          batch_id?: string | null
+          battery_level?: number | null
+          captured_at: string
+          created_at?: string | null
+          device_id: string
+          driver_id: string
+          heading?: number | null
+          id?: string
+          is_background?: boolean | null
+          lat: number
+          lng: number
+          network_type?: string | null
+          received_at?: string | null
+          session_id: string
+          speed_mps?: number | null
+          trip_id?: string | null
+          vehicle_id?: string | null
+        }
+        Update: {
+          accuracy_m?: number | null
+          altitude_m?: number | null
+          batch_id?: string | null
+          battery_level?: number | null
+          captured_at?: string
+          created_at?: string | null
+          device_id?: string
+          driver_id?: string
+          heading?: number | null
+          id?: string
+          is_background?: boolean | null
+          lat?: number
+          lng?: number
+          network_type?: string | null
+          received_at?: string | null
+          session_id?: string
+          speed_mps?: number | null
+          trip_id?: string | null
+          vehicle_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_gps_events_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_gps_events_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_gps_events_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicle_slot_availability"
+            referencedColumns: ["vehicle_id"]
+          },
+          {
+            foreignKeyName: "driver_gps_events_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicle_tier_stats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_gps_events_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_gps_events_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles_unified_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_gps_events_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles_with_taxonomy"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_gps_events_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles_with_tier_stats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_gps_events_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vlms_vehicles_with_taxonomy"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      driver_sessions: {
+        Row: {
+          access_token_hash: string
+          created_at: string
+          device_id: string
+          device_metadata: Json | null
+          driver_id: string
+          end_reason: string | null
+          ended_at: string | null
+          id: string
+          invalidated_at: string | null
+          invalidation_reason: string | null
+          last_active_at: string
+          last_heartbeat_at: string | null
+          refresh_token_hash: string
+          started_at: string
+          status: string
+          updated_at: string
+          vehicle_id: string | null
+        }
+        Insert: {
+          access_token_hash: string
+          created_at?: string
+          device_id: string
+          device_metadata?: Json | null
+          driver_id: string
+          end_reason?: string | null
+          ended_at?: string | null
+          id?: string
+          invalidated_at?: string | null
+          invalidation_reason?: string | null
+          last_active_at?: string
+          last_heartbeat_at?: string | null
+          refresh_token_hash: string
+          started_at?: string
+          status?: string
+          updated_at?: string
+          vehicle_id?: string | null
+        }
+        Update: {
+          access_token_hash?: string
+          created_at?: string
+          device_id?: string
+          device_metadata?: Json | null
+          driver_id?: string
+          end_reason?: string | null
+          ended_at?: string | null
+          id?: string
+          invalidated_at?: string | null
+          invalidation_reason?: string | null
+          last_active_at?: string
+          last_heartbeat_at?: string | null
+          refresh_token_hash?: string
+          started_at?: string
+          status?: string
+          updated_at?: string
+          vehicle_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_sessions_driver_id_profiles_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_sessions_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicle_slot_availability"
+            referencedColumns: ["vehicle_id"]
+          },
+          {
+            foreignKeyName: "driver_sessions_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicle_tier_stats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_sessions_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_sessions_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles_unified_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_sessions_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles_with_taxonomy"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_sessions_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles_with_tier_stats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_sessions_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vlms_vehicles_with_taxonomy"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       driver_vehicle_history: {
         Row: {
           assigned_at: string | null
@@ -583,7 +984,7 @@ export type Database = {
           phone: string
           shift_end: string
           shift_start: string
-          status: Database["public"]["Enums"]["driver_status"]
+          status: string | null
           total_deliveries: number | null
           updated_at: string | null
         }
@@ -604,7 +1005,7 @@ export type Database = {
           phone: string
           shift_end: string
           shift_start: string
-          status?: Database["public"]["Enums"]["driver_status"]
+          status?: string | null
           total_deliveries?: number | null
           updated_at?: string | null
         }
@@ -625,7 +1026,7 @@ export type Database = {
           phone?: string
           shift_end?: string
           shift_start?: string
-          status?: Database["public"]["Enums"]["driver_status"]
+          status?: string | null
           total_deliveries?: number | null
           updated_at?: string | null
         }
@@ -636,58 +1037,115 @@ export type Database = {
           address: string
           admin_unit_id: string | null
           capacity: number | null
+          cd4_service: boolean | null
+          contact_name_pharmacy: string | null
           contact_person: string | null
           created_at: string | null
+          created_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          designation: string | null
+          email: string | null
+          funding_source: string | null
           id: string
+          ip_name: string | null
           lat: number
+          level_of_care: string | null
           lga: string | null
           lng: number
           name: string
           operating_hours: string | null
+          pcr_service: boolean | null
           phone: string | null
+          phone_pharmacy: string | null
+          programme: string | null
+          service_zone: string | null
           state: string | null
+          storage_capacity: number | null
           type: Database["public"]["Enums"]["facility_type"]
+          type_of_service: string | null
           updated_at: string | null
+          updated_by: string | null
           ward: string | null
+          warehouse_code: string | null
           workspace_id: string | null
+          zone_id: string | null
         }
         Insert: {
           address: string
           admin_unit_id?: string | null
           capacity?: number | null
+          cd4_service?: boolean | null
+          contact_name_pharmacy?: string | null
           contact_person?: string | null
           created_at?: string | null
+          created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          designation?: string | null
+          email?: string | null
+          funding_source?: string | null
           id?: string
+          ip_name?: string | null
           lat: number
+          level_of_care?: string | null
           lga?: string | null
           lng: number
           name: string
           operating_hours?: string | null
+          pcr_service?: boolean | null
           phone?: string | null
+          phone_pharmacy?: string | null
+          programme?: string | null
+          service_zone?: string | null
           state?: string | null
+          storage_capacity?: number | null
           type?: Database["public"]["Enums"]["facility_type"]
+          type_of_service?: string | null
           updated_at?: string | null
+          updated_by?: string | null
           ward?: string | null
+          warehouse_code?: string | null
           workspace_id?: string | null
+          zone_id?: string | null
         }
         Update: {
           address?: string
           admin_unit_id?: string | null
           capacity?: number | null
+          cd4_service?: boolean | null
+          contact_name_pharmacy?: string | null
           contact_person?: string | null
           created_at?: string | null
+          created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          designation?: string | null
+          email?: string | null
+          funding_source?: string | null
           id?: string
+          ip_name?: string | null
           lat?: number
+          level_of_care?: string | null
           lga?: string | null
           lng?: number
           name?: string
           operating_hours?: string | null
+          pcr_service?: boolean | null
           phone?: string | null
+          phone_pharmacy?: string | null
+          programme?: string | null
+          service_zone?: string | null
           state?: string | null
+          storage_capacity?: number | null
           type?: Database["public"]["Enums"]["facility_type"]
+          type_of_service?: string | null
           updated_at?: string | null
+          updated_by?: string | null
           ward?: string | null
+          warehouse_code?: string | null
           workspace_id?: string | null
+          zone_id?: string | null
         }
         Relationships: [
           {
@@ -702,6 +1160,13 @@ export type Database = {
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "facilities_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "zones"
             referencedColumns: ["id"]
           },
         ]
@@ -775,6 +1240,203 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      facility_audit_log: {
+        Row: {
+          action: string
+          details: Json | null
+          facility_id: string
+          id: string
+          performed_by: string | null
+          timestamp: string | null
+        }
+        Insert: {
+          action: string
+          details?: Json | null
+          facility_id: string
+          id?: string
+          performed_by?: string | null
+          timestamp?: string | null
+        }
+        Update: {
+          action?: string
+          details?: Json | null
+          facility_id?: string
+          id?: string
+          performed_by?: string | null
+          timestamp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "facility_audit_log_facility_id_fkey"
+            columns: ["facility_id"]
+            isOneToOne: false
+            referencedRelation: "facilities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      facility_deliveries: {
+        Row: {
+          batch_id: string | null
+          created_at: string | null
+          delivery_date: string
+          driver_id: string | null
+          facility_id: string
+          id: string
+          items_delivered: number
+          notes: string | null
+          product_name: string | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          batch_id?: string | null
+          created_at?: string | null
+          delivery_date: string
+          driver_id?: string | null
+          facility_id: string
+          id?: string
+          items_delivered?: number
+          notes?: string | null
+          product_name?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          batch_id?: string | null
+          created_at?: string | null
+          delivery_date?: string
+          driver_id?: string | null
+          facility_id?: string
+          id?: string
+          items_delivered?: number
+          notes?: string | null
+          product_name?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "facility_deliveries_facility_id_fkey"
+            columns: ["facility_id"]
+            isOneToOne: false
+            referencedRelation: "facilities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      facility_services: {
+        Row: {
+          availability: boolean | null
+          created_at: string | null
+          facility_id: string
+          id: string
+          notes: string | null
+          service_name: string
+          updated_at: string | null
+        }
+        Insert: {
+          availability?: boolean | null
+          created_at?: string | null
+          facility_id: string
+          id?: string
+          notes?: string | null
+          service_name: string
+          updated_at?: string | null
+        }
+        Update: {
+          availability?: boolean | null
+          created_at?: string | null
+          facility_id?: string
+          id?: string
+          notes?: string | null
+          service_name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "facility_services_facility_id_fkey"
+            columns: ["facility_id"]
+            isOneToOne: false
+            referencedRelation: "facilities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      facility_stock: {
+        Row: {
+          created_at: string | null
+          facility_id: string
+          id: string
+          last_updated: string | null
+          product_id: string | null
+          product_name: string
+          quantity: number
+          unit: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          facility_id: string
+          id?: string
+          last_updated?: string | null
+          product_id?: string | null
+          product_name: string
+          quantity?: number
+          unit?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          facility_id?: string
+          id?: string
+          last_updated?: string | null
+          product_id?: string | null
+          product_name?: string
+          quantity?: number
+          unit?: string | null
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "facility_stock_facility_id_fkey"
+            columns: ["facility_id"]
+            isOneToOne: false
+            referencedRelation: "facilities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      facility_types: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          metadata: Json
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          metadata?: Json
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          metadata?: Json
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       fleets: {
         Row: {
@@ -1042,6 +1704,344 @@ export type Database = {
           },
         ]
       }
+      invoice_line_items: {
+        Row: {
+          batch_number: string | null
+          category: string | null
+          created_at: string | null
+          description: string
+          expiry_date: string | null
+          id: string
+          invoice_id: string
+          item_id: string | null
+          mfg_date: string | null
+          quantity: number | null
+          serial_number: string | null
+          total_price: number | null
+          unit_pack: string | null
+          unit_price: number | null
+          volume_m3: number | null
+          weight_kg: number | null
+        }
+        Insert: {
+          batch_number?: string | null
+          category?: string | null
+          created_at?: string | null
+          description: string
+          expiry_date?: string | null
+          id?: string
+          invoice_id: string
+          item_id?: string | null
+          mfg_date?: string | null
+          quantity?: number | null
+          serial_number?: string | null
+          total_price?: number | null
+          unit_pack?: string | null
+          unit_price?: number | null
+          volume_m3?: number | null
+          weight_kg?: number | null
+        }
+        Update: {
+          batch_number?: string | null
+          category?: string | null
+          created_at?: string | null
+          description?: string
+          expiry_date?: string | null
+          id?: string
+          invoice_id?: string
+          item_id?: string | null
+          mfg_date?: string | null
+          quantity?: number | null
+          serial_number?: string | null
+          total_price?: number | null
+          unit_pack?: string | null
+          unit_price?: number | null
+          volume_m3?: number | null
+          weight_kg?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_line_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_line_items_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoice_packaging: {
+        Row: {
+          created_at: string | null
+          id: string
+          invoice_id: string
+          packaging_mode: string | null
+          total_packages: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          invoice_id: string
+          packaging_mode?: string | null
+          total_packages?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          invoice_id?: string
+          packaging_mode?: string | null
+          total_packages?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_packaging_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoices: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          facility_id: string
+          id: string
+          invoice_number: string
+          notes: string | null
+          packaging_required: boolean | null
+          ref_number: string | null
+          requisition_id: string | null
+          status: string | null
+          total_price: number | null
+          total_volume_m3: number | null
+          total_weight_kg: number | null
+          updated_at: string | null
+          warehouse_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          facility_id: string
+          id?: string
+          invoice_number: string
+          notes?: string | null
+          packaging_required?: boolean | null
+          ref_number?: string | null
+          requisition_id?: string | null
+          status?: string | null
+          total_price?: number | null
+          total_volume_m3?: number | null
+          total_weight_kg?: number | null
+          updated_at?: string | null
+          warehouse_id: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          facility_id?: string
+          id?: string
+          invoice_number?: string
+          notes?: string | null
+          packaging_required?: boolean | null
+          ref_number?: string | null
+          requisition_id?: string | null
+          status?: string | null
+          total_price?: number | null
+          total_volume_m3?: number | null
+          total_weight_kg?: number | null
+          updated_at?: string | null
+          warehouse_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_facility_id_fkey"
+            columns: ["facility_id"]
+            isOneToOne: false
+            referencedRelation: "facilities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_requisition_id_fkey"
+            columns: ["requisition_id"]
+            isOneToOne: false
+            referencedRelation: "requisitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      items: {
+        Row: {
+          batch_number: string | null
+          category: string
+          created_at: string | null
+          created_by: string | null
+          description: string
+          expiry_date: string | null
+          id: string
+          lot_number: string | null
+          mfg_date: string | null
+          program: string | null
+          serial_number: string
+          stock_on_hand: number | null
+          store_address: string | null
+          unit_pack: string | null
+          unit_price: number | null
+          updated_at: string | null
+          volume_m3: number | null
+          warehouse_id: string | null
+          weight_kg: number | null
+        }
+        Insert: {
+          batch_number?: string | null
+          category: string
+          created_at?: string | null
+          created_by?: string | null
+          description: string
+          expiry_date?: string | null
+          id?: string
+          lot_number?: string | null
+          mfg_date?: string | null
+          program?: string | null
+          serial_number: string
+          stock_on_hand?: number | null
+          store_address?: string | null
+          unit_pack?: string | null
+          unit_price?: number | null
+          updated_at?: string | null
+          volume_m3?: number | null
+          warehouse_id?: string | null
+          weight_kg?: number | null
+        }
+        Update: {
+          batch_number?: string | null
+          category?: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string
+          expiry_date?: string | null
+          id?: string
+          lot_number?: string | null
+          mfg_date?: string | null
+          program?: string | null
+          serial_number?: string
+          stock_on_hand?: number | null
+          store_address?: string | null
+          unit_pack?: string | null
+          unit_price?: number | null
+          updated_at?: string | null
+          volume_m3?: number | null
+          warehouse_id?: string | null
+          weight_kg?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "items_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      levels_of_care: {
+        Row: {
+          created_at: string
+          description: string | null
+          hierarchy_level: number | null
+          id: string
+          is_active: boolean
+          metadata: Json
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          hierarchy_level?: number | null
+          id?: string
+          is_active?: boolean
+          metadata?: Json
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          hierarchy_level?: number | null
+          id?: string
+          is_active?: boolean
+          metadata?: Json
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      lgas: {
+        Row: {
+          created_at: string | null
+          id: string
+          metadata: Json | null
+          name: string
+          population: number | null
+          state: string | null
+          updated_at: string | null
+          warehouse_id: string | null
+          zone_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          name: string
+          population?: number | null
+          state?: string | null
+          updated_at?: string | null
+          warehouse_id?: string | null
+          zone_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          name?: string
+          population?: number | null
+          state?: string | null
+          updated_at?: string | null
+          warehouse_id?: string | null
+          zone_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lgas_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lgas_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "zones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       map_action_audit: {
         Row: {
           action_location: unknown
@@ -1101,6 +2101,287 @@ export type Database = {
           },
         ]
       }
+      mod4_driver_links: {
+        Row: {
+          created_at: string
+          driver_id: string | null
+          id: string
+          link_method: string
+          linked_at: string
+          linked_by: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          driver_id?: string | null
+          id?: string
+          link_method: string
+          linked_at?: string
+          linked_by: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          driver_id?: string | null
+          id?: string
+          link_method?: string
+          linked_at?: string
+          linked_by?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mod4_driver_links_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mod4_event_sync_queue: {
+        Row: {
+          created_at: string | null
+          device_id: string
+          driver_id: string
+          encrypted_payload: string
+          encryption_iv: string
+          error_message: string | null
+          id: string
+          last_retry_at: string | null
+          processed_at: string | null
+          processed_event_id: string | null
+          retry_count: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          device_id: string
+          driver_id: string
+          encrypted_payload: string
+          encryption_iv: string
+          error_message?: string | null
+          id?: string
+          last_retry_at?: string | null
+          processed_at?: string | null
+          processed_event_id?: string | null
+          retry_count?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          device_id?: string
+          driver_id?: string
+          encrypted_payload?: string
+          encryption_iv?: string
+          error_message?: string | null
+          id?: string
+          last_retry_at?: string | null
+          processed_at?: string | null
+          processed_event_id?: string | null
+          retry_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mod4_event_sync_queue_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mod4_event_sync_queue_processed_event_id_fkey"
+            columns: ["processed_event_id"]
+            isOneToOne: false
+            referencedRelation: "mod4_events"
+            referencedColumns: ["event_id"]
+          },
+        ]
+      }
+      mod4_events: {
+        Row: {
+          batch_id: string | null
+          captured_at: string
+          created_at: string | null
+          device_id: string
+          dispatch_id: string | null
+          driver_id: string
+          event_id: string
+          event_type: string
+          lat: number
+          lng: number
+          metadata: Json
+          received_at: string | null
+          session_id: string
+          sync_attempts: number | null
+          sync_status: string | null
+          trip_id: string | null
+          vehicle_id: string | null
+        }
+        Insert: {
+          batch_id?: string | null
+          captured_at: string
+          created_at?: string | null
+          device_id: string
+          dispatch_id?: string | null
+          driver_id: string
+          event_id?: string
+          event_type: string
+          lat: number
+          lng: number
+          metadata?: Json
+          received_at?: string | null
+          session_id: string
+          sync_attempts?: number | null
+          sync_status?: string | null
+          trip_id?: string | null
+          vehicle_id?: string | null
+        }
+        Update: {
+          batch_id?: string | null
+          captured_at?: string
+          created_at?: string | null
+          device_id?: string
+          dispatch_id?: string | null
+          driver_id?: string
+          event_id?: string
+          event_type?: string
+          lat?: number
+          lng?: number
+          metadata?: Json
+          received_at?: string | null
+          session_id?: string
+          sync_attempts?: number | null
+          sync_status?: string | null
+          trip_id?: string | null
+          vehicle_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mod4_events_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mod4_events_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mod4_events_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicle_slot_availability"
+            referencedColumns: ["vehicle_id"]
+          },
+          {
+            foreignKeyName: "mod4_events_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicle_tier_stats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mod4_events_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mod4_events_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles_unified_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mod4_events_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles_with_taxonomy"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mod4_events_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles_with_tier_stats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mod4_events_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vlms_vehicles_with_taxonomy"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mod4_otp_codes: {
+        Row: {
+          attempts: number | null
+          created_at: string
+          created_by: string
+          expires_at: string
+          id: string
+          max_attempts: number | null
+          otp_code: string
+          status: string
+          target_email: string
+          updated_at: string | null
+          used_at: string | null
+          used_by: string | null
+          workspace_id: string
+        }
+        Insert: {
+          attempts?: number | null
+          created_at?: string
+          created_by: string
+          expires_at?: string
+          id?: string
+          max_attempts?: number | null
+          otp_code: string
+          status?: string
+          target_email: string
+          updated_at?: string | null
+          used_at?: string | null
+          used_by?: string | null
+          workspace_id: string
+        }
+        Update: {
+          attempts?: number | null
+          created_at?: string
+          created_by?: string
+          expires_at?: string
+          id?: string
+          max_attempts?: number | null
+          otp_code?: string
+          status?: string
+          target_email?: string
+          updated_at?: string | null
+          used_at?: string | null
+          used_by?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mod4_otp_codes_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string | null
@@ -1134,6 +2415,51 @@ export type Database = {
           title?: string
           type?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      onboarding_requests: {
+        Row: {
+          created_at: string
+          device_id: string | null
+          email: string | null
+          full_name: string
+          id: string
+          organization_hint: string | null
+          phone: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          reviewer_notes: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          device_id?: string | null
+          email?: string | null
+          full_name: string
+          id?: string
+          organization_hint?: string | null
+          phone?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          reviewer_notes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          device_id?: string | null
+          email?: string | null
+          full_name?: string
+          id?: string
+          organization_hint?: string | null
+          phone?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          reviewer_notes?: string | null
+          status?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -1252,6 +2578,124 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      org_status_history: {
+        Row: {
+          changed_at: string
+          changed_by: string | null
+          id: string
+          metadata: Json | null
+          new_status: Database["public"]["Enums"]["org_status"]
+          previous_status: Database["public"]["Enums"]["org_status"] | null
+          reason: string | null
+          workspace_id: string
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          metadata?: Json | null
+          new_status: Database["public"]["Enums"]["org_status"]
+          previous_status?: Database["public"]["Enums"]["org_status"] | null
+          reason?: string | null
+          workspace_id: string
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          metadata?: Json | null
+          new_status?: Database["public"]["Enums"]["org_status"]
+          previous_status?: Database["public"]["Enums"]["org_status"] | null
+          reason?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_status_history_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      package_items: {
+        Row: {
+          id: string
+          item_ids: string[] | null
+          package_number: number | null
+          package_type: string | null
+          packaging_id: string
+          size: string | null
+          volume_m3: number | null
+          weight_kg: number | null
+        }
+        Insert: {
+          id?: string
+          item_ids?: string[] | null
+          package_number?: number | null
+          package_type?: string | null
+          packaging_id: string
+          size?: string | null
+          volume_m3?: number | null
+          weight_kg?: number | null
+        }
+        Update: {
+          id?: string
+          item_ids?: string[] | null
+          package_number?: number | null
+          package_type?: string | null
+          packaging_id?: string
+          size?: string | null
+          volume_m3?: number | null
+          weight_kg?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "package_items_packaging_id_fkey"
+            columns: ["packaging_id"]
+            isOneToOne: false
+            referencedRelation: "invoice_packaging"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      packaging_slot_costs: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          max_volume_m3: number | null
+          max_weight_kg: number | null
+          packaging_type: string
+          slot_cost: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_volume_m3?: number | null
+          max_weight_kg?: number | null
+          packaging_type: string
+          slot_cost: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_volume_m3?: number | null
+          max_weight_kg?: number | null
+          packaging_type?: string
+          slot_cost?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       payload_items: {
         Row: {
@@ -1420,28 +2864,49 @@ export type Database = {
       }
       profiles: {
         Row: {
+          activated_at: string | null
           avatar_url: string | null
           created_at: string | null
           full_name: string | null
           id: string
+          invited_at: string | null
+          invited_by: string | null
+          onboarding_completed: boolean | null
           phone: string | null
+          registered_at: string | null
+          role_assigned_at: string | null
           updated_at: string | null
+          user_status: Database["public"]["Enums"]["user_status"]
         }
         Insert: {
+          activated_at?: string | null
           avatar_url?: string | null
           created_at?: string | null
           full_name?: string | null
           id: string
+          invited_at?: string | null
+          invited_by?: string | null
+          onboarding_completed?: boolean | null
           phone?: string | null
+          registered_at?: string | null
+          role_assigned_at?: string | null
           updated_at?: string | null
+          user_status?: Database["public"]["Enums"]["user_status"]
         }
         Update: {
+          activated_at?: string | null
           avatar_url?: string | null
           created_at?: string | null
           full_name?: string | null
           id?: string
+          invited_at?: string | null
+          invited_by?: string | null
+          onboarding_completed?: boolean | null
           phone?: string | null
+          registered_at?: string | null
+          role_assigned_at?: string | null
           updated_at?: string | null
+          user_status?: Database["public"]["Enums"]["user_status"]
         }
         Relationships: []
       }
@@ -1510,10 +2975,15 @@ export type Database = {
           handling_instructions: string | null
           id: string
           item_name: string
+          qty_issued: number | null
+          qty_received: number | null
+          qty_returned: number | null
           quantity: number
           requisition_id: string
           temperature_required: boolean | null
+          total_price: number | null
           unit: string
+          unit_price: number | null
           volume_m3: number | null
           weight_kg: number | null
         }
@@ -1522,10 +2992,15 @@ export type Database = {
           handling_instructions?: string | null
           id?: string
           item_name: string
+          qty_issued?: number | null
+          qty_received?: number | null
+          qty_returned?: number | null
           quantity: number
           requisition_id: string
           temperature_required?: boolean | null
+          total_price?: number | null
           unit?: string
+          unit_price?: number | null
           volume_m3?: number | null
           weight_kg?: number | null
         }
@@ -1534,68 +3009,295 @@ export type Database = {
           handling_instructions?: string | null
           id?: string
           item_name?: string
+          qty_issued?: number | null
+          qty_received?: number | null
+          qty_returned?: number | null
           quantity?: number
           requisition_id?: string
           temperature_required?: boolean | null
+          total_price?: number | null
           unit?: string
+          unit_price?: number | null
           volume_m3?: number | null
           weight_kg?: number | null
         }
         Relationships: []
       }
+      requisition_packaging: {
+        Row: {
+          computed_at: string
+          computed_by: string | null
+          created_at: string
+          id: string
+          is_final: boolean | null
+          packaging_version: number
+          requisition_id: string
+          rounded_slot_demand: number
+          total_items: number | null
+          total_slot_demand: number
+          total_volume_m3: number | null
+          total_weight_kg: number | null
+        }
+        Insert: {
+          computed_at?: string
+          computed_by?: string | null
+          created_at?: string
+          id?: string
+          is_final?: boolean | null
+          packaging_version?: number
+          requisition_id: string
+          rounded_slot_demand: number
+          total_items?: number | null
+          total_slot_demand: number
+          total_volume_m3?: number | null
+          total_weight_kg?: number | null
+        }
+        Update: {
+          computed_at?: string
+          computed_by?: string | null
+          created_at?: string
+          id?: string
+          is_final?: boolean | null
+          packaging_version?: number
+          requisition_id?: string
+          rounded_slot_demand?: number
+          total_items?: number | null
+          total_slot_demand?: number
+          total_volume_m3?: number | null
+          total_weight_kg?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "requisition_packaging_requisition_id_fkey"
+            columns: ["requisition_id"]
+            isOneToOne: true
+            referencedRelation: "requisitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      requisition_packaging_items: {
+        Row: {
+          created_at: string
+          id: string
+          item_name: string
+          package_count: number
+          packaging_type: string
+          quantity: number
+          requisition_item_id: string
+          requisition_packaging_id: string
+          slot_cost: number
+          slot_demand: number
+          volume_m3: number | null
+          weight_kg: number | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_name: string
+          package_count?: number
+          packaging_type: string
+          quantity: number
+          requisition_item_id: string
+          requisition_packaging_id: string
+          slot_cost: number
+          slot_demand: number
+          volume_m3?: number | null
+          weight_kg?: number | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_name?: string
+          package_count?: number
+          packaging_type?: string
+          quantity?: number
+          requisition_item_id?: string
+          requisition_packaging_id?: string
+          slot_cost?: number
+          slot_demand?: number
+          volume_m3?: number | null
+          weight_kg?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "requisition_packaging_items_requisition_item_id_fkey"
+            columns: ["requisition_item_id"]
+            isOneToOne: false
+            referencedRelation: "requisition_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "requisition_packaging_items_requisition_packaging_id_fkey"
+            columns: ["requisition_packaging_id"]
+            isOneToOne: false
+            referencedRelation: "requisition_packaging"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       requisitions: {
         Row: {
           approved_at: string | null
           approved_by: string | null
+          assigned_to_batch_at: string | null
+          batch_id: string | null
           created_at: string
+          delivered_at: string | null
           facility_id: string
+          facility_incharge: string | null
           fulfilled_at: string | null
           id: string
+          in_transit_at: string | null
+          issued_to: string | null
           notes: string | null
+          packaged_at: string | null
+          pharmacy_incharge: string | null
           priority: string
+          program: string | null
+          purpose: string | null
+          ready_for_dispatch_at: string | null
+          received_from: string | null
           rejection_reason: string | null
           requested_by: string
           requested_delivery_date: string
           requisition_number: string
+          sriv_number: string | null
           status: string
+          submission_date: string | null
           updated_at: string
           warehouse_id: string
         }
         Insert: {
           approved_at?: string | null
           approved_by?: string | null
+          assigned_to_batch_at?: string | null
+          batch_id?: string | null
           created_at?: string
+          delivered_at?: string | null
           facility_id: string
+          facility_incharge?: string | null
           fulfilled_at?: string | null
           id?: string
+          in_transit_at?: string | null
+          issued_to?: string | null
           notes?: string | null
+          packaged_at?: string | null
+          pharmacy_incharge?: string | null
           priority?: string
+          program?: string | null
+          purpose?: string | null
+          ready_for_dispatch_at?: string | null
+          received_from?: string | null
           rejection_reason?: string | null
           requested_by: string
           requested_delivery_date: string
           requisition_number: string
+          sriv_number?: string | null
           status?: string
+          submission_date?: string | null
           updated_at?: string
           warehouse_id: string
         }
         Update: {
           approved_at?: string | null
           approved_by?: string | null
+          assigned_to_batch_at?: string | null
+          batch_id?: string | null
           created_at?: string
+          delivered_at?: string | null
           facility_id?: string
+          facility_incharge?: string | null
           fulfilled_at?: string | null
           id?: string
+          in_transit_at?: string | null
+          issued_to?: string | null
           notes?: string | null
+          packaged_at?: string | null
+          pharmacy_incharge?: string | null
           priority?: string
+          program?: string | null
+          purpose?: string | null
+          ready_for_dispatch_at?: string | null
+          received_from?: string | null
           rejection_reason?: string | null
           requested_by?: string
           requested_delivery_date?: string
           requisition_number?: string
+          sriv_number?: string | null
           status?: string
+          submission_date?: string | null
           updated_at?: string
           warehouse_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "requisitions_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "requisitions_facility_id_fkey"
+            columns: ["facility_id"]
+            isOneToOne: false
+            referencedRelation: "facilities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "requisitions_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      route_facilities: {
+        Row: {
+          distance_from_previous_km: number | null
+          estimated_arrival_min: number | null
+          facility_id: string
+          id: string
+          metadata: Json
+          route_id: string
+          sequence_order: number
+        }
+        Insert: {
+          distance_from_previous_km?: number | null
+          estimated_arrival_min?: number | null
+          facility_id: string
+          id?: string
+          metadata?: Json
+          route_id: string
+          sequence_order: number
+        }
+        Update: {
+          distance_from_previous_km?: number | null
+          estimated_arrival_min?: number | null
+          facility_id?: string
+          id?: string
+          metadata?: Json
+          route_id?: string
+          sequence_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "route_facilities_facility_id_fkey"
+            columns: ["facility_id"]
+            isOneToOne: false
+            referencedRelation: "facilities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "route_facilities_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "routes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       route_history: {
         Row: {
@@ -1766,6 +3468,94 @@ export type Database = {
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      routes: {
+        Row: {
+          algorithm_used: string | null
+          created_at: string
+          created_by: string | null
+          creation_mode: string
+          estimated_duration_min: number | null
+          id: string
+          is_sandbox: boolean
+          locked_at: string | null
+          locked_by: string | null
+          metadata: Json
+          name: string
+          optimized_geometry: Json | null
+          service_area_id: string
+          status: string
+          total_distance_km: number | null
+          updated_at: string
+          updated_by: string | null
+          warehouse_id: string
+          zone_id: string
+        }
+        Insert: {
+          algorithm_used?: string | null
+          created_at?: string
+          created_by?: string | null
+          creation_mode?: string
+          estimated_duration_min?: number | null
+          id?: string
+          is_sandbox?: boolean
+          locked_at?: string | null
+          locked_by?: string | null
+          metadata?: Json
+          name: string
+          optimized_geometry?: Json | null
+          service_area_id: string
+          status?: string
+          total_distance_km?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          warehouse_id: string
+          zone_id: string
+        }
+        Update: {
+          algorithm_used?: string | null
+          created_at?: string
+          created_by?: string | null
+          creation_mode?: string
+          estimated_duration_min?: number | null
+          id?: string
+          is_sandbox?: boolean
+          locked_at?: string | null
+          locked_by?: string | null
+          metadata?: Json
+          name?: string
+          optimized_geometry?: Json | null
+          service_area_id?: string
+          status?: string
+          total_distance_km?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          warehouse_id?: string
+          zone_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "routes_service_area_id_fkey"
+            columns: ["service_area_id"]
+            isOneToOne: false
+            referencedRelation: "service_areas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "routes_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "routes_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "zones"
             referencedColumns: ["id"]
           },
         ]
@@ -2065,6 +3855,136 @@ export type Database = {
           },
         ]
       }
+      scheduler_pre_batches: {
+        Row: {
+          ai_optimization_options: Json | null
+          converted_batch_id: string | null
+          created_at: string
+          created_by: string | null
+          facility_order: string[]
+          facility_requisition_map: Json
+          id: string
+          notes: string | null
+          planned_date: string
+          schedule_title: string
+          source_method: string
+          source_sub_option: string | null
+          start_location_id: string
+          start_location_type: string
+          status: string
+          suggested_vehicle_id: string | null
+          time_window: string | null
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          ai_optimization_options?: Json | null
+          converted_batch_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          facility_order?: string[]
+          facility_requisition_map?: Json
+          id?: string
+          notes?: string | null
+          planned_date: string
+          schedule_title: string
+          source_method: string
+          source_sub_option?: string | null
+          start_location_id: string
+          start_location_type: string
+          status?: string
+          suggested_vehicle_id?: string | null
+          time_window?: string | null
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          ai_optimization_options?: Json | null
+          converted_batch_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          facility_order?: string[]
+          facility_requisition_map?: Json
+          id?: string
+          notes?: string | null
+          planned_date?: string
+          schedule_title?: string
+          source_method?: string
+          source_sub_option?: string | null
+          start_location_id?: string
+          start_location_type?: string
+          status?: string
+          suggested_vehicle_id?: string | null
+          time_window?: string | null
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scheduler_pre_batches_converted_batch_id_fkey"
+            columns: ["converted_batch_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scheduler_pre_batches_suggested_vehicle_id_fkey"
+            columns: ["suggested_vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicle_slot_availability"
+            referencedColumns: ["vehicle_id"]
+          },
+          {
+            foreignKeyName: "scheduler_pre_batches_suggested_vehicle_id_fkey"
+            columns: ["suggested_vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicle_tier_stats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scheduler_pre_batches_suggested_vehicle_id_fkey"
+            columns: ["suggested_vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scheduler_pre_batches_suggested_vehicle_id_fkey"
+            columns: ["suggested_vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles_unified_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scheduler_pre_batches_suggested_vehicle_id_fkey"
+            columns: ["suggested_vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles_with_taxonomy"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scheduler_pre_batches_suggested_vehicle_id_fkey"
+            columns: ["suggested_vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles_with_tier_stats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scheduler_pre_batches_suggested_vehicle_id_fkey"
+            columns: ["suggested_vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vlms_vehicles_with_taxonomy"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scheduler_pre_batches_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       scheduler_settings: {
         Row: {
           auto_cluster_enabled: boolean | null
@@ -2114,6 +4034,117 @@ export type Database = {
             columns: ["default_warehouse_id"]
             isOneToOne: false
             referencedRelation: "warehouses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_area_facilities: {
+        Row: {
+          assigned_at: string
+          assigned_by: string | null
+          facility_id: string
+          id: string
+          service_area_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by?: string | null
+          facility_id: string
+          id?: string
+          service_area_id: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string | null
+          facility_id?: string
+          id?: string
+          service_area_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_area_facilities_facility_id_fkey"
+            columns: ["facility_id"]
+            isOneToOne: false
+            referencedRelation: "facilities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_area_facilities_service_area_id_fkey"
+            columns: ["service_area_id"]
+            isOneToOne: false
+            referencedRelation: "service_areas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_areas: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          delivery_frequency: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          max_distance_km: number | null
+          metadata: Json
+          name: string
+          priority: string
+          service_type: string
+          sla_hours: number | null
+          updated_at: string
+          updated_by: string | null
+          warehouse_id: string
+          zone_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          delivery_frequency?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          max_distance_km?: number | null
+          metadata?: Json
+          name: string
+          priority?: string
+          service_type?: string
+          sla_hours?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          warehouse_id: string
+          zone_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          delivery_frequency?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          max_distance_km?: number | null
+          metadata?: Json
+          name?: string
+          priority?: string
+          service_type?: string
+          sla_hours?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          warehouse_id?: string
+          zone_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_areas_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_areas_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "zones"
             referencedColumns: ["id"]
           },
         ]
@@ -2878,6 +4909,77 @@ export type Database = {
           },
         ]
       }
+      user_invitations: {
+        Row: {
+          accepted_at: string | null
+          accepted_by: string | null
+          created_at: string
+          email: string
+          expired_at: string | null
+          expires_at: string
+          id: string
+          invitation_token: string
+          invited_at: string
+          invited_by: string
+          personal_message: string | null
+          pre_assigned_role: Database["public"]["Enums"]["app_role"]
+          revoked_at: string | null
+          revoked_by: string | null
+          status: Database["public"]["Enums"]["invitation_status"]
+          updated_at: string
+          workspace_id: string
+          workspace_role: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+          email: string
+          expired_at?: string | null
+          expires_at?: string
+          id?: string
+          invitation_token?: string
+          invited_at?: string
+          invited_by: string
+          personal_message?: string | null
+          pre_assigned_role: Database["public"]["Enums"]["app_role"]
+          revoked_at?: string | null
+          revoked_by?: string | null
+          status?: Database["public"]["Enums"]["invitation_status"]
+          updated_at?: string
+          workspace_id: string
+          workspace_role?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+          email?: string
+          expired_at?: string | null
+          expires_at?: string
+          id?: string
+          invitation_token?: string
+          invited_at?: string
+          invited_by?: string
+          personal_message?: string | null
+          pre_assigned_role?: Database["public"]["Enums"]["app_role"]
+          revoked_at?: string | null
+          revoked_by?: string | null
+          status?: Database["public"]["Enums"]["invitation_status"]
+          updated_at?: string
+          workspace_id?: string
+          workspace_role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_invitations_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           assigned_at: string | null
@@ -2898,6 +5000,39 @@ export type Database = {
           assigned_by?: string | null
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_status_history: {
+        Row: {
+          changed_at: string
+          changed_by: string | null
+          id: string
+          metadata: Json | null
+          new_status: Database["public"]["Enums"]["user_status"]
+          previous_status: Database["public"]["Enums"]["user_status"] | null
+          reason: string | null
+          user_id: string
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          metadata?: Json | null
+          new_status: Database["public"]["Enums"]["user_status"]
+          previous_status?: Database["public"]["Enums"]["user_status"] | null
+          reason?: string | null
+          user_id: string
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          metadata?: Json | null
+          new_status?: Database["public"]["Enums"]["user_status"]
+          previous_status?: Database["public"]["Enums"]["user_status"] | null
+          reason?: string | null
           user_id?: string
         }
         Relationships: []
@@ -3606,30 +5741,92 @@ export type Database = {
           address: string | null
           contact_name: string | null
           contact_phone: string | null
+          country: string | null
           created_at: string | null
           email: string | null
           id: string
+          internal_notes: string | null
+          lga: string | null
           name: string
+          onboarded_at: string | null
+          onboarded_by: string | null
+          organization_lead_name: string | null
+          organization_lead_title: string | null
+          organization_type:
+            | Database["public"]["Enums"]["organization_type"]
+            | null
+          primary_email: string | null
+          primary_phone: string | null
+          services_offered:
+            | Database["public"]["Enums"]["vendor_service"][]
+            | null
+          state: string | null
+          vendor_roles: Database["public"]["Enums"]["vendor_role"][]
+          vendor_status: Database["public"]["Enums"]["vendor_status"] | null
         }
         Insert: {
           address?: string | null
           contact_name?: string | null
           contact_phone?: string | null
+          country?: string | null
           created_at?: string | null
           email?: string | null
           id?: string
+          internal_notes?: string | null
+          lga?: string | null
           name: string
+          onboarded_at?: string | null
+          onboarded_by?: string | null
+          organization_lead_name?: string | null
+          organization_lead_title?: string | null
+          organization_type?:
+            | Database["public"]["Enums"]["organization_type"]
+            | null
+          primary_email?: string | null
+          primary_phone?: string | null
+          services_offered?:
+            | Database["public"]["Enums"]["vendor_service"][]
+            | null
+          state?: string | null
+          vendor_roles?: Database["public"]["Enums"]["vendor_role"][]
+          vendor_status?: Database["public"]["Enums"]["vendor_status"] | null
         }
         Update: {
           address?: string | null
           contact_name?: string | null
           contact_phone?: string | null
+          country?: string | null
           created_at?: string | null
           email?: string | null
           id?: string
+          internal_notes?: string | null
+          lga?: string | null
           name?: string
+          onboarded_at?: string | null
+          onboarded_by?: string | null
+          organization_lead_name?: string | null
+          organization_lead_title?: string | null
+          organization_type?:
+            | Database["public"]["Enums"]["organization_type"]
+            | null
+          primary_email?: string | null
+          primary_phone?: string | null
+          services_offered?:
+            | Database["public"]["Enums"]["vendor_service"][]
+            | null
+          state?: string | null
+          vendor_roles?: Database["public"]["Enums"]["vendor_role"][]
+          vendor_status?: Database["public"]["Enums"]["vendor_status"] | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "vendors_onboarded_by_fkey"
+            columns: ["onboarded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       vlms_assignments: {
         Row: {
@@ -4795,40 +6992,76 @@ export type Database = {
       }
       warehouses: {
         Row: {
-          address: string
+          address: string | null
           capacity: number
+          city: string | null
+          code: string | null
+          contact_email: string | null
+          contact_name: string | null
+          contact_phone: string | null
+          country: string | null
           created_at: string | null
+          created_by: string | null
           id: string
-          lat: number
-          lng: number
+          is_active: boolean | null
+          lat: number | null
+          lng: number | null
           name: string
-          operating_hours: string
-          type: Database["public"]["Enums"]["warehouse_type"]
+          operating_hours: string | null
+          state: string | null
+          storage_zones: Json | null
+          total_capacity_m3: number | null
           updated_at: string | null
+          used_capacity_m3: number | null
+          warehouse_type: string | null
         }
         Insert: {
-          address: string
+          address?: string | null
           capacity: number
+          city?: string | null
+          code?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          country?: string | null
           created_at?: string | null
+          created_by?: string | null
           id?: string
-          lat: number
-          lng: number
+          is_active?: boolean | null
+          lat?: number | null
+          lng?: number | null
           name: string
-          operating_hours: string
-          type?: Database["public"]["Enums"]["warehouse_type"]
+          operating_hours?: string | null
+          state?: string | null
+          storage_zones?: Json | null
+          total_capacity_m3?: number | null
           updated_at?: string | null
+          used_capacity_m3?: number | null
+          warehouse_type?: string | null
         }
         Update: {
-          address?: string
+          address?: string | null
           capacity?: number
+          city?: string | null
+          code?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          country?: string | null
           created_at?: string | null
+          created_by?: string | null
           id?: string
-          lat?: number
-          lng?: number
+          is_active?: boolean | null
+          lat?: number | null
+          lng?: number | null
           name?: string
-          operating_hours?: string
-          type?: Database["public"]["Enums"]["warehouse_type"]
+          operating_hours?: string | null
+          state?: string | null
+          storage_zones?: Json | null
+          total_capacity_m3?: number | null
           updated_at?: string | null
+          used_capacity_m3?: number | null
+          warehouse_type?: string | null
         }
         Relationships: []
       }
@@ -4867,15 +7100,89 @@ export type Database = {
           },
         ]
       }
+      workspace_readiness: {
+        Row: {
+          admin_configured_at: string | null
+          became_ready_at: string | null
+          created_at: string
+          first_vehicle_at: string | null
+          first_warehouse_at: string | null
+          has_admin: boolean
+          has_packaging_rules: boolean
+          has_rbac_configured: boolean
+          has_vehicle: boolean
+          has_warehouse: boolean
+          id: string
+          is_ready: boolean | null
+          packaging_configured_at: string | null
+          rbac_configured_at: string | null
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          admin_configured_at?: string | null
+          became_ready_at?: string | null
+          created_at?: string
+          first_vehicle_at?: string | null
+          first_warehouse_at?: string | null
+          has_admin?: boolean
+          has_packaging_rules?: boolean
+          has_rbac_configured?: boolean
+          has_vehicle?: boolean
+          has_warehouse?: boolean
+          id?: string
+          is_ready?: boolean | null
+          packaging_configured_at?: string | null
+          rbac_configured_at?: string | null
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          admin_configured_at?: string | null
+          became_ready_at?: string | null
+          created_at?: string
+          first_vehicle_at?: string | null
+          first_warehouse_at?: string | null
+          has_admin?: boolean
+          has_packaging_rules?: boolean
+          has_rbac_configured?: boolean
+          has_vehicle?: boolean
+          has_warehouse?: boolean
+          id?: string
+          is_ready?: boolean | null
+          packaging_configured_at?: string | null
+          rbac_configured_at?: string | null
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_readiness_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: true
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workspaces: {
         Row: {
           country_id: string
           created_at: string | null
           created_by: string | null
           description: string | null
+          first_admin_assigned_at: string | null
+          first_vehicle_added_at: string | null
+          first_warehouse_added_at: string | null
           id: string
           is_active: boolean | null
           name: string
+          onboarding_completed_at: string | null
+          operating_model: string | null
+          org_status: Database["public"]["Enums"]["org_status"]
+          primary_contact_email: string | null
+          primary_contact_name: string | null
+          primary_contact_phone: string | null
           settings: Json | null
           slug: string
           updated_at: string | null
@@ -4885,9 +7192,18 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           description?: string | null
+          first_admin_assigned_at?: string | null
+          first_vehicle_added_at?: string | null
+          first_warehouse_added_at?: string | null
           id?: string
           is_active?: boolean | null
           name: string
+          onboarding_completed_at?: string | null
+          operating_model?: string | null
+          org_status?: Database["public"]["Enums"]["org_status"]
+          primary_contact_email?: string | null
+          primary_contact_name?: string | null
+          primary_contact_phone?: string | null
           settings?: Json | null
           slug: string
           updated_at?: string | null
@@ -4897,9 +7213,18 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           description?: string | null
+          first_admin_assigned_at?: string | null
+          first_vehicle_added_at?: string | null
+          first_warehouse_added_at?: string | null
           id?: string
           is_active?: boolean | null
           name?: string
+          onboarding_completed_at?: string | null
+          operating_model?: string | null
+          org_status?: Database["public"]["Enums"]["org_status"]
+          primary_contact_email?: string | null
+          primary_contact_name?: string | null
+          primary_contact_phone?: string | null
           settings?: Json | null
           slug?: string
           updated_at?: string | null
@@ -5073,6 +7398,54 @@ export type Database = {
           },
         ]
       }
+      zones: {
+        Row: {
+          code: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          metadata: Json
+          name: string
+          region_center: Json | null
+          type: string
+          updated_at: string
+          updated_by: string | null
+          zone_manager_id: string | null
+        }
+        Insert: {
+          code?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          metadata?: Json
+          name: string
+          region_center?: Json | null
+          type?: string
+          updated_at?: string
+          updated_by?: string | null
+          zone_manager_id?: string | null
+        }
+        Update: {
+          code?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          metadata?: Json
+          name?: string
+          region_center?: Json | null
+          type?: string
+          updated_at?: string
+          updated_by?: string | null
+          zone_manager_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       batch_slot_utilization: {
@@ -5184,6 +7557,32 @@ export type Database = {
           type?: string | null
         }
         Relationships: []
+      }
+      pending_invitations_view: {
+        Row: {
+          email: string | null
+          expires_at: string | null
+          hours_until_expiry: number | null
+          id: string | null
+          invitation_token: string | null
+          invited_at: string | null
+          invited_by: string | null
+          invited_by_name: string | null
+          personal_message: string | null
+          pre_assigned_role: Database["public"]["Enums"]["app_role"] | null
+          workspace_id: string | null
+          workspace_name: string | null
+          workspace_role: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_invitations_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       scheduler_overview_stats: {
         Row: {
@@ -6190,6 +8589,35 @@ export type Database = {
           },
         ]
       }
+      workspace_readiness_details: {
+        Row: {
+          admin_configured_at: string | null
+          became_ready_at: string | null
+          first_vehicle_at: string | null
+          first_warehouse_at: string | null
+          has_admin: boolean | null
+          has_packaging_rules: boolean | null
+          has_rbac_configured: boolean | null
+          has_vehicle: boolean | null
+          has_warehouse: boolean | null
+          is_ready: boolean | null
+          missing_items: string[] | null
+          org_status: Database["public"]["Enums"]["org_status"] | null
+          progress_percentage: number | null
+          updated_at: string | null
+          workspace_id: string | null
+          workspace_name: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_readiness_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: true
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       _postgis_deprecate: {
@@ -6281,6 +8709,7 @@ export type Database = {
         Returns: unknown
       }
       _st_within: { Args: { geom1: unknown; geom2: unknown }; Returns: boolean }
+      accept_invitation: { Args: { p_token: string }; Returns: Json }
       activate_zone_configuration: {
         Args: { p_activated_by: string; p_zone_id: string }
         Returns: boolean
@@ -6323,6 +8752,23 @@ export type Database = {
             }
             Returns: string
           }
+      advance_org_status: {
+        Args: { p_workspace_id: string }
+        Returns: Database["public"]["Enums"]["org_status"]
+      }
+      assign_driver_to_batch: {
+        Args: { p_batch_id: string; p_driver_id: string }
+        Returns: boolean
+      }
+      assign_requisitions_to_batch: {
+        Args: { p_batch_id: string; p_requisition_ids: string[] }
+        Returns: number
+      }
+      assign_user_role: {
+        Args: { p_role: string; p_user_id: string }
+        Returns: boolean
+      }
+      build_batch_snapshot: { Args: { p_batch_id: string }; Returns: Json }
       calculate_cargo_volume: {
         Args: { height_cm: number; length_cm: number; width_cm: number }
         Returns: number
@@ -6335,7 +8781,43 @@ export type Database = {
         }
         Returns: number
       }
+      can_access_planning: {
+        Args: { p_workspace_id: string }
+        Returns: boolean
+      }
+      complete_dispatch: { Args: { p_batch_id: string }; Returns: boolean }
+      complete_driver_activation: {
+        Args: {
+          p_device_id: string
+          p_device_name?: string
+          p_display_name?: string
+          p_pin: string
+          p_platform?: string
+          p_user_agent?: string
+        }
+        Returns: boolean
+      }
+      compute_requisition_packaging: {
+        Args: { p_requisition_id: string }
+        Returns: string
+      }
       compute_total_slots: { Args: { config: Json }; Returns: number }
+      create_organization_with_admin: {
+        Args: {
+          p_country_id: string
+          p_name: string
+          p_operating_model?: string
+          p_primary_contact_email?: string
+          p_primary_contact_name?: string
+          p_primary_contact_phone?: string
+          p_slug: string
+        }
+        Returns: string
+      }
+      determine_packaging_type: {
+        Args: { p_volume_m3: number; p_weight_kg: number }
+        Returns: string
+      }
       disablelongtransactions: { Args: never; Returns: string }
       dropgeometrycolumn:
         | {
@@ -6368,7 +8850,12 @@ export type Database = {
         | { Args: { schema_name: string; table_name: string }; Returns: string }
         | { Args: { table_name: string }; Returns: string }
       enablelongtransactions: { Args: never; Returns: string }
+      end_driver_session: {
+        Args: { p_end_reason?: string; p_session_id: string }
+        Returns: boolean
+      }
       equals: { Args: { geom1: unknown; geom2: unknown }; Returns: boolean }
+      expire_stale_sessions: { Args: never; Returns: number }
       find_admin_unit_by_point: {
         Args: {
           p_admin_level?: number
@@ -6396,6 +8883,10 @@ export type Database = {
           name: string
           similarity: number
         }[]
+      }
+      generate_mod4_otp: {
+        Args: { p_email: string; p_workspace_id: string }
+        Returns: string
       }
       geometry: { Args: { "": string }; Returns: unknown }
       geometry_above: {
@@ -6495,6 +8986,25 @@ export type Database = {
         Returns: boolean
       }
       geomfromewkt: { Args: { "": string }; Returns: unknown }
+      get_active_drivers_with_positions: {
+        Args: never
+        Returns: {
+          batch_name: string
+          battery_level: number
+          current_batch_id: string
+          current_lat: number
+          current_lng: number
+          driver_id: string
+          driver_name: string
+          heading: number
+          last_update: string
+          session_id: string
+          session_started_at: string
+          speed_mps: number
+          vehicle_id: string
+          vehicle_plate: string
+        }[]
+      }
       get_active_zones: {
         Args: { p_workspace_id: string }
         Returns: {
@@ -6507,6 +9017,7 @@ export type Database = {
           zone_type: string
         }[]
       }
+      get_admin_dashboard_metrics: { Args: never; Returns: Json }
       get_admin_unit_descendants: {
         Args: { unit_id: string }
         Returns: {
@@ -6528,6 +9039,137 @@ export type Database = {
           tier_name: string
         }[]
       }
+      get_batch_slot_demand: {
+        Args: { p_facility_ids: string[] }
+        Returns: {
+          facility_id: string
+          facility_name: string
+          requisition_count: number
+          slot_demand: number
+        }[]
+      }
+      get_batch_warehouse_h3_coverage: {
+        Args: {
+          p_radius: number
+          p_resolution: number
+          p_warehouse_ids: string[]
+        }
+        Returns: {
+          capacity_remaining: number
+          cells: string[]
+          facilities_covered: number
+          total_demand: number
+          warehouse_id: string
+          warehouse_name: string
+        }[]
+      }
+      get_cost_by_program: {
+        Args: { p_end_date?: string; p_start_date?: string }
+        Returns: {
+          cost_per_delivery: number
+          cost_per_item: number
+          cost_per_km: number
+          estimated_fuel_cost: number
+          programme: string
+          total_deliveries: number
+          total_distance_km: number
+          total_items_delivered: number
+        }[]
+      }
+      get_cost_kpis: {
+        Args: never
+        Returns: {
+          active_drivers: number
+          active_vehicles: number
+          avg_cost_per_item: number
+          avg_cost_per_km: number
+          total_fuel_cost: number
+          total_items_delivered: number
+          total_maintenance_cost: number
+          total_system_cost: number
+        }[]
+      }
+      get_dashboard_summary: {
+        Args: { end_date?: string; start_date?: string }
+        Returns: {
+          active_drivers: number
+          active_vehicles: number
+          avg_completion_hours: number
+          cost_per_item: number
+          cost_per_km: number
+          driver_on_time_rate: number
+          on_time_rate: number
+          total_cost: number
+          total_deliveries: number
+          total_incidents: number
+          total_items: number
+          vehicle_utilization_rate: number
+          vehicles_in_maintenance: number
+        }[]
+      }
+      get_delivery_kpis: {
+        Args: { end_date?: string; start_date?: string }
+        Returns: {
+          avg_completion_time_hours: number
+          completed_batches: number
+          late_batches: number
+          on_time_batches: number
+          on_time_rate: number
+          total_batches: number
+          total_distance_km: number
+          total_items_delivered: number
+        }[]
+      }
+      get_driver_devices: {
+        Args: never
+        Returns: {
+          device_id: string
+          device_name: string
+          id: string
+          is_trusted: boolean
+          last_seen_at: string
+          platform: string
+          registered_at: string
+          revoked_at: string
+          user_email: string
+          user_id: string
+        }[]
+      }
+      get_driver_event_timeline: {
+        Args: { p_driver_id: string; p_limit?: number; p_session_id?: string }
+        Returns: {
+          batch_name: string
+          captured_at: string
+          event_id: string
+          event_type: string
+          lat: number
+          lng: number
+          metadata: Json
+        }[]
+      }
+      get_driver_kpis: {
+        Args: never
+        Returns: {
+          active_drivers: number
+          avg_fuel_efficiency: number
+          avg_on_time_rate: number
+          total_drivers: number
+          total_incidents: number
+        }[]
+      }
+      get_driver_utilization: {
+        Args: { p_end_date?: string; p_start_date?: string }
+        Returns: {
+          avg_deliveries_per_week: number
+          avg_items_per_delivery: number
+          driver_id: string
+          driver_name: string
+          total_deliveries: number
+          total_distance_km: number
+          total_items_delivered: number
+          utilization_status: string
+        }[]
+      }
       get_driver_vehicles: {
         Args: { p_driver_id: string }
         Returns: {
@@ -6545,6 +9187,293 @@ export type Database = {
           type: string
           vehicle_id: string
         }[]
+      }
+      get_event_distribution: {
+        Args: { p_days?: number }
+        Returns: {
+          count: number
+          event_type: string
+        }[]
+      }
+      get_facility_coverage: {
+        Args: {
+          p_end_date?: string
+          p_programme?: string
+          p_start_date?: string
+        }
+        Returns: {
+          coverage_pct: number
+          facilities_not_served: number
+          facilities_served: number
+          program_coverage_pct: number
+          program_facilities_served: number
+          program_total_facilities: number
+          programme: string
+          total_facilities: number
+          unserved_facility_names: string[]
+        }[]
+      }
+      get_facility_slot_demand: {
+        Args: { p_facility_id: string }
+        Returns: number
+      }
+      get_fleetops_dispatch_analytics: {
+        Args: { p_end_date?: string; p_start_date?: string }
+        Returns: Json
+      }
+      get_h3_cell_metrics: {
+        Args: {
+          p_end_date?: string
+          p_h3_indexes: string[]
+          p_resolution: number
+          p_start_date?: string
+        }
+        Returns: {
+          active_facilities: number
+          active_warehouses: number
+          capacity_available: number
+          capacity_utilized: number
+          deliveries: number
+          demand_forecast: number
+          h3_index: string
+          resolution: number
+          sla_at_risk: number
+          sla_breach_pct: number
+          utilization_pct: number
+        }[]
+      }
+      get_h3_region_metrics: {
+        Args: {
+          p_end_date?: string
+          p_h3_indexes: string[]
+          p_start_date?: string
+        }
+        Returns: {
+          avg_utilization: number
+          facilities_count: number
+          sla_at_risk_count: number
+          total_deliveries: number
+          total_demand: number
+          warehouses_count: number
+        }[]
+      }
+      get_invitation_by_token: { Args: { p_token: string }; Returns: Json }
+      get_low_stock_alerts: {
+        Args: { p_threshold_days?: number }
+        Returns: {
+          current_quantity: number
+          days_supply_remaining: number
+          facility_id: string
+          facility_name: string
+          last_delivery_date: string
+          product_name: string
+          zone: string
+        }[]
+      }
+      get_map_data_in_view: {
+        Args: {
+          max_lat: number
+          max_lon: number
+          min_lat: number
+          min_lon: number
+          zoom_level: number
+        }
+        Returns: Json
+      }
+      get_mod4_linked_users: {
+        Args: never
+        Returns: {
+          driver_id: string
+          id: string
+          link_method: string
+          linked_at: string
+          linked_by: string
+          linked_by_name: string
+          status: string
+          user_email: string
+          user_id: string
+          user_name: string
+        }[]
+      }
+      get_packaging_type_distribution: {
+        Args: { p_end_date?: string; p_start_date?: string }
+        Returns: {
+          avg_slot_cost_per_item: number
+          avg_slot_demand_per_requisition: number
+          item_count: number
+          packaging_type: string
+          requisition_count: number
+          total_package_count: number
+          total_quantity: number
+          total_slot_cost: number
+        }[]
+      }
+      get_program_performance: {
+        Args: { p_end_date?: string; p_start_date?: string }
+        Returns: {
+          avg_items_per_delivery: number
+          late_deliveries: number
+          on_time_deliveries: number
+          on_time_rate_pct: number
+          programme: string
+          total_deliveries: number
+          total_facilities_served: number
+          total_items_delivered: number
+        }[]
+      }
+      get_route_efficiency: {
+        Args: { p_end_date?: string; p_start_date?: string }
+        Returns: {
+          actual_distance_km: number
+          actual_duration_min: number
+          batch_id: string
+          batch_name: string
+          distance_variance_pct: number
+          efficiency_rating: string
+          estimated_distance_km: number
+          estimated_duration_min: number
+          route_date: string
+          time_variance_pct: number
+        }[]
+      }
+      get_session_activity: {
+        Args: { p_days?: number }
+        Returns: {
+          count: number
+          date: string
+        }[]
+      }
+      get_session_gps_quality: { Args: { p_session_id: string }; Returns: Json }
+      get_stock_balance: {
+        Args: { p_product_name?: string }
+        Returns: {
+          allocated_quantity: number
+          available_quantity: number
+          facilities_count: number
+          product_name: string
+          total_quantity: number
+        }[]
+      }
+      get_stock_by_zone: {
+        Args: never
+        Returns: {
+          facilities_count: number
+          low_stock_facilities: number
+          total_products: number
+          total_quantity: number
+          zone: string
+        }[]
+      }
+      get_stock_performance: {
+        Args: { p_end_date?: string; p_start_date?: string }
+        Returns: {
+          avg_days_supply: number
+          current_stock: number
+          product_name: string
+          total_delivered: number
+          turnover_rate: number
+        }[]
+      }
+      get_stock_status: {
+        Args: never
+        Returns: {
+          low_stock_count: number
+          out_of_stock_count: number
+          total_facilities_with_stock: number
+          total_products: number
+          total_stock_items: number
+        }[]
+      }
+      get_storefront_requisition_analytics: {
+        Args: { p_end_date?: string; p_start_date?: string }
+        Returns: Json
+      }
+      get_user_admin_workspace_ids: {
+        Args: { p_user_id?: string }
+        Returns: string[]
+      }
+      get_user_growth: {
+        Args: { p_days?: number }
+        Returns: {
+          count: number
+          date: string
+        }[]
+      }
+      get_user_onboarding_status: { Args: never; Returns: Json }
+      get_user_role: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
+      get_user_workspace_ids: {
+        Args: { p_user_id?: string }
+        Returns: string[]
+      }
+      get_user_workspace_ids_array: { Args: never; Returns: string[] }
+      get_users_with_roles: {
+        Args: {
+          p_limit?: number
+          p_offset?: number
+          p_role_filter?: string[]
+          p_search?: string
+        }
+        Returns: {
+          avatar_url: string
+          created_at: string
+          email: string
+          full_name: string
+          phone: string
+          roles: string[]
+          user_id: string
+          workspace_count: number
+        }[]
+      }
+      get_vehicle_kpis: {
+        Args: never
+        Returns: {
+          active_vehicles: number
+          avg_fuel_efficiency: number
+          avg_utilization_rate: number
+          in_maintenance: number
+          total_maintenance_cost: number
+          total_vehicles: number
+        }[]
+      }
+      get_vehicle_payload_utilization: {
+        Args: {
+          p_end_date?: string
+          p_start_date?: string
+          p_vehicle_id?: string
+        }
+        Returns: {
+          avg_payload_utilization_pct: number
+          avg_weight_utilization_pct: number
+          max_payload_utilization_pct: number
+          max_weight_kg: number
+          max_weight_utilization_pct: number
+          plate_number: string
+          total_deliveries: number
+          total_items_delivered: number
+          total_weight_kg: number
+          underutilized_deliveries: number
+          vehicle_capacity_kg: number
+          vehicle_id: string
+          vehicle_type: string
+        }[]
+      }
+      get_warehouse_h3_coverage: {
+        Args: { p_radius: number; p_resolution: number; p_warehouse_id: string }
+        Returns: {
+          capacity_remaining: number
+          cells: string[]
+          facilities_covered: number
+          total_demand: number
+          warehouse_id: string
+          warehouse_name: string
+        }[]
+      }
+      get_workspace_readiness: {
+        Args: { p_workspace_id: string }
+        Returns: Json
       }
       get_workspace_tradeoffs: {
         Args: { p_workspace_id: string }
@@ -6567,11 +9496,67 @@ export type Database = {
         }
         Returns: boolean
       }
+      ingest_gps_events: {
+        Args: { events: Json }
+        Returns: {
+          errors: Json
+          failed_count: number
+          inserted_count: number
+        }[]
+      }
+      insert_mod4_event: {
+        Args: {
+          p_batch_id?: string
+          p_captured_at: string
+          p_device_id: string
+          p_dispatch_id?: string
+          p_driver_id: string
+          p_event_type: string
+          p_lat: number
+          p_lng: number
+          p_metadata?: Json
+          p_session_id: string
+          p_trip_id?: string
+          p_vehicle_id?: string
+        }
+        Returns: string
+      }
+      invite_user: {
+        Args: {
+          p_app_role: Database["public"]["Enums"]["app_role"]
+          p_email: string
+          p_personal_message?: string
+          p_workspace_id: string
+          p_workspace_role?: string
+        }
+        Returns: string
+      }
       is_slot_available: {
         Args: { p_batch_id?: string; p_slot_key: string; p_vehicle_id: string }
         Returns: boolean
       }
+      is_system_admin: { Args: never; Returns: boolean }
+      is_workspace_admin: {
+        Args: { p_user_id?: string; p_workspace_id: string }
+        Returns: boolean
+      }
+      is_workspace_member: {
+        Args: { p_user_id?: string; p_workspace_id: string }
+        Returns: boolean
+      }
+      is_workspace_owner: {
+        Args: { p_user_id?: string; p_workspace_id: string }
+        Returns: boolean
+      }
+      link_user_to_mod4: {
+        Args: { p_link_method?: string; p_user_id: string }
+        Returns: string
+      }
       longtransactionsenabled: { Args: never; Returns: boolean }
+      mark_requisition_ready_for_dispatch: {
+        Args: { p_requisition_id: string }
+        Returns: boolean
+      }
       populate_geometry_columns:
         | { Args: { tbl_oid: unknown; use_typmod?: boolean }; Returns: number }
         | { Args: { use_typmod?: boolean }; Returns: string }
@@ -6612,6 +9597,11 @@ export type Database = {
       }
       postgis_version: { Args: never; Returns: string }
       postgis_wagyu_version: { Args: never; Returns: string }
+      remove_user_role: {
+        Args: { p_role: string; p_user_id: string }
+        Returns: boolean
+      }
+      revoke_invitation: { Args: { p_invitation_id: string }; Returns: boolean }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
       st_3dclosestpoint: {
@@ -7195,12 +10185,48 @@ export type Database = {
         Args: { geom: unknown; move: number; wrap: number }
         Returns: unknown
       }
+      start_dispatch: { Args: { p_batch_id: string }; Returns: boolean }
+      start_driver_session: {
+        Args: {
+          p_device_id: string
+          p_device_info?: Json
+          p_driver_id: string
+          p_start_lat?: number
+          p_start_lng?: number
+          p_vehicle_id?: string
+        }
+        Returns: string
+      }
+      submit_onboarding_request: {
+        Args: {
+          p_device_id?: string
+          p_email?: string
+          p_full_name: string
+          p_organization_hint?: string
+          p_phone?: string
+        }
+        Returns: string
+      }
       sync_vehicle_tiers_from_config: {
         Args: { p_tier_config: Json; p_vehicle_id: string }
         Returns: undefined
       }
       unaccent: { Args: { "": string }; Returns: string }
       unlockrows: { Args: { "": string }; Returns: number }
+      update_session_heartbeat: {
+        Args: { p_session_id: string }
+        Returns: boolean
+      }
+      update_workspace_config: {
+        Args: {
+          p_operating_model?: string
+          p_primary_contact_email?: string
+          p_primary_contact_name?: string
+          p_primary_contact_phone?: string
+          p_workspace_id: string
+        }
+        Returns: Json
+      }
       updategeometrysrid: {
         Args: {
           catalogn_name: string
@@ -7211,12 +10237,27 @@ export type Database = {
         }
         Returns: string
       }
+      validate_driver_device: {
+        Args: { p_device_id: string }
+        Returns: boolean
+      }
       validate_slot_count: { Args: { slot_count: number }; Returns: boolean }
       validate_tier_config: {
         Args: { p_tiered_config: Json }
         Returns: boolean
       }
       validate_tiered_config: { Args: { config: Json }; Returns: boolean }
+      vendor_has_role: {
+        Args: {
+          role: Database["public"]["Enums"]["vendor_role"]
+          vendor_roles: Database["public"]["Enums"]["vendor_role"][]
+        }
+        Returns: boolean
+      }
+      verify_mod4_otp: {
+        Args: { p_email: string; p_otp: string }
+        Returns: string
+      }
     }
     Enums: {
       app_role:
@@ -7232,7 +10273,23 @@ export type Database = {
         | "completed"
         | "cancelled"
       delivery_priority: "low" | "medium" | "high" | "urgent"
-      driver_status: "available" | "busy" | "offline"
+      driver_status:
+        | "INACTIVE"
+        | "ACTIVE"
+        | "EN_ROUTE"
+        | "AT_STOP"
+        | "DELAYED"
+        | "COMPLETED"
+        | "SUSPENDED"
+      event_type:
+        | "ROUTE_STARTED"
+        | "ARRIVED_AT_STOP"
+        | "DEPARTED_STOP"
+        | "PROOF_CAPTURED"
+        | "DELAY_REPORTED"
+        | "ROUTE_COMPLETED"
+        | "ROUTE_CANCELLED"
+        | "SUPERVISOR_OVERRIDE"
       facility_type:
         | "hospital"
         | "clinic"
@@ -7241,8 +10298,24 @@ export type Database = {
         | "lab"
         | "other"
       fuel_type: "diesel" | "petrol" | "electric"
+      invitation_status: "pending" | "accepted" | "expired" | "revoked"
       license_type: "standard" | "commercial"
       optimization_status: "pending" | "running" | "completed" | "failed"
+      org_status:
+        | "org_created"
+        | "admin_assigned"
+        | "basic_config_complete"
+        | "operational_config_complete"
+        | "active"
+      organization_type:
+        | "government_agency"
+        | "ngo_ingo"
+        | "private_company"
+        | "logistics_provider"
+        | "healthcare_facility"
+        | "donor_development_partner"
+        | "other"
+      packaging_type: "bag_s" | "box_m" | "box_l" | "crate_xl"
       scheduler_batch_status:
         | "draft"
         | "ready"
@@ -7250,8 +10323,19 @@ export type Database = {
         | "published"
         | "cancelled"
       scheduling_mode: "manual" | "ai_optimized" | "uploaded" | "template"
+      user_status: "invited" | "registered" | "role_assigned" | "active"
       vehicle_status: "available" | "in-use" | "maintenance"
       vehicle_type: "truck" | "van" | "pickup" | "car"
+      vendor_role: "client" | "partner" | "service_vendor"
+      vendor_service:
+        | "fleet_vehicles"
+        | "drivers"
+        | "warehousing"
+        | "last_mile_delivery"
+        | "cold_chain_logistics"
+        | "maintenance_fuel"
+        | "other"
+      vendor_status: "active" | "suspended" | "archived"
       warehouse_type: "central" | "zonal" | "regional"
     }
     CompositeTypes: {
@@ -7403,7 +10487,25 @@ export const Constants = {
         "cancelled",
       ],
       delivery_priority: ["low", "medium", "high", "urgent"],
-      driver_status: ["available", "busy", "offline"],
+      driver_status: [
+        "INACTIVE",
+        "ACTIVE",
+        "EN_ROUTE",
+        "AT_STOP",
+        "DELAYED",
+        "COMPLETED",
+        "SUSPENDED",
+      ],
+      event_type: [
+        "ROUTE_STARTED",
+        "ARRIVED_AT_STOP",
+        "DEPARTED_STOP",
+        "PROOF_CAPTURED",
+        "DELAY_REPORTED",
+        "ROUTE_COMPLETED",
+        "ROUTE_CANCELLED",
+        "SUPERVISOR_OVERRIDE",
+      ],
       facility_type: [
         "hospital",
         "clinic",
@@ -7413,8 +10515,26 @@ export const Constants = {
         "other",
       ],
       fuel_type: ["diesel", "petrol", "electric"],
+      invitation_status: ["pending", "accepted", "expired", "revoked"],
       license_type: ["standard", "commercial"],
       optimization_status: ["pending", "running", "completed", "failed"],
+      org_status: [
+        "org_created",
+        "admin_assigned",
+        "basic_config_complete",
+        "operational_config_complete",
+        "active",
+      ],
+      organization_type: [
+        "government_agency",
+        "ngo_ingo",
+        "private_company",
+        "logistics_provider",
+        "healthcare_facility",
+        "donor_development_partner",
+        "other",
+      ],
+      packaging_type: ["bag_s", "box_m", "box_l", "crate_xl"],
       scheduler_batch_status: [
         "draft",
         "ready",
@@ -7423,8 +10543,20 @@ export const Constants = {
         "cancelled",
       ],
       scheduling_mode: ["manual", "ai_optimized", "uploaded", "template"],
+      user_status: ["invited", "registered", "role_assigned", "active"],
       vehicle_status: ["available", "in-use", "maintenance"],
       vehicle_type: ["truck", "van", "pickup", "car"],
+      vendor_role: ["client", "partner", "service_vendor"],
+      vendor_service: [
+        "fleet_vehicles",
+        "drivers",
+        "warehousing",
+        "last_mile_delivery",
+        "cold_chain_logistics",
+        "maintenance_fuel",
+        "other",
+      ],
+      vendor_status: ["active", "suspended", "archived"],
       warehouse_type: ["central", "zonal", "regional"],
     },
   },

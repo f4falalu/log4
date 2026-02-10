@@ -3,6 +3,7 @@ import { FileText, Upload, PenLine, Layers, ChevronRight, ArrowLeft } from 'luci
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -56,6 +57,9 @@ export function NewRequisitionWizard({ open, onOpenChange }: NewRequisitionWizar
             )}
             {step === 'mode' ? 'Create New Requisition' : getModeTitle(selectedMode)}
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            {step === 'mode' ? 'Choose how to create your requisition' : `Create requisition via ${getModeTitle(selectedMode).toLowerCase()}`}
+          </DialogDescription>
         </DialogHeader>
 
         {step === 'mode' && (

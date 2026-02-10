@@ -3,13 +3,17 @@ import { FileText, Upload, PenLine, ChevronRight, ArrowLeft } from 'lucide-react
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import type { InvoiceCreationMode } from '@/types/invoice';
+import { ManualEntryForm } from './ManualEntryForm';
+import { ReadyRequestForm } from './ReadyRequestForm';
+import { UploadFileForm } from './UploadFileForm';
 
 interface NewInvoiceWizardProps {
   open: boolean;
@@ -38,7 +42,10 @@ export function NewInvoiceWizard({ open, onOpenChange }: NewInvoiceWizardProps) 
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className={cn(
+        'max-h-[90vh] flex flex-col',
+        step === 'form' ? 'max-w-4xl' : 'max-w-2xl'
+      )}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {step === 'form' && (
@@ -48,6 +55,9 @@ export function NewInvoiceWizard({ open, onOpenChange }: NewInvoiceWizardProps) 
             )}
             {step === 'mode' ? 'Create New Invoice' : getModeTitle(selectedMode)}
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            {step === 'mode' ? 'Choose how to create your invoice' : `Create invoice via ${getModeTitle(selectedMode).toLowerCase()}`}
+          </DialogDescription>
         </DialogHeader>
 
         {step === 'mode' && (
@@ -99,7 +109,7 @@ function ModeSelector({ onSelect }: ModeSelectorProps) {
       mode: 'upload_file',
       icon: Upload,
       title: 'Upload File',
-      description: 'Upload a CSV or document file with invoice data',
+      description: 'Upload a CSV or Excel file with invoice data',
     },
     {
       mode: 'manual_entry',
@@ -135,92 +145,6 @@ function ModeSelector({ onSelect }: ModeSelectorProps) {
           </CardHeader>
         </Card>
       ))}
-    </div>
-  );
-}
-
-interface FormProps {
-  onClose: () => void;
-}
-
-function ReadyRequestForm({ onClose }: FormProps) {
-  return (
-    <div className="py-4 space-y-4">
-      <p className="text-muted-foreground">
-        Select from approved requisitions to create an invoice.
-      </p>
-
-      <div className="h-64 border rounded-lg flex items-center justify-center text-muted-foreground">
-        <div className="text-center">
-          <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
-          <p>No ready requisitions available</p>
-          <p className="text-sm">Approved requisitions will appear here</p>
-        </div>
-      </div>
-
-      <div className="flex justify-end gap-2">
-        <Button variant="outline" onClick={onClose}>
-          Cancel
-        </Button>
-        <Button disabled>
-          Create Invoice
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-function UploadFileForm({ onClose }: FormProps) {
-  return (
-    <div className="py-4 space-y-4">
-      <p className="text-muted-foreground">
-        Upload a CSV or document file containing invoice data.
-      </p>
-
-      <div className="h-64 border-2 border-dashed rounded-lg flex items-center justify-center text-muted-foreground">
-        <div className="text-center">
-          <Upload className="h-12 w-12 mx-auto mb-2 opacity-50" />
-          <p>Drag and drop a file here</p>
-          <p className="text-sm">or click to browse</p>
-          <p className="text-xs mt-2">Supports CSV, XLS, XLSX</p>
-        </div>
-      </div>
-
-      <div className="flex justify-end gap-2">
-        <Button variant="outline" onClick={onClose}>
-          Cancel
-        </Button>
-        <Button disabled>
-          Process File
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-function ManualEntryForm({ onClose }: FormProps) {
-  return (
-    <div className="py-4 space-y-4">
-      <p className="text-muted-foreground">
-        Manually enter invoice details and add line items.
-      </p>
-
-      <div className="h-64 border rounded-lg p-4 overflow-auto">
-        <div className="text-center text-muted-foreground py-8">
-          <PenLine className="h-12 w-12 mx-auto mb-2 opacity-50" />
-          <p>Manual entry form coming soon</p>
-          <p className="text-sm">This feature is under development</p>
-        </div>
-      </div>
-
-      <div className="flex justify-end gap-2">
-        <Button variant="outline" onClick={onClose}>
-          Cancel
-        </Button>
-        <Button disabled>
-          Create Invoice
-        </Button>
-      </div>
     </div>
   );
 }

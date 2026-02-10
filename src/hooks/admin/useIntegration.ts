@@ -97,13 +97,30 @@ export function useGenerateOTP() {
 
   return useMutation({
     mutationFn: async ({ email, workspaceId }: { email: string; workspaceId: string }) => {
-      const { data, error } = await supabase.rpc('generate_mod4_otp', {
-        p_email: email,
-        p_workspace_id: workspaceId,
-      });
+      // Call Edge Function which creates the user via GoTrue Admin API
+      // then generates the OTP via RPC
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
 
-      if (error) throw error;
-      return data as string;
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-driver-otp`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({ email, workspaceId }),
+        }
+      );
+
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to generate OTP');
+      }
+
+      return result.otp as string;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-integration', 'otps'] });

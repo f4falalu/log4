@@ -43,7 +43,8 @@ interface TacticalDispatchSchedulerProps {
 }
 
 const TacticalDispatchScheduler = ({ facilities, batches, onBatchCreate }: TacticalDispatchSchedulerProps) => {
-  const { data: warehouses = [] } = useWarehouses();
+  const { data: warehouseData } = useWarehouses();
+  const warehouses = warehouseData?.warehouses ?? [];
   const { data: drivers = [] } = useDrivers();
   const { data: vehicles = [] } = useVehicles();
   

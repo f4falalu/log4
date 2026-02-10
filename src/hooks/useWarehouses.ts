@@ -35,7 +35,7 @@ function mapDbToWarehouse(dbWarehouse: any): Warehouse {
 function mapWarehouseToDb(warehouse: WarehouseFormData) {
   return {
     name: warehouse.name,
-    code: warehouse.code,
+    code: warehouse.code || null,
     address: warehouse.address || null,
     city: warehouse.city || null,
     state: warehouse.state || null,
@@ -47,7 +47,9 @@ function mapWarehouseToDb(warehouse: WarehouseFormData) {
     contact_email: warehouse.contact_email || null,
     operating_hours: warehouse.operating_hours || null,
     total_capacity_m3: warehouse.total_capacity_m3 || null,
+    capacity: warehouse.total_capacity_m3 ? Math.round(warehouse.total_capacity_m3) : null, // Map to original capacity field
     storage_zones: warehouse.storage_zones || [],
+    warehouse_type: 'zonal', // Add default warehouse_type
   };
 }
 

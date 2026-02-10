@@ -142,15 +142,6 @@ const commands: CommandItem[] = [
     keywords: ['orders', 'requests', 'procurement'],
   },
   {
-    id: 'fleetops-payloads',
-    label: 'Payloads',
-    description: 'Vehicle payload planning',
-    icon: Package,
-    href: '/fleetops/payloads',
-    workspace: 'fleetops',
-    keywords: ['capacity', 'load', 'vehicle', 'planning'],
-  },
-  {
     id: 'storefront-scheduler',
     label: 'Scheduler',
     description: 'Schedule and plan operations',

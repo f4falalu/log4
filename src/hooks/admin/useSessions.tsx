@@ -50,7 +50,7 @@ export function useSessions(filters: SessionFilters = {}) {
         .from('driver_sessions')
         .select(`
           *,
-          driver:profiles!driver_sessions_driver_id_fkey (
+          driver:profiles!driver_sessions_driver_id_profiles_fkey (
             id,
             full_name,
             phone
@@ -64,7 +64,7 @@ export function useSessions(filters: SessionFilters = {}) {
         .limit(100);
 
       if (filters.status && filters.status.length > 0) {
-        query = query.in('status', filters.status);
+        query = query.in('status', filters.status.map(s => s.toUpperCase()));
       }
 
       if (filters.dateFrom) {
@@ -82,7 +82,10 @@ export function useSessions(filters: SessionFilters = {}) {
       const { data, error } = await query;
 
       if (error) throw error;
-      return (data || []) as DriverSession[];
+      return (data || []).map((s: any) => ({
+        ...s,
+        status: s.status?.toLowerCase() ?? s.status,
+      })) as DriverSession[];
     },
     retry: 1,
     refetchInterval: 30000,
@@ -115,7 +118,7 @@ export function useSessionDetail(sessionId: string) {
         .from('driver_sessions')
         .select(`
           *,
-          driver:profiles!driver_sessions_driver_id_fkey (
+          driver:profiles!driver_sessions_driver_id_profiles_fkey (
             id,
             full_name,
             phone

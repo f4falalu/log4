@@ -51,7 +51,7 @@ interface BatchDetails {
   id: string;
   name: string;
   status: string;
-  delivery_date: string;
+  scheduled_date: string;
   stops: DeliveryStop[];
   driver_id: string | null;
 }
@@ -127,29 +127,30 @@ export default function DeliveryExecutionPage() {
       if (!user) return;
 
       try {
-        // Find driver record linked to this user
-        const { data: driver, error } = await supabase
-          .from('drivers')
-          .select('id')
+        // Find driver record linked to this user via mod4_driver_links
+        const { data: link, error } = await supabase
+          .from('mod4_driver_links')
+          .select('driver_id')
           .eq('user_id', user.id)
+          .eq('status', 'active')
           .single();
 
         if (error && error.code !== 'PGRST116') {
-          console.error('Error fetching driver:', error);
+          console.error('Error fetching driver link:', error);
           return;
         }
 
-        if (driver) {
-          // Check for active session
+        if (link?.driver_id) {
+          // Check for active session (using auth user ID, not driver ID)
           const { data: session } = await supabase
             .from('driver_sessions')
             .select('id')
-            .eq('driver_id', driver.id)
-            .eq('status', 'active')
+            .eq('driver_id', user.id)
+            .eq('status', 'ACTIVE')
             .single();
 
           setDriverContext({
-            driverId: driver.id,
+            driverId: link.driver_id,
             sessionId: session?.id || `session_${Date.now()}`,
             deviceId: generateDeviceId(),
           });
@@ -174,58 +175,40 @@ export default function DeliveryExecutionPage() {
             id,
             name,
             status,
-            delivery_date,
-            assigned_driver_id
+            scheduled_date,
+            driver_id,
+            facility_ids,
+            optimized_route
           `)
           .eq('id', batchId)
           .single();
 
         if (batchError) throw batchError;
 
-        // Fetch facilities for this batch
-        const { data: batchFacilities, error: facilityError } = await supabase
-          .from('delivery_batch_facilities')
-          .select(`
-            id,
-            facility_id,
-            slot_index,
-            status,
-            completed_at,
-            facilities (
-              id,
-              name,
-              address
-            )
-          `)
-          .eq('batch_id', batchId)
-          .order('slot_index');
+        // Fetch facility details for the IDs in this batch
+        const facilityIds = batchData.facility_ids || [];
+        let facilitiesMap: Record<string, { id: string; name: string; address: string }> = {};
+        if (facilityIds.length > 0) {
+          const { data: facilities } = await supabase
+            .from('facilities')
+            .select('id, name, address')
+            .in('id', facilityIds);
+          (facilities || []).forEach((f: any) => {
+            facilitiesMap[f.id] = f;
+          });
+        }
 
-        if (facilityError) throw facilityError;
-
-        // Get item counts per facility
-        const { data: itemCounts } = await supabase
-          .from('batch_items')
-          .select('facility_id')
-          .eq('batch_id', batchId);
-
-        const facilityCounts: Record<string, number> = {};
-        (itemCounts || []).forEach((item: any) => {
-          facilityCounts[item.facility_id] = (facilityCounts[item.facility_id] || 0) + 1;
-        });
-
-        const stops: DeliveryStop[] = (batchFacilities || []).map((bf: any, index: number) => {
-          const facility = bf.facilities;
-          const isCompleted = bf.status === 'completed';
+        const stops: DeliveryStop[] = facilityIds.map((facilityId: string, index: number) => {
+          const facility = facilitiesMap[facilityId];
           const isFirst = index === 0;
 
           return {
-            id: bf.id,
-            facility_id: bf.facility_id,
+            id: `${batchId}-${facilityId}`,
+            facility_id: facilityId,
             facility_name: facility?.name || 'Unknown Facility',
             address: facility?.address || '',
-            status: isCompleted ? 'completed' : (isFirst ? 'in_progress' : 'pending'),
-            items_count: facilityCounts[bf.facility_id] || 0,
-            completed_at: bf.completed_at,
+            status: isFirst ? 'in_progress' as const : 'pending' as const,
+            items_count: 0,
           };
         });
 
@@ -240,9 +223,9 @@ export default function DeliveryExecutionPage() {
           id: batchData.id,
           name: batchData.name,
           status: batchData.status,
-          delivery_date: batchData.delivery_date,
+          scheduled_date: batchData.scheduled_date,
           stops,
-          driver_id: batchData.assigned_driver_id,
+          driver_id: batchData.driver_id,
         });
 
         // Record batch started if this is the first time opening
@@ -316,15 +299,6 @@ export default function DeliveryExecutionPage() {
         itemsDelivered: stop.items_count,
         proofCaptured: !!capturedPhoto,
       }, pos ? { lat: pos.lat, lng: pos.lng } : undefined);
-
-      // Update database
-      await supabase
-        .from('delivery_batch_facilities')
-        .update({
-          status: 'completed',
-          completed_at: new Date().toISOString(),
-        })
-        .eq('id', stop.id);
 
       // Update local state
       const updatedStops = [...batch.stops];

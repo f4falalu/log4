@@ -10,7 +10,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -124,9 +124,12 @@ function GradientOrb() {
 export default function Auth() {
   const { signIn, signUp, signInWithGoogle, user, sendDriverOtp, verifyDriverOtp } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
 
-  const [mode, setMode] = useState<AuthMode>('signup');
+  // Default to OTP login mode when accessed via /login (driver PWA)
+  const isLoginRoute = location.pathname === '/login';
+  const [mode, setMode] = useState<AuthMode>(isLoginRoute ? 'otp-login' : 'signup');
   const [step, setStep] = useState<SignupStep>('credentials');
   const [otpStep, setOtpStep] = useState<OtpStep>('email');
   const [loading, setLoading] = useState(false);
@@ -153,10 +156,10 @@ export default function Auth() {
       if (inviteToken) {
         navigate(`/invite/${inviteToken}`);
       } else {
-        navigate('/');
+        navigate(isLoginRoute ? '/mod4/driver' : '/');
       }
     }
-  }, [user, navigate, inviteToken]);
+  }, [user, navigate, inviteToken, isLoginRoute]);
 
   const updateField = (field: keyof FormData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -318,10 +321,7 @@ export default function Auth() {
 
     setLoading(true);
     try {
-      // For now, we'll use a default workspace ID
-      // In a production app, you might want to allow users to select a workspace
-      // or retrieve it based on the email
-      const { data, error } = await sendDriverOtp(otpEmail, '00000000-0000-0000-0000-000000000000');
+      const { error } = await sendDriverOtp(otpEmail, '00000000-0000-0000-0000-000000000000');
 
       if (error) {
         toast.error('Failed to send OTP', {
@@ -330,7 +330,7 @@ export default function Auth() {
       } else {
         setOtpStep('verify');
         toast.success('OTP Sent', {
-          description: `A 6-digit code has been sent to ${otpEmail}. Code: ${data}`,
+          description: `A login code has been sent to ${otpEmail}.`,
         });
       }
     } catch (err) {
@@ -341,6 +341,10 @@ export default function Auth() {
   };
 
   const handleOtpVerify = async () => {
+    if (!otpEmail) {
+      setErrors({ email: 'Please enter your email address' });
+      return;
+    }
     if (otpValue.length !== 6) {
       toast.error('Invalid OTP', { description: 'Please enter the complete 6-digit code' });
       return;
@@ -351,11 +355,11 @@ export default function Auth() {
       const { success, error } = await verifyDriverOtp(otpEmail, otpValue);
 
       if (success) {
-        toast.success('Login Successful', { description: 'Welcome back!' });
+        toast.success('Device Registered', { description: 'Welcome to BIKO Driver!' });
         if (inviteToken) {
           navigate(`/invite/${inviteToken}`);
         } else {
-          navigate('/');
+          navigate(isLoginRoute ? '/mod4/driver' : '/');
         }
       } else {
         toast.error('Verification Failed', {
@@ -939,8 +943,105 @@ export default function Auth() {
     </div>
   );
 
+  // Detect whether input looks like a phone number
+  const isPhoneInput = (value: string) => /^\+?\d[\d\s-]{6,}$/.test(value.trim());
+
+  // Render driver onboarding form (single email/phone + OTP form for /login route)
+  const renderDriverOnboarding = () => (
+    <div className="space-y-6">
+      <div className="space-y-2">
+        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-400 to-cyan-500 flex items-center justify-center mb-4">
+          <Shield className="w-6 h-6 text-white" />
+        </div>
+        <h1 className="text-3xl font-semibold text-white">Driver Onboarding</h1>
+        <p className="text-zinc-400">Enter your email or phone number and the code from your dispatcher.</p>
+      </div>
+
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="driver-identifier" className="text-zinc-300">
+            Email or Phone Number
+          </Label>
+          <div className="relative">
+            {isPhoneInput(otpEmail) ? (
+              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
+            ) : (
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
+            )}
+            <Input
+              id="driver-identifier"
+              type="text"
+              placeholder="email@example.com or +234 800 000 0000"
+              value={otpEmail}
+              onChange={(e) => {
+                setOtpEmail(e.target.value);
+                if (errors.email) {
+                  setErrors({});
+                }
+              }}
+              className={cn(
+                'h-12 pl-11 bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-600 focus:border-cyan-500 focus:ring-cyan-500/20',
+                errors.email && 'border-red-500'
+              )}
+            />
+          </div>
+          {errors.email && <p className="text-sm text-red-400">{errors.email}</p>}
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-zinc-300">Onboarding Code</Label>
+          <div className="flex justify-center">
+            <InputOTP
+              maxLength={6}
+              value={otpValue}
+              onChange={(value) => setOtpValue(value)}
+            >
+              <InputOTPGroup>
+                <InputOTPSlot index={0} className="w-12 h-12 text-lg bg-zinc-900 border-zinc-800 text-white" />
+                <InputOTPSlot index={1} className="w-12 h-12 text-lg bg-zinc-900 border-zinc-800 text-white" />
+                <InputOTPSlot index={2} className="w-12 h-12 text-lg bg-zinc-900 border-zinc-800 text-white" />
+                <InputOTPSlot index={3} className="w-12 h-12 text-lg bg-zinc-900 border-zinc-800 text-white" />
+                <InputOTPSlot index={4} className="w-12 h-12 text-lg bg-zinc-900 border-zinc-800 text-white" />
+                <InputOTPSlot index={5} className="w-12 h-12 text-lg bg-zinc-900 border-zinc-800 text-white" />
+              </InputOTPGroup>
+            </InputOTP>
+          </div>
+        </div>
+      </div>
+
+      <Button
+        onClick={handleOtpVerify}
+        disabled={loading || otpValue.length !== 6 || !otpEmail}
+        className="w-full h-12 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-medium disabled:opacity-50"
+      >
+        {loading ? (
+          <>
+            <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+            Registering device...
+          </>
+        ) : (
+          <>
+            Register Device
+            <ArrowRight className="w-5 h-5 ml-2" />
+          </>
+        )}
+      </Button>
+
+      <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
+        <p className="text-sm text-blue-300">
+          <strong>Driver Access Only:</strong> Enter the 6-digit onboarding code provided by your dispatcher or admin.
+        </p>
+      </div>
+    </div>
+  );
+
   // Render current step
   const renderStep = () => {
+    // Driver PWA onboarding — single email + OTP form
+    if (isLoginRoute && mode === 'otp-login') {
+      return renderDriverOnboarding();
+    }
+
     if (mode === 'login') {
       return renderLogin();
     }
