@@ -9,7 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 export function Step3OperationalConfig() {
   const { draft, updateDraft, setStep, canProceed } = useVehicleWizard();
   const { data: zones = [] } = useServiceZones();
-  const { data: warehouses = [] } = useWarehouses();
+  const { data: warehousesData } = useWarehouses();
+  const warehouses = warehousesData?.warehouses || [];
 
   return (
     <div className="space-y-6">

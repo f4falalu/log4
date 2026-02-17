@@ -6,12 +6,15 @@ import { UnifiedMapContainer } from '@/components/map/UnifiedMapContainer';
 import ActiveDeliveriesPanel from '@/components/delivery/ActiveDeliveriesPanel';
 import ActivityTimeline from '@/components/dashboard/ActivityTimeline';
 import BatchDetailsPanel from '@/components/delivery/BatchDetailsPanel';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, Plus, Truck, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { useRealtimeBatches } from '@/hooks/useRealtimeBatches';
 import { useRealtimeDrivers } from '@/hooks/useRealtimeDrivers';
 import { useRealtimeRouteProgress } from '@/hooks/useRealtimeRouteProgress';
+import { useNavigate } from 'react-router-dom';
+import { UnifiedWorkflowDialog } from '@/components/unified-workflow';
 
 interface CommandCenterProps {
   facilities: Facility[];
@@ -20,6 +23,7 @@ interface CommandCenterProps {
 }
 
 const CommandCenter = ({ facilities, warehouses, batches }: CommandCenterProps) => {
+  const navigate = useNavigate();
   const [lastRefresh, setLastRefresh] = useState(new Date());
   const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<'all' | 'assigned' | 'in-progress' | 'completed' | 'delayed'>('all');
@@ -27,6 +31,7 @@ const CommandCenter = ({ facilities, warehouses, batches }: CommandCenterProps) 
     start: null,
     end: null
   });
+  const [workflowDialogOpen, setWorkflowDialogOpen] = useState(false);
 
   // Enable real-time updates
   useRealtimeBatches();
@@ -75,6 +80,57 @@ const CommandCenter = ({ facilities, warehouses, batches }: CommandCenterProps) 
             Refresh
           </Button>
         </div>
+
+        {/* Quick Actions */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Quick Actions</CardTitle>
+            <CardDescription>Common operations and workflows</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <Button
+                onClick={() => setWorkflowDialogOpen(true)}
+                variant="default"
+                className="h-auto py-4 flex flex-col items-start gap-2"
+              >
+                <div className="flex items-center gap-2">
+                  <Plus className="h-4 w-4" />
+                  <span className="font-semibold">Create Batch</span>
+                </div>
+                <span className="text-xs font-normal text-muted-foreground">
+                  Start unified dispatch workflow
+                </span>
+              </Button>
+              <Button
+                onClick={() => navigate('/fleetops/dispatch')}
+                variant="outline"
+                className="h-auto py-4 flex flex-col items-start gap-2"
+              >
+                <div className="flex items-center gap-2">
+                  <Truck className="h-4 w-4" />
+                  <span className="font-semibold">Manage Dispatch</span>
+                </div>
+                <span className="text-xs font-normal text-muted-foreground">
+                  Tactical dispatch operations
+                </span>
+              </Button>
+              <Button
+                onClick={() => navigate('/fleetops/drivers')}
+                variant="outline"
+                className="h-auto py-4 flex flex-col items-start gap-2"
+              >
+                <div className="flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  <span className="font-semibold">View Drivers</span>
+                </div>
+                <span className="text-xs font-normal text-muted-foreground">
+                  Driver management & onboarding
+                </span>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* KPI Metrics & Fleet Status */}
         <div className="space-y-4">
@@ -131,6 +187,13 @@ const CommandCenter = ({ facilities, warehouses, batches }: CommandCenterProps) 
         {/* Bottom: Activity Timeline */}
         <ActivityTimeline batches={batches} />
       </div>
+
+      {/* Unified Workflow Dialog */}
+      <UnifiedWorkflowDialog
+        open={workflowDialogOpen}
+        onOpenChange={setWorkflowDialogOpen}
+        startStep={1}
+      />
     </div>
   );
 };

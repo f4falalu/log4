@@ -118,7 +118,7 @@ export function Step3Batch({
   }, [startLocationName]);
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col min-h-[65vh]">
       {/* Batch Header */}
       <div className="p-4 border-b bg-muted/30">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

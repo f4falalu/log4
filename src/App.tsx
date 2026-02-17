@@ -44,6 +44,7 @@ import StorefrontRequisitions from "./pages/storefront/requisitions/page";
 import StorefrontZones from "./pages/storefront/zones/page";
 import StorefrontScheduler from "./pages/storefront/scheduler/page";
 import StorefrontStockReports from "./pages/storefront/stock-reports/page";
+import StorefrontPrograms from "./pages/storefront/programs/page";
 
 // Lazy load new storefront pages
 const StorefrontItems = lazy(() => import("./pages/storefront/items/page"));
@@ -65,14 +66,6 @@ import BatchManagement from "./pages/BatchManagement";
 
 // Lazy load Reports page (includes Recharts - ~300 kB uncompressed / 77 kB gzipped)
 const ReportsPageWrapper = lazy(() => import("./pages/ReportsPageWrapper"));
-// Maps-V2 Pages (lazy loaded - separate chunk)
-const MapV2PlanningPage = lazy(() => import("./maps-v2/ui/MapV2PlanningPage"));
-const MapV2OperationalPage = lazy(() => import("./maps-v2/ui/MapV2OperationalPage"));
-const MapV2ForensicPage = lazy(() => import("./maps-v2/ui/MapV2ForensicPage"));
-import FleetOpsMapLayout from "./pages/fleetops/map/layout";
-import PlanningMapPage from "./pages/fleetops/map/planning/page";
-import OperationalMapPage from "./pages/fleetops/map/operational/page";
-import ForensicsMapPage from "./pages/fleetops/map/forensics/page";
 import VLMSDashboard from "./pages/fleetops/vlms/page";
 import VLMSVehicles from "./pages/fleetops/vlms/vehicles/page";
 import VLMSVehicleOnboard from "./pages/fleetops/vlms/vehicles/onboard/page";
@@ -130,7 +123,7 @@ const App = () => (
                     <Route path="drivers" element={<DriverManagement />} />
                     <Route path="dispatch" element={<DispatchPage />} />
                     <Route path="batches" element={<BatchManagement />} />
-                    <Route path="tactical" element={<Navigate to="/fleetops/map/operational" replace />} />
+                    <Route path="tactical" element={<Navigate to="/map/live" replace />} />
                     <Route path="vehicles" element={<VehicleRegistry />} />
                     <Route path="vehicles/:id" element={
                       React.createElement(
@@ -141,27 +134,6 @@ const App = () => (
                     <Route path="reports" element={
                       <Suspense fallback={<div className="flex items-center justify-center h-screen"><Loader2 className="h-8 w-8 animate-spin" /></div>}>
                         <ReportsPageWrapper />
-                      </Suspense>
-                    } />
-                    <Route path="map" element={<FleetOpsMapLayout />}>
-                      <Route path="planning" element={<PlanningMapPage />} />
-                      <Route path="operational" element={<OperationalMapPage />} />
-                      <Route path="forensics" element={<ForensicsMapPage />} />
-                    </Route>
-                    <Route path="map-v2" element={<Navigate to="/fleetops/map-v2/operational" replace />} />
-                    <Route path="map-v2/planning" element={
-                      <Suspense fallback={<div className="flex items-center justify-center h-screen"><Loader2 className="h-8 w-8 animate-spin" /></div>}>
-                        <MapV2PlanningPage />
-                      </Suspense>
-                    } />
-                    <Route path="map-v2/operational" element={
-                      <Suspense fallback={<div className="flex items-center justify-center h-screen"><Loader2 className="h-8 w-8 animate-spin" /></div>}>
-                        <MapV2OperationalPage />
-                      </Suspense>
-                    } />
-                    <Route path="map-v2/forensics" element={
-                      <Suspense fallback={<div className="flex items-center justify-center h-screen"><Loader2 className="h-8 w-8 animate-spin" /></div>}>
-                        <MapV2ForensicPage />
                       </Suspense>
                     } />
                     <Route path="vlms">
@@ -207,6 +179,7 @@ const App = () => (
                         <StorefrontWarehouse />
                       </Suspense>
                     } />
+                    <Route path="programs" element={<StorefrontPrograms />} />
                     {/* Analytics */}
                     <Route path="stock-reports" element={<StorefrontStockReports />} />
                     {/* Legacy redirects */}

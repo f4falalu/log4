@@ -40,7 +40,8 @@ export default function TacticalMap() {
   const { data: drivers = [] } = useDrivers();
   const { data: zones = [], refetch: refetchZones } = useServiceZones();
   const { data: facilities = [] } = useFacilities();
-  const { data: warehouses = [] } = useWarehouses();
+  const { data: warehousesData } = useWarehouses();
+  const warehouses = warehousesData?.warehouses || [];
   const { data: vehicles = [] } = useVehicles();
   const { data: batches = [] } = useDeliveryBatches();
   const { data: stats } = useRealtimeStats();

@@ -100,10 +100,11 @@ function autoDetectMapping(headers: string[]): ColumnMapping {
 
 export function UploadRequisitionDialog({ open, onOpenChange }: UploadRequisitionDialogProps) {
   const { data: facilitiesData } = useFacilities();
-  const { data: warehouses = [] } = useWarehouses();
+  const { data: warehousesData } = useWarehouses();
   const createRequisition = useCreateRequisition();
 
   const facilities = facilitiesData?.facilities || [];
+  const warehouses = warehousesData?.warehouses || [];
 
   const [step, setStep] = useState<UploadStep>('upload');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);

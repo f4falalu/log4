@@ -35,7 +35,8 @@ interface DispatchSchedulerProps {
 }
 
 const DispatchScheduler = ({ facilities, onBatchCreate }: DispatchSchedulerProps) => {
-  const { data: warehouses = [], isLoading: warehousesLoading } = useWarehouses();
+  const { data: warehousesData, isLoading: warehousesLoading } = useWarehouses();
+  const warehouses = warehousesData?.warehouses || [];
   const { data: drivers = [], isLoading: driversLoading } = useDrivers();
   const { data: vehicles = [], isLoading: vehiclesLoading } = useVehicles();
   

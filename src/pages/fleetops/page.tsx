@@ -5,7 +5,8 @@ import { useDeliveryBatches } from '@/hooks/useDeliveryBatches';
 
 export default function FleetOpsHome() {
   const { data: facilities = [] } = useFacilities();
-  const { data: warehouses = [] } = useWarehouses();
+  const { data: warehousesData } = useWarehouses();
+  const warehouses = warehousesData?.warehouses || [];
   const { data: batches = [] } = useDeliveryBatches();
   
   return (

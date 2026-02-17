@@ -45,8 +45,8 @@ export function InvoiceDetailPanel({ invoice, onClose }: InvoiceDetailPanelProps
   };
 
   const handleDispatchToFleetOps = () => {
-    // Navigate to FleetOps scheduler with invoice data
-    navigate('/fleetops/scheduler', {
+    // Navigate to Storefront scheduler with invoice data
+    navigate('/storefront/scheduler', {
       state: {
         invoiceId: invoice.id,
         invoiceNumber: invoice.invoice_number,

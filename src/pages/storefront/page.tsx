@@ -7,7 +7,8 @@ import {
   Layers,
   Building2,
   Warehouse as WarehouseIcon,
-  BarChart3
+  BarChart3,
+  FolderKanban
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -75,6 +76,13 @@ export default function StorefrontHome() {
           href: '/storefront/warehouse',
           color: 'bg-orange-500'
         },
+        {
+          title: 'Programs',
+          description: 'Manage operational programs and funding configurations',
+          icon: FolderKanban,
+          href: '/storefront/programs',
+          color: 'bg-emerald-500'
+        },
       ]
     },
     {
@@ -125,39 +133,57 @@ export default function StorefrontHome() {
         ))}
       </div>
 
-      <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="mt-8">
         <Card>
           <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
-            <CardDescription>Latest storefront operations</CardDescription>
+            <CardTitle>Getting Started</CardTitle>
+            <CardDescription>Set up your storefront operations</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground">No recent activity</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Quick Stats</CardTitle>
-            <CardDescription>Storefront metrics at a glance</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Active Items</span>
-                <span className="font-semibold">-</span>
+            <div className="space-y-3 text-sm">
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <span className="text-xs font-semibold text-primary">1</span>
+                </div>
+                <div>
+                  <p className="font-medium">Configure Resources</p>
+                  <p className="text-muted-foreground text-xs">
+                    Set up warehouses, facilities, and service zones
+                  </p>
+                </div>
               </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Pending Requisitions</span>
-                <span className="font-semibold">-</span>
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <span className="text-xs font-semibold text-primary">2</span>
+                </div>
+                <div>
+                  <p className="font-medium">Manage Inventory</p>
+                  <p className="text-muted-foreground text-xs">
+                    Add items and track stock levels
+                  </p>
+                </div>
               </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Active Invoices</span>
-                <span className="font-semibold">-</span>
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <span className="text-xs font-semibold text-primary">3</span>
+                </div>
+                <div>
+                  <p className="font-medium">Create Requisitions & Invoices</p>
+                  <p className="text-muted-foreground text-xs">
+                    Process delivery requests and generate invoices
+                  </p>
+                </div>
               </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Warehouses</span>
-                <span className="font-semibold">-</span>
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <span className="text-xs font-semibold text-primary">4</span>
+                </div>
+                <div>
+                  <p className="font-medium">Schedule Deliveries</p>
+                  <p className="text-muted-foreground text-xs">
+                    Use the scheduler to plan and optimize batch deliveries
+                  </p>
+                </div>
               </div>
             </div>
           </CardContent>

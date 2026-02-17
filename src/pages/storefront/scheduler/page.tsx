@@ -31,7 +31,8 @@ export default function SchedulerPage() {
   const [wizardOpen, setWizardOpen] = useState(false);
 
   // Data hooks
-  const { data: warehouses = [] } = useWarehouses();
+  const { data: warehousesData } = useWarehouses();
+  const warehouses = warehousesData?.warehouses || [];
   const { data: drivers = [] } = useDrivers();
   const { data: vehicles = [] } = useVehicles();
   const { data: facilitiesData } = useFacilities();

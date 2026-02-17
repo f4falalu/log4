@@ -54,7 +54,8 @@ export function BatchDetailsPanel({ batch, open, onOpenChange }: BatchDetailsPan
 
   const { data: drivers = [] } = useDrivers();
   const { data: vehicles = [] } = useVehicles();
-  const { data: warehouses = [] } = useWarehouses();
+  const { data: warehousesData } = useWarehouses();
+  const warehouses = warehousesData?.warehouses || [];
   const batchUpdate = useBatchUpdate();
 
   if (!batch) return null;

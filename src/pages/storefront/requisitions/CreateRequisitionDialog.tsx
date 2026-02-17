@@ -41,9 +41,12 @@ interface CreateRequisitionDialogProps {
 }
 
 export function CreateRequisitionDialog({ open, onOpenChange }: CreateRequisitionDialogProps) {
-  const { data: facilities = [] } = useFacilities();
-  const { data: warehouses = [] } = useWarehouses();
+  const { data: facilitiesData } = useFacilities();
+  const { data: warehousesData } = useWarehouses();
   const createRequisition = useCreateRequisition();
+
+  const facilities = facilitiesData?.facilities || [];
+  const warehouses = warehousesData?.warehouses || [];
 
   const [facilityId, setFacilityId] = useState('');
   const [warehouseId, setWarehouseId] = useState('');

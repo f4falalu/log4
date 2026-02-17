@@ -12,7 +12,8 @@ import { Badge } from '@/components/ui/badge';
 import { RefreshCw, Package } from 'lucide-react';
 
 export default function DispatchPage() {
-  const { data: facilities = [] } = useFacilities();
+  const { data: facilitiesData } = useFacilities();
+  const facilities = facilitiesData?.facilities ?? [];
   const { data: batches = [] } = useDeliveryBatches();
   const { data: vehicles = [] } = useVehicles();
   const { data: handoffs = [] } = useActiveHandoffs();

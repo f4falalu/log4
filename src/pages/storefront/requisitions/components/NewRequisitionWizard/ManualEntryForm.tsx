@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, Minus, AlertTriangle } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { Plus, Minus, AlertTriangle, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,7 +16,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import {
   Table,
@@ -54,7 +54,8 @@ const formSchema = z.object({
   warehouse_id: z.string().min(1, 'Warehouse is required'),
   purpose: z.enum(['requisition', 'receive_purchase_items', 'issue_to_loss_register', 'return_expiry', 'issue_to_inter_market'] as const),
   program: z.string().optional(),
-  requested_delivery_date: z.string().min(1, 'Delivery date is required'),
+  requisition_date: z.string().optional(), // Auto-generated
+  required_by_date: z.string().optional(),
   received_from: z.string().optional(),
   issued_to: z.string().optional(),
   notes: z.string().optional(),
@@ -72,8 +73,16 @@ interface ManualEntryFormProps {
 
 export function ManualEntryForm({ onClose, onSuccess }: ManualEntryFormProps) {
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
-  const { data: facilitiesData } = useFacilities();
-  const { data: warehousesData } = useWarehouses();
+  const queryClient = useQueryClient();
+  
+  // Invalidate queries on mount to ensure fresh data
+  React.useEffect(() => {
+    queryClient.invalidateQueries({ queryKey: ['facilities'] });
+    queryClient.invalidateQueries({ queryKey: ['warehouses'] });
+  }, [queryClient]);
+  
+  const { data: facilitiesData, isLoading: facilitiesLoading, error: facilitiesError } = useFacilities();
+  const { data: warehousesData, isLoading: warehousesLoading, error: warehousesError } = useWarehouses();
   const createRequisition = useCreateRequisition();
 
   const facilities = facilitiesData?.facilities || [];
@@ -87,7 +96,8 @@ export function ManualEntryForm({ onClose, onSuccess }: ManualEntryFormProps) {
       warehouse_id: '',
       purpose: 'requisition',
       program: '',
-      requested_delivery_date: '',
+      requisition_date: new Date().toISOString().split('T')[0], // Auto-set to today
+      required_by_date: '',
       received_from: '',
       issued_to: '',
       notes: '',
@@ -115,7 +125,8 @@ export function ManualEntryForm({ onClose, onSuccess }: ManualEntryFormProps) {
         facility_id: values.facility_id,
         warehouse_id: values.warehouse_id,
         priority: 'medium',
-        requested_delivery_date: values.requested_delivery_date,
+        requisition_date: values.requisition_date,
+        required_by_date: values.required_by_date || null,
         notes: values.notes,
         items: values.items.map(item => ({
           item_name: item.item_name,
@@ -143,17 +154,26 @@ export function ManualEntryForm({ onClose, onSuccess }: ManualEntryFormProps) {
 
   return (
     <>
-      <ScrollArea className="flex-1 pr-4 max-h-[60vh]">
-        <form id="manual-requisition-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          {/* Header Section */}
-          <div className="space-y-4">
+      {/* Scrollable Content Region */}
+      <div className="flex-1 overflow-y-auto px-8 py-6">
+        <form id="manual-requisition-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          {/* Requisition Information Section */}
+          <div className="space-y-6">
             <h3 className="text-sm font-semibold text-muted-foreground">Requisition Information</h3>
+
+            {(facilitiesError || warehousesError) && (
+              <div className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+                {facilitiesError && <div>Failed to load facilities: {facilitiesError.message}</div>}
+                {warehousesError && <div>Failed to load warehouses: {warehousesError.message}</div>}
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-4">
               {/* Facility */}
               <div className="space-y-2">
                 <Label>Facility *</Label>
                 <Select
+                  key={`facilities-${facilities.length}-${facilitiesLoading}`}
                   value={form.watch('facility_id')}
                   onValueChange={(value) => {
                     form.setValue('facility_id', value);
@@ -163,16 +183,24 @@ export function ManualEntryForm({ onClose, onSuccess }: ManualEntryFormProps) {
                       form.setValue('pharmacy_incharge', facility.contact_name_pharmacy);
                     }
                   }}
+                  disabled={facilitiesLoading}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select facility" />
+                  <SelectTrigger className="border-input bg-background">
+                    <SelectValue placeholder={facilitiesLoading ? "Loading facilities..." : "Select facility"} />
+                    <ChevronDown className="h-4 w-4 opacity-50" />
                   </SelectTrigger>
-                  <SelectContent>
-                    {facilities.map((f) => (
-                      <SelectItem key={f.id} value={f.id}>
-                        {f.name}
-                      </SelectItem>
-                    ))}
+                  <SelectContent className="z-[9999]">
+                    {facilities.length === 0 ? (
+                      <div className="px-2 py-6 text-center text-sm text-muted-foreground">
+                        No facilities available
+                      </div>
+                    ) : (
+                      facilities.map((f) => (
+                        <SelectItem key={f.id} value={f.id}>
+                          {f.name}
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
                 {form.formState.errors.facility_id && (
@@ -200,18 +228,26 @@ export function ManualEntryForm({ onClose, onSuccess }: ManualEntryFormProps) {
               <div className="space-y-2">
                 <Label>Warehouse *</Label>
                 <Select
+                  key={`warehouses-${warehouses.length}-${warehousesLoading}`}
                   value={form.watch('warehouse_id')}
                   onValueChange={(value) => form.setValue('warehouse_id', value)}
+                  disabled={warehousesLoading}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select warehouse" />
+                    <SelectValue placeholder={warehousesLoading ? "Loading warehouses..." : "Select warehouse"} />
                   </SelectTrigger>
-                  <SelectContent>
-                    {warehouses.map((w) => (
-                      <SelectItem key={w.id} value={w.id}>
-                        {w.name}
-                      </SelectItem>
-                    ))}
+                  <SelectContent className="z-[9999]">
+                    {warehouses.length === 0 ? (
+                      <div className="px-2 py-6 text-center text-sm text-muted-foreground">
+                        No warehouses available
+                      </div>
+                    ) : (
+                      warehouses.map((w) => (
+                        <SelectItem key={w.id} value={w.id}>
+                          {w.name}
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
                 {form.formState.errors.warehouse_id && (
@@ -219,16 +255,30 @@ export function ManualEntryForm({ onClose, onSuccess }: ManualEntryFormProps) {
                 )}
               </div>
 
-              {/* Delivery Date */}
+              {/* Requisition Date */}
               <div className="space-y-2">
-                <Label>Requested Delivery Date *</Label>
+                <Label>Requisition Date (auto)</Label>
                 <Input
                   type="date"
-                  {...form.register('requested_delivery_date')}
+                  {...form.register('requisition_date')}
+                  disabled
+                  className="bg-muted"
                 />
-                {form.formState.errors.requested_delivery_date && (
-                  <p className="text-xs text-destructive">{form.formState.errors.requested_delivery_date.message}</p>
-                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              {/* Required By Date */}
+              <div className="space-y-2">
+                <Label>Required By Date (optional)</Label>
+                <Input
+                  type="date"
+                  {...form.register('required_by_date')}
+                  placeholder="When do you need this by?"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Delivery scheduling happens in /scheduler
+                </p>
               </div>
             </div>
 
@@ -238,7 +288,7 @@ export function ManualEntryForm({ onClose, onSuccess }: ManualEntryFormProps) {
               <RadioGroup
                 value={purpose}
                 onValueChange={(value) => form.setValue('purpose', value as RequisitionPurpose)}
-                className="grid grid-cols-2 gap-2"
+                className="grid grid-cols-2 gap-6"
               >
                 {REQUISITION_PURPOSES.map((p) => (
                   <div key={p.value} className="flex items-center space-x-2">
@@ -283,11 +333,10 @@ export function ManualEntryForm({ onClose, onSuccess }: ManualEntryFormProps) {
             </div>
           </div>
 
-          <Separator />
-
           {/* Line Items Section */}
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
+            {/* Line Items Header */}
+            <div className="flex justify-between items-center">
               <h3 className="text-sm font-semibold text-muted-foreground">Line Items</h3>
               <Button
                 type="button"
@@ -300,9 +349,10 @@ export function ManualEntryForm({ onClose, onSuccess }: ManualEntryFormProps) {
               </Button>
             </div>
 
-            <div className="border rounded-lg overflow-hidden">
+            {/* Scrollable List Container */}
+            <div className="border rounded-md max-h-[320px] overflow-y-auto">
               <Table>
-                <TableHeader>
+                <TableHeader className="sticky top-0 bg-background z-10">
                   <TableRow>
                     <TableHead className="w-8">S/N</TableHead>
                     <TableHead className="min-w-[200px]">Item Description</TableHead>
@@ -390,8 +440,6 @@ export function ManualEntryForm({ onClose, onSuccess }: ManualEntryFormProps) {
             )}
           </div>
 
-          <Separator />
-
           {/* Summary Section */}
           <div className="space-y-4">
             <h3 className="text-sm font-semibold text-muted-foreground">Summary</h3>
@@ -423,11 +471,11 @@ export function ManualEntryForm({ onClose, onSuccess }: ManualEntryFormProps) {
             </div>
           </div>
         </form>
-      </ScrollArea>
+      </div>
 
-      {/* Footer Actions */}
-      <div className="flex justify-end gap-2 pt-4 border-t">
-        <Button type="button" variant="outline" onClick={handleCancel}>
+      {/* Fixed Footer */}
+      <div className="px-8 py-6 border-t bg-background flex justify-end gap-3">
+        <Button type="button" variant="ghost" onClick={handleCancel}>
           Cancel
         </Button>
         <Button

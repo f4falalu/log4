@@ -64,7 +64,7 @@ export function Step4Route({
   }, [estimatedDurationMin]);
 
   return (
-    <div className="flex flex-col h-full p-6">
+    <div className="flex flex-col min-h-[65vh] p-6">
       <div className="mb-6">
         <h2 className="text-lg font-semibold">Route Optimization</h2>
         <p className="text-sm text-muted-foreground mt-1">

@@ -102,7 +102,7 @@ export function Step2Schedule({
   }, [startLocationId, warehouses, facilities]);
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col min-h-[65vh]">
       {/* Schedule Header */}
       <ScheduleHeader
         title={title}

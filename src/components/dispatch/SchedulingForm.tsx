@@ -19,7 +19,8 @@ interface SchedulingFormProps {
 }
 
 const SchedulingForm = ({ facilities, deliveries, onDeliveryCreate }: SchedulingFormProps) => {
-  const { data: warehouses = [] } = useWarehouses();
+  const { data: warehousesData } = useWarehouses();
+  const warehouses = warehousesData?.warehouses || [];
   
   const [formData, setFormData] = useState({
     facilityId: '',

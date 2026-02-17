@@ -8,6 +8,7 @@ import { RouteTable } from './routes/RouteTable';
 import { RouteMapView } from './routes/RouteMapView';
 import { CreateRouteWizard } from './routes/CreateRouteWizard';
 import { RouteDetailDialog } from './routes/RouteDetailDialog';
+import { SandboxRouteBuilder } from './routes/SandboxRouteBuilder';
 
 type ViewMode = 'table' | 'map';
 
@@ -15,6 +16,11 @@ export function RouteManagementTabContent() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [detailRoute, setDetailRoute] = useState<Route | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('table');
+  const [sandboxMode, setSandboxMode] = useState(false);
+
+  if (sandboxMode) {
+    return <SandboxRouteBuilder onClose={() => setSandboxMode(false)} />;
+  }
 
   return (
     <div className="space-y-6">
@@ -56,6 +62,7 @@ export function RouteManagementTabContent() {
       <CreateRouteWizard
         open={isCreateOpen}
         onOpenChange={setIsCreateOpen}
+        onSandboxSelect={() => setSandboxMode(true)}
       />
 
       {detailRoute && (

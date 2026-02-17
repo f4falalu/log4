@@ -6,7 +6,8 @@ import CommandCenter from '@/pages/CommandCenter';
 
 export default function CommandCenterPage() {
   const { data: facilities = [] } = useFacilities();
-  const { data: warehouses = [] } = useWarehouses();
+  const { data: warehousesData } = useWarehouses();
+  const warehouses = warehousesData?.warehouses || [];
   const { data: batches = [] } = useDeliveryBatches();
   
   return (

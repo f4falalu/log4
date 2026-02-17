@@ -418,7 +418,7 @@ export function UnifiedWorkflowDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl h-[90vh] flex flex-col p-0 gap-0">
+      <DialogContent className="max-w-6xl max-h-[90vh] flex flex-col p-0 gap-0">
         {/* Header */}
         <DialogHeader className="px-6 py-4 border-b flex-shrink-0">
           <div className="flex items-center justify-between">
@@ -465,7 +465,7 @@ export function UnifiedWorkflowDialog({
         </DialogHeader>
 
         {/* Content */}
-        <div className="flex-1 overflow-hidden">{renderStepContent}</div>
+        <div className="flex-1 min-h-0 overflow-y-auto">{renderStepContent}</div>
 
         {/* Footer */}
         <div className="px-6 py-4 border-t flex items-center justify-between flex-shrink-0 bg-muted/30">

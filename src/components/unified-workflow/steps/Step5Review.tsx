@@ -134,7 +134,7 @@ export function Step5Review({
   const allChecksPass = checks.every((c) => c.ok);
 
   return (
-    <div className="flex flex-col h-full p-6">
+    <div className="flex flex-col p-6">
       <div className="mb-6">
         <h2 className="text-lg font-semibold">Review & Confirm</h2>
         <p className="text-sm text-muted-foreground mt-1">

@@ -2910,6 +2910,48 @@ export type Database = {
         }
         Relationships: []
       }
+      programs: {
+        Row: {
+          code: string
+          created_at: string
+          description: string | null
+          funding_source: string | null
+          id: string
+          name: string
+          priority_tier: string
+          requires_cold_chain: boolean
+          sla_days: number | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          description?: string | null
+          funding_source?: string | null
+          id?: string
+          name: string
+          priority_tier?: string
+          requires_cold_chain?: boolean
+          sla_days?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          description?: string | null
+          funding_source?: string | null
+          id?: string
+          name?: string
+          priority_tier?: string
+          requires_cold_chain?: boolean
+          sla_days?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       recurring_schedules: {
         Row: {
           active: boolean | null

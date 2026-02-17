@@ -47,16 +47,18 @@ export function NewRequisitionWizard({ open, onOpenChange }: NewRequisitionWizar
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            {step === 'form' && (
-              <Button variant="ghost" size="icon" onClick={handleBack} className="h-6 w-6">
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
-            )}
-            {step === 'mode' ? 'Create New Requisition' : getModeTitle(selectedMode)}
-          </DialogTitle>
+      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col rounded-xl">
+        <DialogHeader className="px-8 pt-8 pb-6 border-b">
+          <div className="flex justify-between items-center">
+            <DialogTitle className="text-xl font-semibold flex items-center gap-2">
+              {step === 'form' && (
+                <Button variant="ghost" size="icon" onClick={handleBack} className="h-6 w-6">
+                  <ArrowLeft className="h-4 w-4" />
+                </Button>
+              )}
+              {step === 'mode' ? 'Create New Requisition' : getModeTitle(selectedMode)}
+            </DialogTitle>
+          </div>
           <DialogDescription className="sr-only">
             {step === 'mode' ? 'Choose how to create your requisition' : `Create requisition via ${getModeTitle(selectedMode).toLowerCase()}`}
           </DialogDescription>
@@ -122,31 +124,33 @@ function ModeSelector({ onSelect }: ModeSelectorProps) {
   ];
 
   return (
-    <div className="grid gap-4 py-4">
-      {modes.map(({ mode, icon: Icon, title, description }) => (
-        <Card
-          key={mode}
-          className={cn(
-            'cursor-pointer hover:border-primary transition-colors'
-          )}
-          onClick={() => onSelect(mode)}
-        >
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <Icon className="h-5 w-5 text-primary" />
+    <div className="flex-1 overflow-y-auto px-8 py-6">
+      <div className="grid gap-4">
+        {modes.map(({ mode, icon: Icon, title, description }) => (
+          <Card
+            key={mode}
+            className={cn(
+              'cursor-pointer hover:border-primary transition-colors'
+            )}
+            onClick={() => onSelect(mode)}
+          >
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Icon className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-base">{title}</CardTitle>
+                    <CardDescription className="text-sm">{description}</CardDescription>
+                  </div>
                 </div>
-                <div>
-                  <CardTitle className="text-base">{title}</CardTitle>
-                  <CardDescription className="text-sm">{description}</CardDescription>
-                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
               </div>
-              <ChevronRight className="h-5 w-5 text-muted-foreground" />
-            </div>
-          </CardHeader>
-        </Card>
-      ))}
+            </CardHeader>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 }

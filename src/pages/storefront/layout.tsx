@@ -8,7 +8,8 @@ import {
   BarChart3,
   Package,
   FileText,
-  Warehouse
+  Warehouse,
+  FolderKanban
 } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { SecondarySidebar, NavigationGroup } from '@/components/layout/SecondarySidebar';
@@ -73,6 +74,11 @@ const navigationGroups: NavigationGroup[] = [
         label: 'Warehouse',
         href: '/storefront/warehouse',
         icon: Warehouse
+      },
+      {
+        label: 'Programs',
+        href: '/storefront/programs',
+        icon: FolderKanban
       },
     ],
   },

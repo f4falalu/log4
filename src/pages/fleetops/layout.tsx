@@ -1,5 +1,5 @@
 import { Outlet, useLocation } from 'react-router-dom';
-import { Package, LayoutDashboard, Users, Truck, MapPin, GitBranch, FileBarChart, Wrench, Radio, History, Map } from 'lucide-react';
+import { Package, LayoutDashboard, Users, Truck, GitBranch, FileBarChart, Wrench, Radio, History } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { SecondarySidebar, NavigationGroup } from '@/components/layout/SecondarySidebar';
 import { useMemo } from 'react';
@@ -52,43 +52,23 @@ const navigationGroups: NavigationGroup[] = [
     ],
   },
   {
-    label: 'MAP SYSTEM',
+    label: 'TRACKING',
     items: [
       {
-        label: 'Planning Map',
-        href: '/fleetops/map-v2/planning',
-        icon: MapPin
-      },
-      {
-        label: 'Operational Map',
-        href: '/fleetops/map-v2/operational',
+        label: 'Live Map',
+        href: '/map/live',
         icon: Radio
       },
       {
-        label: 'Forensics Map',
-        href: '/fleetops/map-v2/forensics',
+        label: 'Playback',
+        href: '/map/playback',
         icon: History
       },
     ],
   },
   {
-    label: 'INTELLIGENCE',
+    label: 'ANALYTICS',
     items: [
-      {
-        label: 'Planning Map',
-        href: '/fleetops/map/planning',
-        icon: MapPin
-      },
-      {
-        label: 'Operational Map',
-        href: '/fleetops/map/operational',
-        icon: Radio
-      },
-      {
-        label: 'Forensics Map',
-        href: '/fleetops/map/forensics',
-        icon: History
-      },
       {
         label: 'Reports',
         href: '/fleetops/reports',
