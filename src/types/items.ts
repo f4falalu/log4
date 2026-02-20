@@ -55,13 +55,17 @@ export type ItemProgram = (typeof ITEM_PROGRAMS)[number];
 
 export interface Item {
   id: string;
-  serial_number: string;
-  description: string;
+  product_code: string;
+  item_name: string;
   unit_pack: string;
   category: ItemCategory;
   program?: ItemProgram;
   weight_kg?: number;
   volume_m3?: number;
+  is_active: boolean;
+  // Legacy fields for backward compatibility
+  serial_number?: string;
+  description?: string;
   batch_number?: string;
   mfg_date?: string;
   expiry_date?: string;
@@ -99,13 +103,17 @@ export interface ItemFilters {
 }
 
 export interface ItemFormData {
-  serial_number: string;
-  description: string;
+  product_code: string;
+  item_name: string;
   unit_pack: string;
   category: ItemCategory;
   program?: ItemProgram;
   weight_kg?: number;
   volume_m3?: number;
+  is_active?: boolean;
+  // Legacy fields for backward compatibility
+  serial_number?: string;
+  description?: string;
   batch_number?: string;
   mfg_date?: string;
   expiry_date?: string;

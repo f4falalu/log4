@@ -143,22 +143,22 @@ export default defineConfig(({ mode }) => ({
             return 'vendor';
           }
 
-          // Application code chunks by module
-          if (id.includes('src/pages/fleetops/vlms')) {
-            return 'pages-vlms';
-          }
-          if (id.includes('src/pages/fleetops')) {
-            return 'pages-fleetops';
-          }
-          if (id.includes('src/pages/storefront')) {
-            return 'pages-storefront';
-          }
-          if (id.includes('src/components/map')) {
-            return 'components-map';
-          }
-          if (id.includes('src/components/vlms')) {
-            return 'components-vlms';
-          }
+          // Application code chunks by module (temporarily disabled for debugging)
+          // if (id.includes('src/pages/fleetops/vlms')) {
+          //   return 'pages-vlms';
+          // }
+          // if (id.includes('src/pages/fleetops')) {
+          //   return 'pages-fleetops';
+          // }
+          // if (id.includes('src/pages/storefront')) {
+          //   return 'pages-storefront';
+          // }
+          // if (id.includes('src/components/map')) {
+          //   return 'components-map';
+          // }
+          // if (id.includes('src/components/vlms')) {
+          //   return 'components-vlms';
+          // }
         },
       },
     },

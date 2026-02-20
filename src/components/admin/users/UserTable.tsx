@@ -50,7 +50,8 @@ export function UserTable() {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<string[]>([]);
-  const { data: users = [], isLoading, error } = useUsers({ search, roleFilter });
+  const { data: usersData = { users: [], total: 0 }, isLoading, error } = useUsers({ search, roleFilter });
+  const users = usersData.users || [];
 
   const exportToCSV = () => {
     const csv = toCSV(

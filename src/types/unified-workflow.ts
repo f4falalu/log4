@@ -389,7 +389,10 @@ export interface UnifiedWorkflowActions {
   clearSlotAssignments: () => void;
 
   // Step 4: Route
-  optimizeRoute: () => Promise<void>;
+  optimizeRoute: (
+    facilitiesWithCoords: Array<{ id: string; lat?: number; lng?: number }>,
+    startLocation?: { lat?: number; lng?: number } | null
+  ) => Promise<void>;
   setOptimizedRoute: (route: RoutePoint[], distance: number, duration: number) => void;
 
   // Step 5: Finalize

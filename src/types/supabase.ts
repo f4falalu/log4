@@ -9531,13 +9531,15 @@ export type Database = {
         }[]
       }
       gettransactionid: { Args: never; Returns: unknown }
-      has_role: {
-        Args: {
-          _role: Database["public"]["Enums"]["app_role"]
-          _user_id: string
-        }
-        Returns: boolean
-      }
+      has_role:
+        | {
+            Args: {
+              _role: Database["public"]["Enums"]["app_role"]
+              _user_id: string
+            }
+            Returns: boolean
+          }
+        | { Args: { role_name: string }; Returns: boolean }
       ingest_gps_events: {
         Args: { events: Json }
         Returns: {

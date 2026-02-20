@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FileText, Upload, PenLine, ChevronRight, ArrowLeft } from 'lucide-react';
+import { FileText, Upload, PenLine, ChevronRight, ArrowLeft, X } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -40,41 +40,88 @@ export function NewInvoiceWizard({ open, onOpenChange }: NewInvoiceWizardProps) 
     onOpenChange(false);
   };
 
+  const handleSuccess = () => {
+    handleClose();
+  };
+
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className={cn(
-        'max-h-[90vh] flex flex-col',
-        step === 'form' ? 'max-w-4xl' : 'max-w-2xl'
-      )}>
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            {step === 'form' && (
-              <Button variant="ghost" size="icon" onClick={handleBack} className="h-6 w-6">
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
-            )}
-            {step === 'mode' ? 'Create New Invoice' : getModeTitle(selectedMode)}
-          </DialogTitle>
+      <DialogContent className="max-h-[90vh] flex flex-col overflow-hidden rounded-xl max-w-4xl">
+        {/* Fixed Header */}
+        <DialogHeader className="px-8 pt-8 pb-6 border-b">
+          <div className="flex justify-between items-center">
+            <DialogTitle className="text-xl font-semibold flex items-center gap-2">
+              {step === 'form' && (
+                <Button variant="ghost" size="icon" onClick={handleBack} className="h-6 w-6">
+                  <ArrowLeft className="h-4 w-4" />
+                </Button>
+              )}
+              {step === 'mode' ? 'Create New Invoice' : getModeTitle(selectedMode)}
+            </DialogTitle>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleClose}
+              className="absolute top-6 right-6 h-6 w-6"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
           <DialogDescription className="sr-only">
             {step === 'mode' ? 'Choose how to create your invoice' : `Create invoice via ${getModeTitle(selectedMode).toLowerCase()}`}
           </DialogDescription>
         </DialogHeader>
 
-        {step === 'mode' && (
-          <ModeSelector onSelect={handleModeSelect} />
-        )}
+        {/* Scrollable Content Region */}
+        <div className="min-h-0 flex-1 overflow-y-auto px-8 py-6">
+          {step === 'mode' && (
+            <ModeSelector onSelect={handleModeSelect} />
+          )}
 
-        {step === 'form' && selectedMode === 'ready_request' && (
-          <ReadyRequestForm onClose={handleClose} />
-        )}
+          {step === 'form' && selectedMode === 'ready_request' && (
+            <ReadyRequestForm onClose={handleSuccess} />
+          )}
 
-        {step === 'form' && selectedMode === 'upload_file' && (
-          <UploadFileForm onClose={handleClose} />
-        )}
+          {step === 'form' && selectedMode === 'upload_file' && (
+            <UploadFileForm onClose={handleSuccess} />
+          )}
 
-        {step === 'form' && selectedMode === 'manual_entry' && (
-          <ManualEntryForm onClose={handleClose} />
-        )}
+          {step === 'form' && selectedMode === 'manual_entry' && (
+            <ManualEntryForm onClose={handleSuccess} />
+          )}
+        </div>
+
+        {/* Fixed Footer */}
+        <div className="px-8 py-6 border-t bg-background flex justify-end gap-3">
+          <Button variant="ghost" onClick={handleClose}>
+            Cancel
+          </Button>
+          {step === 'form' && selectedMode === 'manual_entry' && (
+            <Button
+              type="submit"
+              form="manual-invoice-form"
+              disabled={false} // Will be handled by form validation
+            >
+              Create Invoice
+            </Button>
+          )}
+          {step === 'form' && selectedMode === 'ready_request' && (
+            <Button
+              form="ready-request-form"
+              disabled={false} // Will be handled by form validation
+            >
+              Create Invoice
+            </Button>
+          )}
+          {step === 'form' && selectedMode === 'upload_file' && (
+            <Button
+              form="upload-file-form"
+              disabled={false} // Will be handled by form validation
+            >
+              Create Invoice
+            </Button>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   );

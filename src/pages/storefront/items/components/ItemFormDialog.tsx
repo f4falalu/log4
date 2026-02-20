@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -8,7 +8,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,27 +19,30 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Skeleton } from '@/components/ui/skeleton';
 import type { Item, ItemCategory, ItemFormData, ItemProgram } from '@/types/items';
 import { ITEM_CATEGORIES, ITEM_PROGRAMS } from '@/types/items';
-import { useCreateItem, useUpdateItem } from '@/hooks/useItems';
+import { useCreateItem, useUpdateItem, useItemCategories } from '@/hooks/useItems';
 
 const itemSchema = z.object({
-  serial_number: z.string().min(1, 'Serial number is required'),
-  description: z.string().min(1, 'Description is required'),
-  unit_pack: z.string().min(1, 'Unit pack is required'),
-  category: z.enum(ITEM_CATEGORIES as [ItemCategory, ...ItemCategory[]]),
-  program: z.enum(ITEM_PROGRAMS as [ItemProgram, ...ItemProgram[]]).optional(),
+  product_code: z.string().min(1, 'Product Code is required'),
+  item_name: z.string().min(1, 'Item Name is required'),
+  unit_pack: z.string().min(1, 'Unit Pack is required'),
+  category: z.string().min(1, 'Category is required'), // Use string validation instead of enum
   weight_kg: z.coerce.number().optional(),
   volume_m3: z.coerce.number().optional(),
+  programs: z.array(z.enum(ITEM_PROGRAMS as [ItemProgram, ...ItemProgram[]])).optional(),
+  // Batch fields (optional)
   batch_number: z.string().optional(),
-  mfg_date: z.string().optional(),
   expiry_date: z.string().optional(),
-  store_address: z.string().optional(),
-  lot_number: z.string().optional(),
-  stock_on_hand: z.coerce.number().min(0, 'Stock cannot be negative'),
-  unit_price: z.coerce.number().min(0, 'Price cannot be negative'),
-  warehouse_id: z.string().optional(),
+  initial_quantity: z.coerce.number().optional(),
+  purchase_price: z.coerce.number().optional(),
+  // Legacy fields for backward compatibility
+  serial_number: z.string().optional(),
+  description: z.string().optional(),
+  storage_location: z.string().optional(),
 });
 
 type ItemFormValues = z.infer<typeof itemSchema>;
@@ -55,80 +57,99 @@ export function ItemFormDialog({ open, onOpenChange, item }: ItemFormDialogProps
   const createItem = useCreateItem();
   const updateItem = useUpdateItem();
   const isEditing = !!item;
+  
+  // Use static categories - simple and reliable
+  const availableCategories = ITEM_CATEGORIES;
+  const categoriesLoading = false;
+  const categoriesError = null;
+  
+  // Local state for controlled select to avoid re-render loops
+  const [selectedCategory, setSelectedCategory] = useState('Tablet');
 
   const form = useForm<ItemFormValues>({
     resolver: zodResolver(itemSchema),
     defaultValues: {
-      serial_number: '',
-      description: '',
+      product_code: '',
+      item_name: '',
       unit_pack: '',
-      category: 'Tablet',
-      program: undefined,
+      category: ITEM_CATEGORIES[0] || 'Tablet', // Use first available category
       weight_kg: undefined,
       volume_m3: undefined,
+      programs: [],
       batch_number: '',
-      mfg_date: '',
       expiry_date: '',
-      store_address: '',
-      lot_number: '',
-      stock_on_hand: 0,
-      unit_price: 0,
-      warehouse_id: '',
+      initial_quantity: undefined,
+      purchase_price: undefined,
+      // Legacy fields
+      serial_number: '',
+      description: '',
+      storage_location: '',
     },
   });
 
   useEffect(() => {
+    const defaultCategory = ITEM_CATEGORIES[0] || 'Tablet';
     if (item) {
-      form.reset({
-        serial_number: item.serial_number,
-        description: item.description,
+      const formValues = {
+        product_code: item.product_code || item.serial_number || '',
+        item_name: item.item_name || item.description || '',
         unit_pack: item.unit_pack || '',
         category: item.category,
-        program: item.program,
         weight_kg: item.weight_kg,
         volume_m3: item.volume_m3,
+        programs: item.program ? [item.program] : [],
         batch_number: item.batch_number || '',
-        mfg_date: item.mfg_date || '',
         expiry_date: item.expiry_date || '',
-        store_address: item.store_address || '',
-        lot_number: item.lot_number || '',
-        stock_on_hand: item.stock_on_hand,
-        unit_price: item.unit_price,
-        warehouse_id: item.warehouse_id || '',
-      });
+        initial_quantity: item.stock_on_hand,
+        purchase_price: item.unit_price,
+        // Legacy fields
+        serial_number: item.serial_number || '',
+        description: item.description || '',
+        storage_location: item.store_address || '',
+      };
+      form.reset(formValues);
+      setSelectedCategory(item.category || defaultCategory);
     } else {
-      form.reset({
-        serial_number: '',
-        description: '',
+      const formValues = {
+        product_code: '',
+        item_name: '',
         unit_pack: '',
-        category: 'Tablet',
-        program: undefined,
+        category: defaultCategory,
         weight_kg: undefined,
         volume_m3: undefined,
+        programs: [],
         batch_number: '',
-        mfg_date: '',
         expiry_date: '',
-        store_address: '',
-        lot_number: '',
-        stock_on_hand: 0,
-        unit_price: 0,
-        warehouse_id: '',
-      });
+        initial_quantity: undefined,
+        purchase_price: undefined,
+        // Legacy fields
+        serial_number: '',
+        description: '',
+        storage_location: '',
+      };
+      form.reset(formValues);
+      setSelectedCategory(defaultCategory);
     }
   }, [item, form]);
 
   const onSubmit = async (values: ItemFormValues) => {
+    // Map to existing ItemFormData for now
     const formData: ItemFormData = {
-      ...values,
-      program: values.program || undefined,
-      weight_kg: values.weight_kg || undefined,
-      volume_m3: values.volume_m3 || undefined,
-      batch_number: values.batch_number || undefined,
-      mfg_date: values.mfg_date || undefined,
-      expiry_date: values.expiry_date || undefined,
-      store_address: values.store_address || undefined,
-      lot_number: values.lot_number || undefined,
-      warehouse_id: values.warehouse_id || undefined,
+      product_code: values.product_code,
+      item_name: values.item_name,
+      unit_pack: values.unit_pack,
+      category: values.category,
+      program: values.programs?.[0], // Take first program for now
+      weight_kg: values.weight_kg,
+      volume_m3: values.volume_m3,
+      batch_number: values.batch_number,
+      expiry_date: values.expiry_date,
+      store_address: values.storage_location,
+      stock_on_hand: values.initial_quantity || 0,
+      unit_price: values.purchase_price || 0,
+      // Legacy fields
+      serial_number: values.serial_number || values.product_code,
+      description: values.description || values.item_name,
     };
 
     try {
@@ -147,89 +168,82 @@ export function ItemFormDialog({ open, onOpenChange, item }: ItemFormDialogProps
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader className="flex-shrink-0">
-          <DialogTitle>{isEditing ? 'Edit Item' : 'Add New Item'}</DialogTitle>
-          <DialogDescription className="sr-only">
-            {isEditing ? 'Update item details' : 'Fill in the details to add a new item'}
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent className="max-w-3xl max-h-[85vh] overflow-hidden rounded-xl shadow-lg flex flex-col">
+        {/* Sticky Header */}
+        <div className="sticky top-0 bg-background px-8 py-6 border-b">
+          <DialogHeader>
+            <DialogTitle>{isEditing ? 'Edit Item' : 'Add New Item'}</DialogTitle>
+            <DialogDescription>
+              Define master data for stock tracking and logistics planning.
+            </DialogDescription>
+          </DialogHeader>
+        </div>
 
-        <ScrollArea className="flex-1 max-h-[calc(90vh-140px)]">
-          <form id="item-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pr-4 pb-2">
-            {/* Basic Information */}
-            <div className="space-y-4">
-              <h3 className="text-sm font-semibold text-muted-foreground">Basic Information</h3>
-
-              <div className="grid grid-cols-2 gap-4">
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-y-auto px-8 py-8 space-y-10">
+          {/* SECTION 1: Product Identity */}
+          <div className="space-y-6">
+            <h3 className="text-lg font-semibold">Product Identity</h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Left Column */}
+              <div className="space-y-6">
                 <div className="space-y-2">
-                  <Label htmlFor="serial_number">Serial Number *</Label>
+                  <Label htmlFor="product_code">Product Code *</Label>
                   <Input
-                    id="serial_number"
-                    {...form.register('serial_number')}
-                    placeholder="e.g., SN-001"
+                    id="product_code"
+                    {...form.register('product_code')}
+                    placeholder="e.g., PAR-001"
+                    disabled={isEditing} // Cannot edit product code after creation
                   />
-                  {form.formState.errors.serial_number && (
+                  {form.formState.errors.product_code && (
                     <p className="text-xs text-destructive">
-                      {form.formState.errors.serial_number.message}
+                      {form.formState.errors.product_code.message}
                     </p>
                   )}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="category">Category *</Label>
-                  <Select
-                    value={form.watch('category')}
-                    onValueChange={(value) => form.setValue('category', value as ItemCategory)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {ITEM_CATEGORIES.map((category) => (
-                        <SelectItem key={category} value={category}>
-                          {category}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="item_name">Item Name *</Label>
+                  <Input
+                    id="item_name"
+                    {...form.register('item_name')}
+                    placeholder="Enter item name"
+                  />
+                  {form.formState.errors.item_name && (
+                    <p className="text-xs text-destructive">
+                      {form.formState.errors.item_name.message}
+                    </p>
+                  )}
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="program">Program</Label>
-                <Select
-                  value={form.watch('program') || ''}
-                  onValueChange={(value) => form.setValue('program', value as ItemProgram || undefined)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select program (optional)" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {ITEM_PROGRAMS.map((program) => (
-                      <SelectItem key={program} value={program}>
-                        {program}
-                      </SelectItem>
+              {/* Right Column */}
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="category">Category *</Label>
+                  <select 
+                    id="category"
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    value={selectedCategory}
+                    onChange={(e) => {
+                      setSelectedCategory(e.target.value);
+                      form.setValue('category', e.target.value, { shouldValidate: true });
+                    }}
+                  >
+                    {availableCategories.map((category) => (
+                      <option key={category} value={category}>
+                        {category}
+                      </option>
                     ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                  </select>
+                  {form.formState.errors.category && (
+                    <p className="text-xs text-destructive">
+                      {form.formState.errors.category.message}
+                    </p>
+                  )}
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="description">Description *</Label>
-                <Input
-                  id="description"
-                  {...form.register('description')}
-                  placeholder="Item description"
-                />
-                {form.formState.errors.description && (
-                  <p className="text-xs text-destructive">
-                    {form.formState.errors.description.message}
-                  </p>
-                )}
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="unit_pack">Unit Pack *</Label>
                   <Input
@@ -243,140 +257,141 @@ export function ItemFormDialog({ open, onOpenChange, item }: ItemFormDialogProps
                     </p>
                   )}
                 </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="store_address">Store Address</Label>
-                  <Input
-                    id="store_address"
-                    {...form.register('store_address')}
-                    placeholder="Storage location"
-                  />
-                </div>
               </div>
             </div>
+          </div>
 
-            {/* Measurements */}
-            <div className="space-y-4">
-              <h3 className="text-sm font-semibold text-muted-foreground">Measurements</h3>
+          {/* SECTION 2: Logistics Attributes */}
+          <div className="mt-10 border-t pt-8 space-y-6">
+            <h3 className="text-lg font-semibold">Logistics Attributes</h3>
+            <p className="text-sm text-muted-foreground">
+              Used for route capacity planning and fleet optimization.
+            </p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="weight_kg">Weight (kg)</Label>
+                <Input
+                  id="weight_kg"
+                  type="number"
+                  step="0.01"
+                  {...form.register('weight_kg')}
+                  placeholder="0.00"
+                />
+              </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="weight_kg">Weight (kg)</Label>
-                  <Input
-                    id="weight_kg"
-                    type="number"
-                    step="0.01"
-                    {...form.register('weight_kg')}
-                    placeholder="0.00"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="volume_m3">Volume (m³)</Label>
-                  <Input
-                    id="volume_m3"
-                    type="number"
-                    step="0.0001"
-                    {...form.register('volume_m3')}
-                    placeholder="0.0000"
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="volume_m3">Volume (m³)</Label>
+                <Input
+                  id="volume_m3"
+                  type="number"
+                  step="0.0001"
+                  {...form.register('volume_m3')}
+                  placeholder="0.0000"
+                />
               </div>
             </div>
+          </div>
 
-            {/* Batch Information */}
-            <div className="space-y-4">
-              <h3 className="text-sm font-semibold text-muted-foreground">Batch Information</h3>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="batch_number">Batch Number</Label>
-                  <Input
-                    id="batch_number"
-                    {...form.register('batch_number')}
-                    placeholder="e.g., BTH-2024-001"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="lot_number">Lot Number</Label>
-                  <Input
-                    id="lot_number"
-                    {...form.register('lot_number')}
-                    placeholder="e.g., LOT-001"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="mfg_date">Manufacturing Date</Label>
-                  <Input
-                    id="mfg_date"
-                    type="date"
-                    {...form.register('mfg_date')}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="expiry_date">Expiry Date</Label>
-                  <Input
-                    id="expiry_date"
-                    type="date"
-                    {...form.register('expiry_date')}
-                  />
-                </div>
+          {/* SECTION 3: Program Association (Optional) */}
+          <div className="mt-10 border-t pt-8 space-y-6">
+            <h3 className="text-lg font-semibold">Program Association (Optional)</h3>
+            <p className="text-sm text-muted-foreground">
+              If blank, this item is available across all programs.
+            </p>
+            
+            <div className="space-y-2">
+              <Label>Programs</Label>
+              <div className="flex flex-wrap gap-2">
+                {ITEM_PROGRAMS.map((program) => (
+                  <Button
+                    key={program}
+                    type="button"
+                    variant={form.watch('programs')?.includes(program) ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => {
+                      const currentPrograms = form.watch('programs') || [];
+                      if (currentPrograms.includes(program)) {
+                        form.setValue('programs', currentPrograms.filter(p => p !== program));
+                      } else {
+                        form.setValue('programs', [...currentPrograms, program]);
+                      }
+                    }}
+                  >
+                    {program}
+                  </Button>
+                ))}
               </div>
             </div>
+          </div>
 
-            {/* Stock & Pricing */}
-            <div className="space-y-4">
-              <h3 className="text-sm font-semibold text-muted-foreground">Stock & Pricing</h3>
+          {/* SECTION 4: Create Initial Batch (Optional) */}
+          <div className="mt-12">
+            <Accordion type="single" collapsible className="border-none">
+              <AccordionItem value="batch" className="border">
+                <AccordionTrigger className="px-0">
+                  Create Initial Batch (Optional)
+                </AccordionTrigger>
+                <AccordionContent className="space-y-4 pt-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="batch_number">Batch Number</Label>
+                      <Input
+                        id="batch_number"
+                        {...form.register('batch_number')}
+                        placeholder="e.g., BTH-2024-001"
+                      />
+                    </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="stock_on_hand">Stock on Hand *</Label>
-                  <Input
-                    id="stock_on_hand"
-                    type="number"
-                    {...form.register('stock_on_hand')}
-                    placeholder="0"
-                  />
-                  {form.formState.errors.stock_on_hand && (
-                    <p className="text-xs text-destructive">
-                      {form.formState.errors.stock_on_hand.message}
-                    </p>
-                  )}
-                </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="expiry_date">Expiry Date</Label>
+                      <Input
+                        id="expiry_date"
+                        type="date"
+                        {...form.register('expiry_date')}
+                      />
+                    </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="unit_price">Unit Price (NGN) *</Label>
-                  <Input
-                    id="unit_price"
-                    type="number"
-                    step="0.01"
-                    {...form.register('unit_price')}
-                    placeholder="0.00"
-                  />
-                  {form.formState.errors.unit_price && (
-                    <p className="text-xs text-destructive">
-                      {form.formState.errors.unit_price.message}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-          </form>
-        </ScrollArea>
+                    <div className="space-y-2">
+                      <Label htmlFor="initial_quantity">Initial Quantity</Label>
+                      <Input
+                        id="initial_quantity"
+                        type="number"
+                        {...form.register('initial_quantity')}
+                        placeholder="0"
+                      />
+                    </div>
 
-        <DialogFooter className="flex-shrink-0 border-t pt-4 mt-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="purchase_price">Purchase Price</Label>
+                      <Input
+                        id="purchase_price"
+                        type="number"
+                        step="0.01"
+                        {...form.register('purchase_price')}
+                        placeholder="0.00"
+                      />
+                    </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </div>
+        </div>
+
+        {/* Sticky Footer */}
+        <div className="sticky bottom-0 bg-background border-t px-8 py-4 flex justify-end gap-3">
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button type="submit" form="item-form" disabled={isPending}>
+          <Button 
+            type="submit" 
+            form="item-form" 
+            disabled={isPending || !form.watch('product_code') || !form.watch('item_name') || !form.watch('unit_pack')}
+          >
             {isPending ? 'Saving...' : isEditing ? 'Update Item' : 'Create Item'}
           </Button>
-        </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );

@@ -1,4 +1,4 @@
-const GEOAPIFY_API_KEY = import.meta.env.VITE_GEOAPIFY_API_KEY || '';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface GeoapifyPlace {
   formatted: string;
@@ -28,15 +28,18 @@ export interface GeoapifyRoute {
 }
 
 export async function searchAddress(query: string): Promise<GeoapifyPlace[]> {
-  if (GEOAPIFY_API_KEY) {
-    try {
-      const response = await fetch(
-        `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(query)}&apiKey=${GEOAPIFY_API_KEY}&limit=5`
-      );
+  try {
+    // Use secure Supabase edge function proxy
+    const { data, error } = await supabase.functions.invoke('geocode', {
+      body: {
+        type: 'search',
+        query
+      }
+    });
 
-      if (!response.ok) throw new Error('Failed to search address');
+    if (error) throw error;
 
-      const data = await response.json();
+    if (data && data.features && data.features.length > 0) {
       return data.features.map((feature: any) => ({
         formatted: feature.properties.formatted,
         lat: feature.properties.lat,
@@ -48,9 +51,9 @@ export async function searchAddress(query: string): Promise<GeoapifyPlace[]> {
         postcode: feature.properties.postcode,
         country: feature.properties.country
       }));
-    } catch (error) {
-      console.error('Geoapify search error:', error);
     }
+  } catch (error) {
+    console.error('Geoapify search error:', error);
   }
 
   // Fallback to Nominatim (OpenStreetMap) — no API key required
@@ -81,33 +84,34 @@ export async function searchAddress(query: string): Promise<GeoapifyPlace[]> {
 }
 
 export async function reverseGeocode(lat: number, lon: number): Promise<GeoapifyPlace | null> {
-  if (!GEOAPIFY_API_KEY) {
-    console.warn('Geoapify API key not configured');
-    return null;
-  }
-
   try {
-    const response = await fetch(
-      `https://api.geoapify.com/v1/geocode/reverse?lat=${lat}&lon=${lon}&apiKey=${GEOAPIFY_API_KEY}`
-    );
-    
-    if (!response.ok) throw new Error('Failed to reverse geocode');
-    
-    const data = await response.json();
-    if (data.features.length === 0) return null;
-    
-    const feature = data.features[0];
-    return {
-      formatted: feature.properties.formatted,
-      lat: feature.properties.lat,
-      lon: feature.properties.lon,
-      address_line1: feature.properties.address_line1 || '',
-      address_line2: feature.properties.address_line2,
-      city: feature.properties.city,
-      state: feature.properties.state,
-      postcode: feature.properties.postcode,
-      country: feature.properties.country
-    };
+    // Use secure Supabase edge function proxy
+    const { data, error } = await supabase.functions.invoke('geocode', {
+      body: {
+        type: 'reverse',
+        lat,
+        lon
+      }
+    });
+
+    if (error) throw error;
+
+    if (data && data.features && data.features.length > 0) {
+      const feature = data.features[0];
+      return {
+        formatted: feature.properties.formatted,
+        lat: feature.properties.lat,
+        lon: feature.properties.lon,
+        address_line1: feature.properties.address_line1 || '',
+        address_line2: feature.properties.address_line2,
+        city: feature.properties.city,
+        state: feature.properties.state,
+        postcode: feature.properties.postcode,
+        country: feature.properties.country
+      };
+    }
+
+    return null;
   } catch (error) {
     console.error('Geoapify reverse geocode error:', error);
     return null;
@@ -115,33 +119,35 @@ export async function reverseGeocode(lat: number, lon: number): Promise<Geoapify
 }
 
 export async function getRoute(waypoints: Array<[number, number]>): Promise<GeoapifyRoute | null> {
-  if (!GEOAPIFY_API_KEY) {
-    console.warn('Geoapify API key not configured');
-    return null;
-  }
-
   if (waypoints.length < 2) return null;
 
   try {
-    const waypointsParam = waypoints.map(([lat, lon]) => `${lon},${lat}`).join('|');
-    const response = await fetch(
-      `https://api.geoapify.com/v1/routing?waypoints=${waypointsParam}&mode=drive&apiKey=${GEOAPIFY_API_KEY}`
-    );
-    
-    if (!response.ok) throw new Error('Failed to get route');
-    
-    const data = await response.json();
-    if (!data.features || data.features.length === 0) return null;
-    
-    const feature = data.features[0];
-    const properties = feature.properties;
-    
-    return {
-      distance: properties.distance,
-      time: properties.time,
-      geometry: feature.geometry.coordinates[0].map((coord: number[]) => [coord[0], coord[1]]),
-      legs: properties.legs || []
-    };
+    // Convert waypoints from [lat, lon] to { lat, lon } format for edge function
+    const waypointsFormatted = waypoints.map(([lat, lon]) => ({ lat, lon }));
+
+    // Use secure Supabase edge function proxy
+    const { data, error } = await supabase.functions.invoke('routing', {
+      body: {
+        waypoints: waypointsFormatted,
+        mode: 'drive'
+      }
+    });
+
+    if (error) throw error;
+
+    if (data && data.features && data.features.length > 0) {
+      const feature = data.features[0];
+      const properties = feature.properties;
+
+      return {
+        distance: properties.distance,
+        time: properties.time,
+        geometry: feature.geometry.coordinates[0].map((coord: number[]) => [coord[0], coord[1]]),
+        legs: properties.legs || []
+      };
+    }
+
+    return null;
   } catch (error) {
     console.error('Geoapify routing error:', error);
     return null;
@@ -153,19 +159,21 @@ export async function getIsochrone(
   lon: number,
   timeMinutes: number
 ): Promise<any> {
-  if (!GEOAPIFY_API_KEY) {
-    console.warn('Geoapify API key not configured');
-    return null;
-  }
-
   try {
-    const response = await fetch(
-      `https://api.geoapify.com/v1/isoline?lat=${lat}&lon=${lon}&type=time&mode=drive&range=${timeMinutes * 60}&apiKey=${GEOAPIFY_API_KEY}`
-    );
-    
-    if (!response.ok) throw new Error('Failed to get isochrone');
-    
-    return await response.json();
+    // Use secure Supabase edge function proxy
+    const { data, error } = await supabase.functions.invoke('isoline', {
+      body: {
+        lat,
+        lon,
+        type: 'time',
+        mode: 'drive',
+        range: timeMinutes * 60 // Convert minutes to seconds
+      }
+    });
+
+    if (error) throw error;
+
+    return data;
   } catch (error) {
     console.error('Geoapify isochrone error:', error);
     return null;

@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { Item, ItemFilters, ItemFormData, ItemAnalytics, ItemShipmentHistory } from '@/types/items';
+import { ITEM_CATEGORIES } from '@/types/items';
 import { toast } from 'sonner';
 
 // ========================================
@@ -10,13 +11,17 @@ import { toast } from 'sonner';
 function mapDbToItem(dbItem: any): Item {
   return {
     id: dbItem.id,
-    serial_number: dbItem.serial_number,
-    description: dbItem.description,
+    product_code: dbItem.product_code || dbItem.serial_number || '',
+    item_name: dbItem.item_name || dbItem.description || '',
     unit_pack: dbItem.unit_pack || '',
     category: dbItem.category,
     program: dbItem.program || undefined,
     weight_kg: dbItem.weight_kg ? Number(dbItem.weight_kg) : undefined,
     volume_m3: dbItem.volume_m3 ? Number(dbItem.volume_m3) : undefined,
+    is_active: dbItem.is_active !== undefined ? dbItem.is_active : true,
+    // Legacy fields for backward compatibility
+    serial_number: dbItem.serial_number || undefined,
+    description: dbItem.description || undefined,
     batch_number: dbItem.batch_number || undefined,
     mfg_date: dbItem.mfg_date || undefined,
     expiry_date: dbItem.expiry_date || undefined,
@@ -39,13 +44,17 @@ function mapDbToItem(dbItem: any): Item {
 
 function mapItemToDb(item: ItemFormData) {
   return {
-    serial_number: item.serial_number,
-    description: item.description,
+    product_code: item.product_code,
+    item_name: item.item_name,
     unit_pack: item.unit_pack || null,
     category: item.category,
     program: item.program || null,
     weight_kg: item.weight_kg || null,
     volume_m3: item.volume_m3 || null,
+    is_active: item.is_active !== undefined ? item.is_active : true,
+    // Legacy fields for backward compatibility
+    serial_number: item.serial_number || item.product_code,
+    description: item.description || item.item_name,
     batch_number: item.batch_number || null,
     mfg_date: item.mfg_date || null,
     expiry_date: item.expiry_date || null,
@@ -325,10 +334,19 @@ export function useItemCategories() {
 
       if (error) throw error;
 
-      // Get unique categories
-      const categories = [...new Set((data || []).map(d => d.category))].filter(Boolean);
-      return categories;
+      // Get unique categories from existing items
+      const existingCategories = [...new Set((data || []).map(d => d.category))].filter(Boolean);
+      
+      // If no items exist, return the default categories from the constant
+      if (existingCategories.length === 0) {
+        return ITEM_CATEGORIES;
+      }
+      
+      return existingCategories;
     },
+    // Fallback to default categories if query fails
+    retry: 1,
+    retryDelay: 1000,
   });
 }
 

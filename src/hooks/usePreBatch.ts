@@ -135,19 +135,48 @@ export function usePreBatch(id: string | null, options: UsePreBatchOptions = {})
 
 export function useCreatePreBatch() {
   const queryClient = useQueryClient();
-  const { user, currentWorkspace } = useAuth();
+  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async (payload: Omit<CreatePreBatchPayload, 'workspace_id' | 'created_by'>) => {
-      if (!currentWorkspace?.id) {
-        throw new Error('No workspace selected');
+      // Get the user's workspace (from workspace_members)
+      // The RLS policy requires the user to be a member of the workspace
+      const { data: membership, error: membershipError } = await supabase
+        .from('workspace_members')
+        .select('workspace_id')
+        .eq('user_id', user?.id)
+        .limit(1)
+        .single();
+
+      if (membershipError || !membership) {
+        console.error('Failed to fetch workspace membership:', membershipError);
+        throw new Error('You are not a member of any workspace. Please contact your administrator.');
+      }
+
+      const workspaceId = membership.workspace_id;
+
+      // Normalize UUIDs to ensure we send SQL NULL, not the string "null"
+      const normalizeUUID = (value: string | null | undefined): string | null => {
+        if (!value || value === 'null' || value === 'undefined') return null;
+        return value;
+      };
+
+      const normalizedPayload = {
+        ...payload,
+        start_location_id: normalizeUUID(payload.start_location_id) || '',
+        suggested_vehicle_id: normalizeUUID(payload.suggested_vehicle_id),
+      };
+
+      // Validate required fields
+      if (!normalizedPayload.start_location_id) {
+        throw new Error('Start location is required');
       }
 
       const { data, error } = await supabase
         .from('scheduler_pre_batches')
         .insert({
-          ...payload,
-          workspace_id: currentWorkspace.id,
+          ...normalizedPayload,
+          workspace_id: workspaceId,
           created_by: user?.id || null,
         })
         .select()
@@ -317,23 +346,48 @@ export function useConvertPreBatchToBatch() {
       if (!preBatch) throw new Error('Pre-batch not found');
 
       // 2. Create the delivery batch
+      // Normalize UUIDs to ensure we send SQL NULL, not the string "null"
+      const normalizeUUID = (value: string | null | undefined): string | null => {
+        if (!value || value === 'null' || value === 'undefined') return null;
+        return value;
+      };
+
+      const driverId = normalizeUUID(payload.driverId);
+      const vehicleId = normalizeUUID(payload.vehicleId);
+      const warehouseId = normalizeUUID(preBatch.start_location_id);
+      const preBatchId = normalizeUUID(payload.preBatchId);
+
+      // Validate required UUIDs
+      if (!vehicleId) {
+        throw new Error('Vehicle ID is required');
+      }
+      if (!warehouseId) {
+        throw new Error('Warehouse ID is required');
+      }
+      if (!preBatchId) {
+        throw new Error('Pre-batch ID is required');
+      }
+
       const { data: batch, error: createError } = await supabase
         .from('delivery_batches')
         .insert({
           name: payload.batchName,
-          warehouse_id: preBatch.start_location_id,
+          warehouse_id: warehouseId,
           facility_ids: preBatch.facility_order,
           scheduled_date: preBatch.planned_date,
           scheduled_time: getTimeFromWindow(preBatch.time_window),
-          vehicle_id: payload.vehicleId,
-          driver_id: payload.driverId || null,
-          status: payload.driverId ? 'assigned' : 'planned',
+          vehicle_id: vehicleId,
+          driver_id: driverId,
+          status: driverId ? 'assigned' : 'planned',
           priority: payload.priority,
-          pre_batch_id: payload.preBatchId,
+          pre_batch_id: preBatchId,
           slot_assignments: payload.slotAssignments,
-          optimized_route: payload.optimizedRoute || null,
-          total_distance: payload.totalDistanceKm || null,
-          estimated_duration: payload.estimatedDurationMin || null,
+          // NOT NULL fields - provide defaults if missing
+          optimized_route: payload.optimizedRoute || [],
+          total_distance: payload.totalDistanceKm || 0,
+          estimated_duration: payload.estimatedDurationMin || 0,
+          medication_type: 'Mixed', // Default medication type
+          total_quantity: preBatch.facility_order.length || 1, // Number of facilities as proxy
           notes: payload.notes || preBatch.notes || null,
         })
         .select()

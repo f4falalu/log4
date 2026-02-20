@@ -2,14 +2,28 @@
   command = "npm run build"
   publish = "dist"
 
-[context.production]
-  branch = "production"
-
 [context.main]
   branch = "main"
   publish = "dist"
 
+# SPA fallback - route all requests to index.html for client-side routing
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
+
+# Security headers
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    X-XSS-Protection = "1; mode=block"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "geolocation=(self), camera=(self), microphone=()"
+
+# Cache static assets
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"

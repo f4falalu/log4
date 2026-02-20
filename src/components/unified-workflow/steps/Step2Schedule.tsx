@@ -152,6 +152,7 @@ export function Step2Schedule({
             <DecisionSupportColumn
               workingSet={workingSet}
               startLocation={startLocation}
+              facilities={candidates}
               sourceSubOption={sourceSubOption}
               aiOptions={aiOptions}
               onAiOptionsChange={onAiOptionsChange}

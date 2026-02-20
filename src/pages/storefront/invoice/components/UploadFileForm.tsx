@@ -1,4 +1,5 @@
-import { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Upload, FileText, Check, AlertTriangle, ChevronLeft, ArrowRight, Download, FileSpreadsheet, Trash2 } from 'lucide-react';
 import Papa from 'papaparse';
 import ExcelJS from 'exceljs';
@@ -120,8 +121,16 @@ export function UploadFileForm({ onClose }: UploadFileFormProps) {
   const [warehouseId, setWarehouseId] = useState('');
   const [facilityId, setFacilityId] = useState('');
 
-  const { data: warehousesData } = useWarehouses();
-  const { data: facilitiesData } = useFacilities();
+  const queryClient = useQueryClient();
+
+  // Invalidate queries on mount to ensure fresh data
+  useEffect(() => {
+    queryClient.invalidateQueries({ queryKey: ['facilities'] });
+    queryClient.invalidateQueries({ queryKey: ['warehouses'] });
+  }, [queryClient]);
+
+  const { data: warehousesData, isLoading: warehousesLoading } = useWarehouses();
+  const { data: facilitiesData, isLoading: facilitiesLoading } = useFacilities();
   const createInvoice = useCreateInvoice();
 
   const warehouses = warehousesData?.warehouses || [];
@@ -465,7 +474,7 @@ export function UploadFileForm({ onClose }: UploadFileFormProps) {
                                   : 'Select column...'}
                               </SelectValue>
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="z-[9999]">
                               <SelectItem value="__none__">-- Not mapped --</SelectItem>
                               {headers.map((header, index) => (
                                 <SelectItem key={`col-${index}`} value={String(index)}>
@@ -562,7 +571,7 @@ export function UploadFileForm({ onClose }: UploadFileFormProps) {
                   <SelectTrigger className="h-9">
                     <SelectValue placeholder="Select warehouse..." />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="z-[9999]">
                     {warehouses.map(wh => (
                       <SelectItem key={wh.id} value={wh.id}>
                         {wh.name} {wh.code ? `(${wh.code})` : ''}
@@ -577,7 +586,7 @@ export function UploadFileForm({ onClose }: UploadFileFormProps) {
                   <SelectTrigger className="h-9">
                     <SelectValue placeholder="Select facility..." />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="z-[9999]">
                     {facilities.map(f => (
                       <SelectItem key={f.id} value={f.id}>
                         {f.name}

@@ -25,13 +25,74 @@ import type {
   ParsedFacility,
 } from '@/types/unified-workflow';
 import type { TimeWindow, Priority, RoutePoint } from '@/types/scheduler';
+import { calculateDistance, calculateRouteDistance } from '@/lib/routeOptimization';
+
+// =====================================================
+// HELPER FUNCTIONS
+// =====================================================
+
+/**
+ * Nearest neighbor algorithm for route optimization
+ * Greedily selects the closest unvisited facility at each step
+ */
+function optimizeNearestNeighbor(
+  facilities: Array<{ id: string; name: string; lat: number; lng: number; sequence: number }>,
+  startLocation?: { lat?: number; lng?: number } | null
+): Array<{ id: string; name: string; lat: number; lng: number; sequence: number }> {
+  if (facilities.length === 0) return [];
+  if (facilities.length === 1) return facilities;
+
+  const unvisited = [...facilities];
+  const optimized: typeof facilities = [];
+
+  // Starting point
+  let current: { lat: number; lng: number } = startLocation?.lat && startLocation?.lng
+    ? { lat: startLocation.lat, lng: startLocation.lng }
+    : { lat: facilities[0].lat, lng: facilities[0].lng };
+
+  // If we don't have a start location, use the first facility and remove it from unvisited
+  if (!startLocation?.lat || !startLocation?.lng) {
+    optimized.push(unvisited.shift()!);
+    current = optimized[0];
+  }
+
+  // Nearest neighbor algorithm
+  while (unvisited.length > 0) {
+    let nearestIndex = 0;
+    let minDistance = calculateDistance(
+      current.lat,
+      current.lng,
+      unvisited[0].lat,
+      unvisited[0].lng
+    );
+
+    for (let i = 1; i < unvisited.length; i++) {
+      const distance = calculateDistance(
+        current.lat,
+        current.lng,
+        unvisited[i].lat,
+        unvisited[i].lng
+      );
+      if (distance < minDistance) {
+        minDistance = distance;
+        nearestIndex = i;
+      }
+    }
+
+    const nearest = unvisited.splice(nearestIndex, 1)[0];
+    optimized.push(nearest);
+    current = nearest;
+  }
+
+  return optimized;
+}
 
 // =====================================================
 // INITIAL STATE
 // =====================================================
 
 const initialAiOptions: AiOptimizationOptions = {
-  shortest_distance: false,
+  shortest_distance: true, // Enable by default for optimal route
   fastest_route: false,
   efficiency: false,
   priority_complex: false,
@@ -463,27 +524,106 @@ export const useUnifiedWorkflowStore = create<UnifiedWorkflowStore>()(
         // STEP 4: ROUTE OPTIMIZATION
         // =====================================================
 
-        optimizeRoute: async (): Promise<void> => {
+        optimizeRoute: async (
+          facilitiesWithCoords: Array<{ id: string; lat?: number; lng?: number }> = [],
+          startLocation?: { lat?: number; lng?: number } | null
+        ): Promise<void> => {
           set({ is_loading: true, error: null }, false, 'unified/optimizeRoute/start');
 
-          // This will be implemented with the actual route optimizer
-          // For now, create a simple route from working set
+          const { working_set, ai_optimization_options } = get();
 
-          const { working_set, start_location_id } = get();
+          // Create facility lookup map
+          const facilityMap = new Map(facilitiesWithCoords.map((f) => [f.id, f]));
 
-          // Placeholder route - actual implementation will use OSRM/route optimizer
-          const route: RoutePoint[] = working_set.map((ws, idx) => ({
-            lat: 0, // Will be populated from facility data
-            lng: 0,
-            facility_id: ws.facility_id,
+          // Build list of facilities with coordinates
+          const facilitiesWithValidCoords = working_set
+            .map((ws) => {
+              const coords = facilityMap.get(ws.facility_id);
+              return coords?.lat && coords?.lng
+                ? {
+                    id: ws.facility_id,
+                    name: ws.facility_name,
+                    lat: coords.lat,
+                    lng: coords.lng,
+                    sequence: ws.sequence,
+                  }
+                : null;
+            })
+            .filter((f): f is NonNullable<typeof f> => f !== null);
+
+          if (facilitiesWithValidCoords.length === 0) {
+            set(
+              {
+                error: 'No facilities with valid coordinates found',
+                is_loading: false,
+              },
+              false,
+              'unified/optimizeRoute/error'
+            );
+            return;
+          }
+
+          // Apply optimization based on selected options
+          let optimizedFacilities = [...facilitiesWithValidCoords];
+
+          if (ai_optimization_options.shortest_distance) {
+            // Use nearest neighbor algorithm for shortest distance
+            optimizedFacilities = optimizeNearestNeighbor(
+              facilitiesWithValidCoords,
+              startLocation
+            );
+          } else if (ai_optimization_options.fastest_route) {
+            // For fastest route, prioritize highways/main roads (simplified: use shortest distance)
+            optimizedFacilities = optimizeNearestNeighbor(
+              facilitiesWithValidCoords,
+              startLocation
+            );
+          } else if (ai_optimization_options.priority_complex) {
+            // Keep original order (assumes facilities are already ordered by priority)
+            optimizedFacilities = facilitiesWithValidCoords;
+          } else {
+            // Default: use current working set order
+            optimizedFacilities = facilitiesWithValidCoords.sort((a, b) => a.sequence - b.sequence);
+          }
+
+          // Build route points
+          const route: RoutePoint[] = optimizedFacilities.map((f, idx) => ({
+            lat: f.lat,
+            lng: f.lng,
+            facility_id: f.id,
             sequence: idx + 1,
           }));
+
+          // Calculate total distance
+          let totalDistance = 0;
+          const routeCoordinates: [number, number][] = [];
+
+          // Start from warehouse if available
+          if (startLocation?.lat && startLocation?.lng) {
+            routeCoordinates.push([startLocation.lat, startLocation.lng]);
+          }
+
+          // Add all facility coordinates
+          optimizedFacilities.forEach((f) => {
+            routeCoordinates.push([f.lat, f.lng]);
+          });
+
+          // Calculate distance between consecutive points
+          if (routeCoordinates.length >= 2) {
+            totalDistance = calculateRouteDistance(routeCoordinates);
+          }
+
+          // Estimate duration (40 km/h average + 20 min per stop)
+          const travelTimeMin = (totalDistance / 40) * 60;
+          const serviceTimeMin = optimizedFacilities.length * 20;
+          const loadingTimeMin = 15;
+          const estimatedDuration = Math.round(travelTimeMin + serviceTimeMin + loadingTimeMin);
 
           set(
             {
               optimized_route: route,
-              total_distance_km: 0, // Will be calculated
-              estimated_duration_min: 0, // Will be calculated
+              total_distance_km: Math.round(totalDistance * 100) / 100,
+              estimated_duration_min: estimatedDuration,
               is_loading: false,
             },
             false,

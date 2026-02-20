@@ -31,6 +31,8 @@ export interface FacilityCandidate {
   code?: string;
   lga?: string;
   zone?: string;
+  lat?: number;
+  lng?: number;
   requisition_ids: string[];
   slot_demand: number;
   weight_kg?: number;

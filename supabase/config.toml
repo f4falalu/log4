@@ -1,5 +1,8 @@
 project_id = "cenugzabuzglswikoewy"
 
+[functions.send-email-login-otp]
+verify_jwt = false
+
 [functions.calculate-payload]
 verify_jwt = true
 

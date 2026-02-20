@@ -123,7 +123,7 @@ function optimizeRouteOrder(warehouse: Warehouse, facilities: Facility[]): [numb
 }
 
 // Calculate total distance for a route
-function calculateRouteDistance(route: [number, number][]): number {
+export function calculateRouteDistance(route: [number, number][]): number {
   let totalDistance = 0;
   for (let i = 1; i < route.length; i++) {
     totalDistance += calculateDistance(
@@ -163,7 +163,7 @@ export async function optimizeBatchDeliveryWithAPI(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`
       },
       body: JSON.stringify({
         waypoints,

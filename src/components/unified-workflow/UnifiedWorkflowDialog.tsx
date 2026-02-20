@@ -120,6 +120,8 @@ export function UnifiedWorkflowDialog({
       code: f.warehouse_code,
       lga: f.lga,
       zone: f.service_zone,
+      lat: f.lat,
+      lng: f.lng,
       requisition_ids: [],
       slot_demand: 1,
       weight_kg: 0,
@@ -241,8 +243,32 @@ export function UnifiedWorkflowDialog({
   // Handle final confirm (Step 5) (memoized to prevent infinite loops)
   const handleConfirm = React.useCallback(async () => {
     try {
+      // Ensure a pre-batch exists (create one if the user skipped "Save Draft")
+      let preBatchId = storePreBatchId;
+
+      if (!preBatchId) {
+        const newPreBatch = await createPreBatch.mutateAsync({
+          source_method: sourceMethod!,
+          source_sub_option: sourceSubOption,
+          schedule_title: scheduleTitle!,
+          start_location_id: startLocationId!,
+          start_location_type: startLocationType,
+          planned_date: plannedDate!,
+          time_window: timeWindow,
+          facility_order: workingSet.map((w) => w.facility_id),
+          facility_requisition_map: workingSet.reduce(
+            (acc, w) => ({ ...acc, [w.facility_id]: w.requisition_ids }),
+            {}
+          ),
+          ai_optimization_options: sourceSubOption === 'ai_optimization' ? aiOptions : null,
+          suggested_vehicle_id: suggestedVehicleId,
+          notes: scheduleNotes,
+        });
+        preBatchId = newPreBatch.id;
+      }
+
       await convertToBatch.mutateAsync({
-        preBatchId: storePreBatchId!,
+        preBatchId: preBatchId,
         batchName: batchName!,
         vehicleId: vehicleId!,
         driverId: driverId,
@@ -260,7 +286,18 @@ export function UnifiedWorkflowDialog({
     }
   }, [
     convertToBatch,
+    createPreBatch,
     storePreBatchId,
+    sourceMethod,
+    sourceSubOption,
+    scheduleTitle,
+    startLocationId,
+    startLocationType,
+    plannedDate,
+    timeWindow,
+    workingSet,
+    aiOptions,
+    suggestedVehicleId,
     batchName,
     vehicleId,
     driverId,
@@ -273,6 +310,12 @@ export function UnifiedWorkflowDialog({
     actions,
     onOpenChange,
   ]);
+
+  // Handle route optimization (Step 4) (memoized to prevent infinite loops)
+  const handleOptimizeRoute = React.useCallback(async () => {
+    const startLocation = warehouses.find(w => w.id === startLocationId) || null;
+    await actions.optimizeRoute(facilityCandidates, startLocation);
+  }, [actions, facilityCandidates, warehouses, startLocationId]);
 
   // Render step content (memoized to prevent infinite loops)
   const renderStepContent = React.useMemo(() => {
@@ -343,15 +386,20 @@ export function UnifiedWorkflowDialog({
         );
 
       case 4:
+        const startLocation = warehouses.find(w => w.id === startLocationId) || null;
         return (
           <Step4Route
             facilities={workingSet}
+            facilitiesWithCoords={facilityCandidates}
+            startLocation={startLocation}
             startLocationName={startLocationName}
             optimizedRoute={optimizedRoute}
             totalDistanceKm={totalDistanceKm}
             estimatedDurationMin={estimatedDurationMin}
             isOptimizing={isLoading}
-            onOptimize={actions.optimizeRoute}
+            optimizationOptions={aiOptions}
+            onOptimizationOptionsChange={actions.setAiOptimizationOptions}
+            onOptimize={handleOptimizeRoute}
           />
         );
 
@@ -411,6 +459,7 @@ export function UnifiedWorkflowDialog({
     selectedDriver,
     scheduleNotes,
     actions,
+    handleOptimizeRoute,
   ]);
 
   // Progress percentage
