@@ -1032,6 +1032,36 @@ export type Database = {
         }
         Relationships: []
       }
+      email_login_otps: {
+        Row: {
+          code: string
+          created_at: string | null
+          email: string
+          expires_at: string
+          id: string
+          used: boolean | null
+          used_at: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          email: string
+          expires_at: string
+          id?: string
+          used?: boolean | null
+          used_at?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          email?: string
+          expires_at?: string
+          id?: string
+          used?: boolean | null
+          used_at?: string | null
+        }
+        Relationships: []
+      }
       facilities: {
         Row: {
           address: string
@@ -3578,29 +3608,7 @@ export type Database = {
           warehouse_id?: string
           zone_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "routes_service_area_id_fkey"
-            columns: ["service_area_id"]
-            isOneToOne: false
-            referencedRelation: "service_areas"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "routes_warehouse_id_fkey"
-            columns: ["warehouse_id"]
-            isOneToOne: false
-            referencedRelation: "warehouses"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "routes_zone_id_fkey"
-            columns: ["zone_id"]
-            isOneToOne: false
-            referencedRelation: "zones"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       schedule_templates: {
         Row: {
@@ -8827,6 +8835,7 @@ export type Database = {
         Args: { p_workspace_id: string }
         Returns: boolean
       }
+      cleanup_expired_email_otps: { Args: never; Returns: number }
       complete_dispatch: { Args: { p_batch_id: string }; Returns: boolean }
       complete_driver_activation: {
         Args: {
@@ -8926,6 +8935,7 @@ export type Database = {
           similarity: number
         }[]
       }
+      generate_email_login_otp: { Args: { p_email: string }; Returns: Json }
       generate_mod4_otp: {
         Args: { p_email: string; p_workspace_id: string }
         Returns: string
@@ -10297,6 +10307,10 @@ export type Database = {
           vendor_roles: Database["public"]["Enums"]["vendor_role"][]
         }
         Returns: boolean
+      }
+      verify_email_login_otp: {
+        Args: { p_code: string; p_email: string }
+        Returns: Json
       }
       verify_mod4_otp: {
         Args: { p_email: string; p_otp: string }
