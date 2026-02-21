@@ -26,6 +26,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { useFacilities, useDeleteFacility, useBulkDeleteFacilities } from '@/hooks/useFacilities';
 import { useOperationalZones } from '@/hooks/useOperationalZones';
+import { usePrograms } from '@/hooks/usePrograms';
 import { FacilityFilters } from '@/lib/facility-validation';
 import { Facility } from '@/types';
 import { FacilitiesTable } from './components/FacilitiesTable';
@@ -88,6 +89,10 @@ export default function StorefrontFacilities() {
 
   // Zones for dynamic filter
   const { zones } = useOperationalZones();
+  
+  // Programs for dynamic filter
+  const { data: programsData } = usePrograms();
+  const programs = programsData?.programs || [];
 
   // Choose filters based on view mode
   const activeFilters = viewMode === 'map' ? mapFilters : { ...filters, search: searchTerm };
@@ -651,10 +656,11 @@ export default function StorefrontFacilities() {
                 <SelectValue placeholder="Programme" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Family Planning">Family Planning</SelectItem>
-                <SelectItem value="DRF">DRF</SelectItem>
-                <SelectItem value="HIV/AIDS">HIV/AIDS</SelectItem>
-                <SelectItem value="Malaria">Malaria</SelectItem>
+                {programs.map((program) => (
+                  <SelectItem key={program.id} value={program.name}>
+                    {program.name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
 
