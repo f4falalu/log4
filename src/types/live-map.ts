@@ -268,3 +268,143 @@ export interface RouteLineProperties {
   progress: number;
   status: DriverStatus;
 }
+
+// ============================================================================
+// PLAYBACK ENGINE TYPES - Production-grade time-synchronized playback
+// ============================================================================
+
+// Normalized trip data structure for playback engine
+export interface NormalizedTrip {
+  id: string;
+  batchId: string;
+  startTime: number; // Unix timestamp (ms)
+  endTime: number; // Unix timestamp (ms)
+  gps: IndexedPosition[];
+  events: IndexedEvent[];
+  stops: EnhancedStop[];
+  plannedRoute: Polyline | null;
+  analytics: TripAnalytics;
+
+  // Precomputed for O(1) lookups during playback
+  cumulativeDistances: number[]; // Cumulative distance at each GPS point
+  eventStartMap: Map<number, IndexedEvent[]>; // Events starting at timestamp
+  eventEndMap: Map<number, IndexedEvent[]>; // Events ending at timestamp
+}
+
+// Time-indexed GPS position (sorted by timestamp)
+export interface IndexedPosition {
+  timestamp: number; // Unix timestamp (ms)
+  lat: number;
+  lng: number;
+  heading: number; // degrees (0-360)
+  speed: number; // m/s
+  accuracy: number; // meters
+}
+
+// Interpolated position between two GPS points
+export interface InterpolatedPosition {
+  lat: number;
+  lng: number;
+  heading: number;
+  speed: number;
+  timestamp: number;
+  index: number; // Index of previous GPS point
+  ratio: number; // Interpolation ratio (0-1)
+}
+
+// Time-windowed event for playback
+export interface IndexedEvent {
+  id: string;
+  type: 'delay' | 'arrival' | 'departure' | 'deviation' | 'proof';
+  startTime: number; // Unix timestamp (ms)
+  endTime?: number; // Unix timestamp (ms) - undefined means instant event
+  location: [number, number]; // [lng, lat]
+  metadata: {
+    stopId?: string;
+    facilityName?: string;
+    reason?: string;
+    duration?: number; // seconds
+    severity?: 'low' | 'medium' | 'high';
+  };
+}
+
+// Enhanced stop with additional playback metadata
+export interface EnhancedStop extends StopAnalytics {
+  location: [number, number]; // [lng, lat]
+  plannedArrival?: Date;
+  actualArrival: Date;
+  dwellTime: number; // seconds
+  status: 'completed' | 'missed' | 'delayed';
+  variance?: number; // seconds difference from planned
+}
+
+// Route variance analytics
+export interface RouteVariance {
+  plannedDistance: number; // meters
+  actualDistance: number; // meters
+  variance: number; // meters (actual - planned)
+  variancePercent: number; // percentage
+}
+
+// Delay breakdown by category
+export interface DelayBreakdown {
+  traffic: number; // seconds
+  roadworks: number; // seconds
+  weather: number; // seconds
+  mechanical: number; // seconds
+  other: number; // seconds
+  total: number; // seconds
+}
+
+// Polyline type (GeoJSON LineString coordinates)
+export type Polyline = [number, number][]; // Array of [lng, lat] points
+
+// Deviation segment (where actual route deviates from planned)
+export interface DeviationSegment {
+  id: string;
+  startIndex: number; // Index in GPS array
+  endIndex: number; // Index in GPS array
+  startTime: number; // Unix timestamp (ms)
+  endTime: number; // Unix timestamp (ms)
+  coordinates: Polyline; // Actual route coordinates
+  plannedCoordinates: Polyline; // Planned route coordinates
+  maxDeviation: number; // Maximum distance from planned route (meters)
+  totalDeviation: number; // Total cumulative deviation (meters)
+}
+
+// Speed zone analytics
+export interface SpeedZone {
+  id: string;
+  name: string;
+  startIndex: number;
+  endIndex: number;
+  avgSpeed: number; // km/h
+  maxSpeed: number; // km/h
+  minSpeed: number; // km/h
+  duration: number; // seconds
+  distance: number; // meters
+}
+
+// Dwell time bucket for histogram
+export interface DwellTimeBucket {
+  label: string; // e.g., "0-10min"
+  min: number; // seconds
+  max: number; // seconds
+  count: number; // number of stops in this bucket
+  stops: string[]; // stop IDs
+}
+
+// Stop compliance status
+export type StopComplianceStatus = 'on-time' | 'delayed' | 'missed' | 'excessive-dwell';
+
+// Stop compliance entry for table
+export interface StopCompliance {
+  stopId: string;
+  facilityName: string;
+  status: StopComplianceStatus;
+  plannedArrival: Date | null;
+  actualArrival: Date;
+  plannedDwell: number | null; // seconds
+  actualDwell: number; // seconds
+  variance: number | null; // seconds
+}

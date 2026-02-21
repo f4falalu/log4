@@ -1,205 +1,123 @@
 /**
- * Playback Map Page - Historical replay with analytics
+ * Playback Map Page - Production-grade historical replay
+ *
+ * Architecture:
+ * - Time-synchronized playback engine
+ * - RAF-based animation loop
+ * - Deterministic state (everything derives from currentTime)
+ * - Real-time analytics
  */
 
-import { useState, useCallback, useMemo } from 'react';
-import { Calendar, ChevronDown } from 'lucide-react';
-import { PlaybackMapView } from '../components/PlaybackMapView';
-import { TimelineControls } from '../components/TimelineControls';
-import { PlaybackAnalytics } from '../components/PlaybackAnalytics';
-import { usePlaybackData, usePlaybackBatches } from '@/hooks/usePlaybackData';
-import { useLiveMapStore } from '@/stores/liveMapStore';
-import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { useState, useEffect } from 'react';
+import { TopContextBar } from './components/TopContextBar';
+import { LeftPanel } from './components/LeftPanel';
+import { PlaybackMap } from './components/PlaybackMap';
+import { PlaybackDock } from './components/PlaybackDock';
+import { usePlaybackStore } from '@/stores/playbackStore';
+import { usePlaybackEngine } from '@/hooks/usePlaybackEngine';
+import { Loader2 } from 'lucide-react';
 
 export default function PlaybackMapPage() {
   const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
+  const [filterDate, setFilterDate] = useState<Date | null>(null);
 
-  const playback = useLiveMapStore((s) => s.playback);
-  const setPlaybackTimeRange = useLiveMapStore((s) => s.setPlaybackTimeRange);
-  const setPlaybackActive = useLiveMapStore((s) => s.setPlaybackActive);
+  const selectBatch = usePlaybackStore((state) => state.selectBatch);
+  const reset = usePlaybackStore((state) => state.reset);
 
-  // Fetch available batches for selection
-  const { data: batches, isLoading: batchesLoading } = usePlaybackBatches();
-
-  // Fetch playback data for selected batch
-  const {
-    events,
-    analytics,
-    stopAnalytics,
-    timeRange,
-    getPositionAtTime,
-    getEventAtTime,
-    isLoading: dataLoading,
-  } = usePlaybackData({
-    batchId: selectedBatchId || undefined,
+  // Initialize playback engine (fetches + normalizes data)
+  const { isLoading, isError } = usePlaybackEngine({
+    batchId: selectedBatchId,
     enabled: !!selectedBatchId,
   });
 
-  // Set time range when data loads
-  useMemo(() => {
-    if (timeRange && selectedBatchId) {
-      setPlaybackTimeRange(timeRange.start, timeRange.end);
-      setPlaybackActive(true);
-    }
-  }, [timeRange, selectedBatchId, setPlaybackTimeRange, setPlaybackActive]);
-
-  // Current position based on playback time
-  const currentPosition = useMemo(() => {
-    if (!playback.currentTime) return null;
-    return getPositionAtTime(playback.currentTime);
-  }, [playback.currentTime, getPositionAtTime]);
-
-  // Current event/status based on playback time
-  const currentEvent = useMemo(() => {
-    if (!playback.currentTime) return null;
-    return getEventAtTime(playback.currentTime);
-  }, [playback.currentTime, getEventAtTime]);
-
-  // Build facilities list from stop analytics
-  const facilities = useMemo(() => {
-    return stopAnalytics.map((stop) => ({
-      id: stop.facilityId,
-      name: stop.facilityName,
-      position: [0, 0] as [number, number], // Would need actual positions
-    }));
-  }, [stopAnalytics]);
-
   // Handle batch selection
-  const handleSelectBatch = useCallback(
-    (batchId: string) => {
-      setSelectedBatchId(batchId);
-    },
-    []
-  );
-
-  // Handle timeline time change
-  const handleTimeChange = useCallback((time: Date) => {
-    // Time changes are handled via the store
-  }, []);
-
-  // Format date for display
-  const formatDate = (date: Date | null) => {
-    if (!date) return 'N/A';
-    return new Intl.DateTimeFormat('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: 'numeric',
-    }).format(date);
+  const handleSelectBatch = (id: string) => {
+    console.log('[PlaybackPage] Batch selected:', id);
+    setSelectedBatchId(id);
+    selectBatch(id);
+    // Clear date filter when batch is selected
+    setFilterDate(null);
   };
 
-  // Get selected batch info
-  const selectedBatch = batches?.find((b) => b.id === selectedBatchId);
+  // Handle date filter from calendar
+  const handleDateFilter = (date: Date | null) => {
+    console.log('[PlaybackPage] Date filter:', date);
+    setFilterDate(date);
+    // Clear selected batch when filtering by date
+    // (batches will be filtered in TopContextBar)
+    if (date && selectedBatchId) {
+      setSelectedBatchId(null);
+      selectBatch(null);
+    }
+  };
+
+  // Debug logging
+  console.log('[PlaybackPage] Render state:', {
+    selectedBatchId,
+    isLoading,
+    isError,
+  });
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      reset();
+    };
+  }, [reset]);
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Header with batch selector */}
-      <div className="border-b bg-background/95 px-4 py-3 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-4">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="min-w-[250px] justify-between">
-                {selectedBatch ? (
-                  <span className="truncate">
-                    {selectedBatch.name}
-                    {selectedBatch.driverName && ` - ${selectedBatch.driverName}`}
-                  </span>
-                ) : (
-                  <span className="text-muted-foreground">Select a batch...</span>
-                )}
-                <ChevronDown className="h-4 w-4 ml-2 shrink-0" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-[300px]">
-              {batchesLoading ? (
-                <div className="p-2 text-sm text-muted-foreground">
-                  Loading batches...
-                </div>
-              ) : batches?.length === 0 ? (
-                <div className="p-2 text-sm text-muted-foreground">
-                  No completed batches found
-                </div>
-              ) : (
-                batches?.map((batch) => (
-                  <DropdownMenuItem
-                    key={batch.id}
-                    onClick={() => handleSelectBatch(batch.id)}
-                  >
-                    <div className="flex flex-col">
-                      <span className="font-medium">{batch.name}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {batch.driverName} • {formatDate(batch.startTime)}
-                      </span>
-                    </div>
-                  </DropdownMenuItem>
-                ))
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+    <div className="flex flex-col h-full bg-background">
+      {/* Top context bar */}
+      <TopContextBar
+        selectedBatchId={selectedBatchId}
+        onSelectBatch={handleSelectBatch}
+        filterDate={filterDate}
+        onDateFilter={handleDateFilter}
+      />
 
-          {selectedBatch?.startTime && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Calendar className="h-4 w-4" />
-              {formatDate(selectedBatch.startTime)}
-              {selectedBatch.endTime && ` - ${formatDate(selectedBatch.endTime)}`}
+      {/* Main content area - Map dominant layout */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Left intelligence panel - Collapsible */}
+        <LeftPanel />
+
+        {/* Map area - Takes remaining space */}
+        <div className="flex-1 relative">
+          {/* Loading overlay */}
+          {isLoading && selectedBatchId && (
+            <div className="absolute inset-0 flex items-center justify-center bg-background/90 z-50">
+              <div className="flex flex-col items-center gap-3">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <p className="text-sm text-muted-foreground">
+                  Loading trip data...
+                </p>
+              </div>
             </div>
           )}
-        </div>
 
-        {dataLoading && (
-          <span className="text-sm text-muted-foreground">Loading...</span>
-        )}
-      </div>
-
-      {/* Main content */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Map */}
-        <div className="flex-1 flex flex-col">
-          <div className="flex-1 relative">
-            {selectedBatchId ? (
-              <PlaybackMapView
-                events={events}
-                currentPosition={currentPosition}
-                currentStatus={currentEvent?.driverStatus || null}
-                facilities={facilities}
-              />
-            ) : (
-              <div className="absolute inset-0 flex items-center justify-center bg-muted/20">
-                <div className="text-center space-y-2">
-                  <h2 className="text-xl font-semibold">Playback Mode</h2>
-                  <p className="text-muted-foreground">
-                    Select a completed batch to replay the trip
-                  </p>
-                </div>
+          {/* Error overlay */}
+          {isError && (
+            <div className="absolute inset-0 flex items-center justify-center bg-background/90 z-50">
+              <div className="text-center space-y-2">
+                <p className="text-sm font-medium text-destructive">
+                  Failed to load trip data
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Please try selecting a different batch
+                </p>
               </div>
-            )}
-          </div>
-
-          {/* Timeline controls */}
-          {selectedBatchId && (
-            <TimelineControls
-              events={events}
-              timeRange={timeRange}
-              onTimeChange={handleTimeChange}
-            />
+            </div>
           )}
-        </div>
 
-        {/* Analytics sidebar */}
-        {selectedBatchId && (
-          <PlaybackAnalytics
-            analytics={analytics}
-            stopAnalytics={stopAnalytics}
-            batchName={selectedBatch?.name}
+          {/* Map always renders */}
+          <PlaybackMap
+            className="absolute inset-0"
+            hasTrip={!!selectedBatchId}
           />
-        )}
+        </div>
       </div>
+
+      {/* Bottom playback controls */}
+      <PlaybackDock />
     </div>
   );
 }
