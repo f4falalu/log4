@@ -31,7 +31,8 @@ interface CreateAssignmentDialogProps {
 export function CreateAssignmentDialog({ open, onOpenChange }: CreateAssignmentDialogProps) {
   const { data: vehicles = [] } = useVehicles();
   const { data: drivers = [] } = useDrivers();
-  const { data: facilities = [] } = useFacilities();
+  const { data: facilitiesData } = useFacilities();
+  const facilities = facilitiesData?.facilities || [];
   const { createAssignment, isLoading } = useAssignmentsStore();
 
   // Form state

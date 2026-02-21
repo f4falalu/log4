@@ -28,7 +28,8 @@ export function VehicleFilters({
   onClearFilters,
   onCollapse,
 }: VehicleFiltersProps) {
-  const { data: facilities } = useFacilities();
+  const { data: facilitiesData } = useFacilities();
+  const facilities = facilitiesData?.facilities;
 
   const hasActiveFilters =
     Object.keys(filters).length > 0 && Object.values(filters).some((v) => v);
