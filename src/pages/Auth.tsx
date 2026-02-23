@@ -27,13 +27,12 @@ import {
   User,
   Phone,
   Building2,
-  Briefcase,
-  CheckCircle,
   Loader2,
   Eye,
   EyeOff,
   Shield,
 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import {
   InputOTP,
   InputOTPGroup,
@@ -43,7 +42,15 @@ import {
 // Validation schemas
 const emailPasswordSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
+  password: z.string()
+    .min(8, 'Password must be at least 8 characters')
+    .regex(/[A-Z]/, 'Must contain at least one uppercase letter')
+    .regex(/[a-z]/, 'Must contain at least one lowercase letter')
+    .regex(/[0-9]/, 'Must contain at least one number'),
+  confirmPassword: z.string(),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: 'Passwords do not match',
+  path: ['confirmPassword'],
 });
 
 const profileSchema = z.object({
@@ -58,10 +65,9 @@ type OtpStep = 'email' | 'verify';
 interface FormData {
   email: string;
   password: string;
+  confirmPassword: string;
   fullName: string;
   phone: string;
-  organization: string;
-  role: string;
 }
 
 // Google icon SVG component
@@ -141,10 +147,9 @@ export default function Auth() {
   const [formData, setFormData] = useState<FormData>({
     email: '',
     password: '',
+    confirmPassword: '',
     fullName: '',
     phone: '',
-    organization: '',
-    role: '',
   });
 
   // Check for invitation token in URL
@@ -211,6 +216,7 @@ export default function Auth() {
         if (inviteToken) {
           navigate(`/invite/${inviteToken}`);
         } else {
+          // ProtectedRoute will redirect to /onboarding if needed
           navigate('/');
         }
       }
@@ -226,6 +232,7 @@ export default function Auth() {
       emailPasswordSchema.parse({
         email: formData.email,
         password: formData.password,
+        confirmPassword: formData.confirmPassword,
       });
       setErrors({});
       setStep('profile');
@@ -273,10 +280,20 @@ export default function Auth() {
       if (error) {
         toast.error('Signup Failed', { description: error.message });
       } else {
-        setStep('complete');
-        toast.success('Account Created', {
-          description: 'Please check your email to verify your account.',
-        });
+        // Check if user was auto-logged in (email confirmation not required)
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          toast.success('Account Created', {
+            description: "Let's set up your workspace!",
+          });
+          navigate('/onboarding');
+        } else {
+          // Email verification required — show verification prompt
+          setStep('complete');
+          toast.success('Account Created', {
+            description: 'Please check your email to verify your account.',
+          });
+        }
       }
     } catch {
       toast.error('An error occurred during signup');
@@ -592,7 +609,28 @@ export default function Auth() {
             </button>
           </div>
           {errors.password && <p className="text-sm text-red-400">{errors.password}</p>}
-          <p className="text-xs text-zinc-500">Must be at least 8 characters</p>
+          <p className="text-xs text-zinc-500">Min 8 characters, uppercase, lowercase, and a number</p>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="signup-confirm-password" className="text-zinc-300">
+            Confirm Password
+          </Label>
+          <div className="relative">
+            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
+            <Input
+              id="signup-confirm-password"
+              type={showPassword ? 'text' : 'password'}
+              placeholder="Confirm your password"
+              value={formData.confirmPassword}
+              onChange={(e) => updateField('confirmPassword', e.target.value)}
+              className={cn(
+                'h-12 pl-11 bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-600 focus:border-emerald-500 focus:ring-emerald-500/20',
+                errors.confirmPassword && 'border-red-500'
+              )}
+            />
+          </div>
+          {errors.confirmPassword && <p className="text-sm text-red-400">{errors.confirmPassword}</p>}
         </div>
       </div>
 
@@ -688,41 +726,6 @@ export default function Auth() {
           </div>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="organization" className="text-zinc-300">
-            Organization{' '}
-            <span className="text-zinc-600">(optional)</span>
-          </Label>
-          <div className="relative">
-            <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
-            <Input
-              id="organization"
-              type="text"
-              placeholder="Your company or organization"
-              value={formData.organization}
-              onChange={(e) => updateField('organization', e.target.value)}
-              className="h-12 pl-11 bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-600 focus:border-emerald-500 focus:ring-emerald-500/20"
-            />
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="role" className="text-zinc-300">
-            Your role{' '}
-            <span className="text-zinc-600">(optional)</span>
-          </Label>
-          <div className="relative">
-            <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
-            <Input
-              id="role"
-              type="text"
-              placeholder="e.g., Operations Manager, Fleet Supervisor"
-              value={formData.role}
-              onChange={(e) => updateField('role', e.target.value)}
-              className="h-12 pl-11 bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-600 focus:border-emerald-500 focus:ring-emerald-500/20"
-            />
-          </div>
-        </div>
       </div>
 
       <Button
@@ -745,34 +748,34 @@ export default function Auth() {
     </div>
   );
 
-  // Render signup complete
+  // Render signup complete — email verification needed
   const renderComplete = () => (
     <div className="space-y-6 text-center">
-      <div className="mx-auto w-16 h-16 rounded-full bg-emerald-500/20 flex items-center justify-center">
-        <CheckCircle className="w-8 h-8 text-emerald-400" />
+      <div className="mx-auto w-16 h-16 rounded-full bg-amber-500/20 flex items-center justify-center">
+        <Mail className="w-8 h-8 text-amber-400" />
       </div>
 
       <div className="space-y-2">
-        <h1 className="text-3xl font-semibold text-white">You&apos;re all set!</h1>
+        <h1 className="text-3xl font-semibold text-white">Verify your email</h1>
         <p className="text-zinc-400">
-          We&apos;ve sent a verification email to <strong className="text-white">{formData.email}</strong>
+          We&apos;ve sent a verification link to <strong className="text-white">{formData.email}</strong>
         </p>
       </div>
 
       <div className="p-4 rounded-lg bg-zinc-900 border border-zinc-800 text-left space-y-3">
-        <h3 className="font-medium text-white">Next steps:</h3>
+        <h3 className="font-medium text-white">What happens next:</h3>
         <ul className="space-y-2 text-sm text-zinc-400">
           <li className="flex items-start gap-2">
             <span className="text-emerald-400">1.</span>
-            Check your email and click the verification link
+            Click the verification link in your email
           </li>
           <li className="flex items-start gap-2">
             <span className="text-emerald-400">2.</span>
-            Sign in to access your dashboard
+            You&apos;ll be taken to set up your organization workspace
           </li>
           <li className="flex items-start gap-2">
             <span className="text-emerald-400">3.</span>
-            Set up your workspace or accept an invitation
+            Invite your team and configure your fleet
           </li>
         </ul>
       </div>
@@ -781,7 +784,7 @@ export default function Auth() {
         onClick={switchToLogin}
         className="w-full h-12 bg-white hover:bg-zinc-200 text-black font-medium"
       >
-        Sign In
+        Already verified? Sign In
         <ArrowRight className="w-5 h-5 ml-2" />
       </Button>
     </div>
@@ -1108,19 +1111,6 @@ export default function Auth() {
                 <p className="text-zinc-500">{formData.email || 'your@email.com'}</p>
               </div>
 
-              {formData.organization && (
-                <div className="flex items-center gap-2 text-zinc-400">
-                  <Building2 className="w-4 h-4" />
-                  <span>{formData.organization}</span>
-                </div>
-              )}
-
-              {formData.role && (
-                <div className="flex items-center gap-2 text-zinc-400">
-                  <Briefcase className="w-4 h-4" />
-                  <span>{formData.role}</span>
-                </div>
-              )}
 
               {/* Feature highlights */}
               <div className="pt-4 border-t border-zinc-800 space-y-3">

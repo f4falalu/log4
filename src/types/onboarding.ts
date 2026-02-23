@@ -21,11 +21,18 @@ export type OrgStatus =
 
 export type OperatingModel = 'owned_fleet' | 'contracted' | 'hybrid';
 
+export type OrgType = 'ngo' | 'government' | 'private' | 'pharma_distributor' | 'other';
+
+export type Sector = 'health' | 'logistics' | 'agriculture' | 'retail' | 'other';
+
 export interface OrganizationConfig {
   operating_model: OperatingModel | null;
+  org_type: OrgType | null;
+  sector: Sector | null;
   primary_contact_name: string | null;
   primary_contact_email: string | null;
   primary_contact_phone: string | null;
+  fax: string | null;
 }
 
 export interface OrganizationStatusHistory {
@@ -183,10 +190,11 @@ export interface ReadinessCheckResult {
 }
 
 // =====================================================
-// Onboarding Wizard Types
+// Onboarding Wizard Types (V2)
 // =====================================================
 
-export type OnboardingWizardStep =
+/** Legacy wizard steps (kept for backward compatibility) */
+export type LegacyOnboardingWizardStep =
   | 'country'
   | 'workspace'
   | 'operating_model'
@@ -194,25 +202,57 @@ export type OnboardingWizardStep =
   | 'boundaries'
   | 'complete';
 
+/** New V2 onboarding wizard steps */
+export type OnboardingWizardStep =
+  | 'organization'
+  | 'team'
+  | 'data_import'
+  | 'fleet'
+  | 'launch';
+
+export interface OnboardingStepConfig {
+  key: OnboardingWizardStep;
+  label: string;
+  description: string;
+  optional: boolean;
+}
+
+export const ONBOARDING_STEPS: OnboardingStepConfig[] = [
+  { key: 'organization', label: 'Organization', description: 'Set up your organization workspace', optional: false },
+  { key: 'team', label: 'Team Setup', description: 'Invite your team members', optional: true },
+  { key: 'data_import', label: 'Data Import', description: 'Add warehouses and facilities', optional: true },
+  { key: 'fleet', label: 'Fleet Setup', description: 'Add your vehicles', optional: true },
+  { key: 'launch', label: 'Launch', description: 'Review and launch your workspace', optional: false },
+];
+
+export interface TeamInvitation {
+  name: string;
+  email: string;
+  appRole: string;
+  workspaceRole?: WorkspaceRole;
+}
+
 export interface OnboardingWizardState {
   currentStep: OnboardingWizardStep;
-  selectedCountry: {
-    id: string;
-    name: string;
-    iso_code: string;
-    iso3_code: string;
-  } | null;
-  workspaceName: string;
-  workspaceSlug: string;
+  workspaceId: string | null;
+  // Organization fields
+  orgName: string;
+  orgSlug: string;
+  orgType: OrgType | null;
+  sector: Sector | null;
+  contactEmail: string;
+  contactPhone: string;
+  fax: string;
+  selectedCountryIds: string[];
+  primaryCountryId: string | null;
+  selectedStateIds: string[];
   operatingModel: OperatingModel | null;
-  primaryContact: {
-    name: string;
-    email: string;
-    phone: string;
-  };
-  createdWorkspaceId: string | null;
+  // Team setup
+  invitations: TeamInvitation[];
+  // Progress
   isSubmitting: boolean;
   error: string | null;
+  completedSteps: OnboardingWizardStep[];
 }
 
 export interface CreateOrganizationParams {
@@ -223,6 +263,11 @@ export interface CreateOrganizationParams {
   primary_contact_name?: string;
   primary_contact_email?: string;
   primary_contact_phone?: string;
+  // V2 fields
+  org_type?: OrgType;
+  sector?: Sector;
+  fax?: string;
+  country_ids?: string[];
 }
 
 export interface UpdateWorkspaceConfigParams {
@@ -386,3 +431,23 @@ export function getReadinessGateLabel(gate: ReadinessGate): string {
   };
   return labels[gate];
 }
+
+// =====================================================
+// Organization Type & Sector Constants
+// =====================================================
+
+export const ORG_TYPES: { value: OrgType; label: string }[] = [
+  { value: 'ngo', label: 'Non-Governmental Organization' },
+  { value: 'government', label: 'Government Agency' },
+  { value: 'private', label: 'Private Company' },
+  { value: 'pharma_distributor', label: 'Pharmaceutical Distributor' },
+  { value: 'other', label: 'Other' },
+];
+
+export const SECTORS: { value: Sector; label: string }[] = [
+  { value: 'health', label: 'Healthcare' },
+  { value: 'logistics', label: 'Logistics & Supply Chain' },
+  { value: 'agriculture', label: 'Agriculture' },
+  { value: 'retail', label: 'Retail & Distribution' },
+  { value: 'other', label: 'Other' },
+];

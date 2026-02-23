@@ -21,6 +21,8 @@ export function useUserRole() {
       return data.map(r => r.role) as AppRole[];
     },
     enabled: !!user,
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
   });
 
   // Set default active role when roles are loaded

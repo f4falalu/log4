@@ -1,5 +1,6 @@
 import React, { useEffect, lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/sonner";
+import { Toaster as RadixToaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Loader2 } from "lucide-react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -31,11 +32,13 @@ import AdminSessionDetailPage from "./pages/admin/sessions/[id]/page";
 import AdminAuditPage from "./pages/admin/audit/page";
 import AdminLocationsPage from "./pages/admin/LocationManagement";
 import AdminIntegrationPage from "./pages/admin/integration/page";
+import AdminRolesPage from "./pages/admin/roles/page";
+import AdminPermissionSetsPage from "./pages/admin/permission-sets/page";
 import LiveMapPage from "./pages/map/live/page";
 import PlaybackMapPage from "./pages/map/playback/page";
 
 // Onboarding Pages
-import WorkspaceSetupWizard from "./components/onboarding/WorkspaceSetupWizard";
+import OnboardingWizardV2 from "./components/onboarding/OnboardingWizardV2";
 import AcceptInvitationPage from "./pages/invite/AcceptInvitationPage";
 import FleetOpsHome from "./pages/fleetops/page";
 import StorefrontHome from "./pages/storefront/page";
@@ -103,6 +106,7 @@ const App = () => (
             <TooltipProvider>
               <WorkspaceThemeApplier />
               <Toaster />
+              <RadixToaster />
               <MapStateProvider>
                 <Routes>
                   <Route path="/auth" element={<Auth />} />
@@ -110,7 +114,7 @@ const App = () => (
                   <Route path="/auth/callback" element={<AuthCallback />} />
 
                   {/* Onboarding Routes */}
-                  <Route path="/onboarding" element={<WorkspaceSetupWizard />} />
+                  <Route path="/onboarding" element={<ProtectedRoute><OnboardingWizardV2 /></ProtectedRoute>} />
                   <Route path="/invite/:token" element={<AcceptInvitationPage />} />
 
                   {/* FleetOps Workspace */}
@@ -245,6 +249,10 @@ const App = () => (
 
                     {/* Analytics Tab */}
                     <Route path="analytics" element={<AdminDashboard />} />
+
+                    {/* RBAC Tab */}
+                    <Route path="roles" element={<AdminRolesPage />} />
+                    <Route path="permission-sets" element={<AdminPermissionSetsPage />} />
 
                     {/* Integration Tab */}
                     <Route path="integration" element={<AdminIntegrationPage />} />

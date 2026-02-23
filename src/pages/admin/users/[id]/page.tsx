@@ -1,20 +1,44 @@
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, ArrowLeft, Edit } from 'lucide-react';
-import { useUserDetail, useAssignRole, useRemoveRole } from '@/hooks/admin/useUserDetail';
-import { RoleSelector } from '@/components/admin/users/RoleSelector';
-import { AppRole } from '@/types';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { Loader2, ArrowLeft, Edit, User, Shield, Lock, FileText } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useUserRoles } from '@/hooks/rbac';
+import { UserRoleAssignment } from './components/UserRoleAssignment';
+import { UserPermissionSetsManagement } from './components/UserPermissionSetsManagement';
+import { UserScopeBindingsEditor } from './components/UserScopeBindingsEditor';
+import { UserAuditHistory } from './components/UserAuditHistory';
 
-export default function UserDetailPage() {
+export default function UserDetailPageEnhanced() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { data, isLoading, error } = useUserDetail(id!);
-  const assignRole = useAssignRole();
-  const removeRole = useRemoveRole();
+  const [activeTab, setActiveTab] = useState('profile');
 
-  if (isLoading) {
+  // Fetch user profile
+  const { data: profile, isLoading: profileLoading } = useQuery({
+    queryKey: ['user-profile', id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('admin_users_view')
+        .select('*')
+        .eq('id', id!)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!id,
+  });
+
+  // Fetch user's current role from new RBAC system
+  const { data: userRoles } = useUserRoles(id);
+  const currentRole = userRoles?.[0] || null;
+
+  if (profileLoading) {
     return (
       <div className="container mx-auto p-6">
         <div className="flex items-center justify-center py-12">
@@ -24,22 +48,18 @@ export default function UserDetailPage() {
     );
   }
 
-  if (error || !data) {
+  if (!profile) {
     return (
       <div className="container mx-auto p-6">
         <Card className="border-destructive">
           <CardHeader>
             <CardTitle className="text-destructive">Error Loading User</CardTitle>
-            <CardDescription>
-              {error instanceof Error ? error.message : 'Failed to load user details'}
-            </CardDescription>
+            <CardDescription>Failed to load user details</CardDescription>
           </CardHeader>
         </Card>
       </div>
     );
   }
-
-  const { profile, roles, workspaces } = data;
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -50,8 +70,8 @@ export default function UserDetailPage() {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">{profile.full_name}</h1>
-            <p className="text-muted-foreground">User Details</p>
+            <h1 className="text-3xl font-bold tracking-tight">{profile.full_name || profile.email}</h1>
+            <p className="text-muted-foreground">User Management</p>
           </div>
         </div>
         <Button onClick={() => navigate(`/admin/users/${id}/edit`)}>
@@ -60,76 +80,105 @@ export default function UserDetailPage() {
         </Button>
       </div>
 
-      {/* Profile Information */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Profile Information</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Full Name</p>
-              <p className="text-base">{profile.full_name}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Phone</p>
-              <p className="text-base">{profile.phone || '-'}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">User ID</p>
-              <p className="text-base font-mono text-xs">{profile.id}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Created</p>
-              <p className="text-base">{new Date(profile.created_at).toLocaleString()}</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="profile" className="flex items-center gap-2">
+            <User className="h-4 w-4" />
+            Profile
+          </TabsTrigger>
+          <TabsTrigger value="permissions" className="flex items-center gap-2">
+            <Shield className="h-4 w-4" />
+            Roles & Permissions
+          </TabsTrigger>
+          <TabsTrigger value="scopes" className="flex items-center gap-2">
+            <Lock className="h-4 w-4" />
+            Scope Bindings
+          </TabsTrigger>
+          <TabsTrigger value="audit" className="flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            Audit History
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Roles */}
-      <Card>
-        <CardHeader>
-          <CardTitle>App Roles</CardTitle>
-          <CardDescription>Manage user's application-level roles</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <RoleSelector
-            roles={roles.map((r) => r.role)}
-            onAddRole={(role: AppRole) => assignRole.mutate({ userId: id!, role })}
-            onRemoveRole={(role: AppRole) => removeRole.mutate({ userId: id!, role })}
-            disabled={assignRole.isPending || removeRole.isPending}
-          />
-        </CardContent>
-      </Card>
-
-      {/* Workspaces */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Workspace Memberships</CardTitle>
-          <CardDescription>Workspaces this user belongs to</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {workspaces.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Not a member of any workspaces</p>
-          ) : (
-            <div className="space-y-2">
-              {workspaces.map((ws: any) => (
-                <div
-                  key={ws.workspace_id}
-                  className="flex items-center justify-between p-3 border rounded-lg"
-                >
-                  <div>
-                    <p className="font-medium">{ws.workspaces.name}</p>
-                    <p className="text-sm text-muted-foreground">/{ws.workspaces.slug}</p>
-                  </div>
-                  <Badge variant="secondary">{ws.role}</Badge>
+        {/* Profile Tab */}
+        <TabsContent value="profile" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Profile Information</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Full Name</p>
+                  <p className="text-base">{profile.full_name || '-'}</p>
                 </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Email</p>
+                  <p className="text-base">{profile.email}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Phone</p>
+                  <p className="text-base">{profile.phone || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">User ID</p>
+                  <p className="text-base font-mono text-xs">{profile.id}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Created</p>
+                  <p className="text-base">{new Date(profile.created_at).toLocaleString()}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Last Sign In</p>
+                  <p className="text-base">
+                    {profile.last_sign_in_at
+                      ? new Date(profile.last_sign_in_at).toLocaleString()
+                      : 'Never'}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Current Roles Summary */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Current Roles</CardTitle>
+              <CardDescription>Active roles assigned to this user</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {profile.roles && profile.roles.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {profile.roles.map((roleCode: string) => (
+                    <Badge key={roleCode} variant="secondary">
+                      {roleCode.replace(/_/g, ' ').toUpperCase()}
+                    </Badge>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No roles assigned</p>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Roles & Permissions Tab */}
+        <TabsContent value="permissions" className="space-y-4">
+          <UserRoleAssignment userId={id!} currentRole={currentRole} />
+          <UserPermissionSetsManagement userId={id!} />
+        </TabsContent>
+
+        {/* Scope Bindings Tab */}
+        <TabsContent value="scopes">
+          <UserScopeBindingsEditor userId={id!} />
+        </TabsContent>
+
+        {/* Audit History Tab */}
+        <TabsContent value="audit">
+          <UserAuditHistory userId={id!} userName={profile.full_name || profile.email} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

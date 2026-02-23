@@ -15,6 +15,7 @@ import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { BatchRouteMap } from './BatchRouteMap';
 import { AssignmentDialog } from './AssignmentDialog';
+import { BatchStatusActions } from './BatchStatusActions';
 import { useDrivers } from '@/hooks/useDrivers';
 import { useVehicles } from '@/hooks/useVehicles';
 import { useWarehouses } from '@/hooks/useWarehouses';
@@ -31,9 +32,6 @@ import {
   Edit,
   Save,
   X,
-  CheckCircle,
-  Play,
-  Square,
   Loader2,
   Calendar,
   Hash,
@@ -105,20 +103,6 @@ export function BatchDetailsPanel({ batch, open, onOpenChange }: BatchDetailsPan
         },
       }
     );
-  };
-
-  const handleStatusUpdate = (newStatus: DeliveryBatch['status']) => {
-    const updates: Partial<DeliveryBatch> = { status: newStatus };
-
-    if (newStatus === 'in-progress' && !batch.actualStartTime) {
-      updates.actualStartTime = new Date().toISOString();
-    }
-
-    if (newStatus === 'completed') {
-      updates.actualEndTime = new Date().toISOString();
-    }
-
-    batchUpdate.mutate({ batchId: batch.id, updates });
   };
 
   return (
@@ -295,44 +279,16 @@ export function BatchDetailsPanel({ batch, open, onOpenChange }: BatchDetailsPan
                       </div>
                     </div>
 
-                    {/* Actions */}
-                    {batch.status !== 'completed' && batch.status !== 'cancelled' && (
-                      <>
-                        <Separator />
-                        <div className="flex gap-2">
-                          {batch.status === 'assigned' && (
-                            <Button onClick={() => handleStatusUpdate('in-progress')} disabled={batchUpdate.isPending}>
-                              {batchUpdate.isPending ? (
-                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                              ) : (
-                                <Play className="h-4 w-4 mr-2" />
-                              )}
-                              Start Delivery
-                            </Button>
-                          )}
-                          {batch.status === 'in-progress' && (
-                            <Button onClick={() => handleStatusUpdate('completed')} disabled={batchUpdate.isPending}>
-                              {batchUpdate.isPending ? (
-                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                              ) : (
-                                <CheckCircle className="h-4 w-4 mr-2" />
-                              )}
-                              Mark Complete
-                            </Button>
-                          )}
-                          {(batch.status === 'planned' || batch.status === 'assigned') && (
-                            <Button
-                              variant="outline"
-                              onClick={() => handleStatusUpdate('cancelled')}
-                              disabled={batchUpdate.isPending}
-                            >
-                              <Square className="h-4 w-4 mr-2" />
-                              Cancel
-                            </Button>
-                          )}
-                        </div>
-                      </>
-                    )}
+                    {/* Status Actions */}
+                    <Separator />
+                    <div className="space-y-2">
+                      <h4 className="font-medium text-sm text-muted-foreground">Status</h4>
+                      <BatchStatusActions
+                        batchId={batch.id}
+                        currentStatus={batch.status}
+                        batchName={batch.name}
+                      />
+                    </div>
                   </div>
                 </ScrollArea>
               </TabsContent>

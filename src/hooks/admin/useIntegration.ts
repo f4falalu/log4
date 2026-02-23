@@ -31,34 +31,39 @@ export interface Mod4OTPCode {
 // QUERIES
 // =====================================================
 
-export function useLinkedUsers() {
+export function useLinkedUsers(workspaceId: string | null | undefined) {
   return useQuery({
-    queryKey: ['admin-integration', 'linked'],
+    queryKey: ['admin-integration', 'linked', workspaceId],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_mod4_linked_users');
+      const { data, error } = await supabase.rpc('get_mod4_linked_users', {
+        p_workspace_id: workspaceId!,
+      });
 
       if (error) throw error;
       return (data || []) as Mod4DriverLink[];
     },
+    enabled: !!workspaceId,
     retry: 1,
     staleTime: 30000,
   });
 }
 
-export function usePendingOTPs() {
+export function usePendingOTPs(workspaceId: string | null | undefined) {
   return useQuery({
-    queryKey: ['admin-integration', 'otps'],
+    queryKey: ['admin-integration', 'otps', workspaceId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('mod4_otp_codes')
         .select('*')
         .eq('status', 'pending')
+        .eq('workspace_id', workspaceId!)
         .gt('expires_at', new Date().toISOString())
         .order('created_at', { ascending: false });
 
       if (error) throw error;
       return (data || []) as Mod4OTPCode[];
     },
+    enabled: !!workspaceId,
     retry: 1,
     refetchInterval: 30000,
   });

@@ -19,6 +19,7 @@ import { VehicleImage } from './VehicleImage';
 import { cn } from '@/lib/utils';
 import { getStatusColors } from '@/lib/designTokens';
 import type { Database } from '@/integrations/supabase/types';
+import { VehicleCapacityVisualizer } from './capacity/VehicleCapacityVisualizer';
 
 type Vehicle = Database['public']['Tables']['vehicles']['Row'];
 
@@ -27,6 +28,21 @@ interface VehicleCardProps {
   onView?: (vehicle: Vehicle) => void;
   onEdit?: (vehicle: Vehicle) => void;
   onDelete?: (vehicle: Vehicle) => void;
+}
+
+/**
+ * Map vehicle types to visualizer types
+ */
+function mapVehicleType(vehicleType?: string | null): 'truck' | 'van' | 'pickup' | 'car' {
+  const type = vehicleType?.toLowerCase();
+
+  if (type === 'truck' || type === 'bus') return 'truck';
+  if (type === 'van') return 'van';
+  if (type === 'pickup' || type === 'suv') return 'pickup';
+  if (type === 'sedan' || type === 'car') return 'car';
+
+  // Default to van for logistics use case
+  return 'van';
 }
 
 export function VehicleCard({ vehicle, onView, onEdit, onDelete }: VehicleCardProps) {
@@ -100,6 +116,20 @@ export function VehicleCard({ vehicle, onView, onEdit, onDelete }: VehicleCardPr
             <div className="px-2 py-1 bg-muted border border-border rounded text-xs font-mono font-medium">
               {vehicle.license_plate}
             </div>
+          </div>
+        )}
+
+        {/* Capacity Visualizer */}
+        {(vehicle.capacity_kg || vehicle.capacity_m3) && (
+          <div className="flex justify-center py-2 border-y border-border bg-muted/30">
+            <VehicleCapacityVisualizer
+              vehicleType={mapVehicleType(vehicle.vehicle_type || vehicle.type)}
+              maxWeight={vehicle.capacity_kg || undefined}
+              maxVolume={vehicle.capacity_m3 || undefined}
+              size="sm"
+              showLabel={false}
+              showMetrics={false}
+            />
           </div>
         )}
 

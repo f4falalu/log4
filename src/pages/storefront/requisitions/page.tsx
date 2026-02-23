@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { DateRange } from 'react-day-picker';
-import { useRequisitions, useUpdateRequisitionStatus } from '@/hooks/useRequisitions';
+import { useRequisitions } from '@/hooks/useRequisitions';
 import { useWarehouses } from '@/hooks/useWarehouses';
 import type { Requisition } from '@/types/requisitions';
 import { RequisitionsLayout } from './components/RequisitionsLayout';
@@ -9,16 +9,6 @@ import { RequisitionsListView } from './components/RequisitionsListView';
 import { RequisitionSummaryStrip } from './components/RequisitionSummaryStrip';
 import { RequisitionDetailPanel } from './components/RequisitionDetailPanel';
 import { NewRequisitionWizard } from './components/NewRequisitionWizard';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
 
 export default function RequisitionsPage() {
   // Filter state
@@ -35,13 +25,10 @@ export default function RequisitionsPage() {
 
   // Dialog state
   const [isWizardOpen, setIsWizardOpen] = useState(false);
-  const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
-  const [rejectionReason, setRejectionReason] = useState('');
 
   // Data fetching
   const { data: requisitions = [], isLoading } = useRequisitions();
   const { data: warehousesData } = useWarehouses();
-  const updateStatus = useUpdateRequisitionStatus();
 
   const warehouses = warehousesData?.warehouses || [];
 
@@ -101,24 +88,6 @@ export default function RequisitionsPage() {
     setDateRange(undefined);
   };
 
-  const handleReject = () => {
-    setRejectDialogOpen(true);
-  };
-
-  const confirmReject = () => {
-    if (selectedRequisition && rejectionReason.trim()) {
-      updateStatus.mutate({
-        id: selectedRequisition.id,
-        status: 'rejected',
-        rejection_reason: rejectionReason,
-      });
-      setRejectDialogOpen(false);
-      setRejectionReason('');
-      setIsDetailOpen(false);
-      setSelectedRequisition(null);
-    }
-  };
-
   return (
     <>
       <RequisitionsLayout
@@ -155,7 +124,6 @@ export default function RequisitionsPage() {
           <RequisitionDetailPanel
             requisition={selectedRequisition}
             onClose={handleCloseDetail}
-            onReject={handleReject}
           />
         )}
       </RequisitionsLayout>
@@ -165,41 +133,6 @@ export default function RequisitionsPage() {
         open={isWizardOpen}
         onOpenChange={setIsWizardOpen}
       />
-
-      {/* Rejection Dialog */}
-      <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Reject Requisition</DialogTitle>
-            <DialogDescription>
-              Please provide a reason for rejecting this requisition.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="rejection-reason">Rejection Reason</Label>
-              <Textarea
-                id="rejection-reason"
-                value={rejectionReason}
-                onChange={(e) => setRejectionReason(e.target.value)}
-                placeholder="Enter reason for rejection..."
-                rows={4}
-              />
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setRejectDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button
-                onClick={confirmReject}
-                disabled={!rejectionReason.trim() || updateStatus.isPending}
-              >
-                {updateStatus.isPending ? 'Rejecting...' : 'Confirm Rejection'}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </>
   );
 }

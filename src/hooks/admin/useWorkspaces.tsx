@@ -31,9 +31,33 @@ export function useWorkspaces() {
   return useQuery({
     queryKey: ['admin-workspaces'],
     queryFn: async () => {
+      // Step 1: Get current user's workspace IDs
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
+      const { data: workspaceMemberships, error: workspaceError } = await supabase
+        .from('workspace_members')
+        .select('workspace_id')
+        .eq('user_id', user.id);
+
+      if (workspaceError) {
+        console.error('Error fetching workspace memberships:', workspaceError);
+        throw workspaceError;
+      }
+
+      const workspaceIds = (workspaceMemberships || []).map(wm => wm.workspace_id);
+
+      if (workspaceIds.length === 0) {
+        return [];
+      }
+
+      // Step 2: Query workspaces filtered by user's memberships
       const { data, error } = await supabase
         .from('workspaces')
         .select('*, workspace_members(count)')
+        .in('id', workspaceIds)
         .eq('is_active', true)
         .order('name');
 
@@ -62,29 +86,35 @@ export function useWorkspaceDetail(workspaceId: string) {
 
       if (wsError) throw wsError;
 
-      // Fetch members with profiles
+      // Fetch members
       const { data: members, error: membersError } = await supabase
         .from('workspace_members')
-        .select(`
-          user_id,
-          workspace_id,
-          role,
-          joined_at,
-          profiles (
-            full_name,
-            phone,
-            avatar_url
-          )
-        `)
+        .select('user_id, workspace_id, role, joined_at')
         .eq('workspace_id', workspaceId);
 
       if (membersError) throw membersError;
+
+      // Fetch profiles separately (embedded select requires FK to profiles which may not exist yet)
+      const userIds = (members || []).map((m: any) => m.user_id);
+      let profilesMap: Record<string, { full_name: string; phone: string | null; avatar_url: string | null }> = {};
+
+      if (userIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, full_name, phone, avatar_url')
+          .in('id', userIds);
+
+        profilesMap = (profiles || []).reduce((acc: any, p: any) => {
+          acc[p.id] = { full_name: p.full_name, phone: p.phone, avatar_url: p.avatar_url };
+          return acc;
+        }, {});
+      }
 
       return {
         workspace: workspace as Workspace,
         members: (members || []).map((m: any) => ({
           ...m,
-          profile: m.profiles,
+          profile: profilesMap[m.user_id] || { full_name: 'Unknown', phone: null, avatar_url: null },
         })) as WorkspaceMember[],
       };
     },

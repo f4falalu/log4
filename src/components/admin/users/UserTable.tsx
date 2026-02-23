@@ -51,9 +51,11 @@ export function UserTable() {
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<string[]>([]);
   const { data: usersData = { users: [], total: 0 }, isLoading, error } = useUsers({ search, roleFilter });
-  const users = usersData.users || [];
+  const users = usersData?.users || [];
 
   const exportToCSV = () => {
+    if (!users || users.length === 0) return;
+    
     const csv = toCSV(
       users.map((u) => ({
         name: u.full_name,
@@ -145,24 +147,30 @@ export function UserTable() {
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Phone</TableHead>
+                <TableHead>Organization</TableHead>
                 <TableHead>Roles</TableHead>
                 <TableHead>Workspaces</TableHead>
                 <TableHead>Created</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {users.map((user) => (
+              {users && users.map((user) => (
                 <TableRow
-                  key={user.user_id}
+                  key={user.id}
                   className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => navigate(`/admin/members/${user.user_id}`)}
+                  onClick={() => navigate(`/admin/members/${user.id}`)}
                 >
                   <TableCell className="font-medium">{user.full_name}</TableCell>
                   <TableCell>{user.email}</TableCell>
                   <TableCell>{user.phone || '-'}</TableCell>
                   <TableCell>
+                    <Badge variant="outline" className="text-xs">
+                      {user.organization || 'default'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
                     <div className="flex flex-wrap gap-1">
-                      {user.roles.map((role) => (
+                      {user.roles && user.roles.map((role) => (
                         <Badge
                           key={role}
                           className={ROLE_COLORS[role as AppRole]}
@@ -171,7 +179,7 @@ export function UserTable() {
                           {ROLE_LABELS[role as AppRole]}
                         </Badge>
                       ))}
-                      {user.roles.length === 0 && (
+                      {(!user.roles || user.roles.length === 0) && (
                         <span className="text-sm text-muted-foreground">No roles</span>
                       )}
                     </div>

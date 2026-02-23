@@ -15,13 +15,13 @@ import {
   Package,
   Edit,
   Trash2,
-  Send,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useSchedulerBatch } from '@/hooks/useSchedulerBatches';
+import { SchedulerBatchStatusActions } from '@/components/storefront/scheduler/SchedulerBatchStatusActions';
 import {
   getStatusColor,
   getStatusLabel,
@@ -31,7 +31,6 @@ import {
   formatDistance,
   formatDuration,
   formatCapacity,
-  canPublishBatch,
 } from '@/lib/schedulerUtils';
 
 interface SchedulePreviewPanelProps {
@@ -227,12 +226,11 @@ export function SchedulePreviewPanel({
 
       {/* Actions */}
       <div className="border-t p-4 space-y-2">
-        {canPublishBatch(batch) && (
-          <Button className="w-full gap-2" size="sm">
-            <Send className="h-4 w-4" />
-            Publish to FleetOps
-          </Button>
-        )}
+        <SchedulerBatchStatusActions
+          batchId={batch.id}
+          currentStatus={batch.status}
+          batchName={batch.name || batch.batch_code}
+        />
         <div className="flex gap-2">
           <Button variant="outline" className="flex-1 gap-2" size="sm">
             <Edit className="h-4 w-4" />

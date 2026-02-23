@@ -97,7 +97,87 @@ export type Database = {
             foreignKeyName: "admin_units_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
+            referencedRelation: "workspace_isolation_audit"
+            referencedColumns: ["workspace_id"]
+          },
+          {
+            foreignKeyName: "admin_units_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
             referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_logs: {
+        Row: {
+          action: string
+          id: string
+          ip_address: unknown
+          metadata: Json | null
+          new_state: Json | null
+          organization_id: string | null
+          previous_state: Json | null
+          resource: string
+          resource_id: string | null
+          severity: string | null
+          state_diff: Json | null
+          timestamp: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          id?: string
+          ip_address?: unknown
+          metadata?: Json | null
+          new_state?: Json | null
+          organization_id?: string | null
+          previous_state?: Json | null
+          resource: string
+          resource_id?: string | null
+          severity?: string | null
+          state_diff?: Json | null
+          timestamp?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          id?: string
+          ip_address?: unknown
+          metadata?: Json | null
+          new_state?: Json | null
+          organization_id?: string | null
+          previous_state?: Json | null
+          resource?: string
+          resource_id?: string | null
+          severity?: string | null
+          state_diff?: Json | null
+          timestamp?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_logs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "workspace_isolation_audit"
+            referencedColumns: ["workspace_id"]
+          },
+          {
+            foreignKeyName: "audit_logs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
             referencedColumns: ["id"]
           },
         ]
@@ -407,6 +487,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "delivery_schedules_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "delivery_schedules_driver_id_fkey"
             columns: ["driver_id"]
             isOneToOne: false
@@ -552,7 +639,22 @@ export type Database = {
           user_agent?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "driver_devices_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_devices_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       driver_events: {
         Row: {
@@ -612,6 +714,20 @@ export type Database = {
             columns: ["batch_id"]
             isOneToOne: false
             referencedRelation: "delivery_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_events_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_events_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
             referencedColumns: ["id"]
           },
           {
@@ -812,6 +928,13 @@ export type Database = {
           vehicle_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "driver_sessions_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "driver_sessions_driver_id_profiles_fkey"
             columns: ["driver_id"]
@@ -1186,6 +1309,34 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "facilities_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "facilities_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "facilities_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "facilities_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspace_isolation_audit"
+            referencedColumns: ["workspace_id"]
+          },
+          {
             foreignKeyName: "facilities_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
@@ -1249,11 +1400,32 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "facility_assignments_activated_by_fkey"
+            columns: ["activated_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "facility_assignments_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "facility_assignments_facility_id_fkey"
             columns: ["facility_id"]
             isOneToOne: false
             referencedRelation: "facilities"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "facility_assignments_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspace_isolation_audit"
+            referencedColumns: ["workspace_id"]
           },
           {
             foreignKeyName: "facility_assignments_workspace_id_fkey"
@@ -1302,6 +1474,13 @@ export type Database = {
             columns: ["facility_id"]
             isOneToOne: false
             referencedRelation: "facilities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "facility_audit_log_performed_by_fkey"
+            columns: ["performed_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
             referencedColumns: ["id"]
           },
         ]
@@ -1574,6 +1753,20 @@ export type Database = {
           workspace_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "forensics_query_log_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forensics_query_log_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspace_isolation_audit"
+            referencedColumns: ["workspace_id"]
+          },
           {
             foreignKeyName: "forensics_query_log_workspace_id_fkey"
             columns: ["workspace_id"]
@@ -1892,6 +2085,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "invoices_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "invoices_facility_id_fkey"
             columns: ["facility_id"]
             isOneToOne: false
@@ -1979,6 +2179,13 @@ export type Database = {
           weight_kg?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "items_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "items_warehouse_id_fkey"
             columns: ["warehouse_id"]
@@ -2123,6 +2330,20 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "map_action_audit_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "map_action_audit_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspace_isolation_audit"
+            referencedColumns: ["workspace_id"]
+          },
+          {
             foreignKeyName: "map_action_audit_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
@@ -2171,6 +2392,20 @@ export type Database = {
             columns: ["driver_id"]
             isOneToOne: false
             referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mod4_driver_links_linked_by_fkey"
+            columns: ["linked_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mod4_driver_links_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "admin_users_view"
             referencedColumns: ["id"]
           },
         ]
@@ -2404,6 +2639,27 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "mod4_otp_codes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mod4_otp_codes_used_by_fkey"
+            columns: ["used_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mod4_otp_codes_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspace_isolation_audit"
+            referencedColumns: ["workspace_id"]
+          },
+          {
             foreignKeyName: "mod4_otp_codes_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
@@ -2446,7 +2702,15 @@ export type Database = {
           type?: string
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       onboarding_requests: {
         Row: {
@@ -2491,7 +2755,15 @@ export type Database = {
           status?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_requests_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       optimization_cache: {
         Row: {
@@ -2601,6 +2873,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "optimization_runs_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "optimization_runs_warehouse_id_fkey"
             columns: ["warehouse_id"]
             isOneToOne: false
@@ -2641,6 +2920,20 @@ export type Database = {
           workspace_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "org_status_history_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "org_status_history_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspace_isolation_audit"
+            referencedColumns: ["workspace_id"]
+          },
           {
             foreignKeyName: "org_status_history_workspace_id_fkey"
             columns: ["workspace_id"]
@@ -2842,6 +3135,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "payloads_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "payloads_vehicle_id_fkey"
             columns: ["vehicle_id"]
             isOneToOne: false
@@ -2892,6 +3192,126 @@ export type Database = {
           },
         ]
       }
+      permission_set_permissions: {
+        Row: {
+          created_at: string | null
+          id: string
+          permission_id: string
+          permission_set_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          permission_id: string
+          permission_set_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          permission_id?: string
+          permission_set_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "permission_set_permissions_permission_id_fkey"
+            columns: ["permission_id"]
+            isOneToOne: false
+            referencedRelation: "permissions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "permission_set_permissions_permission_set_id_fkey"
+            columns: ["permission_set_id"]
+            isOneToOne: false
+            referencedRelation: "permission_sets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      permission_sets: {
+        Row: {
+          code: string
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          organization_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          organization_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          organization_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "permission_sets_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "workspace_isolation_audit"
+            referencedColumns: ["workspace_id"]
+          },
+          {
+            foreignKeyName: "permission_sets_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      permissions: {
+        Row: {
+          action: string
+          category: string
+          code: string
+          created_at: string | null
+          description: string
+          id: string
+          is_dangerous: boolean | null
+          resource: string
+          updated_at: string | null
+        }
+        Insert: {
+          action: string
+          category: string
+          code: string
+          created_at?: string | null
+          description: string
+          id?: string
+          is_dangerous?: boolean | null
+          resource: string
+          updated_at?: string | null
+        }
+        Update: {
+          action?: string
+          category?: string
+          code?: string
+          created_at?: string | null
+          description?: string
+          id?: string
+          is_dangerous?: boolean | null
+          resource?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           activated_at: string | null
@@ -2902,6 +3322,7 @@ export type Database = {
           invited_at: string | null
           invited_by: string | null
           onboarding_completed: boolean | null
+          organization: string | null
           phone: string | null
           registered_at: string | null
           role_assigned_at: string | null
@@ -2917,6 +3338,7 @@ export type Database = {
           invited_at?: string | null
           invited_by?: string | null
           onboarding_completed?: boolean | null
+          organization?: string | null
           phone?: string | null
           registered_at?: string | null
           role_assigned_at?: string | null
@@ -2932,13 +3354,29 @@ export type Database = {
           invited_at?: string | null
           invited_by?: string | null
           onboarding_completed?: boolean | null
+          organization?: string | null
           phone?: string | null
           registered_at?: string | null
           role_assigned_at?: string | null
           updated_at?: string | null
           user_status?: Database["public"]["Enums"]["user_status"]
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       programs: {
         Row: {
@@ -3326,6 +3764,90 @@ export type Database = {
           },
         ]
       }
+      role_permissions: {
+        Row: {
+          created_at: string | null
+          id: string
+          permission_id: string
+          role_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          permission_id: string
+          role_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          permission_id?: string
+          role_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "role_permissions_permission_id_fkey"
+            columns: ["permission_id"]
+            isOneToOne: false
+            referencedRelation: "permissions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "role_permissions_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      roles: {
+        Row: {
+          code: string
+          created_at: string | null
+          description: string | null
+          id: string
+          is_system_role: boolean | null
+          name: string
+          organization_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_system_role?: boolean | null
+          name: string
+          organization_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_system_role?: boolean | null
+          name?: string
+          organization_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "roles_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "workspace_isolation_audit"
+            referencedColumns: ["workspace_id"]
+          },
+          {
+            foreignKeyName: "roles_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       route_facilities: {
         Row: {
           distance_from_previous_km: number | null
@@ -3522,10 +4044,24 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "route_sketches_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "route_sketches_end_facility_id_fkey"
             columns: ["end_facility_id"]
             isOneToOne: false
             referencedRelation: "facilities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "route_sketches_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
             referencedColumns: ["id"]
           },
           {
@@ -3534,6 +4070,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "facilities"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "route_sketches_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspace_isolation_audit"
+            referencedColumns: ["workspace_id"]
           },
           {
             foreignKeyName: "route_sketches_workspace_id_fkey"
@@ -3608,7 +4151,29 @@ export type Database = {
           warehouse_id?: string
           zone_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "routes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "routes_locked_by_fkey"
+            columns: ["locked_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "routes_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       schedule_templates: {
         Row: {
@@ -3672,6 +4237,13 @@ export type Database = {
           warehouse_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "schedule_templates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "schedule_templates_default_driver_id_fkey"
             columns: ["default_driver_id"]
@@ -3834,6 +4406,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "scheduler_batches_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "scheduler_batches_driver_id_fkey"
             columns: ["driver_id"]
             isOneToOne: false
@@ -3978,6 +4557,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "scheduler_pre_batches_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "scheduler_pre_batches_suggested_vehicle_id_fkey"
             columns: ["suggested_vehicle_id"]
             isOneToOne: false
@@ -4025,6 +4611,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "vlms_vehicles_with_taxonomy"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scheduler_pre_batches_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspace_isolation_audit"
+            referencedColumns: ["workspace_id"]
           },
           {
             foreignKeyName: "scheduler_pre_batches_workspace_id_fkey"
@@ -4086,6 +4679,13 @@ export type Database = {
             referencedRelation: "warehouses"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "scheduler_settings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
         ]
       }
       service_area_facilities: {
@@ -4111,6 +4711,13 @@ export type Database = {
           service_area_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "service_area_facilities_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "service_area_facilities_facility_id_fkey"
             columns: ["facility_id"]
@@ -4184,6 +4791,20 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "service_areas_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_areas_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "service_areas_warehouse_id_fkey"
             columns: ["warehouse_id"]
             isOneToOne: false
@@ -4236,7 +4857,15 @@ export type Database = {
           name?: string
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "service_zones_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       slot_assignments: {
         Row: {
@@ -4291,6 +4920,13 @@ export type Database = {
           vehicle_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "slot_assignments_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "slot_assignments_facility_id_fkey"
             columns: ["facility_id"]
@@ -4404,7 +5040,15 @@ export type Database = {
           value_text?: string | null
           workspace_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "system_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tradeoff_confirmations: {
         Row: {
@@ -4895,6 +5539,27 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "tradeoffs_confirmed_by_fkey"
+            columns: ["confirmed_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tradeoffs_initiated_by_fkey"
+            columns: ["initiated_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tradeoffs_rejected_by_fkey"
+            columns: ["rejected_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "tradeoffs_source_driver_id_fkey"
             columns: ["source_driver_id"]
             isOneToOne: false
@@ -4949,6 +5614,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "vlms_vehicles_with_taxonomy"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tradeoffs_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspace_isolation_audit"
+            referencedColumns: ["workspace_id"]
           },
           {
             foreignKeyName: "tradeoffs_workspace_id_fkey"
@@ -5022,10 +5694,87 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "user_invitations_accepted_by_fkey"
+            columns: ["accepted_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_invitations_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_invitations_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_invitations_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspace_isolation_audit"
+            referencedColumns: ["workspace_id"]
+          },
+          {
             foreignKeyName: "user_invitations_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_permission_sets: {
+        Row: {
+          assigned_at: string | null
+          assigned_by: string | null
+          expires_at: string | null
+          id: string
+          permission_set_id: string
+          user_id: string
+        }
+        Insert: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          expires_at?: string | null
+          id?: string
+          permission_set_id: string
+          user_id: string
+        }
+        Update: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          expires_at?: string | null
+          id?: string
+          permission_set_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_permission_sets_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_permission_sets_permission_set_id_fkey"
+            columns: ["permission_set_id"]
+            isOneToOne: false
+            referencedRelation: "permission_sets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_permission_sets_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
             referencedColumns: ["id"]
           },
         ]
@@ -5035,24 +5784,97 @@ export type Database = {
           assigned_at: string | null
           assigned_by: string | null
           id: string
-          role: Database["public"]["Enums"]["app_role"]
+          role: Database["public"]["Enums"]["app_role"] | null
+          role_id: string
           user_id: string
         }
         Insert: {
           assigned_at?: string | null
           assigned_by?: string | null
           id?: string
-          role: Database["public"]["Enums"]["app_role"]
+          role?: Database["public"]["Enums"]["app_role"] | null
+          role_id: string
           user_id: string
         }
         Update: {
           assigned_at?: string | null
           assigned_by?: string | null
           id?: string
-          role?: Database["public"]["Enums"]["app_role"]
+          role?: Database["public"]["Enums"]["app_role"] | null
+          role_id?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_roles_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "roles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_roles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_scope_bindings: {
+        Row: {
+          assigned_at: string | null
+          assigned_by: string | null
+          expires_at: string | null
+          id: string
+          metadata: Json | null
+          scope_id: string
+          scope_type: string
+          user_id: string
+        }
+        Insert: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          expires_at?: string | null
+          id?: string
+          metadata?: Json | null
+          scope_id: string
+          scope_type: string
+          user_id: string
+        }
+        Update: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          expires_at?: string | null
+          id?: string
+          metadata?: Json | null
+          scope_id?: string
+          scope_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_scope_bindings_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_scope_bindings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_status_history: {
         Row: {
@@ -5085,7 +5907,22 @@ export type Database = {
           reason?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_status_history_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_status_history_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       vehicle_categories: {
         Row: {
@@ -5489,6 +6326,13 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "vehicle_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_types_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
             referencedColumns: ["id"]
           },
         ]
@@ -7113,7 +7957,61 @@ export type Database = {
           used_capacity_m3?: number | null
           warehouse_type?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "warehouses_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workspace_countries: {
+        Row: {
+          country_id: string
+          created_at: string
+          id: string
+          is_primary: boolean
+          workspace_id: string
+        }
+        Insert: {
+          country_id: string
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          workspace_id: string
+        }
+        Update: {
+          country_id?: string
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_countries_country_id_fkey"
+            columns: ["country_id"]
+            isOneToOne: false
+            referencedRelation: "countries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspace_countries_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspace_isolation_audit"
+            referencedColumns: ["workspace_id"]
+          },
+          {
+            foreignKeyName: "workspace_countries_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       workspace_members: {
         Row: {
@@ -7141,6 +8039,20 @@ export type Database = {
           workspace_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "workspace_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspace_members_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspace_isolation_audit"
+            referencedColumns: ["workspace_id"]
+          },
           {
             foreignKeyName: "workspace_members_workspace_id_fkey"
             columns: ["workspace_id"]
@@ -7210,6 +8122,56 @@ export type Database = {
             foreignKeyName: "workspace_readiness_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: true
+            referencedRelation: "workspace_isolation_audit"
+            referencedColumns: ["workspace_id"]
+          },
+          {
+            foreignKeyName: "workspace_readiness_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: true
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workspace_states: {
+        Row: {
+          admin_unit_id: string
+          created_at: string
+          id: string
+          workspace_id: string
+        }
+        Insert: {
+          admin_unit_id: string
+          created_at?: string
+          id?: string
+          workspace_id: string
+        }
+        Update: {
+          admin_unit_id?: string
+          created_at?: string
+          id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_states_admin_unit_id_fkey"
+            columns: ["admin_unit_id"]
+            isOneToOne: false
+            referencedRelation: "admin_units"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspace_states_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspace_isolation_audit"
+            referencedColumns: ["workspace_id"]
+          },
+          {
+            foreignKeyName: "workspace_states_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
             referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
@@ -7221,6 +8183,7 @@ export type Database = {
           created_at: string | null
           created_by: string | null
           description: string | null
+          fax: string | null
           first_admin_assigned_at: string | null
           first_vehicle_added_at: string | null
           first_warehouse_added_at: string | null
@@ -7228,11 +8191,14 @@ export type Database = {
           is_active: boolean | null
           name: string
           onboarding_completed_at: string | null
+          onboarding_current_step: string | null
           operating_model: string | null
           org_status: Database["public"]["Enums"]["org_status"]
+          org_type: string | null
           primary_contact_email: string | null
           primary_contact_name: string | null
           primary_contact_phone: string | null
+          sector: string | null
           settings: Json | null
           slug: string
           updated_at: string | null
@@ -7242,6 +8208,7 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           description?: string | null
+          fax?: string | null
           first_admin_assigned_at?: string | null
           first_vehicle_added_at?: string | null
           first_warehouse_added_at?: string | null
@@ -7249,11 +8216,14 @@ export type Database = {
           is_active?: boolean | null
           name: string
           onboarding_completed_at?: string | null
+          onboarding_current_step?: string | null
           operating_model?: string | null
           org_status?: Database["public"]["Enums"]["org_status"]
+          org_type?: string | null
           primary_contact_email?: string | null
           primary_contact_name?: string | null
           primary_contact_phone?: string | null
+          sector?: string | null
           settings?: Json | null
           slug: string
           updated_at?: string | null
@@ -7263,6 +8233,7 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           description?: string | null
+          fax?: string | null
           first_admin_assigned_at?: string | null
           first_vehicle_added_at?: string | null
           first_warehouse_added_at?: string | null
@@ -7270,11 +8241,14 @@ export type Database = {
           is_active?: boolean | null
           name?: string
           onboarding_completed_at?: string | null
+          onboarding_current_step?: string | null
           operating_model?: string | null
           org_status?: Database["public"]["Enums"]["org_status"]
+          org_type?: string | null
           primary_contact_email?: string | null
           primary_contact_name?: string | null
           primary_contact_phone?: string | null
+          sector?: string | null
           settings?: Json | null
           slug?: string
           updated_at?: string | null
@@ -7285,6 +8259,13 @@ export type Database = {
             columns: ["country_id"]
             isOneToOne: false
             referencedRelation: "countries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspaces_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
             referencedColumns: ["id"]
           },
         ]
@@ -7433,11 +8414,46 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "zone_configurations_activated_by_fkey"
+            columns: ["activated_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "zone_configurations_deactivated_by_fkey"
+            columns: ["deactivated_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "zone_configurations_draft_created_by_fkey"
+            columns: ["draft_created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "zone_configurations_parent_version_id_fkey"
             columns: ["parent_version_id"]
             isOneToOne: false
             referencedRelation: "zone_configurations"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "zone_configurations_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "zone_configurations_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspace_isolation_audit"
+            referencedColumns: ["workspace_id"]
           },
           {
             foreignKeyName: "zone_configurations_workspace_id_fkey"
@@ -7494,10 +8510,115 @@ export type Database = {
           updated_by?: string | null
           zone_manager_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "zones_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "zones_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "zones_zone_manager_id_fkey"
+            columns: ["zone_manager_id"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
+      admin_users_view: {
+        Row: {
+          app_metadata: Json | null
+          avatar_url: string | null
+          confirmed_at: string | null
+          created_at: string | null
+          email: string | null
+          email_confirmed_at: string | null
+          full_name: string | null
+          id: string | null
+          last_sign_in_at: string | null
+          organization: string | null
+          phone: string | null
+          profile_updated_at: string | null
+          role_count: number | null
+          roles: string[] | null
+          user_metadata: Json | null
+          workspace_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_members_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspace_isolation_audit"
+            referencedColumns: ["workspace_id"]
+          },
+          {
+            foreignKeyName: "workspace_members_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_logs_critical: {
+        Row: {
+          action: string | null
+          id: string | null
+          metadata: Json | null
+          new_state: Json | null
+          previous_state: Json | null
+          resource: string | null
+          resource_id: string | null
+          state_diff: Json | null
+          timestamp: string | null
+          user_email: string | null
+          user_name: string | null
+        }
+        Relationships: []
+      }
+      audit_summary_by_resource: {
+        Row: {
+          last_modified_at: string | null
+          resource: string | null
+          total_changes: number | null
+          unique_resources_affected: number | null
+          unique_users: number | null
+        }
+        Relationships: []
+      }
+      audit_summary_by_user: {
+        Row: {
+          action_counts: Json | null
+          critical_actions: number | null
+          high_actions: number | null
+          last_action_at: string | null
+          total_actions: number | null
+          user_email: string | null
+          user_id: string | null
+          user_name: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       batch_slot_utilization: {
         Row: {
           batch_id: string | null
@@ -7626,6 +8747,20 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "user_invitations_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_invitations_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspace_isolation_audit"
+            referencedColumns: ["workspace_id"]
+          },
+          {
             foreignKeyName: "user_invitations_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
@@ -7726,6 +8861,49 @@ export type Database = {
             columns: ["vehicle_id"]
             isOneToOne: false
             referencedRelation: "vlms_vehicles_with_taxonomy"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_effective_permissions: {
+        Row: {
+          action: string | null
+          category: string | null
+          permission_code: string | null
+          permission_id: string | null
+          resource: string | null
+          source: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
+      user_scopes_detailed: {
+        Row: {
+          assigned_at: string | null
+          assigned_by: string | null
+          assigned_by_email: string | null
+          expires_at: string | null
+          id: string | null
+          scope_id: string | null
+          scope_name: string | null
+          scope_type: string | null
+          user_email: string | null
+          user_id: string | null
+          user_name: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_scope_bindings_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_scope_bindings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
             referencedColumns: ["id"]
           },
         ]
@@ -8639,6 +9817,17 @@ export type Database = {
           },
         ]
       }
+      workspace_isolation_audit: {
+        Row: {
+          is_active: boolean | null
+          system_admin_count: number | null
+          user_count: number | null
+          user_emails: string[] | null
+          workspace_id: string | null
+          workspace_name: string | null
+        }
+        Relationships: []
+      }
       workspace_readiness_details: {
         Row: {
           admin_configured_at: string | null
@@ -8659,6 +9848,13 @@ export type Database = {
           workspace_name: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "workspace_readiness_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: true
+            referencedRelation: "workspace_isolation_audit"
+            referencedColumns: ["workspace_id"]
+          },
           {
             foreignKeyName: "workspace_readiness_workspace_id_fkey"
             columns: ["workspace_id"]
@@ -8835,7 +10031,47 @@ export type Database = {
         Args: { p_workspace_id: string }
         Returns: boolean
       }
+      can_access_program_resource: {
+        Args: {
+          _permission_code: string
+          _program_id: string
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      can_access_resource: {
+        Args: {
+          _facility_id?: string
+          _permission_code: string
+          _program_id?: string
+          _user_id: string
+          _warehouse_id?: string
+          _zone_id?: string
+        }
+        Returns: boolean
+      }
+      can_access_warehouse_resource: {
+        Args: {
+          _permission_code: string
+          _user_id: string
+          _warehouse_id: string
+        }
+        Returns: boolean
+      }
+      can_transition_requisition_status: {
+        Args: {
+          _new_status: string
+          _requisition_id: string
+          _user_id?: string
+        }
+        Returns: boolean
+      }
       cleanup_expired_email_otps: { Args: never; Returns: number }
+      cleanup_expired_scopes: { Args: never; Returns: number }
+      cleanup_old_audit_logs: {
+        Args: { _retention_days?: number }
+        Returns: number
+      }
       complete_dispatch: { Args: { p_batch_id: string }; Returns: boolean }
       complete_driver_activation: {
         Args: {
@@ -8848,23 +10084,56 @@ export type Database = {
         }
         Returns: boolean
       }
+      complete_onboarding: {
+        Args: { p_workspace_id: string }
+        Returns: undefined
+      }
       compute_requisition_packaging: {
         Args: { p_requisition_id: string }
         Returns: string
       }
       compute_total_slots: { Args: { config: Json }; Returns: number }
-      create_organization_with_admin: {
+      create_audit_log: {
         Args: {
-          p_country_id: string
-          p_name: string
-          p_operating_model?: string
-          p_primary_contact_email?: string
-          p_primary_contact_name?: string
-          p_primary_contact_phone?: string
-          p_slug: string
+          _action: string
+          _metadata?: Json
+          _new_state?: Json
+          _previous_state?: Json
+          _resource: string
+          _resource_id: string
+          _severity?: string
         }
         Returns: string
       }
+      create_organization_with_admin:
+        | {
+            Args: {
+              p_country_id: string
+              p_name: string
+              p_operating_model?: string
+              p_primary_contact_email?: string
+              p_primary_contact_name?: string
+              p_primary_contact_phone?: string
+              p_slug: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_country_id: string
+              p_country_ids?: string[]
+              p_fax?: string
+              p_name: string
+              p_operating_model?: string
+              p_org_type?: string
+              p_primary_contact_email?: string
+              p_primary_contact_name?: string
+              p_primary_contact_phone?: string
+              p_sector?: string
+              p_slug: string
+            }
+            Returns: string
+          }
       determine_packaging_type: {
         Args: { p_volume_m3: number; p_weight_kg: number }
         Returns: string
@@ -9078,6 +10347,10 @@ export type Database = {
           id: string
           name: string
         }[]
+      }
+      get_available_requisition_states: {
+        Args: { _requisition_id: string; _user_id?: string }
+        Returns: string[]
       }
       get_batch_slot_assignments: {
         Args: { p_batch_id: string }
@@ -9452,9 +10725,44 @@ export type Database = {
         }[]
       }
       get_user_onboarding_status: { Args: never; Returns: Json }
+      get_user_organization: { Args: never; Returns: string }
+      get_user_permission_sets: {
+        Args: { _user_id: string }
+        Returns: {
+          expires_at: string
+          permission_set_code: string
+          permission_set_name: string
+        }[]
+      }
+      get_user_permissions: {
+        Args: { _user_id: string }
+        Returns: {
+          permission_code: string
+          source: string
+        }[]
+      }
+      get_user_program_scopes: {
+        Args: { _user_id: string }
+        Returns: {
+          program_id: string
+        }[]
+      }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
+      }
+      get_user_roles: {
+        Args: { _user_id: string }
+        Returns: {
+          role_code: string
+          role_name: string
+        }[]
+      }
+      get_user_warehouse_scopes: {
+        Args: { _user_id: string }
+        Returns: {
+          warehouse_id: string
+        }[]
       }
       get_user_workspace_ids: {
         Args: { p_user_id?: string }
@@ -9541,6 +10849,10 @@ export type Database = {
         }[]
       }
       gettransactionid: { Args: never; Returns: unknown }
+      has_permission: {
+        Args: { _permission_code: string; _user_id: string }
+        Returns: boolean
+      }
       has_role:
         | {
             Args: {
@@ -9549,7 +10861,8 @@ export type Database = {
             }
             Returns: boolean
           }
-        | { Args: { role_name: string }; Returns: boolean }
+        | { Args: { _role_code: string; _user_id: string }; Returns: boolean }
+        | { Args: { role_code_param: string }; Returns: boolean }
       ingest_gps_events: {
         Args: { events: Json }
         Returns: {
@@ -9585,11 +10898,17 @@ export type Database = {
         }
         Returns: string
       }
+      is_dangerous_permission: {
+        Args: { _permission_code: string }
+        Returns: boolean
+      }
       is_slot_available: {
         Args: { p_batch_id?: string; p_slot_key: string; p_vehicle_id: string }
         Returns: boolean
       }
-      is_system_admin: { Args: never; Returns: boolean }
+      is_system_admin:
+        | { Args: never; Returns: boolean }
+        | { Args: { _user_id: string }; Returns: boolean }
       is_workspace_admin: {
         Args: { p_user_id?: string; p_workspace_id: string }
         Returns: boolean
@@ -9656,6 +10975,14 @@ export type Database = {
         Returns: boolean
       }
       revoke_invitation: { Args: { p_invitation_id: string }; Returns: boolean }
+      save_onboarding_step: {
+        Args: { p_step: string; p_workspace_id: string }
+        Returns: undefined
+      }
+      save_workspace_states: {
+        Args: { p_admin_unit_ids: string[]; p_workspace_id: string }
+        Returns: undefined
+      }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
       st_3dclosestpoint: {
@@ -10290,6 +11617,33 @@ export type Database = {
           table_name: string
         }
         Returns: string
+      }
+      user_has_facility_access: {
+        Args: { _facility_id: string; _user_id: string }
+        Returns: boolean
+      }
+      user_has_program_access: {
+        Args: { _program_id: string; _user_id: string }
+        Returns: boolean
+      }
+      user_has_role: {
+        Args: { p_role: string; p_user_id: string }
+        Returns: boolean
+      }
+      user_has_role_typed: {
+        Args: {
+          p_role: Database["public"]["Enums"]["app_role"]
+          p_user_id: string
+        }
+        Returns: boolean
+      }
+      user_has_warehouse_access: {
+        Args: { _user_id: string; _warehouse_id: string }
+        Returns: boolean
+      }
+      user_has_zone_access: {
+        Args: { _user_id: string; _zone_id: string }
+        Returns: boolean
       }
       validate_driver_device: {
         Args: { p_device_id: string }

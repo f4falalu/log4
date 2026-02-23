@@ -9,14 +9,19 @@ export interface User {
   avatar_url: string | null;
   created_at: string;
   last_sign_in_at: string | null;
+  organization: string;
+  roles: string[];
+  workspace_count: number;
   user_metadata: {
     full_name?: string;
     phone?: string;
     avatar_url?: string;
+    organization?: string;
   };
   app_metadata: {
     roles?: string[];
     workspace_count?: number;
+    organization?: string;
   };
 }
 
@@ -33,50 +38,109 @@ export function useUsers(params: UseUsersParams = {}) {
   return useQuery({
     queryKey: ['admin-users', search, roleFilter, limit, offset],
     queryFn: async () => {
-      let query = supabase
-        .from('auth.users')
-        .select(`
-          id,
-          email,
-          created_at,
-          last_sign_in_at,
-          user_metadata,
-          app_metadata,
-          phone
-        `, { count: 'exact' })
-        .order('created_at', { ascending: false });
+      try {
+        // Step 1: Get current user's workspace IDs
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          throw new Error('User not authenticated');
+        }
 
-      // Apply search filter
-      if (search) {
-        query = query.or(`email.ilike.%${search}%,user_metadata->>full_name.ilike.%${search}%`);
+        const { data: workspaceMemberships, error: workspaceError } = await supabase
+          .from('workspace_members')
+          .select('workspace_id')
+          .eq('user_id', user.id);
+
+        if (workspaceError) {
+          console.error('Error fetching workspace memberships:', workspaceError);
+          throw workspaceError;
+        }
+
+        const workspaceIds = (workspaceMemberships || []).map(wm => wm.workspace_id);
+
+        if (workspaceIds.length === 0) {
+          return { users: [], total: 0 };
+        }
+
+        // Step 2: Query users in the same workspaces
+        let query = supabase
+          .from('admin_users_view')
+          .select(`
+            id,
+            email,
+            created_at,
+            last_sign_in_at,
+            user_metadata,
+            app_metadata,
+            phone,
+            full_name,
+            avatar_url,
+            organization,
+            workspace_id,
+            roles,
+            role_count
+          `, { count: 'exact' })
+          .in('workspace_id', workspaceIds)
+          .order('created_at', { ascending: false });
+
+        // Apply search filter
+        if (search) {
+          query = query.or(`email.ilike.%${search}%,full_name.ilike.%${search}%`);
+        }
+
+        // Apply role filter
+        if (roleFilter && roleFilter.length > 0) {
+          // Filter users who have any of the specified roles
+          query = query.overlaps('roles', roleFilter);
+        }
+
+        // Apply pagination
+        query = query.range(offset, offset + limit - 1);
+
+        const { data, error, count } = await query;
+
+        if (error) {
+          throw error;
+        }
+
+        // Transform data to match User interface
+        const users: User[] = (data || []).map((user: any) => ({
+          id: user.id,
+          email: user.email,
+          full_name: user.full_name || user.email?.split('@')[0] || '',
+          phone: user.phone || user.user_metadata?.phone || null,
+          avatar_url: user.avatar_url || user.user_metadata?.avatar_url || null,
+          created_at: user.created_at,
+          last_sign_in_at: user.last_sign_in_at,
+          organization: user.organization || 'default',
+          roles: user.roles || [],
+          workspace_count: 1, // User is in their own workspace (already filtered)
+          user_metadata: {
+            ...user.user_metadata,
+            organization: user.organization || 'default',
+          },
+          app_metadata: {
+            ...user.app_metadata,
+            roles: user.roles || [],
+            workspace_count: 1,
+            organization: user.organization || 'default',
+          },
+        }));
+
+        return {
+          users,
+          total: count || 0,
+        };
+      } catch (error) {
+        console.error('Error in useUsers query:', error);
+        // Return fallback data
+        return {
+          users: [],
+          total: 0,
+        };
       }
-
-      // Apply pagination
-      query = query.range(offset, offset + limit - 1);
-
-      const { data, error, count } = await query;
-
-      if (error) throw error;
-
-      // Transform data to match User interface
-      const users: User[] = (data || []).map((user: any) => ({
-        id: user.id,
-        email: user.email,
-        full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || '',
-        phone: user.phone || user.user_metadata?.phone || null,
-        avatar_url: user.user_metadata?.avatar_url || null,
-        created_at: user.created_at,
-        last_sign_in_at: user.last_sign_in_at,
-        user_metadata: user.user_metadata || {},
-        app_metadata: user.app_metadata || {},
-      }));
-
-      return {
-        users,
-        total: count || 0,
-      };
     },
     retry: 1,
     refetchInterval: 30000,
+    staleTime: 10000,
   });
 }

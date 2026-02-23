@@ -8,6 +8,8 @@ export default function AuthCallback() {
   useEffect(() => {
     supabase.auth.onAuthStateChange((event) => {
       if (event === 'SIGNED_IN') {
+        // Navigate to root — ProtectedRoute will redirect to
+        // /onboarding for new users or /fleetops for returning users
         navigate('/');
       }
     });

@@ -2,6 +2,8 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useCanAccessPlanning } from '@/hooks/useWorkspaceReadiness';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { AppRole } from '@/types';
 import { toast } from 'sonner';
 
@@ -33,6 +35,24 @@ export function ProtectedRoute({
   const { hasRole, isLoading: roleLoading } = useUserRole();
   const location = useLocation();
 
+  // Check if user has a workspace (for onboarding redirect)
+  const isOnboardingRoute = location.pathname.startsWith('/onboarding');
+  const isInviteRoute = location.pathname.startsWith('/invite');
+  const { data: onboardingStatus, isLoading: onboardingLoading } = useQuery({
+    queryKey: ['onboarding-guard-status'],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_user_onboarding_status');
+      if (error) throw error;
+      return data as {
+        user_id: string;
+        onboarding_completed: boolean;
+        has_workspace: boolean;
+      };
+    },
+    enabled: !!user && !isOnboardingRoute && !isInviteRoute,
+    staleTime: 30000,
+  });
+
   // Check if this is a planning route that requires readiness
   const isPlanningRoute = PLANNING_ROUTES.some((route) => location.pathname.startsWith(route));
   const shouldCheckReadiness = requiresReadiness || isPlanningRoute;
@@ -46,15 +66,8 @@ export function ProtectedRoute({
     shouldCheckReadiness ? effectiveWorkspaceId : null
   );
 
-  // TEMPORARY: Auth bypass for development (remove before production)
-  const AUTH_BYPASS = localStorage.getItem('biko_dev_access') === 'granted';
-
-  if (AUTH_BYPASS) {
-    return <>{children}</>;
-  }
-
   // Combined loading state
-  const isLoading = loading || roleLoading || (shouldCheckReadiness && readinessLoading);
+  const isLoading = loading || roleLoading || (shouldCheckReadiness && readinessLoading) || (!isOnboardingRoute && !isInviteRoute && onboardingLoading);
 
   if (isLoading) {
     return (
@@ -71,6 +84,19 @@ export function ProtectedRoute({
   if (!user) {
     const redirectTo = location.pathname.startsWith('/mod4') ? '/login' : '/auth';
     return <Navigate to={redirectTo} state={{ from: location }} replace />;
+  }
+
+  // Check if user needs onboarding (no workspace yet)
+  // Users with both a workspace and a role are existing users — skip onboarding
+  // even if onboarding_completed hasn't been explicitly set (pre-V2 accounts)
+  if (
+    !isOnboardingRoute &&
+    !isInviteRoute &&
+    onboardingStatus &&
+    !onboardingStatus.has_workspace &&
+    !onboardingStatus.onboarding_completed
+  ) {
+    return <Navigate to="/onboarding" replace />;
   }
 
   // Check role requirement

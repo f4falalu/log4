@@ -4,12 +4,30 @@ import { Package } from 'lucide-react';
 import { formatWeight } from '@/lib/vlms/capacityCalculations';
 import { VehicleWithRelations } from '@/types/vlms';
 import { TierConfig } from '@/types/vlms-onboarding';
+import { VehicleCapacityVisualizer } from './VehicleCapacityVisualizer';
 
 interface VehicleCapacityCardProps {
   vehicle: VehicleWithRelations;
+  currentWeight?: number; // Optional current load for visualization
+  currentVolume?: number; // Optional current volume for visualization
 }
 
-export function VehicleCapacityCard({ vehicle }: VehicleCapacityCardProps) {
+/**
+ * Map VLMS vehicle types to visualizer types
+ */
+function mapVehicleType(vehicleType?: string | null): 'truck' | 'van' | 'pickup' | 'car' {
+  const type = vehicleType?.toLowerCase();
+
+  if (type === 'truck' || type === 'bus') return 'truck';
+  if (type === 'van') return 'van';
+  if (type === 'pickup' || type === 'suv') return 'pickup';
+  if (type === 'sedan' || type === 'car') return 'car';
+
+  // Default to van for logistics use case
+  return 'van';
+}
+
+export function VehicleCapacityCard({ vehicle, currentWeight, currentVolume }: VehicleCapacityCardProps) {
   // Extract tiers array from tiered_config object
   const tieredConfig = vehicle.tiered_config as any;
   const tierConfigs: TierConfig[] = tieredConfig?.tiers || [];
@@ -26,6 +44,20 @@ export function VehicleCapacityCard({ vehicle }: VehicleCapacityCardProps) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Vehicle Capacity Visualizer */}
+        <div className="flex justify-center py-4 border-b">
+          <VehicleCapacityVisualizer
+            vehicleType={mapVehicleType(vehicle.vehicle_type)}
+            currentWeight={currentWeight}
+            maxWeight={vehicle.capacity_kg || undefined}
+            currentVolume={currentVolume}
+            maxVolume={vehicle.capacity_m3 || undefined}
+            size="lg"
+            showLabel={false}
+            showMetrics={true}
+          />
+        </div>
+
         {/* Payload Capacity Header */}
         {vehicle.capacity_kg && (
           <div className="pb-4 border-b">

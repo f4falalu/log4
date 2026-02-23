@@ -1,14 +1,14 @@
 import { format } from 'date-fns';
-import { X, Building2, Warehouse, Calendar, FileText, Truck, Edit } from 'lucide-react';
+import { X, Building2, Warehouse, Calendar, Truck, Edit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
-import type { Invoice, InvoiceStatus } from '@/types/invoice';
+import type { Invoice } from '@/types/invoice';
 import { INVOICE_STATUS_CONFIG } from '@/types/invoice';
-import { useUpdateInvoiceStatus } from '@/hooks/useInvoices';
 import { useNavigate } from 'react-router-dom';
+import { InvoiceStatusActions } from '@/components/storefront/invoice/InvoiceStatusActions';
 
 interface InvoiceDetailPanelProps {
   invoice: Invoice;
@@ -17,7 +17,6 @@ interface InvoiceDetailPanelProps {
 
 export function InvoiceDetailPanel({ invoice, onClose }: InvoiceDetailPanelProps) {
   const navigate = useNavigate();
-  const updateStatus = useUpdateInvoiceStatus();
   const statusConfig = INVOICE_STATUS_CONFIG[invoice.status];
 
   const formatCurrency = (value: number) => {
@@ -54,10 +53,6 @@ export function InvoiceDetailPanel({ invoice, onClose }: InvoiceDetailPanelProps
         warehouseId: invoice.warehouse_id,
       },
     });
-  };
-
-  const handleStatusChange = (newStatus: InvoiceStatus) => {
-    updateStatus.mutate({ id: invoice.id, status: newStatus });
   };
 
   return (
@@ -175,52 +170,17 @@ export function InvoiceDetailPanel({ invoice, onClose }: InvoiceDetailPanelProps
               </div>
             </>
           )}
-
-          {/* Status Actions */}
-          {invoice.status === 'draft' && (
-            <>
-              <Separator />
-              <div className="space-y-2">
-                <h3 className="text-sm font-semibold text-muted-foreground">Actions</h3>
-                <div className="space-y-2">
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => handleStatusChange('ready')}
-                    disabled={updateStatus.isPending}
-                  >
-                    <FileText className="h-4 w-4 mr-2" />
-                    Mark as Ready
-                  </Button>
-                </div>
-              </div>
-            </>
-          )}
-
-          {invoice.packaging_required && invoice.status === 'ready' && (
-            <>
-              <Separator />
-              <div className="space-y-2">
-                <h3 className="text-sm font-semibold text-muted-foreground">Packaging</h3>
-                <p className="text-sm text-muted-foreground">
-                  This invoice requires packaging before dispatch.
-                </p>
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => handleStatusChange('packaging_pending')}
-                  disabled={updateStatus.isPending}
-                >
-                  Start Packaging
-                </Button>
-              </div>
-            </>
-          )}
         </div>
       </ScrollArea>
 
       {/* Footer Actions */}
       <div className="flex-shrink-0 p-4 border-t space-y-2">
+        <InvoiceStatusActions
+          invoiceId={invoice.id}
+          currentStatus={invoice.status}
+          invoiceNumber={invoice.invoice_number}
+        />
+
         {canDispatch() && (
           <Button onClick={handleDispatchToFleetOps} className="w-full">
             <Truck className="h-4 w-4 mr-2" />

@@ -5,10 +5,7 @@ import {
   Warehouse,
   Calendar,
   User,
-  Check,
-  XCircle,
   Package,
-  FileText,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -23,24 +20,19 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
-import type { Requisition, RequisitionStatus } from '@/types/requisitions';
+import type { Requisition } from '@/types/requisitions';
 import { REQUISITION_STATUS_CONFIG, REQUISITION_PURPOSES } from '@/types/requisitions';
-import { useUpdateRequisitionStatus } from '@/hooks/useRequisitions';
+import { RequisitionStatusActions } from '@/components/storefront/requisitions/RequisitionStatusActions';
 
 interface RequisitionDetailPanelProps {
   requisition: Requisition;
   onClose: () => void;
-  onApprove?: () => void;
-  onReject?: () => void;
 }
 
 export function RequisitionDetailPanel({
   requisition,
   onClose,
-  onApprove,
-  onReject,
 }: RequisitionDetailPanelProps) {
-  const updateStatus = useUpdateRequisitionStatus();
   const statusConfig = REQUISITION_STATUS_CONFIG[requisition.status];
   const purposeConfig = REQUISITION_PURPOSES.find(p => p.value === requisition.purpose);
 
@@ -61,14 +53,6 @@ export function RequisitionDetailPanel({
       case 'low': return 'bg-gray-100 text-gray-800';
       default: return 'bg-gray-100 text-gray-800';
     }
-  };
-
-  const handleApprove = () => {
-    updateStatus.mutate({ id: requisition.id, status: 'approved' });
-  };
-
-  const handleMarkReady = () => {
-    updateStatus.mutate({ id: requisition.id, status: 'ready_for_dispatch' });
   };
 
   return (
@@ -276,45 +260,11 @@ export function RequisitionDetailPanel({
 
       {/* Footer Actions */}
       <div className="flex-shrink-0 p-4 border-t space-y-2">
-        {requisition.status === 'pending' && (
-          <div className="flex gap-2">
-            <Button
-              onClick={handleApprove}
-              className="flex-1"
-              disabled={updateStatus.isPending}
-            >
-              <Check className="h-4 w-4 mr-2" />
-              Approve
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={onReject}
-              className="flex-1"
-              disabled={updateStatus.isPending}
-            >
-              <XCircle className="h-4 w-4 mr-2" />
-              Reject
-            </Button>
-          </div>
-        )}
-
-        {requisition.status === 'approved' && (
-          <Button
-            onClick={handleMarkReady}
-            className="w-full"
-            disabled={updateStatus.isPending}
-          >
-            <FileText className="h-4 w-4 mr-2" />
-            Mark Ready for Dispatch
-          </Button>
-        )}
-
-        {requisition.status === 'ready_for_dispatch' && (
-          <Button variant="outline" className="w-full">
-            <FileText className="h-4 w-4 mr-2" />
-            Create Invoice
-          </Button>
-        )}
+        <RequisitionStatusActions
+          requisitionId={requisition.id}
+          currentStatus={requisition.status}
+          requisitionNumber={requisition.sriv_number || requisition.requisition_number || 'N/A'}
+        />
       </div>
     </div>
   );
