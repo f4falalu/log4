@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { GPSPoint } from '@/hooks/admin/useSessions';
+import { tw } from '@/lib/colors';
 
 interface SessionGPSMapProps {
   gpsPoints: GPSPoint[];
@@ -69,7 +70,7 @@ export function SessionGPSMap({ gpsPoints, startLocation, endLocation }: Session
             'line-cap': 'round',
           },
           paint: {
-            'line-color': '#3b82f6',
+            'line-color': tw.blue[500],
             'line-width': 3,
             'line-opacity': 0.8,
           },
@@ -86,7 +87,7 @@ export function SessionGPSMap({ gpsPoints, startLocation, endLocation }: Session
       // Add start marker
       if (startLocation || (gpsPoints.length > 0)) {
         const start = startLocation || { lat: gpsPoints[0].latitude, lng: gpsPoints[0].longitude };
-        new maplibregl.Marker({ color: '#22c55e' })
+        new maplibregl.Marker({ color: tw.green[500] })
           .setLngLat([start.lng, start.lat])
           .setPopup(new maplibregl.Popup().setHTML('<strong>Start</strong>'))
           .addTo(map.current);
@@ -98,7 +99,7 @@ export function SessionGPSMap({ gpsPoints, startLocation, endLocation }: Session
           lat: gpsPoints[gpsPoints.length - 1].latitude,
           lng: gpsPoints[gpsPoints.length - 1].longitude,
         };
-        new maplibregl.Marker({ color: '#ef4444' })
+        new maplibregl.Marker({ color: tw.red[500] })
           .setLngLat([end.lng, end.lat])
           .setPopup(new maplibregl.Popup().setHTML('<strong>End</strong>'))
           .addTo(map.current);

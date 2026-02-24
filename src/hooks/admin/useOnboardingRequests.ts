@@ -51,15 +51,18 @@ export function useOnboardingRequests() {
   });
 }
 
-export function useDriverDevices() {
+export function useDriverDevices(workspaceId: string | null | undefined) {
   return useQuery({
-    queryKey: ['admin-integration', 'devices'],
+    queryKey: ['admin-integration', 'devices', workspaceId],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_driver_devices');
+      const { data, error } = await supabase.rpc('get_driver_devices', {
+        p_workspace_id: workspaceId!,
+      });
 
       if (error) throw error;
       return (data || []) as DriverDevice[];
     },
+    enabled: !!workspaceId,
     retry: 1,
     staleTime: 30000,
   });

@@ -6,6 +6,7 @@
 import type maplibregl from 'maplibre-gl';
 import { BaseLayer } from './BaseLayer';
 import type { MapFeatureCollection } from '@/types/live-map';
+import { tw, mapEntityColors } from '@/lib/colors';
 
 export interface WarehouseMarkerProperties {
   id: string;
@@ -37,8 +38,8 @@ export class WarehouseMarkerLayer extends BaseLayer<MapFeatureCollection<Warehou
       source: SOURCE_ID,
       paint: {
         'circle-radius': ['interpolate', ['linear'], ['zoom'], 8, 6, 12, 10, 16, 14],
-        'circle-color': '#8b5cf6', // violet-500
-        'circle-stroke-color': '#7c3aed', // violet-600
+        'circle-color': mapEntityColors.warehouse,
+        'circle-stroke-color': mapEntityColors.warehouseStroke,
         'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 8, 2, 12, 3, 16, 4],
         'circle-opacity': 0.85,
         'circle-stroke-opacity': 0.9,
@@ -52,8 +53,8 @@ export class WarehouseMarkerLayer extends BaseLayer<MapFeatureCollection<Warehou
       source: SOURCE_ID,
       paint: {
         'circle-radius': ['interpolate', ['linear'], ['zoom'], 8, 4, 12, 7, 16, 10],
-        'circle-color': '#8b5cf6',
-        'circle-stroke-color': '#ffffff',
+        'circle-color': mapEntityColors.warehouse,
+        'circle-stroke-color': tw.white,
         'circle-stroke-width': 1.5,
       },
     });
@@ -73,8 +74,8 @@ export class WarehouseMarkerLayer extends BaseLayer<MapFeatureCollection<Warehou
         'text-max-width': 12,
       },
       paint: {
-        'text-color': '#5b21b6',
-        'text-halo-color': '#ffffff',
+        'text-color': mapEntityColors.warehouseLabel,
+        'text-halo-color': tw.white,
         'text-halo-width': 1,
       },
     });

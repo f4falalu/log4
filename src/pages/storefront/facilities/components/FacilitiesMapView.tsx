@@ -2,6 +2,7 @@ import { useRef, useEffect, useState } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { Facility } from '@/types';
+import { facilityPriorityColors, popupColors, tw } from '@/lib/colors';
 
 interface FacilitiesMapViewProps {
   facilities: Facility[];
@@ -10,13 +11,7 @@ interface FacilitiesMapViewProps {
   onViewDetails: (facility: Facility) => void;
 }
 
-// Color mapping for level of care
-const levelColors: Record<string, string> = {
-  Tertiary: '#dc2626',
-  Secondary: '#ea580c',
-  Primary: '#16a34a',
-  default: '#6b7280',
-};
+const levelColors: Record<string, string> = facilityPriorityColors;
 
 export function FacilitiesMapView({
   facilities,
@@ -111,24 +106,24 @@ export function FacilitiesMapView({
           <div style="min-width: 250px; max-width: 300px; font-family: system-ui, sans-serif;">
             <div style="margin-bottom: 8px;">
               <h4 style="font-weight: 600; font-size: 14px; margin: 0;">${facility.name}</h4>
-              <p style="font-size: 12px; color: #6b7280; margin: 4px 0 0 0;">
+              <p style="font-size: 12px; color: ${popupColors.textSecondary}; margin: 4px 0 0 0;">
                 ${facility.lga || ''}${facility.lga && facility.state ? ', ' : ''}${facility.state || ''}
               </p>
             </div>
 
             <div style="display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; font-size: 12px;">
-              <span style="color: #6b7280;">${facility.address || 'No address'}</span>
+              <span style="color: ${popupColors.textSecondary};">${facility.address || 'No address'}</span>
             </div>
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
-              <div style="text-align: center; padding: 8px; background: #f3f4f6; border-radius: 4px;">
-                <div style="font-size: 11px; color: #6b7280;">Storage</div>
+              <div style="text-align: center; padding: 8px; background: ${popupColors.bgSubtle}; border-radius: 4px;">
+                <div style="font-size: 11px; color: ${popupColors.textSecondary};">Storage</div>
                 <div style="font-size: 14px; font-weight: 500;">
                   ${facility.storage_capacity?.toLocaleString() ?? 'N/A'}
                 </div>
               </div>
-              <div style="text-align: center; padding: 8px; background: #f3f4f6; border-radius: 4px;">
-                <div style="font-size: 11px; color: #6b7280;">General</div>
+              <div style="text-align: center; padding: 8px; background: ${popupColors.bgSubtle}; border-radius: 4px;">
+                <div style="font-size: 11px; color: ${popupColors.textSecondary};">General</div>
                 <div style="font-size: 14px; font-weight: 500;">
                   ${facility.capacity?.toLocaleString() ?? 'N/A'}
                 </div>
@@ -138,20 +133,20 @@ export function FacilitiesMapView({
             ${
               facility.pcr_service || facility.cd4_service
                 ? `<div style="display: flex; gap: 4px; margin-bottom: 8px;">
-                    ${facility.pcr_service ? '<span style="display: inline-flex; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 500; background: #dcfce7; color: #166534;">PCR</span>' : ''}
-                    ${facility.cd4_service ? '<span style="display: inline-flex; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 500; background: #dbeafe; color: #1e40af;">CD4</span>' : ''}
+                    ${facility.pcr_service ? `<span style="display: inline-flex; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 500; background: ${popupColors.badgePcr.bg}; color: ${popupColors.badgePcr.text};">PCR</span>` : ''}
+                    ${facility.cd4_service ? `<span style="display: inline-flex; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 500; background: ${popupColors.badgeCd4.bg}; color: ${popupColors.badgeCd4.text};">CD4</span>` : ''}
                   </div>`
                 : ''
             }
 
-            <div style="display: flex; gap: 8px; padding-top: 8px; border-top: 1px solid #e5e7eb;">
+            <div style="display: flex; gap: 8px; padding-top: 8px; border-top: 1px solid ${popupColors.border};">
               <button id="view-details-${facility.id}" style="
                 flex: 1;
                 padding: 6px 12px;
                 font-size: 12px;
                 font-weight: 500;
                 color: white;
-                background: #2563eb;
+                background: ${popupColors.btnPrimary};
                 border: none;
                 border-radius: 4px;
                 cursor: pointer;
@@ -160,8 +155,8 @@ export function FacilitiesMapView({
                 padding: 6px 12px;
                 font-size: 12px;
                 font-weight: 500;
-                color: #374151;
-                background: #f3f4f6;
+                color: ${popupColors.textPrimary};
+                background: ${popupColors.bgSubtle};
                 border: none;
                 border-radius: 4px;
                 cursor: pointer;

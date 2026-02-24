@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import { tw } from '@/lib/colors';
 import { useTheme } from 'next-themes';
 import {
   ArrowLeft,
@@ -472,7 +473,7 @@ export function SandboxRouteBuilder({ onClose }: SandboxRouteBuilderProps) {
         type: 'line',
         source: 'tethers',
         paint: {
-          'line-color': '#3b82f6',
+          'line-color': tw.blue[500],
           'line-width': 2,
           'line-dasharray': [4, 3],
           'line-opacity': 0.7,
@@ -503,7 +504,7 @@ export function SandboxRouteBuilder({ onClose }: SandboxRouteBuilderProps) {
       el.innerHTML = `
         <div style="
           width: 40px; height: 40px;
-          background: #3b82f6;
+          background: ${tw.blue[500]};
           border: 3px solid white;
           border-radius: 50%;
           display: flex; align-items: center; justify-content: center;
@@ -515,7 +516,7 @@ export function SandboxRouteBuilder({ onClose }: SandboxRouteBuilderProps) {
         .setLngLat([zoneCenter.lng, zoneCenter.lat])
         .setPopup(
           new maplibregl.Popup({ offset: 25 }).setHTML(
-            `<strong>${selectedZone?.name || 'Zone Center'}</strong><div style="font-size:12px;color:#666;">Zone Center</div>`
+            `<strong>${selectedZone?.name || 'Zone Center'}</strong><div style="font-size:12px;color:${tw.gray[500]};">Zone Center</div>`
           )
         )
         .addTo(map);
@@ -535,8 +536,8 @@ export function SandboxRouteBuilder({ onClose }: SandboxRouteBuilderProps) {
       el.innerHTML = `
         <div data-marker-inner="true" style="
           width: 26px; height: 26px;
-          background: ${isSelected ? '#10b981' : '#6b7280'};
-          border: 2px solid ${isSelected ? '#059669' : '#9ca3af'};
+          background: ${isSelected ? tw.emerald[500] : tw.gray[500]};
+          border: 2px solid ${isSelected ? tw.emerald[600] : tw.gray[400]};
           border-radius: 50%;
           display: flex; align-items: center; justify-content: center;
           box-shadow: 0 2px 6px rgba(0,0,0,0.25);
@@ -559,8 +560,8 @@ export function SandboxRouteBuilder({ onClose }: SandboxRouteBuilderProps) {
       const popup = new maplibregl.Popup({ offset: 18, closeButton: false }).setHTML(
         `<div style="padding:4px;min-width:140px;">
           <strong>${f.name}</strong>
-          <div style="font-size:12px;color:#666;">${f.lga || 'Unknown LGA'} &middot; ${f.level_of_care || 'N/A'}</div>
-          ${isSelected ? `<div style="font-size:11px;color:#10b981;margin-top:4px;">Stop #${visitIndex ?? ''}</div>` : ''}
+          <div style="font-size:12px;color:${tw.gray[500]};">${f.lga || 'Unknown LGA'} &middot; ${f.level_of_care || 'N/A'}</div>
+          ${isSelected ? `<div style="font-size:11px;color:${tw.emerald[500]};margin-top:4px;">Stop #${visitIndex ?? ''}</div>` : ''}
         </div>`
       );
 

@@ -34,8 +34,8 @@ const STATUS_COLORS: Record<string, string> = {
   revoked: 'bg-red-500/10 text-red-600',
 };
 
-export function LinkedUsersTable() {
-  const { data: links = [], isLoading, error } = useLinkedUsers();
+export function LinkedUsersTable({ workspaceId }: { workspaceId: string | null | undefined }) {
+  const { data: links = [], isLoading, error } = useLinkedUsers(workspaceId);
   const suspendLink = useSuspendLink();
   const revokeLink = useRevokeLink();
 

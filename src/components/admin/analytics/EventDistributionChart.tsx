@@ -11,19 +11,9 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 import { useEventDistribution } from '@/hooks/admin/useAnalytics';
+import { chartColors } from '@/lib/colors';
 
-const COLORS = [
-  '#3b82f6', // blue
-  '#22c55e', // green
-  '#f59e0b', // amber
-  '#ef4444', // red
-  '#8b5cf6', // purple
-  '#06b6d4', // cyan
-  '#f97316', // orange
-  '#ec4899', // pink
-  '#84cc16', // lime
-  '#6366f1', // indigo
-];
+const COLORS = chartColors;
 
 interface EventDistributionChartProps {
   days?: number;

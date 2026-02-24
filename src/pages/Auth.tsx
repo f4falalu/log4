@@ -189,22 +189,16 @@ export default function Auth() {
   };
 
   const handleLogin = async () => {
-    try {
-      emailPasswordSchema.parse({
-        email: formData.email,
-        password: formData.password,
-      });
-    } catch (err) {
-      if (err instanceof z.ZodError) {
-        const fieldErrors: Record<string, string> = {};
-        err.errors.forEach((e) => {
-          if (e.path[0]) {
-            fieldErrors[e.path[0] as string] = e.message;
-          }
-        });
-        setErrors(fieldErrors);
-        return;
-      }
+    const loginErrors: Record<string, string> = {};
+    if (!formData.email || !z.string().email().safeParse(formData.email).success) {
+      loginErrors.email = 'Please enter a valid email address';
+    }
+    if (!formData.password) {
+      loginErrors.password = 'Please enter your password';
+    }
+    if (Object.keys(loginErrors).length > 0) {
+      setErrors(loginErrors);
+      return;
     }
 
     setLoading(true);

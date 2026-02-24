@@ -6,22 +6,12 @@
 import type maplibregl from 'maplibre-gl';
 import { BaseLayer } from './BaseLayer';
 import type { MapFeatureCollection, DeliveryMarkerProperties, DriverStatus } from '@/types/live-map';
+import { statusColors, tw } from '@/lib/colors';
 
 const LAYER_ID = 'delivery-markers';
 const SOURCE_ID = 'delivery-markers-source';
 
-// Status colors
-const STATUS_COLORS: Record<DriverStatus | 'pending' | 'completed', string> = {
-  INACTIVE: '#9ca3af',
-  ACTIVE: '#3b82f6',
-  EN_ROUTE: '#3b82f6',
-  AT_STOP: '#22c55e',
-  DELAYED: '#ef4444',
-  COMPLETED: '#10b981',
-  SUSPENDED: '#f59e0b',
-  pending: '#9ca3af',
-  completed: '#10b981',
-};
+const STATUS_COLORS: Record<DriverStatus | 'pending' | 'completed', string> = statusColors;
 
 export class DeliveryMarkerLayer extends BaseLayer<MapFeatureCollection<DeliveryMarkerProperties>> {
   private currentData: MapFeatureCollection<DeliveryMarkerProperties> | null = null;
@@ -95,13 +85,13 @@ export class DeliveryMarkerLayer extends BaseLayer<MapFeatureCollection<Delivery
           12, 5,
           16, 8,
         ],
-        'circle-color': '#ffffff',
+        'circle-color': tw.white,
         'circle-stroke-color': [
           'match',
           ['get', 'status'],
           'COMPLETED', STATUS_COLORS.COMPLETED,
           'AT_STOP', STATUS_COLORS.AT_STOP,
-          '#6b7280',
+          tw.gray[500],
         ],
         'circle-stroke-width': 1,
       },
@@ -126,7 +116,7 @@ export class DeliveryMarkerLayer extends BaseLayer<MapFeatureCollection<Delivery
         'text-anchor': 'center',
       },
       paint: {
-        'text-color': '#374151',
+        'text-color': tw.gray[700],
       },
     });
 
@@ -145,8 +135,8 @@ export class DeliveryMarkerLayer extends BaseLayer<MapFeatureCollection<Delivery
         'text-max-width': 12,
       },
       paint: {
-        'text-color': '#374151',
-        'text-halo-color': '#ffffff',
+        'text-color': tw.gray[700],
+        'text-halo-color': tw.white,
         'text-halo-width': 1,
       },
     });

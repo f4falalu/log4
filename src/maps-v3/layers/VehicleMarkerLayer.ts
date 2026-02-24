@@ -6,6 +6,7 @@
 import type maplibregl from 'maplibre-gl';
 import { BaseLayer } from './BaseLayer';
 import type { MapFeatureCollection, VehicleMarkerProperties } from '@/types/live-map';
+import { tw, mapEntityColors } from '@/lib/colors';
 
 const LAYER_ID = 'vehicle-markers';
 const SOURCE_ID = 'vehicle-markers-source';
@@ -46,10 +47,10 @@ export class VehicleMarkerLayer extends BaseLayer<MapFeatureCollection<VehicleMa
         'circle-color': [
           'case',
           ['get', 'isActive'],
-          '#8b5cf6', // purple for active
-          '#9ca3af', // gray for inactive
+          mapEntityColors.vehicle,
+          tw.gray[400],
         ],
-        'circle-stroke-color': '#ffffff',
+        'circle-stroke-color': tw.white,
         'circle-stroke-width': 2,
         'circle-opacity': 0.9,
       },
@@ -82,8 +83,8 @@ export class VehicleMarkerLayer extends BaseLayer<MapFeatureCollection<VehicleMa
         'text-transform': 'uppercase',
       },
       paint: {
-        'text-color': '#374151',
-        'text-halo-color': '#ffffff',
+        'text-color': tw.gray[700],
+        'text-halo-color': tw.white,
         'text-halo-width': 1,
       },
     });
@@ -102,14 +103,14 @@ export class VehicleMarkerLayer extends BaseLayer<MapFeatureCollection<VehicleMa
         'text-anchor': 'center',
       },
       paint: {
-        'text-color': '#ffffff',
+        'text-color': tw.white,
         'text-halo-color': [
           'case',
           ['>', ['get', 'utilization'], 80],
-          '#ef4444', // red when high
+          tw.red[500],
           ['>', ['get', 'utilization'], 50],
-          '#f59e0b', // amber when medium
-          '#22c55e', // green when low
+          tw.amber[500],
+          tw.green[500],
         ],
         'text-halo-width': 4,
       },

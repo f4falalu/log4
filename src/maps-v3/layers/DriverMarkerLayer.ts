@@ -6,20 +6,12 @@
 import type maplibregl from 'maplibre-gl';
 import { BaseLayer } from './BaseLayer';
 import type { MapFeatureCollection, DriverMarkerProperties, DriverStatus } from '@/types/live-map';
+import { statusColors, tw } from '@/lib/colors';
 
 const LAYER_ID = 'driver-markers';
 const SOURCE_ID = 'driver-markers-source';
 
-// Status colors
-const STATUS_COLORS: Record<DriverStatus, string> = {
-  INACTIVE: '#6b7280', // gray
-  ACTIVE: '#3b82f6', // blue
-  EN_ROUTE: '#3b82f6', // blue
-  AT_STOP: '#22c55e', // green
-  DELAYED: '#ef4444', // red
-  COMPLETED: '#10b981', // emerald
-  SUSPENDED: '#f59e0b', // amber
-};
+const STATUS_COLORS: Record<DriverStatus, string> = statusColors;
 
 export class DriverMarkerLayer extends BaseLayer<MapFeatureCollection<DriverMarkerProperties>> {
   private currentData: MapFeatureCollection<DriverMarkerProperties> | null = null;
@@ -66,7 +58,7 @@ export class DriverMarkerLayer extends BaseLayer<MapFeatureCollection<DriverMark
           'SUSPENDED', STATUS_COLORS.SUSPENDED,
           STATUS_COLORS.INACTIVE, // default
         ],
-        'circle-stroke-color': '#ffffff',
+        'circle-stroke-color': tw.white,
         'circle-stroke-width': 2,
         'circle-opacity': [
           'case',
@@ -92,8 +84,8 @@ export class DriverMarkerLayer extends BaseLayer<MapFeatureCollection<DriverMark
         'text-max-width': 10,
       },
       paint: {
-        'text-color': '#1f2937',
-        'text-halo-color': '#ffffff',
+        'text-color': tw.gray[800],
+        'text-halo-color': tw.white,
         'text-halo-width': 1,
       },
     });

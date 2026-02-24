@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import { tw } from '@/lib/colors';
 import { useTheme } from 'next-themes';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -208,7 +209,7 @@ export function FacilityMapSelector({
         <div style="
           width: 36px;
           height: 36px;
-          background: #3b82f6;
+          background: ${tw.blue[500]};
           border: 3px solid white;
           border-radius: 50%;
           display: flex;
@@ -222,7 +223,7 @@ export function FacilityMapSelector({
       const popup = new maplibregl.Popup({ offset: 25 }).setHTML(`
         <div style="padding: 4px;">
           <strong>${warehouse.name}</strong>
-          <div style="font-size: 12px; color: #666;">Origin Warehouse</div>
+          <div style="font-size: 12px; color: ${tw.gray[500]};">Origin Warehouse</div>
         </div>
       `);
 
@@ -247,8 +248,8 @@ export function FacilityMapSelector({
         <div style="
           width: 28px;
           height: 28px;
-          background: ${isSelected ? '#10b981' : '#6b7280'};
-          border: 2px solid ${isSelected ? '#059669' : '#9ca3af'};
+          background: ${isSelected ? tw.emerald[500] : tw.gray[500]};
+          border: 2px solid ${isSelected ? tw.emerald[600] : tw.gray[400]};
           border-radius: 50%;
           display: flex;
           align-items: center;
@@ -273,9 +274,9 @@ export function FacilityMapSelector({
       const popup = new maplibregl.Popup({ offset: 20, closeButton: false }).setHTML(`
         <div style="padding: 4px; min-width: 150px;">
           <strong>${facility.name}</strong>
-          <div style="font-size: 12px; color: #666;">${facility.address || 'No address'}</div>
-          ${facility.service_zone ? `<div style="font-size: 11px; color: #888; margin-top: 2px;">Zone: ${facility.service_zone}</div>` : ''}
-          <div style="font-size: 11px; color: ${isSelected ? '#10b981' : '#888'}; margin-top: 4px;">
+          <div style="font-size: 12px; color: ${tw.gray[500]};">${facility.address || 'No address'}</div>
+          ${facility.service_zone ? `<div style="font-size: 11px; color: ${tw.gray[400]}; margin-top: 2px;">Zone: ${facility.service_zone}</div>` : ''}
+          <div style="font-size: 11px; color: ${isSelected ? tw.emerald[500] : tw.gray[400]}; margin-top: 4px;">
             ${isSelected ? '✓ Selected' : 'Click to select'}
           </div>
         </div>

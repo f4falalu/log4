@@ -47,6 +47,7 @@ export function ProtectedRoute({
         user_id: string;
         onboarding_completed: boolean;
         has_workspace: boolean;
+        has_role: boolean;
       };
     },
     enabled: !!user && !isOnboardingRoute && !isInviteRoute,
@@ -94,6 +95,7 @@ export function ProtectedRoute({
     !isInviteRoute &&
     onboardingStatus &&
     !onboardingStatus.has_workspace &&
+    !onboardingStatus.has_role &&
     !onboardingStatus.onboarding_completed
   ) {
     return <Navigate to="/onboarding" replace />;

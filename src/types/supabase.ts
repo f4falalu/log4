@@ -5050,6 +5050,259 @@ export type Database = {
           },
         ]
       }
+      trade_off_confirmations: {
+        Row: {
+          confirmed: boolean | null
+          confirmed_at: string | null
+          created_at: string | null
+          driver_id: string
+          driver_name: string
+          id: string
+          role: string
+          trade_off_id: string
+          vehicle_id: string | null
+        }
+        Insert: {
+          confirmed?: boolean | null
+          confirmed_at?: string | null
+          created_at?: string | null
+          driver_id: string
+          driver_name: string
+          id?: string
+          role: string
+          trade_off_id: string
+          vehicle_id?: string | null
+        }
+        Update: {
+          confirmed?: boolean | null
+          confirmed_at?: string | null
+          created_at?: string | null
+          driver_id?: string
+          driver_name?: string
+          id?: string
+          role?: string
+          trade_off_id?: string
+          vehicle_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trade_off_confirmations_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_off_confirmations_trade_off_id_fkey"
+            columns: ["trade_off_id"]
+            isOneToOne: false
+            referencedRelation: "trade_offs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_off_confirmations_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicle_slot_availability"
+            referencedColumns: ["vehicle_id"]
+          },
+          {
+            foreignKeyName: "trade_off_confirmations_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicle_tier_stats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_off_confirmations_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_off_confirmations_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles_unified_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_off_confirmations_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles_with_taxonomy"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_off_confirmations_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles_with_tier_stats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_off_confirmations_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vlms_vehicles_with_taxonomy"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trade_off_items: {
+        Row: {
+          allocated_quantities: Json
+          created_at: string | null
+          id: string
+          item_name: string
+          original_quantity: number
+          trade_off_id: string
+          unit: string
+        }
+        Insert: {
+          allocated_quantities?: Json
+          created_at?: string | null
+          id?: string
+          item_name: string
+          original_quantity: number
+          trade_off_id: string
+          unit?: string
+        }
+        Update: {
+          allocated_quantities?: Json
+          created_at?: string | null
+          id?: string
+          item_name?: string
+          original_quantity?: number
+          trade_off_id?: string
+          unit?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trade_off_items_trade_off_id_fkey"
+            columns: ["trade_off_id"]
+            isOneToOne: false
+            referencedRelation: "trade_offs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trade_offs: {
+        Row: {
+          cancelled_at: string | null
+          created_at: string | null
+          executed_at: string | null
+          handover_lat: number | null
+          handover_lng: number | null
+          id: string
+          initiated_by: string | null
+          original_dispatch_id: string | null
+          reason: string | null
+          receiving_vehicle_ids: string[]
+          source_driver_id: string | null
+          source_vehicle_id: string | null
+          status: Database["public"]["Enums"]["tradeoff_status"]
+          updated_at: string | null
+        }
+        Insert: {
+          cancelled_at?: string | null
+          created_at?: string | null
+          executed_at?: string | null
+          handover_lat?: number | null
+          handover_lng?: number | null
+          id?: string
+          initiated_by?: string | null
+          original_dispatch_id?: string | null
+          reason?: string | null
+          receiving_vehicle_ids?: string[]
+          source_driver_id?: string | null
+          source_vehicle_id?: string | null
+          status?: Database["public"]["Enums"]["tradeoff_status"]
+          updated_at?: string | null
+        }
+        Update: {
+          cancelled_at?: string | null
+          created_at?: string | null
+          executed_at?: string | null
+          handover_lat?: number | null
+          handover_lng?: number | null
+          id?: string
+          initiated_by?: string | null
+          original_dispatch_id?: string | null
+          reason?: string | null
+          receiving_vehicle_ids?: string[]
+          source_driver_id?: string | null
+          source_vehicle_id?: string | null
+          status?: Database["public"]["Enums"]["tradeoff_status"]
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trade_offs_initiated_by_fkey"
+            columns: ["initiated_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_offs_source_driver_id_fkey"
+            columns: ["source_driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_offs_source_vehicle_id_fkey"
+            columns: ["source_vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicle_slot_availability"
+            referencedColumns: ["vehicle_id"]
+          },
+          {
+            foreignKeyName: "trade_offs_source_vehicle_id_fkey"
+            columns: ["source_vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicle_tier_stats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_offs_source_vehicle_id_fkey"
+            columns: ["source_vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_offs_source_vehicle_id_fkey"
+            columns: ["source_vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles_unified_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_offs_source_vehicle_id_fkey"
+            columns: ["source_vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles_with_taxonomy"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_offs_source_vehicle_id_fkey"
+            columns: ["source_vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles_with_tier_stats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_offs_source_vehicle_id_fkey"
+            columns: ["source_vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vlms_vehicles_with_taxonomy"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tradeoff_confirmations: {
         Row: {
           confirmation_location: unknown
@@ -10105,35 +10358,22 @@ export type Database = {
         }
         Returns: string
       }
-      create_organization_with_admin:
-        | {
-            Args: {
-              p_country_id: string
-              p_name: string
-              p_operating_model?: string
-              p_primary_contact_email?: string
-              p_primary_contact_name?: string
-              p_primary_contact_phone?: string
-              p_slug: string
-            }
-            Returns: string
-          }
-        | {
-            Args: {
-              p_country_id: string
-              p_country_ids?: string[]
-              p_fax?: string
-              p_name: string
-              p_operating_model?: string
-              p_org_type?: string
-              p_primary_contact_email?: string
-              p_primary_contact_name?: string
-              p_primary_contact_phone?: string
-              p_sector?: string
-              p_slug: string
-            }
-            Returns: string
-          }
+      create_organization_with_admin: {
+        Args: {
+          p_country_id: string
+          p_country_ids?: string[]
+          p_fax?: string
+          p_name: string
+          p_operating_model?: string
+          p_org_type?: string
+          p_primary_contact_email?: string
+          p_primary_contact_name?: string
+          p_primary_contact_phone?: string
+          p_sector?: string
+          p_slug: string
+        }
+        Returns: string
+      }
       determine_packaging_type: {
         Args: { p_volume_m3: number; p_weight_kg: number }
         Returns: string
@@ -10445,8 +10685,20 @@ export type Database = {
           total_items_delivered: number
         }[]
       }
+      get_driver_costs: {
+        Args: { limit_count?: number }
+        Returns: {
+          cost_per_item: number
+          distance_covered: number
+          driver_id: string
+          fuel_cost: number
+          items_delivered: number
+          operational_cost: number
+          total_cost: number
+        }[]
+      }
       get_driver_devices: {
-        Args: never
+        Args: { p_workspace_id: string }
         Returns: {
           device_id: string
           device_name: string
@@ -10606,7 +10858,7 @@ export type Database = {
         Returns: Json
       }
       get_mod4_linked_users: {
-        Args: never
+        Args: { p_workspace_id: string }
         Returns: {
           driver_id: string
           id: string
@@ -10633,6 +10885,7 @@ export type Database = {
           total_slot_cost: number
         }[]
       }
+      get_program_metrics: { Args: { _program_code: string }; Returns: Json }
       get_program_performance: {
         Args: { p_end_date?: string; p_start_date?: string }
         Returns: {
@@ -10713,6 +10966,29 @@ export type Database = {
         Args: { p_end_date?: string; p_start_date?: string }
         Returns: Json
       }
+      get_top_drivers: {
+        Args: { limit_count?: number; metric?: string }
+        Returns: {
+          completed_batches: number
+          driver_id: string
+          driver_name: string
+          fuel_efficiency_km_per_liter: number
+          on_time_rate: number
+          total_incidents: number
+          total_items_delivered: number
+        }[]
+      }
+      get_top_vehicles_by_ontime: {
+        Args: { limit_count?: number }
+        Returns: {
+          on_time_batches: number
+          on_time_rate: number
+          total_batches: number
+          vehicle_id: string
+          vehicle_number: string
+          vehicle_type: string
+        }[]
+      }
       get_user_admin_workspace_ids: {
         Args: { p_user_id?: string }
         Returns: string[]
@@ -10787,6 +11063,17 @@ export type Database = {
           workspace_count: number
         }[]
       }
+      get_vehicle_costs: {
+        Args: { limit_count?: number }
+        Returns: {
+          fuel_consumed_liters: number
+          fuel_cost: number
+          maintenance_cost: number
+          maintenance_events: number
+          total_cost: number
+          vehicle_id: string
+        }[]
+      }
       get_vehicle_kpis: {
         Args: never
         Returns: {
@@ -10816,6 +11103,18 @@ export type Database = {
           total_weight_kg: number
           underutilized_deliveries: number
           vehicle_capacity_kg: number
+          vehicle_id: string
+          vehicle_type: string
+        }[]
+      }
+      get_vehicles_needing_maintenance: {
+        Args: never
+        Returns: {
+          last_maintenance_date: string
+          maintenance_in_progress: number
+          plate_number: string
+          total_distance_km: number
+          total_maintenance_cost: number
           vehicle_id: string
           vehicle_type: string
         }[]
@@ -11735,6 +12034,14 @@ export type Database = {
         | "published"
         | "cancelled"
       scheduling_mode: "manual" | "ai_optimized" | "uploaded" | "template"
+      tradeoff_status:
+        | "initiated"
+        | "receivers_selected"
+        | "allocation_complete"
+        | "confirmations_pending"
+        | "all_confirmed"
+        | "executed"
+        | "cancelled"
       user_status: "invited" | "registered" | "role_assigned" | "active"
       vehicle_status: "available" | "in-use" | "maintenance"
       vehicle_type: "truck" | "van" | "pickup" | "car"
@@ -11955,6 +12262,15 @@ export const Constants = {
         "cancelled",
       ],
       scheduling_mode: ["manual", "ai_optimized", "uploaded", "template"],
+      tradeoff_status: [
+        "initiated",
+        "receivers_selected",
+        "allocation_complete",
+        "confirmations_pending",
+        "all_confirmed",
+        "executed",
+        "cancelled",
+      ],
       user_status: ["invited", "registered", "role_assigned", "active"],
       vehicle_status: ["available", "in-use", "maintenance"],
       vehicle_type: ["truck", "van", "pickup", "car"],

@@ -1,6 +1,17 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import type { Program, ProgramFormData, ProgramFilters } from '@/types/program';
+import type { Program, ProgramFormData, ProgramFilters, ProgramMetrics } from '@/types/program';
+
+const EMPTY_METRICS: ProgramMetrics = {
+  facility_count: 0,
+  active_requisitions: 0,
+  active_schedules: 0,
+  active_batches: 0,
+  pending_batches: 0,
+  stockout_count: 0,
+  fulfillment_rate: 0,
+  avg_delivery_time: 0,
+};
 
 // Fetch programs with filters
 export function usePrograms(filters?: ProgramFilters) {
@@ -12,7 +23,6 @@ export function usePrograms(filters?: ProgramFilters) {
         .select('*')
         .order('created_at', { ascending: false });
 
-      // Apply filters
       if (filters?.search) {
         query = query.or(
           `name.ilike.%${filters.search}%,code.ilike.%${filters.search}%`
@@ -35,23 +45,21 @@ export function usePrograms(filters?: ProgramFilters) {
 
       if (error) throw error;
 
-      // Fetch metrics for each program
-      // TODO: Replace with actual metrics from database views/aggregates
-      const programsWithMetrics = data?.map((program) => ({
-        ...program,
-        metrics: {
-          facility_count: Math.floor(Math.random() * 50) + 10,
-          active_requisitions: Math.floor(Math.random() * 20),
-          active_schedules: Math.floor(Math.random() * 15),
-          active_batches: Math.floor(Math.random() * 10),
-          pending_batches: Math.floor(Math.random() * 5),
-          stockout_count: Math.floor(Math.random() * 3),
-          fulfillment_rate: 85 + Math.floor(Math.random() * 15),
-          avg_delivery_time: 2 + Math.random() * 3,
-        },
-      })) as Program[];
+      // Fetch metrics for each program from DB
+      const programsWithMetrics = await Promise.all(
+        (data || []).map(async (program) => {
+          const { data: metrics } = await supabase.rpc('get_program_metrics', {
+            _program_code: program.code || program.name,
+          });
 
-      return { programs: programsWithMetrics || [] };
+          return {
+            ...program,
+            metrics: (metrics as ProgramMetrics) || EMPTY_METRICS,
+          } as Program;
+        })
+      );
+
+      return { programs: programsWithMetrics };
     },
   });
 }
@@ -69,19 +77,14 @@ export function useProgram(id: string) {
 
       if (error) throw error;
 
-      // Add metrics (TODO: replace with real data)
+      // Fetch metrics from DB
+      const { data: metrics } = await supabase.rpc('get_program_metrics', {
+        _program_code: data.code || data.name,
+      });
+
       const programWithMetrics: Program = {
         ...data,
-        metrics: {
-          facility_count: Math.floor(Math.random() * 50) + 10,
-          active_requisitions: Math.floor(Math.random() * 20),
-          active_schedules: Math.floor(Math.random() * 15),
-          active_batches: Math.floor(Math.random() * 10),
-          pending_batches: Math.floor(Math.random() * 5),
-          stockout_count: Math.floor(Math.random() * 3),
-          fulfillment_rate: 85 + Math.floor(Math.random() * 15),
-          avg_delivery_time: 2 + Math.random() * 3,
-        },
+        metrics: (metrics as ProgramMetrics) || EMPTY_METRICS,
       };
 
       return programWithMetrics;

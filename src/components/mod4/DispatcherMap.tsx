@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import { tw } from '@/lib/colors';
 import { useTheme } from 'next-themes';
 import { getMapLibreStyle } from '@/lib/mapConfig';
 
@@ -115,15 +116,15 @@ export function DispatcherMap({
         const isSelected = driver.driver_id === selectedDriverId;
         const batteryColor = driver.battery_level
           ? driver.battery_level > 50
-            ? '#10b981'
+            ? tw.emerald[500]
             : driver.battery_level > 20
-            ? '#f59e0b'
-            : '#ef4444'
-          : '#6b7280';
+            ? tw.amber[500]
+            : tw.red[500]
+          : tw.gray[500];
 
         el.innerHTML = `
           <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="16" cy="16" r="14" fill="${isSelected ? '#3b82f6' : batteryColor}" stroke="white" stroke-width="2"/>
+            <circle cx="16" cy="16" r="14" fill="${isSelected ? tw.blue[500] : batteryColor}" stroke="white" stroke-width="2"/>
             <path d="M16 10 L16 22 M10 16 L22 16" stroke="white" stroke-width="2" stroke-linecap="round"/>
           </svg>
         `;
@@ -171,15 +172,15 @@ export function DispatcherMap({
         const isSelected = driver.driver_id === selectedDriverId;
         const batteryColor = driver.battery_level
           ? driver.battery_level > 50
-            ? '#10b981'
+            ? tw.emerald[500]
             : driver.battery_level > 20
-            ? '#f59e0b'
-            : '#ef4444'
-          : '#6b7280';
+            ? tw.amber[500]
+            : tw.red[500]
+          : tw.gray[500];
 
         el.innerHTML = `
           <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="16" cy="16" r="14" fill="${isSelected ? '#3b82f6' : batteryColor}" stroke="white" stroke-width="2"/>
+            <circle cx="16" cy="16" r="14" fill="${isSelected ? tw.blue[500] : batteryColor}" stroke="white" stroke-width="2"/>
             <path d="M16 10 L16 22 M10 16 L22 16" stroke="white" stroke-width="2" stroke-linecap="round"/>
           </svg>
         `;

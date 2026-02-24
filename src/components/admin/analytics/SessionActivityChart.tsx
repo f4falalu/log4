@@ -11,6 +11,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 import { useSessionActivity } from '@/hooks/admin/useAnalytics';
+import { tw } from '@/lib/colors';
 
 interface SessionActivityChartProps {
   days?: number;
@@ -67,7 +68,7 @@ export function SessionActivityChart({ days = 30 }: SessionActivityChartProps) {
                 yAxisId="right"
                 type="monotone"
                 dataKey="distance_km"
-                stroke="#22c55e"
+                stroke={tw.green[500]}
                 strokeWidth={2}
                 dot={false}
                 name="Distance (km)"

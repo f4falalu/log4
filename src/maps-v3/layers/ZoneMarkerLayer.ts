@@ -6,6 +6,7 @@
 import type maplibregl from 'maplibre-gl';
 import { BaseLayer } from './BaseLayer';
 import type { MapFeatureCollection } from '@/types/live-map';
+import { tw, mapEntityColors } from '@/lib/colors';
 
 export interface ZoneMarkerProperties {
   id: string;
@@ -37,9 +38,9 @@ export class ZoneMarkerLayer extends BaseLayer<MapFeatureCollection<ZoneMarkerPr
       source: SOURCE_ID,
       paint: {
         'circle-radius': ['interpolate', ['linear'], ['zoom'], 8, 16, 12, 28, 16, 40],
-        'circle-color': '#f59e0b', // amber-500
+        'circle-color': mapEntityColors.zone,
         'circle-opacity': 0.12,
-        'circle-stroke-color': '#f59e0b',
+        'circle-stroke-color': mapEntityColors.zone,
         'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 8, 1, 12, 2, 16, 2.5],
         'circle-stroke-opacity': 0.5,
       },
@@ -52,8 +53,8 @@ export class ZoneMarkerLayer extends BaseLayer<MapFeatureCollection<ZoneMarkerPr
       source: SOURCE_ID,
       paint: {
         'circle-radius': ['interpolate', ['linear'], ['zoom'], 8, 4, 12, 6, 16, 8],
-        'circle-color': '#f59e0b',
-        'circle-stroke-color': '#ffffff',
+        'circle-color': mapEntityColors.zone,
+        'circle-stroke-color': tw.white,
         'circle-stroke-width': 2,
       },
     });
@@ -73,8 +74,8 @@ export class ZoneMarkerLayer extends BaseLayer<MapFeatureCollection<ZoneMarkerPr
         'text-max-width': 14,
       },
       paint: {
-        'text-color': '#92400e',
-        'text-halo-color': '#ffffff',
+        'text-color': mapEntityColors.zoneLabel,
+        'text-halo-color': tw.white,
         'text-halo-width': 1.5,
       },
     });

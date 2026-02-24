@@ -1,6 +1,7 @@
 import { useEffect, useRef, useMemo } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import { tw } from '@/lib/colors';
 import { useTheme } from 'next-themes';
 import { MAP_CONFIG, getMapLibreStyle } from '@/lib/mapConfig';
 import type { Facility, Warehouse } from '@/types';
@@ -109,7 +110,7 @@ export function BatchRouteMap({
           <div style="
             width: 32px;
             height: 32px;
-            background: #3b82f6;
+            background: ${tw.blue[500]};
             border: 3px solid white;
             border-radius: 50%;
             display: flex;
@@ -123,7 +124,7 @@ export function BatchRouteMap({
         const popup = new maplibregl.Popup({ offset: 25 }).setHTML(`
           <div style="padding: 4px;">
             <strong>${warehouse.name}</strong>
-            <div style="font-size: 12px; color: #666;">Origin Warehouse</div>
+            <div style="font-size: 12px; color: ${tw.gray[500]};">Origin Warehouse</div>
           </div>
         `);
 
@@ -145,7 +146,7 @@ export function BatchRouteMap({
           <div style="
             width: 28px;
             height: 28px;
-            background: #10b981;
+            background: ${tw.emerald[500]};
             border: 2px solid white;
             border-radius: 50%;
             display: flex;
@@ -161,8 +162,8 @@ export function BatchRouteMap({
         const popup = new maplibregl.Popup({ offset: 20 }).setHTML(`
           <div style="padding: 4px;">
             <strong>${facility.name}</strong>
-            <div style="font-size: 12px; color: #666;">${facility.address || 'No address'}</div>
-            <div style="font-size: 11px; color: #888; margin-top: 2px;">Stop #${index + 1}</div>
+            <div style="font-size: 12px; color: ${tw.gray[500]};">${facility.address || 'No address'}</div>
+            <div style="font-size: 11px; color: ${tw.gray[400]}; margin-top: 2px;">Stop #${index + 1}</div>
           </div>
         `);
 
@@ -205,7 +206,7 @@ export function BatchRouteMap({
             'line-cap': 'round',
           },
           paint: {
-            'line-color': '#3b82f6',
+            'line-color': tw.blue[500],
             'line-width': 3,
             'line-opacity': 0.7,
           },
@@ -254,7 +255,7 @@ export function BatchRouteMap({
               'line-cap': 'round',
             },
             paint: {
-              'line-color': '#3b82f6',
+              'line-color': tw.blue[500],
               'line-width': 2,
               'line-opacity': 0.5,
               'line-dasharray': [2, 2],

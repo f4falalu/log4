@@ -68,8 +68,8 @@ export default function AdminIntegrationPage() {
     retry: 1,
   });
 
-  const { data: links = [] } = useLinkedUsers();
-  const { data: pendingOTPs = [] } = usePendingOTPs();
+  const { data: links = [] } = useLinkedUsers(workspaceId);
+  const { data: pendingOTPs = [] } = usePendingOTPs(workspaceId);
   const { data: requests = [] } = useOnboardingRequests();
 
   // Mock active integrations (in real app, fetch from database)
@@ -333,7 +333,7 @@ export default function AdminIntegrationPage() {
             <CardContent className="p-6">
               <h3 className="text-lg font-medium mb-4">Linked Users</h3>
               <div className="border rounded-lg">
-                <LinkedUsersTable />
+                <LinkedUsersTable workspaceId={workspaceId} />
               </div>
             </CardContent>
           </Card>

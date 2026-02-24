@@ -6,6 +6,7 @@
 import type maplibregl from 'maplibre-gl';
 import { BaseLayer } from './BaseLayer';
 import type { MapFeatureCollection } from '@/types/live-map';
+import { tw, mapEntityColors } from '@/lib/colors';
 
 export interface FacilityMarkerProperties {
   id: string;
@@ -38,7 +39,7 @@ export class FacilityMarkerLayer extends BaseLayer<MapFeatureCollection<Facility
       paint: {
         'circle-radius': ['interpolate', ['linear'], ['zoom'], 8, 4, 12, 7, 16, 10],
         'circle-color': 'transparent',
-        'circle-stroke-color': '#10b981', // emerald-500
+        'circle-stroke-color': mapEntityColors.facility,
         'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 8, 1.5, 12, 2, 16, 3],
         'circle-opacity': 0.9,
       },
@@ -51,8 +52,8 @@ export class FacilityMarkerLayer extends BaseLayer<MapFeatureCollection<Facility
       source: SOURCE_ID,
       paint: {
         'circle-radius': ['interpolate', ['linear'], ['zoom'], 8, 2.5, 12, 4, 16, 6],
-        'circle-color': '#10b981',
-        'circle-stroke-color': '#ffffff',
+        'circle-color': mapEntityColors.facility,
+        'circle-stroke-color': tw.white,
         'circle-stroke-width': 1,
       },
     });
@@ -72,8 +73,8 @@ export class FacilityMarkerLayer extends BaseLayer<MapFeatureCollection<Facility
         'text-max-width': 10,
       },
       paint: {
-        'text-color': '#065f46',
-        'text-halo-color': '#ffffff',
+        'text-color': mapEntityColors.facilityLabel,
+        'text-halo-color': tw.white,
         'text-halo-width': 1,
       },
     });

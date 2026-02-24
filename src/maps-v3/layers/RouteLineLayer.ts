@@ -6,19 +6,14 @@
 import type maplibregl from 'maplibre-gl';
 import { BaseLayer } from './BaseLayer';
 import type { MapFeatureCollection, RouteLineProperties, DriverStatus } from '@/types/live-map';
+import { statusColors, tw } from '@/lib/colors';
 
 const LAYER_ID = 'route-lines';
 const SOURCE_ID = 'route-lines-source';
 
-// Status colors for routes
 const STATUS_COLORS: Record<DriverStatus, string> = {
-  INACTIVE: '#9ca3af',
-  ACTIVE: '#3b82f6',
-  EN_ROUTE: '#3b82f6',
-  AT_STOP: '#22c55e',
-  DELAYED: '#ef4444',
-  COMPLETED: '#10b981',
-  SUSPENDED: '#f59e0b',
+  ...statusColors,
+  INACTIVE: tw.gray[400], // Routes use lighter gray than drivers
 };
 
 export class RouteLineLayer extends BaseLayer<MapFeatureCollection<RouteLineProperties>> {
@@ -50,7 +45,7 @@ export class RouteLineLayer extends BaseLayer<MapFeatureCollection<RouteLineProp
         'line-cap': 'round',
       },
       paint: {
-        'line-color': '#ffffff',
+        'line-color': tw.white,
         'line-width': [
           'interpolate',
           ['linear'],

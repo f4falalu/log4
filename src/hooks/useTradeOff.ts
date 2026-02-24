@@ -17,6 +17,7 @@
  */
 
 import { create } from 'zustand';
+import { supabase } from '@/integrations/supabase/client';
 
 export type TradeOffState =
   | 'initiated'
@@ -83,7 +84,7 @@ interface TradeOffStore extends TradeOffWorkflow {
   allocateItem: (itemId: string, vehicleId: string, quantity: number) => void;
   confirmTradeOff: (driverId: string, confirmed: boolean) => void;
   executeTradeOff: () => Promise<void>;
-  cancelTradeOff: () => void;
+  cancelTradeOff: () => Promise<void>;
   reset: () => void;
 
   // UI actions
@@ -218,14 +219,66 @@ export const useTradeOff = create<TradeOffStore>((set, get) => ({
       throw new Error('Cannot execute Trade-Off: not all parties have confirmed');
     }
 
-    // TODO: Implement actual API call to execute Trade-Off
-    // This will:
-    // 1. Create tradeoff record in database
-    // 2. Create tradeoff_items records
-    // 3. Create tradeoff_confirmations records
-    // 4. Update dispatch state
-    // 5. Create audit log entry
+    const { data: { user } } = await supabase.auth.getUser();
 
+    // 1. Insert trade-off record
+    const { data: tradeOff, error: tradeOffError } = await supabase
+      .from('trade_offs')
+      .insert({
+        id: state.id!,
+        original_dispatch_id: state.originalDispatchId,
+        source_vehicle_id: state.sourceVehicleId,
+        source_driver_id: state.sourceDriverId,
+        receiving_vehicle_ids: state.receivingVehicleIds,
+        handover_lat: state.handoverPoint?.lat ?? null,
+        handover_lng: state.handoverPoint?.lng ?? null,
+        status: 'executed',
+        initiated_by: user?.id ?? null,
+        reason: state.reason,
+        executed_at: new Date().toISOString(),
+      })
+      .select('id')
+      .single();
+
+    if (tradeOffError) throw tradeOffError;
+
+    const tradeOffId = tradeOff.id;
+
+    // 2. Insert trade-off items
+    if (state.items.length > 0) {
+      const itemRows = state.items.map((item) => ({
+        trade_off_id: tradeOffId,
+        item_name: item.itemName,
+        original_quantity: item.originalQuantity,
+        unit: item.unit,
+        allocated_quantities: item.allocatedQuantities,
+      }));
+
+      const { error: itemsError } = await supabase
+        .from('trade_off_items')
+        .insert(itemRows);
+
+      if (itemsError) throw itemsError;
+    }
+
+    // 3. Insert confirmations
+    if (state.confirmations.length > 0) {
+      const confRows = state.confirmations.map((conf) => ({
+        trade_off_id: tradeOffId,
+        driver_id: conf.driverId,
+        driver_name: conf.driverName,
+        vehicle_id: conf.vehicleId,
+        role: conf.role,
+        confirmed: conf.confirmed,
+        confirmed_at: conf.confirmedAt ? conf.confirmedAt.toISOString() : null,
+      }));
+
+      const { error: confError } = await supabase
+        .from('trade_off_confirmations')
+        .insert(confRows);
+
+      if (confError) throw confError;
+    }
 
     set({ state: 'executed' });
 
@@ -238,7 +291,20 @@ export const useTradeOff = create<TradeOffStore>((set, get) => ({
   // ========================================================================
   // CANCEL TRADE-OFF
   // ========================================================================
-  cancelTradeOff: () => {
+  cancelTradeOff: async () => {
+    const { id } = get();
+
+    // If already persisted to DB, update status
+    if (id) {
+      await supabase
+        .from('trade_offs')
+        .update({
+          status: 'cancelled',
+          cancelled_at: new Date().toISOString(),
+        })
+        .eq('id', id);
+    }
+
     set({ state: 'cancelled' });
 
     // Reset after short delay
