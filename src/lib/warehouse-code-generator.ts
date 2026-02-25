@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 /**
  * Warehouse Code Generator Utility
@@ -167,4 +168,88 @@ export function formatWarehouseCode(
 ): string {
   const sequenceStr = sequence ? sequence.toString().padStart(3, '0') : '___';
   return `${prefix}/${state}/${zone}/${sequenceStr}`;
+}
+
+/**
+ * Batch generates warehouse codes for multiple facilities
+ * Optimized for bulk imports - queries DB once per zone instead of per facility
+ * @param facilities - Array of facilities with service_zone and originalIndex
+ * @param client - Supabase client instance
+ * @returns Promise<Map<number, string>> - Map of facility index to generated warehouse code
+ */
+export async function batchGenerateWarehouseCodes(
+  facilities: Array<{ service_zone?: string; originalIndex: number }>,
+  client: SupabaseClient = supabase
+): Promise<Map<number, string>> {
+  const codeMap = new Map<number, string>();
+  const stateCode = 'KAN';
+
+  // Group facilities by zone to minimize DB queries
+  const zoneGroups = new Map<string, Array<{ service_zone?: string; originalIndex: number }>>();
+
+  facilities.forEach((facility) => {
+    const zoneCode = facility.service_zone && ZONE_CODE_MAP[facility.service_zone]
+      ? ZONE_CODE_MAP[facility.service_zone]
+      : '01';
+
+    if (!zoneGroups.has(zoneCode)) {
+      zoneGroups.set(zoneCode, []);
+    }
+    zoneGroups.get(zoneCode)!.push(facility);
+  });
+
+  // Process each zone group
+  for (const [zoneCode, group] of zoneGroups.entries()) {
+    try {
+      // Single query per zone to get the last sequence number
+      const { data, error } = await client
+        .from('facilities')
+        .select('warehouse_code')
+        .like('warehouse_code', `PSM/${stateCode}/${zoneCode}/%`)
+        .order('warehouse_code', { ascending: false })
+        .limit(1);
+
+      if (error) {
+        console.error(`Error fetching facilities for zone ${zoneCode}:`, error);
+        // Use timestamp-based fallback for this zone
+        group.forEach((facility, index) => {
+          const timestamp = Date.now() % 1000 + index;
+          codeMap.set(
+            facility.originalIndex,
+            `PSM/${stateCode}/${zoneCode}/${timestamp.toString().padStart(3, '0')}`
+          );
+        });
+        continue;
+      }
+
+      // Extract last sequence number
+      let sequence = 0;
+      if (data && data.length > 0) {
+        const lastCode = data[0].warehouse_code;
+        const match = lastCode?.match(/\/(\d{3})$/);
+        if (match) {
+          sequence = parseInt(match[1], 10);
+        }
+      }
+
+      // Generate codes sequentially in-memory (fast)
+      group.forEach((facility) => {
+        sequence++;
+        const sequenceStr = sequence.toString().padStart(3, '0');
+        codeMap.set(facility.originalIndex, `PSM/${stateCode}/${zoneCode}/${sequenceStr}`);
+      });
+    } catch (error) {
+      console.error(`Error generating codes for zone ${zoneCode}:`, error);
+      // Fallback for this zone
+      group.forEach((facility, index) => {
+        const timestamp = Date.now() % 1000 + index;
+        codeMap.set(
+          facility.originalIndex,
+          `PSM/${stateCode}/${zoneCode}/${timestamp.toString().padStart(3, '0')}`
+        );
+      });
+    }
+  }
+
+  return codeMap;
 }

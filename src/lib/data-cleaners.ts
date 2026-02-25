@@ -10,6 +10,37 @@ import type { LevelOfCare } from '@/hooks/useLevelsOfCare';
 import { fuzzyMatch } from './fuzzy-match';
 
 /**
+ * Cache for fuzzy match results to avoid redundant calculations
+ * Key format: "type:value:threshold"
+ */
+class FuzzyMatchCache {
+  private cache: Map<string, any> = new Map();
+
+  getCacheKey(type: string, value: string, threshold: number): string {
+    return `${type}:${value.toLowerCase()}:${threshold}`;
+  }
+
+  get<T>(type: string, value: string, threshold: number): T | undefined {
+    return this.cache.get(this.getCacheKey(type, value, threshold));
+  }
+
+  set(type: string, value: string, threshold: number, result: any): void {
+    this.cache.set(this.getCacheKey(type, value, threshold), result);
+  }
+
+  clear(): void {
+    this.cache.clear();
+  }
+
+  size(): number {
+    return this.cache.size;
+  }
+}
+
+// Global cache instance - cleared between imports
+export const fuzzyMatchCache = new FuzzyMatchCache();
+
+/**
  * Database tables interface for normalization
  */
 export interface DBTables {
@@ -62,18 +93,34 @@ export function normalizeLGA(
 
   // Title case for consistency
   const normalized = toTitleCase(cleaned);
+  const threshold = 0.65;
 
-  // Try fuzzy match against DB (threshold lowered to 65% for better matching)
-  const match = fuzzyMatch(normalized, lgas, 0.65, (lga) => lga.name);
-
-  if (match?.isExact) {
-    return { name: match.match.name, id: match.match.id, confidence: 'exact' };
-  } else if (match) {
-    return { name: match.match.name, id: match.match.id, confidence: 'fuzzy' };
+  // Check cache first
+  const cacheKey = 'lga';
+  const cached = fuzzyMatchCache.get<{ name: string; id: string | null; confidence: 'exact' | 'fuzzy' | 'none' }>(
+    cacheKey,
+    normalized,
+    threshold
+  );
+  if (cached) {
+    return cached;
   }
 
-  // Return cleaned value even if no DB match
-  return { name: normalized, id: null, confidence: 'none' };
+  // Try fuzzy match against DB (threshold lowered to 65% for better matching)
+  const match = fuzzyMatch(normalized, lgas, threshold, (lga) => lga.name);
+
+  let result: { name: string; id: string | null; confidence: 'exact' | 'fuzzy' | 'none' };
+  if (match?.isExact) {
+    result = { name: match.match.name, id: match.match.id, confidence: 'exact' };
+  } else if (match) {
+    result = { name: match.match.name, id: match.match.id, confidence: 'fuzzy' };
+  } else {
+    result = { name: normalized, id: null, confidence: 'none' };
+  }
+
+  // Cache the result
+  fuzzyMatchCache.set(cacheKey, normalized, threshold, result);
+  return result;
 }
 
 /**
@@ -90,18 +137,34 @@ export function normalizeZone(
 
   // Title case for consistency
   const normalized = toTitleCase(cleaned);
+  const threshold = 0.75;
 
-  // Try fuzzy match against DB
-  const match = fuzzyMatch(normalized, zones, 0.75, (zone) => zone.name);
-
-  if (match?.isExact) {
-    return { name: match.match.name, id: match.match.id, confidence: 'exact' };
-  } else if (match) {
-    return { name: match.match.name, id: match.match.id, confidence: 'fuzzy' };
+  // Check cache first
+  const cacheKey = 'zone';
+  const cached = fuzzyMatchCache.get<{ name: string; id: string | null; confidence: 'exact' | 'fuzzy' | 'none' }>(
+    cacheKey,
+    normalized,
+    threshold
+  );
+  if (cached) {
+    return cached;
   }
 
-  // Return cleaned value even if no DB match
-  return { name: normalized, id: null, confidence: 'none' };
+  // Try fuzzy match against DB
+  const match = fuzzyMatch(normalized, zones, threshold, (zone) => zone.name);
+
+  let result: { name: string; id: string | null; confidence: 'exact' | 'fuzzy' | 'none' };
+  if (match?.isExact) {
+    result = { name: match.match.name, id: match.match.id, confidence: 'exact' };
+  } else if (match) {
+    result = { name: match.match.name, id: match.match.id, confidence: 'fuzzy' };
+  } else {
+    result = { name: normalized, id: null, confidence: 'none' };
+  }
+
+  // Cache the result
+  fuzzyMatchCache.set(cacheKey, normalized, threshold, result);
+  return result;
 }
 
 /**
@@ -118,18 +181,34 @@ export function normalizeFacilityType(
 
   // Title case for consistency
   const normalized = toTitleCase(cleaned);
+  const threshold = 0.75;
 
-  // Try fuzzy match against DB
-  const match = fuzzyMatch(normalized, facilityTypes, 0.75, (type) => type.name);
-
-  if (match?.isExact) {
-    return { name: match.match.name, id: match.match.id, confidence: 'exact' };
-  } else if (match) {
-    return { name: match.match.name, id: match.match.id, confidence: 'fuzzy' };
+  // Check cache first
+  const cacheKey = 'facilityType';
+  const cached = fuzzyMatchCache.get<{ name: string; id: string | null; confidence: 'exact' | 'fuzzy' | 'none' }>(
+    cacheKey,
+    normalized,
+    threshold
+  );
+  if (cached) {
+    return cached;
   }
 
-  // Return cleaned value even if no DB match
-  return { name: normalized, id: null, confidence: 'none' };
+  // Try fuzzy match against DB
+  const match = fuzzyMatch(normalized, facilityTypes, threshold, (type) => type.name);
+
+  let result: { name: string; id: string | null; confidence: 'exact' | 'fuzzy' | 'none' };
+  if (match?.isExact) {
+    result = { name: match.match.name, id: match.match.id, confidence: 'exact' };
+  } else if (match) {
+    result = { name: match.match.name, id: match.match.id, confidence: 'fuzzy' };
+  } else {
+    result = { name: normalized, id: null, confidence: 'none' };
+  }
+
+  // Cache the result
+  fuzzyMatchCache.set(cacheKey, normalized, threshold, result);
+  return result;
 }
 
 /**
@@ -146,18 +225,34 @@ export function normalizeLevelOfCare(
 
   // Title case for consistency (Primary, Secondary, Tertiary)
   const normalized = toTitleCase(cleaned);
+  const threshold = 0.75;
 
-  // Try fuzzy match against DB
-  const match = fuzzyMatch(normalized, levelsOfCare, 0.75, (level) => level.name);
-
-  if (match?.isExact) {
-    return { name: match.match.name, id: match.match.id, confidence: 'exact' };
-  } else if (match) {
-    return { name: match.match.name, id: match.match.id, confidence: 'fuzzy' };
+  // Check cache first
+  const cacheKey = 'levelOfCare';
+  const cached = fuzzyMatchCache.get<{ name: string; id: string | null; confidence: 'exact' | 'fuzzy' | 'none' }>(
+    cacheKey,
+    normalized,
+    threshold
+  );
+  if (cached) {
+    return cached;
   }
 
-  // Return cleaned value even if no DB match
-  return { name: normalized, id: null, confidence: 'none' };
+  // Try fuzzy match against DB
+  const match = fuzzyMatch(normalized, levelsOfCare, threshold, (level) => level.name);
+
+  let result: { name: string; id: string | null; confidence: 'exact' | 'fuzzy' | 'none' };
+  if (match?.isExact) {
+    result = { name: match.match.name, id: match.match.id, confidence: 'exact' };
+  } else if (match) {
+    result = { name: match.match.name, id: match.match.id, confidence: 'fuzzy' };
+  } else {
+    result = { name: normalized, id: null, confidence: 'none' };
+  }
+
+  // Cache the result
+  fuzzyMatchCache.set(cacheKey, normalized, threshold, result);
+  return result;
 }
 
 /**

@@ -687,6 +687,25 @@ export function validateFacilityRow(
  * @param skipConfig - Skip configuration for optional fields
  * @param normalizedRows - Optional normalized row data with DB match results
  */
+/**
+ * Validates a single row with caching support
+ * Optimized for cell-by-cell edits - only validates the changed row
+ */
+export function validateSingleRow(
+  row: any,
+  rowIndex: number,
+  existingWarehouseCodes: Set<string> = new Set(),
+  skipConfig: SkipConfig = {},
+  dbMatchResults?: {
+    lga?: { id: string | null; confidence: 'exact' | 'fuzzy' | 'none' };
+    zone?: { id: string | null; confidence: 'exact' | 'fuzzy' | 'none' };
+    facilityType?: { id: string | null; confidence: 'exact' | 'fuzzy' | 'none' };
+    levelOfCare?: { id: string | null; confidence: 'exact' | 'fuzzy' | 'none' };
+  }
+): ValidationResult[] {
+  return validateFacilityRow(row, rowIndex, existingWarehouseCodes, skipConfig, dbMatchResults);
+}
+
 export function validateParsedData(
   parsedData: ParsedFile,
   existingWarehouseCodes: Set<string> = new Set(),

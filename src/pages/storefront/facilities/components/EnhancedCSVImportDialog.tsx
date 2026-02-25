@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import {
   Dialog,
   DialogContent,
@@ -35,6 +36,7 @@ import { toast } from 'sonner';
 import {
   parseFile,
   validateParsedData,
+  validateSingleRow,
   getValidationSummary,
   applyManualMappings,
   type ParsedFile,
@@ -42,12 +44,13 @@ import {
   type SkipConfig,
 } from '@/lib/file-import';
 import { ColumnMapper, type ColumnMapping, type ColumnMapperResult } from './ColumnMapper';
-import { cleanFacilityRows, type DBTables, type NormalizedRow } from '@/lib/data-cleaners';
+import { cleanFacilityRows, type DBTables, type NormalizedRow, fuzzyMatchCache } from '@/lib/data-cleaners';
 import { useFacilityTypes } from '@/hooks/useFacilityTypes';
 import { useLevelsOfCare } from '@/hooks/useLevelsOfCare';
 import { useOperationalZones } from '@/hooks/useOperationalZones';
 import { useLGAs } from '@/hooks/useLGAs';
-import { generateWarehouseCode } from '@/lib/warehouse-code-generator';
+import { batchGenerateWarehouseCodes } from '@/lib/warehouse-code-generator';
+import { chunk } from '@/lib/utils';
 
 interface EnhancedCSVImportDialogProps {
   open: boolean;
@@ -76,6 +79,8 @@ export function EnhancedCSVImportDialog({ open, onOpenChange }: EnhancedCSVImpor
   const [importProgress, setImportProgress] = useState(0);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const [skipValidation, setSkipValidation] = useState(false);
+  const [cancelImport, setCancelImport] = useState(false);
+  const [importStats, setImportStats] = useState({ processed: 0, currentBatch: 0, totalBatches: 0 });
 
   const queryClient = useQueryClient();
 
@@ -88,6 +93,25 @@ export function EnhancedCSVImportDialog({ open, onOpenChange }: EnhancedCSVImpor
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target?.files?.[0];
     if (!selectedFile) return;
+
+    // File size validation (10MB soft limit, 20MB hard limit)
+    const fileSizeMB = selectedFile.size / (1024 * 1024);
+    const MAX_SIZE_MB = 20;
+    const WARN_SIZE_MB = 10;
+
+    if (fileSizeMB > MAX_SIZE_MB) {
+      toast.error(
+        `File size (${fileSizeMB.toFixed(1)}MB) exceeds the ${MAX_SIZE_MB}MB limit. Please split your file into smaller chunks.`
+      );
+      e.target.value = ''; // Clear file input
+      return;
+    }
+
+    if (fileSizeMB > WARN_SIZE_MB) {
+      toast.warning(
+        `Large file detected (${fileSizeMB.toFixed(1)}MB). Processing may take longer than usual.`
+      );
+    }
 
     setFile(selectedFile);
     toast.loading('Parsing file...');
@@ -178,7 +202,10 @@ export function EnhancedCSVImportDialog({ open, onOpenChange }: EnhancedCSVImpor
     setStep('preview');
   };
 
-  const handleCellEdit = (rowIndex: number, field: string, value: any) => {
+  // Debounced validation ref
+  const validationTimeoutRef = useRef<NodeJS.Timeout>();
+
+  const handleCellEdit = useCallback((rowIndex: number, field: string, value: any) => {
     setEditedRows(prev => ({
       ...prev,
       [rowIndex]: {
@@ -187,16 +214,47 @@ export function EnhancedCSVImportDialog({ open, onOpenChange }: EnhancedCSVImpor
       },
     }));
 
-    // Re-validate after edit
-    if (parsedData) {
-      const updatedRows = parsedData.rows.map((row, idx) =>
-        editedRows[idx] || row
-      );
-      const newParsed = { ...parsedData, rows: updatedRows };
-      const newIssues = validateParsedData(newParsed);
-      setValidationIssues(newIssues);
+    // Debounced validation - only validate the edited row after 300ms
+    if (validationTimeoutRef.current) {
+      clearTimeout(validationTimeoutRef.current);
     }
-  };
+
+    validationTimeoutRef.current = setTimeout(() => {
+      if (!parsedData) return;
+
+      // Get the edited row data
+      const editedRow = {
+        ...(parsedData.rows[rowIndex] || {}),
+        ...(editedRows[rowIndex] || {}),
+        [field]: value,
+      };
+
+      // Validate only this row
+      const dbMatchResults = normalizedRows[rowIndex]?.dbMatches;
+      const rowIssues = validateSingleRow(
+        editedRow,
+        rowIndex,
+        new Set(),
+        skipConfig,
+        dbMatchResults
+      );
+
+      // Update validation issues - remove old issues for this row, add new ones
+      setValidationIssues(prev => {
+        const otherRowIssues = prev.filter(issue => issue.row !== rowIndex + 1);
+        return [...otherRowIssues, ...rowIssues];
+      });
+    }, 300);
+  }, [parsedData, editedRows, normalizedRows, skipConfig]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (validationTimeoutRef.current) {
+        clearTimeout(validationTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const getMergedRow = (rowIndex: number) => {
     if (editedRows[rowIndex]) {
@@ -204,6 +262,16 @@ export function EnhancedCSVImportDialog({ open, onOpenChange }: EnhancedCSVImpor
     }
     return parsedData?.rows[rowIndex] || {};
   };
+
+  // Virtual scrolling setup for preview table
+  const parentRef = useRef<HTMLDivElement>(null);
+
+  const rowVirtualizer = useVirtualizer({
+    count: parsedData?.rows.length || 0,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 50, // Approximate row height in pixels
+    overscan: 10, // Render 10 rows above/below viewport
+  });
 
   /**
    * Build a DB-ready insert object from a CSV row.
@@ -250,6 +318,7 @@ export function EnhancedCSVImportDialog({ open, onOpenChange }: EnhancedCSVImpor
 
     setStep('importing');
     setImportProgress(0);
+    setCancelImport(false);
 
     const result: ImportResult = {
       total: parsedData.rows.length,
@@ -258,8 +327,13 @@ export function EnhancedCSVImportDialog({ open, onOpenChange }: EnhancedCSVImpor
       errors: [],
     };
 
-    for (let i = 0; i < parsedData.rows.length; i++) {
-      try {
+    const BATCH_SIZE = 150;
+
+    try {
+      // Prepare all rows first (validation, merging edits)
+      const preparedRows: Array<{ row: any; normalizedRow: NormalizedRow; originalIndex: number }> = [];
+
+      for (let i = 0; i < parsedData.rows.length; i++) {
         const row = getMergedRow(i);
 
         // Skip rows that have no name (minimum viable field)
@@ -269,33 +343,98 @@ export function EnhancedCSVImportDialog({ open, onOpenChange }: EnhancedCSVImpor
             row: i + 1,
             error: 'Skipped: facility name is required',
           });
-          setImportProgress(Math.round(((i + 1) / parsedData.rows.length) * 100));
           continue;
         }
 
-        // Handle warehouse code auto-generation
-        if (autoGenerateWarehouseCode || !row.warehouse_code) {
-          row.warehouse_code = await generateWarehouseCode(row.service_zone);
-        }
-
-        // Build DB-ready object (snake_case only, no camelCase fields)
-        const dbFacility = buildDbFacility(row, normalizedRows[i]);
-
-        const { error } = await supabase
-          .from('facilities')
-          .insert(dbFacility);
-
-        if (error) throw error;
-        result.success++;
-      } catch (error: any) {
-        result.failed++;
-        result.errors.push({
-          row: i + 1,
-          error: error.message || 'Unknown error',
+        preparedRows.push({
+          row,
+          normalizedRow: normalizedRows[i],
+          originalIndex: i,
         });
       }
 
-      setImportProgress(Math.round(((i + 1) / parsedData.rows.length) * 100));
+      // Batch generate warehouse codes if needed (one query per zone instead of per facility)
+      if (autoGenerateWarehouseCode) {
+        const facilitiesForCodeGen = preparedRows.map((item) => ({
+          service_zone: item.row.service_zone,
+          originalIndex: item.originalIndex,
+        }));
+
+        const warehouseCodeMap = await batchGenerateWarehouseCodes(facilitiesForCodeGen, supabase);
+
+        // Apply generated codes to rows
+        preparedRows.forEach((item) => {
+          const generatedCode = warehouseCodeMap.get(item.originalIndex);
+          if (generatedCode) {
+            item.row.warehouse_code = generatedCode;
+          }
+        });
+      }
+
+      // Build all DB-ready facilities
+      const dbFacilities = preparedRows.map((item) =>
+        buildDbFacility(item.row, item.normalizedRow)
+      );
+
+      // Split into batches and insert
+      const batches = chunk(dbFacilities, BATCH_SIZE);
+      const totalBatches = batches.length;
+      setImportStats({ processed: 0, currentBatch: 0, totalBatches });
+
+      for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+        // Check for cancel request
+        if (cancelImport) {
+          toast.info('Import cancelled');
+          break;
+        }
+
+        const batch = batches[batchIndex];
+        const batchStartIndex = batchIndex * BATCH_SIZE;
+
+        try {
+          // Batch insert - much faster than individual inserts
+          const { data, error } = await supabase
+            .from('facilities')
+            .insert(batch)
+            .select('id');
+
+          if (error) throw error;
+
+          result.success += batch.length;
+
+          // Update progress every batch (not every row)
+          const processed = (batchIndex + 1) * BATCH_SIZE;
+          setImportStats({
+            processed: Math.min(processed, preparedRows.length),
+            currentBatch: batchIndex + 1,
+            totalBatches,
+          });
+          setImportProgress(Math.round(((result.success + result.failed) / preparedRows.length) * 100));
+        } catch (error: any) {
+          // If batch fails, retry row by row for this batch
+          console.error(`Batch ${batchIndex + 1} failed, retrying individually:`, error);
+
+          for (let i = 0; i < batch.length; i++) {
+            if (cancelImport) break;
+
+            try {
+              await supabase.from('facilities').insert(batch[i]);
+              result.success++;
+            } catch (rowError: any) {
+              result.failed++;
+              result.errors.push({
+                row: batchStartIndex + i + 1,
+                error: rowError.message || 'Unknown error',
+              });
+            }
+          }
+
+          setImportProgress(Math.round(((result.success + result.failed) / preparedRows.length) * 100));
+        }
+      }
+    } catch (error: any) {
+      toast.error(`Import failed: ${error.message}`);
+      console.error('Import error:', error);
     }
 
     // Invalidate facilities cache so the table refreshes
@@ -325,7 +464,18 @@ export function EnhancedCSVImportDialog({ open, onOpenChange }: EnhancedCSVImpor
     setImportProgress(0);
     setImportResult(null);
     setSkipValidation(false);
+    setCancelImport(false);
+    setImportStats({ processed: 0, currentBatch: 0, totalBatches: 0 });
+
+    // Clear fuzzy match cache on dialog close
+    fuzzyMatchCache.clear();
+
     onOpenChange(false);
+  };
+
+  const handleCancelImport = () => {
+    setCancelImport(true);
+    toast.info('Cancelling import...');
   };
 
   const validationSummary = validationIssues.length > 0
@@ -530,80 +680,110 @@ export function EnhancedCSVImportDialog({ open, onOpenChange }: EnhancedCSVImpor
                 );
               })()}
 
-              {/* Data Preview Table */}
-              <ScrollArea className="h-[400px] border rounded-lg">
-                <table className="w-full text-sm">
-                  <thead className="bg-muted sticky top-0">
-                    <tr>
-                      <th className="p-2 text-left font-medium">#</th>
-                      <th className="p-2 text-left font-medium">Name</th>
-                      <th className="p-2 text-left font-medium">Address</th>
-                      <th className="p-2 text-left font-medium">Latitude</th>
-                      <th className="p-2 text-left font-medium">Longitude</th>
-                      <th className="p-2 text-left font-medium">LGA</th>
-                      <th className="p-2 text-left font-medium">Issues</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {parsedData.rows.map((row, idx) => {
+              {/* Data Preview Table (Virtualized) */}
+              <div className="border rounded-lg overflow-hidden">
+                <div className="bg-muted border-b">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr>
+                        <th className="p-2 text-left font-medium w-12">#</th>
+                        <th className="p-2 text-left font-medium min-w-[200px]">Name</th>
+                        <th className="p-2 text-left font-medium min-w-[200px]">Address</th>
+                        <th className="p-2 text-left font-medium w-24">Latitude</th>
+                        <th className="p-2 text-left font-medium w-24">Longitude</th>
+                        <th className="p-2 text-left font-medium min-w-[120px]">LGA</th>
+                        <th className="p-2 text-left font-medium min-w-[120px]">Issues</th>
+                      </tr>
+                    </thead>
+                  </table>
+                </div>
+                <div
+                  ref={parentRef}
+                  className="h-[400px] overflow-auto"
+                >
+                  <div
+                    style={{
+                      height: `${rowVirtualizer.getTotalSize()}px`,
+                      width: '100%',
+                      position: 'relative',
+                    }}
+                  >
+                    {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                      const idx = virtualRow.index;
                       const mergedRow = getMergedRow(idx);
                       const rowIssues = validationIssues.filter(i => i.row === idx + 1);
                       const hasErrors = rowIssues.some(i => i.severity === 'error');
 
                       return (
-                        <tr key={idx} className={hasErrors ? 'bg-destructive/10' : ''}>
-                          <td className="p-2 border-t">{idx + 1}</td>
-                          <td className="p-2 border-t">
-                            <Input
-                              value={mergedRow.name || ''}
-                              onChange={(e) => handleCellEdit(idx, 'name', e.target.value)}
-                              className="h-8"
-                            />
-                          </td>
-                          <td className="p-2 border-t">
-                            <Input
-                              value={mergedRow.address || ''}
-                              onChange={(e) => handleCellEdit(idx, 'address', e.target.value)}
-                              className="h-8"
-                            />
-                          </td>
-                          <td className="p-2 border-t">
-                            <Input
-                              value={mergedRow.latitude || ''}
-                              onChange={(e) => handleCellEdit(idx, 'latitude', e.target.value)}
-                              className="h-8 w-24"
-                            />
-                          </td>
-                          <td className="p-2 border-t">
-                            <Input
-                              value={mergedRow.longitude || ''}
-                              onChange={(e) => handleCellEdit(idx, 'longitude', e.target.value)}
-                              className="h-8 w-24"
-                            />
-                          </td>
-                          <td className="p-2 border-t">{mergedRow.lga || '-'}</td>
-                          <td className="p-2 border-t">
-                            {rowIssues.length > 0 && (
-                              <div className="flex gap-1">
-                                {rowIssues.filter(i => i.severity === 'error').length > 0 && (
-                                  <Badge variant="destructive" className="text-xs">
-                                    {rowIssues.filter(i => i.severity === 'error').length} errors
-                                  </Badge>
-                                )}
-                                {rowIssues.filter(i => i.severity === 'warning').length > 0 && (
-                                  <Badge variant="secondary" className="text-xs">
-                                    {rowIssues.filter(i => i.severity === 'warning').length} warnings
-                                  </Badge>
-                                )}
-                              </div>
-                            )}
-                          </td>
-                        </tr>
+                        <div
+                          key={virtualRow.key}
+                          style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            height: `${virtualRow.size}px`,
+                            transform: `translateY(${virtualRow.start}px)`,
+                          }}
+                        >
+                          <table className="w-full text-sm">
+                            <tbody>
+                              <tr className={hasErrors ? 'bg-destructive/10' : ''}>
+                                <td className="p-2 border-t w-12">{idx + 1}</td>
+                                <td className="p-2 border-t min-w-[200px]">
+                                  <Input
+                                    value={mergedRow.name || ''}
+                                    onChange={(e) => handleCellEdit(idx, 'name', e.target.value)}
+                                    className="h-8"
+                                  />
+                                </td>
+                                <td className="p-2 border-t min-w-[200px]">
+                                  <Input
+                                    value={mergedRow.address || ''}
+                                    onChange={(e) => handleCellEdit(idx, 'address', e.target.value)}
+                                    className="h-8"
+                                  />
+                                </td>
+                                <td className="p-2 border-t w-24">
+                                  <Input
+                                    value={mergedRow.latitude || ''}
+                                    onChange={(e) => handleCellEdit(idx, 'latitude', e.target.value)}
+                                    className="h-8 w-24"
+                                  />
+                                </td>
+                                <td className="p-2 border-t w-24">
+                                  <Input
+                                    value={mergedRow.longitude || ''}
+                                    onChange={(e) => handleCellEdit(idx, 'longitude', e.target.value)}
+                                    className="h-8 w-24"
+                                  />
+                                </td>
+                                <td className="p-2 border-t min-w-[120px]">{mergedRow.lga || '-'}</td>
+                                <td className="p-2 border-t min-w-[120px]">
+                                  {rowIssues.length > 0 && (
+                                    <div className="flex gap-1">
+                                      {rowIssues.filter(i => i.severity === 'error').length > 0 && (
+                                        <Badge variant="destructive" className="text-xs">
+                                          {rowIssues.filter(i => i.severity === 'error').length} errors
+                                        </Badge>
+                                      )}
+                                      {rowIssues.filter(i => i.severity === 'warning').length > 0 && (
+                                        <Badge variant="secondary" className="text-xs">
+                                          {rowIssues.filter(i => i.severity === 'warning').length} warnings
+                                        </Badge>
+                                      )}
+                                    </div>
+                                  )}
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
                       );
                     })}
-                  </tbody>
-                </table>
-              </ScrollArea>
+                  </div>
+                </div>
+              </div>
 
               {/* Validation Issues List */}
               {validationIssues.length > 0 && (
@@ -639,17 +819,39 @@ export function EnhancedCSVImportDialog({ open, onOpenChange }: EnhancedCSVImpor
 
           {/* Step 4: Importing */}
           {step === 'importing' && (
-            <div className="space-y-4 py-8">
+            <div className="space-y-6 py-8">
               <div className="text-center">
                 <Upload className="h-12 w-12 mx-auto text-primary animate-pulse" />
                 <h3 className="text-lg font-semibold mt-4">Importing Facilities...</h3>
-                <p className="text-sm text-muted-foreground">Please wait while we import your data</p>
-              </div>
-              <div className="max-w-md mx-auto">
-                <Progress value={importProgress} className="h-2" />
-                <p className="text-center text-sm text-muted-foreground mt-2">
-                  {importProgress}% complete
+                <p className="text-sm text-muted-foreground">
+                  {cancelImport ? 'Cancelling import...' : 'Please wait while we import your data'}
                 </p>
+              </div>
+              <div className="max-w-md mx-auto space-y-4">
+                <Progress value={importProgress} className="h-2" />
+                <div className="text-center space-y-1">
+                  <p className="text-lg font-semibold">
+                    {importProgress}% complete
+                  </p>
+                  {importStats.totalBatches > 0 && (
+                    <p className="text-sm text-muted-foreground">
+                      Processing batch {importStats.currentBatch} of {importStats.totalBatches}
+                      {' • '}
+                      {importStats.processed} facilities processed
+                    </p>
+                  )}
+                </div>
+                <div className="flex justify-center pt-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCancelImport}
+                    disabled={cancelImport}
+                  >
+                    <X className="h-4 w-4 mr-2" />
+                    {cancelImport ? 'Cancelling...' : 'Cancel Import'}
+                  </Button>
+                </div>
               </div>
             </div>
           )}
