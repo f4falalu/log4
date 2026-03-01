@@ -12,14 +12,35 @@ export function useUserRole() {
     queryFn: async () => {
       if (!user) return [];
 
-      const { data, error } = await supabase
+      // Step 1: Get role_ids for this user
+      const { data: userRoles, error: urError } = await supabase
         .from('user_roles')
-        .select('role_id, roles:role_id (code)')
+        .select('role_id')
         .eq('user_id', user.id);
 
-      if (error) throw error;
-      return data
-        .map(r => (r.roles as any)?.code as string)
+      if (urError) {
+        console.error('[useUserRole] user_roles query failed:', urError);
+        throw urError;
+      }
+
+      if (!userRoles || userRoles.length === 0) return [];
+
+      const roleIds = userRoles.map(ur => ur.role_id).filter(Boolean);
+      if (roleIds.length === 0) return [];
+
+      // Step 2: Look up role codes from roles table
+      const { data: roleRows, error: rolesError } = await supabase
+        .from('roles')
+        .select('code')
+        .in('id', roleIds);
+
+      if (rolesError) {
+        console.error('[useUserRole] roles query failed:', rolesError);
+        throw rolesError;
+      }
+
+      return (roleRows || [])
+        .map(r => r.code as string)
         .filter(Boolean) as AppRole[];
     },
     enabled: !!user,
