@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="180" height="180" viewBox="0 0 180 180">
+  <rect width="180" height="180" fill="#0a0f1a" rx="22"/>
+  <text x="90" y="105" font-family="system-ui, -apple-system, sans-serif" font-size="45" font-weight="bold" fill="#3b82f6" text-anchor="middle">M4</text>
+  <circle cx="90" cy="135" r="7" fill="#22c55e"/>
+</svg>

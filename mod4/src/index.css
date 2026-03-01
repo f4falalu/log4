@@ -1,0 +1,184 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* MOD4 Design System — Industrial Field Execution Terminal
+   Optimized for outdoor visibility, glove-friendly touch, vehicle cockpit use
+*/
+
+@layer base {
+  :root {
+    /* Mod4 uses dark mode by default for field visibility */
+    --background: 222 47% 6%;
+    --foreground: 210 40% 96%;
+
+    --card: 222 47% 8%;
+    --card-foreground: 210 40% 96%;
+
+    --popover: 222 47% 10%;
+    --popover-foreground: 210 40% 96%;
+
+    /* Amber — Primary action color, high visibility */
+    --primary: 38 92% 50%;
+    --primary-foreground: 222 47% 6%;
+
+    /* Slate — Secondary surfaces */
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 40% 96%;
+
+    --muted: 217 33% 14%;
+    --muted-foreground: 215 20% 55%;
+
+    /* Cyan — Navigation, routes, informational */
+    --accent: 192 91% 50%;
+    --accent-foreground: 222 47% 6%;
+
+    /* Semantic colors */
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 210 40% 98%;
+
+    --success: 142 71% 45%;
+    --success-foreground: 222 47% 6%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 222 47% 6%;
+
+    --info: 192 91% 50%;
+    --info-foreground: 222 47% 6%;
+
+    /* Sync states */
+    --sync-idle: 215 20% 55%;
+    --sync-pending: 38 92% 50%;
+    --sync-syncing: 192 91% 50%;
+    --sync-success: 142 71% 45%;
+    --sync-error: 0 72% 51%;
+
+    --border: 217 33% 20%;
+    --input: 217 33% 17%;
+    --ring: 38 92% 50%;
+
+    --radius: 0.75rem;
+
+    /* Route/Map colors */
+    --route-primary: 192 91% 50%;
+    --route-completed: 142 71% 45%;
+    --route-pending: 38 92% 50%;
+
+    /* Slot status colors */
+    --slot-pending: 217 33% 25%;
+    --slot-active: 38 92% 50%;
+    --slot-delivered: 142 71% 45%;
+    --slot-failed: 0 72% 51%;
+
+    --sidebar-background: 222 47% 8%;
+    --sidebar-foreground: 210 40% 96%;
+    --sidebar-primary: 38 92% 50%;
+    --sidebar-primary-foreground: 222 47% 6%;
+    --sidebar-accent: 217 33% 17%;
+    --sidebar-accent-foreground: 210 40% 96%;
+    --sidebar-border: 217 33% 20%;
+    --sidebar-ring: 38 92% 50%;
+  }
+
+  .dark {
+    /* Dark mode is the default, these are the same values */
+    --background: 222 47% 6%;
+    --foreground: 210 40% 96%;
+    --card: 222 47% 8%;
+    --card-foreground: 210 40% 96%;
+    --popover: 222 47% 10%;
+    --popover-foreground: 210 40% 96%;
+    --primary: 38 92% 50%;
+    --primary-foreground: 222 47% 6%;
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 40% 96%;
+    --muted: 217 33% 14%;
+    --muted-foreground: 215 20% 55%;
+    --accent: 192 91% 50%;
+    --accent-foreground: 222 47% 6%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217 33% 20%;
+    --input: 217 33% 17%;
+    --ring: 38 92% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    user-select: none;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: 'cv11', 'ss01', 'ss03';
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
+  .font-mono {
+    font-family: 'JetBrains Mono', monospace;
+  }
+}
+
+@layer components {
+  /* Sync status indicator pulse */
+  .sync-pulse {
+    animation: sync-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes sync-pulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
+  }
+
+  /* Touch-optimized button base */
+  .touch-target {
+    min-height: 48px;
+    min-width: 48px;
+  }
+
+  /* Status badge base */
+  .status-badge {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wider;
+  }
+
+  /* Glassmorphism card */
+  .glass-card {
+    @apply bg-card/80 backdrop-blur-xl border border-border/50;
+  }
+
+  /* Route line glow effect */
+  .route-glow {
+    filter: drop-shadow(0 0 8px hsl(var(--route-primary) / 0.5));
+  }
+}
+
+@layer utilities {
+  /* Safe area insets for mobile */
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .safe-x {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}
