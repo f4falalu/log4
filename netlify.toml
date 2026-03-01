@@ -22,7 +22,18 @@
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "geolocation=(self), camera=(self), microphone=()"
 
-# Cache static assets
+# Prevent caching index.html so deploys take effect immediately
+[[headers]]
+  for = "/"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+
+# Cache static assets (Vite uses content-hashed filenames, so immutable is safe)
 [[headers]]
   for = "/assets/*"
   [headers.values]
