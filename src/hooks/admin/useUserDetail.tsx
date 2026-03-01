@@ -24,10 +24,10 @@ export function useUserDetail(userId: string) {
 
       if (authError) throw authError;
 
-      // Fetch roles
+      // Fetch roles (using role_id FK to roles table)
       const { data: roles, error: rolesError } = await supabase
         .from('user_roles')
-        .select('role, assigned_by, assigned_at')
+        .select('role_id, assigned_by, assigned_at, roles:role_id (code, name)')
         .eq('user_id', userId);
 
       if (rolesError) throw rolesError;

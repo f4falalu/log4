@@ -14,11 +14,13 @@ export function useUserRole() {
 
       const { data, error } = await supabase
         .from('user_roles')
-        .select('role')
+        .select('role_id, roles:role_id (code)')
         .eq('user_id', user.id);
 
       if (error) throw error;
-      return data.map(r => r.role) as AppRole[];
+      return data
+        .map(r => (r.roles as any)?.code as string)
+        .filter(Boolean) as AppRole[];
     },
     enabled: !!user,
     staleTime: 30_000,
