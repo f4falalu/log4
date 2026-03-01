@@ -88,25 +88,39 @@ export function useRole(roleId: string | undefined) {
 }
 
 /**
- * Get current user's roles
+ * Get roles for a specific user (or current user if no userId provided).
+ * Uses admin_get_user_roles RPC for other users, get_user_roles for current user.
  */
-export function useUserRoles() {
+export function useUserRoles(targetUserId?: string) {
   const { user } = useAuth();
+  const userId = targetUserId || user?.id;
 
   return useQuery({
-    queryKey: ['user-roles', user?.id],
+    queryKey: ['user-roles', userId],
     queryFn: async () => {
-      if (!user?.id) return [];
+      if (!userId) return [];
 
-      const { data, error } = await supabase.rpc('get_user_roles', {
-        _user_id: user.id,
+      // Use admin RPC which is SECURITY DEFINER and works for any user
+      const { data, error } = await supabase.rpc('admin_get_user_roles' as any, {
+        _target_user_id: userId,
       });
 
-      if (error) throw error;
+      if (error) {
+        // Fallback to get_user_roles if admin RPC not available yet
+        const { data: fallbackData, error: fallbackError } = await supabase.rpc('get_user_roles', {
+          _user_id: userId,
+        });
+        if (fallbackError) throw fallbackError;
+        return fallbackData as { role_code: string; role_name: string }[];
+      }
 
-      return data as { role_code: string; role_name: string }[];
+      // Map admin RPC response to expected format
+      return (data as any[]).map((r: any) => ({
+        role_code: r.role_code,
+        role_name: r.role_name,
+      })) as { role_code: string; role_name: string }[];
     },
-    enabled: !!user?.id,
+    enabled: !!userId,
   });
 }
 
@@ -126,7 +140,7 @@ export function useIsSystemAdmin(): boolean {
 }
 
 /**
- * Assign role to user (admin only)
+ * Assign role to user (admin only) — uses SECURITY DEFINER RPC
  */
 export function useAssignRole() {
   const queryClient = useQueryClient();
@@ -139,20 +153,23 @@ export function useAssignRole() {
       userId: string;
       roleId: string;
     }) => {
-      const { data, error } = await supabase
-        .from('user_roles')
-        .insert({
-          user_id: userId,
-          role_id: roleId,
-        })
-        .select()
+      // Look up the role code from the roleId
+      const { data: role, error: roleError } = await supabase
+        .from('roles')
+        .select('code')
+        .eq('id', roleId)
         .single();
 
+      if (roleError) throw roleError;
+
+      const { error } = await supabase.rpc('admin_assign_role' as any, {
+        _target_user_id: userId,
+        _role_code: role.code,
+      });
+
       if (error) throw error;
-      return data;
     },
     onSuccess: (_, variables) => {
-      // Invalidate user permissions cache
       queryClient.invalidateQueries({ queryKey: ['user-permissions', variables.userId] });
       queryClient.invalidateQueries({ queryKey: ['user-roles', variables.userId] });
     },
@@ -160,7 +177,7 @@ export function useAssignRole() {
 }
 
 /**
- * Remove role from user (admin only)
+ * Remove role from user (admin only) — uses SECURITY DEFINER RPC
  */
 export function useRemoveRole() {
   const queryClient = useQueryClient();
@@ -173,11 +190,19 @@ export function useRemoveRole() {
       userId: string;
       roleId: string;
     }) => {
-      const { error } = await supabase
-        .from('user_roles')
-        .delete()
-        .eq('user_id', userId)
-        .eq('role_id', roleId);
+      // Look up the role code from the roleId
+      const { data: role, error: roleError } = await supabase
+        .from('roles')
+        .select('code')
+        .eq('id', roleId)
+        .single();
+
+      if (roleError) throw roleError;
+
+      const { error } = await supabase.rpc('admin_remove_role' as any, {
+        _target_user_id: userId,
+        _role_code: role.code,
+      });
 
       if (error) throw error;
     },

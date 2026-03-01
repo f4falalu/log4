@@ -30,8 +30,8 @@ export function useUserRole() {
   // Set default active role when roles are loaded
   useEffect(() => {
     if (roles.length > 0 && !activeRole) {
-      // Default to system_admin if available, otherwise first role
-      const defaultRole = roles.includes('system_admin') ? 'system_admin' : roles[0];
+      // Use the first role returned by the RPC
+      const defaultRole = roles[0];
       setActiveRole(defaultRole);
     }
   }, [roles, activeRole, setActiveRole]);
