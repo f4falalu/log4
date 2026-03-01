@@ -34,6 +34,7 @@ import AdminLocationsPage from "./pages/admin/LocationManagement";
 import AdminIntegrationPage from "./pages/admin/integration/page";
 import AdminRolesPage from "./pages/admin/roles/page";
 import AdminPermissionSetsPage from "./pages/admin/permission-sets/page";
+import AdminGroupsPage from "./pages/admin/groups/page";
 import LiveMapPage from "./pages/map/live/page";
 import PlaybackMapPage from "./pages/map/playback/page";
 
@@ -253,6 +254,7 @@ const App = () => (
                     {/* RBAC Tab */}
                     <Route path="roles" element={<AdminRolesPage />} />
                     <Route path="permission-sets" element={<AdminPermissionSetsPage />} />
+                    <Route path="groups" element={<AdminGroupsPage />} />
 
                     {/* Integration Tab */}
                     <Route path="integration" element={<AdminIntegrationPage />} />
