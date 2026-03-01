@@ -12,36 +12,15 @@ export function useUserRole() {
     queryFn: async () => {
       if (!user) return [];
 
-      // Step 1: Get role_ids for this user
-      const { data: userRoles, error: urError } = await supabase
-        .from('user_roles')
-        .select('role_id')
-        .eq('user_id', user.id);
+      // Use SECURITY DEFINER RPC to bypass RLS issues on user_roles/roles tables
+      const { data, error } = await supabase.rpc('get_my_roles' as any);
 
-      if (urError) {
-        console.error('[useUserRole] user_roles query failed:', urError);
-        throw urError;
+      if (error) {
+        console.error('[useUserRole] get_my_roles RPC failed:', error);
+        throw error;
       }
 
-      if (!userRoles || userRoles.length === 0) return [];
-
-      const roleIds = userRoles.map(ur => ur.role_id).filter(Boolean);
-      if (roleIds.length === 0) return [];
-
-      // Step 2: Look up role codes from roles table
-      const { data: roleRows, error: rolesError } = await supabase
-        .from('roles')
-        .select('code')
-        .in('id', roleIds);
-
-      if (rolesError) {
-        console.error('[useUserRole] roles query failed:', rolesError);
-        throw rolesError;
-      }
-
-      return (roleRows || [])
-        .map(r => r.code as string)
-        .filter(Boolean) as AppRole[];
+      return ((data as string[]) || []).filter(Boolean) as AppRole[];
     },
     enabled: !!user,
     staleTime: 30_000,
