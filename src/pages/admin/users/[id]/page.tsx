@@ -26,6 +26,7 @@ export default function UserDetailPageEnhanced() {
         .from('admin_users_view')
         .select('*')
         .eq('id', id!)
+        .limit(1)
         .single();
 
       if (error) throw error;
