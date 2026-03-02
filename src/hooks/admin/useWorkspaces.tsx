@@ -19,7 +19,7 @@ export interface WorkspaceMember {
   user_id: string;
   workspace_id: string;
   role: 'owner' | 'admin' | 'member' | 'viewer';
-  joined_at: string;
+  created_at: string;
   profile: {
     full_name: string;
     phone: string | null;
@@ -89,7 +89,7 @@ export function useWorkspaceDetail(workspaceId: string) {
       // Fetch members
       const { data: members, error: membersError } = await supabase
         .from('workspace_members')
-        .select('user_id, workspace_id, role, joined_at')
+        .select('user_id, workspace_id, role, created_at')
         .eq('workspace_id', workspaceId);
 
       if (membersError) throw membersError;

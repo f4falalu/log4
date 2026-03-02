@@ -47,7 +47,7 @@ export function UserLoginRights({ userId }: UserLoginRightsProps) {
         .select(`
           workspace_id,
           role,
-          joined_at,
+          created_at,
           workspaces (
             id,
             name,
@@ -61,20 +61,35 @@ export function UserLoginRights({ userId }: UserLoginRightsProps) {
       return (data || []).map((m: any) => ({
         workspace_id: m.workspace_id,
         role: m.role,
-        joined_at: m.joined_at,
+        joined_at: m.created_at,
         workspace: m.workspaces,
       }));
     },
     enabled: !!userId,
   });
 
-  // Get all available workspaces
+  // Get workspaces the current admin has access to (scoped to their memberships)
   const { data: allWorkspaces, isLoading: workspacesLoading } = useQuery({
-    queryKey: ['all-workspaces'],
+    queryKey: ['admin-accessible-workspaces'],
     queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      // Get workspace IDs the current admin is a member of
+      const { data: adminMemberships, error: memberError } = await supabase
+        .from('workspace_members')
+        .select('workspace_id')
+        .eq('user_id', user.id);
+
+      if (memberError) throw memberError;
+
+      const adminWorkspaceIds = (adminMemberships || []).map(m => m.workspace_id);
+      if (adminWorkspaceIds.length === 0) return [];
+
       const { data, error } = await supabase
         .from('workspaces')
         .select('id, name, slug')
+        .in('id', adminWorkspaceIds)
         .eq('is_active', true)
         .order('name');
 

@@ -118,7 +118,7 @@ export function MemberList({ workspaceId, members }: MemberListProps) {
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>
-                <TableCell>{new Date(member.joined_at).toLocaleDateString()}</TableCell>
+                <TableCell>{new Date(member.created_at).toLocaleDateString()}</TableCell>
                 <TableCell>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>

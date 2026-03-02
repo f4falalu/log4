@@ -49,34 +49,33 @@ export function useDriverGPS(options: UseDriverGPSOptions = {}) {
 
   // Fetch latest GPS positions for all drivers
   const fetchLatestPositions = useCallback(async (): Promise<DriverGPSData> => {
-    // Use RPC function to get latest position per driver efficiently
-    // Fall back to direct query if RPC doesn't exist
     try {
-      const { data, error } = await supabase
+      // Only fetch recent GPS events (last 30 minutes) with a safety limit
+      const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+
+      let query = supabase
         .from('driver_gps_events')
         .select('*')
-        .order('captured_at', { ascending: false });
+        .gte('captured_at', thirtyMinAgo)
+        .order('captured_at', { ascending: false })
+        .limit(200);
+
+      // Filter by specific driver IDs if provided
+      if (driverIds && driverIds.length > 0) {
+        query = query.in('driver_id', driverIds);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
 
-      // Group by driver_id, keeping only the latest entry
+      // Group by driver_id, keeping only the latest entry per driver
       const latestByDriver: DriverGPSData = {};
       for (const row of data || []) {
         const driverId = row.driver_id as string;
         if (!latestByDriver[driverId]) {
           latestByDriver[driverId] = transformGPSEvent(row);
         }
-      }
-
-      // Filter by driverIds if provided
-      if (driverIds && driverIds.length > 0) {
-        const filtered: DriverGPSData = {};
-        for (const id of driverIds) {
-          if (latestByDriver[id]) {
-            filtered[id] = latestByDriver[id];
-          }
-        }
-        return filtered;
       }
 
       return latestByDriver;

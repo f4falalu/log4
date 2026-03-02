@@ -59,6 +59,33 @@ async function fetchActiveDrivers() {
   return data || [];
 }
 
+// Fetch active drivers with positions via RPC (handles auth.users → mod4_driver_links → drivers chain)
+interface ActiveDriverPosition {
+  driver_id: string;
+  driver_name: string;
+  session_id: string;
+  vehicle_id: string | null;
+  vehicle_plate: string | null;
+  current_lat: number | null;
+  current_lng: number | null;
+  heading: number | null;
+  speed_mps: number | null;
+  last_update: string | null;
+  current_batch_id: string | null;
+  batch_name: string | null;
+  session_started_at: string;
+  battery_level: number | null;
+}
+
+async function fetchActiveDriverPositions(): Promise<ActiveDriverPosition[]> {
+  const { data, error } = await supabase.rpc('get_active_drivers_with_positions');
+  if (error) {
+    console.error('Error fetching active driver positions:', error);
+    return [];
+  }
+  return (data || []) as ActiveDriverPosition[];
+}
+
 // Fetch active vehicles (available or in-use, not in maintenance)
 async function fetchActiveVehicles() {
   const { data, error } = await supabase
@@ -130,6 +157,15 @@ export function useLiveTracking(options: UseLiveTrackingOptions = {}) {
     staleTime: 10000,
   });
 
+  // RPC-based active driver positions (handles auth.users → mod4_driver_links → drivers chain)
+  const activeDriverPositionsQuery = useQuery({
+    queryKey: ['active-driver-positions'],
+    queryFn: fetchActiveDriverPositions,
+    enabled,
+    refetchInterval: 15000,
+    staleTime: 5000,
+  });
+
   const vehiclesQuery = useQuery({
     queryKey: ['active-vehicles'],
     queryFn: fetchActiveVehicles,
@@ -171,9 +207,20 @@ export function useLiveTracking(options: UseLiveTrackingOptions = {}) {
   // Transform to LiveDriver objects
   const liveDrivers = useMemo((): LiveDriver[] => {
     const drivers = driversQuery.data || [];
+    const rpcPositions = activeDriverPositionsQuery.data || [];
 
-    return drivers.map((driver): LiveDriver => {
+    // Build map of RPC positions by driver_id for quick lookup
+    const rpcByDriverId = new Map<string, ActiveDriverPosition>();
+    for (const pos of rpcPositions) {
+      if (pos.driver_id) rpcByDriverId.set(pos.driver_id, pos);
+    }
+
+    // Start with drivers from the drivers table query
+    const driverIds = new Set<string>();
+    const result: LiveDriver[] = drivers.map((driver): LiveDriver => {
+      driverIds.add(driver.id);
       const gps = gpsData.positions[driver.id];
+      const rpc = rpcByDriverId.get(driver.id);
       const latestEvent = eventsData.latestByDriver[driver.id];
 
       // Find batch this driver is assigned to
@@ -181,26 +228,78 @@ export function useLiveTracking(options: UseLiveTrackingOptions = {}) {
         (b) => b.driver_id === driver.id
       );
 
+      // Use GPS realtime data first, then RPC data, then drivers table
+      const hasGps = !!gps;
+      const hasRpc = !!rpc && rpc.current_lat != null && rpc.current_lng != null;
+      const hasDriverCoords = !!driver.current_lng && !!driver.current_lat;
+
+      const position: [number, number] = hasGps
+        ? [gps.lng, gps.lat]
+        : hasRpc
+          ? [rpc.current_lng!, rpc.current_lat!]
+          : hasDriverCoords
+            ? [Number(driver.current_lng), Number(driver.current_lat)]
+            : [0, 0];
+
       return {
         id: driver.id,
         name: driver.name || 'Unknown Driver',
         phone: driver.phone,
         status: (latestEvent?.driverStatus || 'INACTIVE') as DriverStatus,
-        position: gps
-          ? [gps.lng, gps.lat]
-          : [driver.current_lng || 0, driver.current_lat || 0],
-        batchId: batch?.id || null,
-        vehicleId: batch?.vehicle_id || null,
-        sessionId: gps?.sessionId || null,
-        lastUpdate: gps?.capturedAt || new Date(driver.updated_at || ''),
-        speed: gps?.speed || 0,
-        heading: gps?.heading || 0,
+        position,
+        batchId: batch?.id || rpc?.current_batch_id || null,
+        vehicleId: batch?.vehicle_id || rpc?.vehicle_id || null,
+        sessionId: gps?.sessionId || rpc?.session_id || null,
+        lastUpdate: gps?.capturedAt || (rpc?.last_update ? new Date(rpc.last_update) : new Date(driver.updated_at || '')),
+        speed: gps?.speed || rpc?.speed_mps || 0,
+        heading: gps?.heading || rpc?.heading || 0,
         accuracy: gps?.accuracy || 0,
-        batteryLevel: gps?.batteryLevel,
-        isOnline: gps ? Date.now() - gps.capturedAt.getTime() < 5 * 60 * 1000 : false,
+        batteryLevel: gps?.batteryLevel ?? rpc?.battery_level ?? undefined,
+        isOnline: hasGps
+          ? Date.now() - gps.capturedAt.getTime() < 5 * 60 * 1000
+          : hasRpc && rpc.last_update
+            ? Date.now() - new Date(rpc.last_update).getTime() < 5 * 60 * 1000
+            : false,
       };
     });
-  }, [driversQuery.data, batchesQuery.data, gpsData.positions, eventsData.latestByDriver]);
+
+    // Add drivers from RPC that aren't in the drivers table query
+    // (e.g., drivers with active sessions whose status wasn't updated)
+    for (const rpc of rpcPositions) {
+      if (rpc.driver_id && !driverIds.has(rpc.driver_id)) {
+        const gps = gpsData.positions[rpc.driver_id];
+        const hasGps = !!gps;
+        const hasRpc = rpc.current_lat != null && rpc.current_lng != null;
+
+        result.push({
+          id: rpc.driver_id,
+          name: rpc.driver_name || 'Unknown Driver',
+          phone: undefined,
+          status: 'ACTIVE' as DriverStatus,
+          position: hasGps
+            ? [gps.lng, gps.lat]
+            : hasRpc
+              ? [rpc.current_lng!, rpc.current_lat!]
+              : [0, 0],
+          batchId: rpc.current_batch_id || null,
+          vehicleId: rpc.vehicle_id || null,
+          sessionId: gps?.sessionId || rpc.session_id || null,
+          lastUpdate: gps?.capturedAt || (rpc.last_update ? new Date(rpc.last_update) : new Date()),
+          speed: gps?.speed || rpc.speed_mps || 0,
+          heading: gps?.heading || rpc.heading || 0,
+          accuracy: gps?.accuracy || 0,
+          batteryLevel: gps?.batteryLevel ?? rpc.battery_level ?? undefined,
+          isOnline: hasGps
+            ? Date.now() - gps.capturedAt.getTime() < 5 * 60 * 1000
+            : rpc.last_update
+              ? Date.now() - new Date(rpc.last_update).getTime() < 5 * 60 * 1000
+              : true, // Has active session, assume online
+        });
+      }
+    }
+
+    return result;
+  }, [driversQuery.data, activeDriverPositionsQuery.data, batchesQuery.data, gpsData.positions, eventsData.latestByDriver]);
 
   // Transform to LiveVehicle objects
   const liveVehicles = useMemo((): LiveVehicle[] => {
@@ -548,7 +647,7 @@ export function useLiveTracking(options: UseLiveTrackingOptions = {}) {
 
   // Loading state
   const isLoading =
-    batchesQuery.isLoading || driversQuery.isLoading || vehiclesQuery.isLoading;
+    batchesQuery.isLoading || driversQuery.isLoading || vehiclesQuery.isLoading || activeDriverPositionsQuery.isLoading;
 
   // Error state
   const error = batchesQuery.error || driversQuery.error || vehiclesQuery.error;

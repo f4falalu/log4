@@ -52,18 +52,7 @@ export default function AdminIntegrationPage() {
         .limit(1)
         .maybeSingle();
 
-      if (membership) return membership.workspace_id as string;
-
-      // Fallback: first active workspace
-      const { data: ws } = await supabase
-        .from('workspaces')
-        .select('id')
-        .eq('is_active', true)
-        .order('created_at', { ascending: true })
-        .limit(1)
-        .maybeSingle();
-
-      return ws?.id as string | null;
+      return membership?.workspace_id as string | null;
     },
     retry: 1,
   });
