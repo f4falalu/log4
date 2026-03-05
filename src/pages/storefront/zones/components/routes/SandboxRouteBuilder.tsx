@@ -22,7 +22,15 @@ import {
   Layers,
   Route,
   Radar,
+  Split,
+  Brain,
 } from 'lucide-react';
+import { MapOverlayControls } from '@/components/map/MapOverlayControls';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -45,8 +53,11 @@ import { useCreateRoute } from '@/hooks/useRoutes';
 import { calculateDistance } from '@/lib/routeOptimization';
 import { computeDistanceMatrix, type GeoPoint } from '@/lib/algorithms/distanceMatrix';
 import { solveTSP } from '@/lib/algorithms/tsp';
+import { getRoadRoute, getAlternativeRoadRoutes, type RoadRouteResult, type AlternativeRoadRoute } from '@/lib/geoapify';
 import { getMapLibreStyle } from '@/lib/mapConfig';
+import { RouteComparisonPanel } from './RouteComparisonPanel';
 import type { Facility } from '@/types';
+import type { ComparisonRoute } from '@/types/routes';
 
 // ─── Optimization Config ───
 
@@ -94,89 +105,155 @@ const DEFAULT_CONFIG: OptimizationConfig = {
 const SERVICE_TIME_HOURS = 0.25; // 15 min per stop
 const AVG_SPEED_KMH = 40;
 
+// Color palette for route types
+const ROUTE_COLORS: Record<string, string> = {
+  balanced: '#3b82f6', // blue — Fastest
+  short: '#22c55e',    // green — Shortest
+  less_maneuvers: '#f97316', // orange — Fewest Turns
+};
+
+const ROUTE_TYPE_LABELS: Record<string, string> = {
+  balanced: 'Fastest',
+  short: 'Shortest',
+  less_maneuvers: 'Fewest Turns',
+};
+
+// For advanced planning: algorithm + route type combos
+const ALGORITHM_COLOR_OFFSET: Record<string, string[]> = {
+  'Shortest Distance': ['#3b82f6', '#22c55e', '#f97316'],
+  'Fuel Efficient': ['#8b5cf6', '#a855f7', '#d946ef'],
+  'Time Optimized': ['#06b6d4', '#14b8a6', '#10b981'],
+  'Cluster Priority': ['#ef4444', '#f59e0b', '#ec4899'],
+};
+
+// Per-facility cardinal path with metadata
+interface CardinalPath {
+  routeType: string;
+  geometry: Array<[number, number]>;
+  distanceKm: number;
+  timeMinutes: number;
+}
+
 /**
- * Build a weighted distance matrix based on selected optimization criteria.
- * Multiple criteria are combined by averaging normalized matrices.
+ * Solve route optimization using the selected criteria.
+ * Depot (zone center) is always index 0 in the matrix so TSP
+ * considers the real starting/ending point of the route.
+ *
+ * Returns the ordered facility IDs (excluding depot).
  */
-function buildOptimizedMatrix(
-  points: GeoPoint[],
+function solveWithConfig(
+  depot: { lat: number; lng: number },
+  facilityPoints: GeoPoint[],
   config: OptimizationConfig
-): { matrix: number[][]; algorithmLabel: string } {
-  const n = points.length;
-  const rawMatrix = computeDistanceMatrix(points);
-  const matrices: number[][] [] = [];
+): { orderedIds: string[]; algorithmLabel: string } {
+  const n = facilityPoints.length;
+  if (n <= 1) {
+    return { orderedIds: facilityPoints.map(p => p.id), algorithmLabel: 'Direct' };
+  }
+
+  // Build points array with depot at index 0
+  const allPoints: GeoPoint[] = [
+    { id: '__depot__', lat: depot.lat, lng: depot.lng },
+    ...facilityPoints,
+  ];
+  const rawMatrix = computeDistanceMatrix(allPoints);
+
+  // Determine which algorithm to use (only one active at a time for clarity)
+  if (config.clusterPriority) {
+    // Cluster-first-route-second: genuinely different ordering
+    return solveClusterFirst(allPoints, facilityPoints, rawMatrix);
+  }
+
+  // Build the cost matrix for TSP based on selected criteria
+  const total = allPoints.length;
+  let matrix = rawMatrix;
   const labels: string[] = [];
 
-  // Shortest Distance: raw haversine distances
-  if (config.shortestDistance) {
-    matrices.push(rawMatrix);
+  if (config.fuelEfficiency) {
+    // Cubed distances: strongly penalizes long legs, favors uniform step sizes
+    matrix = Array.from({ length: total }, (_, i) =>
+      Array.from({ length: total }, (_, j) => rawMatrix[i][j] ** 3)
+    );
+    labels.push('Fuel Efficient');
+  } else if (config.timeOptimized) {
+    // Time-based: distance/speed + service penalty (constant per stop doesn't change order,
+    // but variable speed by distance does — use slower speed for short hops simulating urban stops)
+    matrix = Array.from({ length: total }, (_, i) =>
+      Array.from({ length: total }, (_, j) => {
+        if (i === j) return 0;
+        const dist = rawMatrix[i][j];
+        // Short hops (<10km) are urban → slower avg speed; long hops are highway → faster
+        const speed = dist < 10 ? 25 : dist < 30 ? 35 : 50;
+        return dist / speed + SERVICE_TIME_HOURS;
+      })
+    );
+    labels.push('Time Optimized');
+  } else {
     labels.push('Shortest Distance');
   }
 
-  // Fuel Efficiency: squared distances (penalizes long legs more)
-  if (config.fuelEfficiency) {
-    const squared: number[][] = Array.from({ length: n }, (_, i) =>
-      Array.from({ length: n }, (_, j) => rawMatrix[i][j] ** 2)
-    );
-    matrices.push(squared);
-    labels.push('Fuel Efficient');
-  }
+  const result = solveTSP(matrix, 0); // depot is index 0
+  // Strip depot from the order
+  const facilityOrder = result.order.filter(idx => idx !== 0);
+  const orderedIds = facilityOrder.map(idx => allPoints[idx].id);
 
-  // Time Optimized: distance/speed + service time per stop
-  if (config.timeOptimized) {
-    const timeMatrix: number[][] = Array.from({ length: n }, (_, i) =>
-      Array.from({ length: n }, (_, j) =>
-        i === j ? 0 : rawMatrix[i][j] / AVG_SPEED_KMH + SERVICE_TIME_HOURS
-      )
-    );
-    matrices.push(timeMatrix);
-    labels.push('Time Optimized');
-  }
+  return { orderedIds, algorithmLabel: labels.join(' + ') };
+}
 
-  // Cluster Priority: cluster facilities, add inter-cluster penalty
-  if (config.clusterPriority) {
-    const clusterCount = Math.max(2, Math.ceil(n / 5));
-    const assignments = simpleKMeans(points, clusterCount);
-    const clusterMatrix: number[][] = Array.from({ length: n }, (_, i) =>
-      Array.from({ length: n }, (_, j) => {
-        const base = rawMatrix[i][j];
-        // Add 50% penalty for crossing cluster boundaries
-        return assignments[i] !== assignments[j] ? base * 1.5 : base;
-      })
-    );
-    matrices.push(clusterMatrix);
-    labels.push('Cluster Priority');
-  }
+/**
+ * Cluster-first-route-second: group nearby facilities into clusters,
+ * then visit all facilities in the nearest cluster before moving to the next.
+ * Produces genuinely different orderings from pure shortest-distance TSP.
+ */
+function solveClusterFirst(
+  allPoints: GeoPoint[],
+  facilityPoints: GeoPoint[],
+  rawMatrix: number[][]
+): { orderedIds: string[]; algorithmLabel: string } {
+  const n = facilityPoints.length;
+  const clusterCount = Math.max(2, Math.ceil(n / 4));
+  const assignments = simpleKMeans(facilityPoints, clusterCount);
 
-  // If nothing selected, fall back to raw
-  if (matrices.length === 0) {
-    return { matrix: rawMatrix, algorithmLabel: 'Shortest Distance' };
-  }
-
-  // Combine by normalizing each matrix and averaging
-  if (matrices.length === 1) {
-    return { matrix: matrices[0], algorithmLabel: labels[0] };
-  }
-
-  // Normalize each matrix to [0,1] range, then average
-  const normalized = matrices.map((m) => {
-    let maxVal = 0;
-    for (let i = 0; i < n; i++)
-      for (let j = 0; j < n; j++)
-        if (m[i][j] > maxVal) maxVal = m[i][j];
-    if (maxVal === 0) return m;
-    return m.map((row) => row.map((v) => v / maxVal));
+  // Group facility indices by cluster
+  const clusters: Map<number, number[]> = new Map();
+  assignments.forEach((clusterId, facIdx) => {
+    const list = clusters.get(clusterId) || [];
+    list.push(facIdx + 1); // +1 because depot is at index 0 in allPoints
+    clusters.set(clusterId, list);
   });
 
-  const combined: number[][] = Array.from({ length: n }, (_, i) =>
-    Array.from({ length: n }, (_, j) => {
-      let sum = 0;
-      for (const nm of normalized) sum += nm[i][j];
-      return sum / normalized.length;
+  // Order clusters by nearest centroid to depot
+  const depotIdx = 0;
+  const clusterOrder = [...clusters.entries()]
+    .map(([cid, members]) => {
+      const avgDist = members.reduce((s, m) => s + rawMatrix[depotIdx][m], 0) / members.length;
+      return { cid, members, avgDist };
     })
-  );
+    .sort((a, b) => a.avgDist - b.avgDist);
 
-  return { matrix: combined, algorithmLabel: labels.join(' + ') };
+  // Within each cluster, use nearest-neighbor from the last visited point
+  const orderedIds: string[] = [];
+  let currentIdx = depotIdx;
+
+  for (const { members } of clusterOrder) {
+    const remaining = new Set(members);
+    while (remaining.size > 0) {
+      let nearest = -1;
+      let nearestDist = Infinity;
+      for (const m of remaining) {
+        if (rawMatrix[currentIdx][m] < nearestDist) {
+          nearestDist = rawMatrix[currentIdx][m];
+          nearest = m;
+        }
+      }
+      if (nearest === -1) break;
+      remaining.delete(nearest);
+      orderedIds.push(allPoints[nearest].id);
+      currentIdx = nearest;
+    }
+  }
+
+  return { orderedIds, algorithmLabel: 'Cluster Priority' };
 }
 
 /**
@@ -236,7 +313,7 @@ interface SandboxRouteBuilderProps {
   onClose: () => void;
 }
 
-type TetherMode = 'cardinal' | 'route';
+type TetherMode = 'cardinal' | 'route' | 'alternatives';
 
 export function SandboxRouteBuilder({ onClose }: SandboxRouteBuilderProps) {
   const [zoneId, setZoneId] = useState('');
@@ -252,6 +329,26 @@ export function SandboxRouteBuilder({ onClose }: SandboxRouteBuilderProps) {
   const [showOptSettings, setShowOptSettings] = useState(false);
   const [optimizedTime, setOptimizedTime] = useState<number | null>(null);
   const [algorithmLabel, setAlgorithmLabel] = useState<string | null>(null);
+  const [roadRoute, setRoadRoute] = useState<RoadRouteResult | null>(null);
+  const [isFetchingRoad, setIsFetchingRoad] = useState(false);
+  const [isMapFullscreen, setIsMapFullscreen] = useState(false);
+  const [focusSelected, setFocusSelected] = useState(false);
+
+  // Multi-route comparison state
+  const [comparisonRoutes, setComparisonRoutes] = useState<ComparisonRoute[]>([]);
+  const [selectedComparisonId, setSelectedComparisonId] = useState<string | null>(null);
+  const [isFetchingAlternatives, setIsFetchingAlternatives] = useState(false);
+  const [isAdvancedPlanning, setIsAdvancedPlanning] = useState(false);
+  const [comparisonMode, setComparisonMode] = useState<'alternatives' | 'advanced' | null>(null);
+
+  // Pre-optimization waypoint road: road route through all selected facilities in current order
+  const [waypointRoad, setWaypointRoad] = useState<RoadRouteResult | null>(null);
+  const [waypointAlternatives, setWaypointAlternatives] = useState<AlternativeRoadRoute[]>([]);
+  const waypointRoadKeyRef = useRef<string>(''); // track which facility set we last fetched for
+
+  // Per-facility road paths cache: facilityId → array of alternative paths from zone center
+  const [cardinalRoads, setCardinalRoads] = useState<Record<string, CardinalPath[]>>({});
+  const cardinalFetchingRef = useRef<Set<string>>(new Set());
 
   const { theme } = useTheme();
   const { zones } = useOperationalZones();
@@ -278,6 +375,7 @@ export function SandboxRouteBuilder({ onClose }: SandboxRouteBuilderProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<Map<string, maplibregl.Marker>>(new Map());
+  const infoMarkersRef = useRef<maplibregl.Marker[]>([]);
 
   // Reset selections when zone changes
   useEffect(() => {
@@ -286,7 +384,121 @@ export function SandboxRouteBuilder({ onClose }: SandboxRouteBuilderProps) {
     setOptimizedDistance(null);
     setSearchQuery('');
     setTetherMode('cardinal');
+    setRoadRoute(null);
+    setWaypointRoad(null);
+    setWaypointAlternatives([]);
+    waypointRoadKeyRef.current = '';
+    setCardinalRoads({});
+    cardinalFetchingRef.current.clear();
+    setComparisonRoutes([]);
+    setSelectedComparisonId(null);
+    setComparisonMode(null);
   }, [zoneId]);
+
+  // Fetch all alternative road paths for each newly selected facility (zone center → facility)
+  useEffect(() => {
+    if (!zoneCenter || selectedFacilityIds.length === 0) return;
+
+    const needFetch = selectedFacilityIds.filter(id => {
+      if (cardinalRoads[id]) return false;
+      if (cardinalFetchingRef.current.has(id)) return false;
+      const f = facilities.find(fac => fac.id === id);
+      return f && f.lat && f.lng;
+    });
+
+    if (needFetch.length === 0) return;
+
+    // Mark as fetching immediately
+    needFetch.forEach(id => cardinalFetchingRef.current.add(id));
+
+    // Fetch in parallel (batch of up to 6 at a time)
+    const batch = needFetch.slice(0, 6);
+    Promise.all(
+      batch.map(async (facId) => {
+        const f = facilities.find(fac => fac.id === facId);
+        if (!f || !f.lat || !f.lng) return null;
+
+        try {
+          const waypoints = [
+            { lat: zoneCenter.lat, lng: zoneCenter.lng },
+            { lat: f.lat, lng: f.lng },
+          ];
+          const alternatives = await getAlternativeRoadRoutes(waypoints);
+          if (alternatives.length > 0) {
+            const paths: CardinalPath[] = alternatives.map(alt => ({
+              routeType: alt.routeType,
+              geometry: alt.geometry,
+              distanceKm: alt.roadDistanceKm,
+              timeMinutes: alt.roadTimeMinutes,
+            }));
+            return { facId, paths };
+          }
+        } catch (err) {
+          console.error(`[SandboxRouteBuilder] Cardinal road fetch failed for ${facId}:`, err);
+        }
+        return null;
+      })
+    ).then(results => {
+      const newRoads: Record<string, CardinalPath[]> = {};
+      let hasNew = false;
+      for (const r of results) {
+        if (!r) continue;
+        hasNew = true;
+        newRoads[r.facId] = r.paths;
+      }
+      if (hasNew) {
+        setCardinalRoads(prev => {
+          const next: Record<string, CardinalPath[]> = { ...prev };
+          for (const [k, v] of Object.entries(newRoads)) next[k] = v;
+          return next;
+        });
+      }
+      batch.forEach(id => cardinalFetchingRef.current.delete(id));
+    });
+  }, [selectedFacilityIds, zoneCenter, facilities, cardinalRoads]);
+
+  // Fetch road routes through all selected facilities in current order (for waypoint/route mode before optimization)
+  useEffect(() => {
+    if (!zoneCenter || selectedFacilityIds.length < 1) {
+      setWaypointRoad(null);
+      setWaypointAlternatives([]);
+      waypointRoadKeyRef.current = '';
+      return;
+    }
+    // If we already have an optimized roadRoute, no need for waypoint preview
+    if (roadRoute) return;
+
+    // Build a key from the current facility selection to avoid re-fetching the same set
+    const key = selectedFacilityIds.join(',');
+    if (key === waypointRoadKeyRef.current) return;
+    waypointRoadKeyRef.current = key;
+
+    const orderedFacilities = selectedFacilityIds
+      .map(id => facilities.find(f => f.id === id))
+      .filter((f): f is Facility => !!f && !!f.lat && !!f.lng);
+
+    if (orderedFacilities.length < 1) return;
+
+    const waypoints = [
+      { lat: zoneCenter.lat, lng: zoneCenter.lng },
+      ...orderedFacilities.map(f => ({ lat: f.lat!, lng: f.lng! })),
+      { lat: zoneCenter.lat, lng: zoneCenter.lng }, // round trip
+    ];
+
+    // Fetch all alternative road routes (Geoapify + OSRM fallback)
+    getAlternativeRoadRoutes(waypoints)
+      .then(alternatives => {
+        if (waypointRoadKeyRef.current !== key) return;
+        if (alternatives.length > 0) {
+          // Use the first (balanced/fastest) as the primary waypoint road
+          setWaypointRoad(alternatives[0]);
+          setWaypointAlternatives(alternatives);
+        }
+      })
+      .catch(err => {
+        console.error('[SandboxRouteBuilder] Waypoint road fetch failed:', err);
+      });
+  }, [selectedFacilityIds, zoneCenter, facilities, roadRoute]);
 
   // Filter facilities by search
   const filteredFacilities = useMemo(() => {
@@ -335,22 +547,54 @@ export function SandboxRouteBuilder({ onClose }: SandboxRouteBuilderProps) {
     };
   }, [facilities, selectedFacilityIds, facilityDistances]);
 
-  // Sorted insight rows
+  // Sorted insight rows with inter-facility distances
   const insightRows = useMemo(() => {
-    const selected = facilities.filter((f) => selectedFacilityIds.includes(f.id));
-    const rows = selected.map((f) => ({
-      id: f.id,
-      name: f.name,
-      lga: f.lga || 'Unknown',
-      distance: facilityDistances.get(f.id) ?? 0,
-    }));
+    // Use optimized order if available, otherwise selection order
+    const orderedIds = optimizedOrder || selectedFacilityIds;
+    const selected = orderedIds
+      .map((id) => facilities.find((f) => f.id === id))
+      .filter((f): f is Facility => !!f);
+
+    const rows = selected.map((f, idx) => {
+      // Distance from zone center (origin)
+      const distFromOrigin = facilityDistances.get(f.id) ?? 0;
+
+      // Distance from previous facility in route order
+      let distFromPrevious: number | null = null;
+      if (idx > 0) {
+        const prevFac = selected[idx - 1];
+        if (prevFac && prevFac.lat && prevFac.lng && f.lat && f.lng) {
+          distFromPrevious = Math.round(
+            calculateDistance(prevFac.lat, prevFac.lng, f.lat, f.lng) * 10
+          ) / 10;
+        }
+      } else if (f.lat && f.lng && zoneCenter) {
+        // First facility: distance from origin
+        distFromPrevious = Math.round(
+          calculateDistance(zoneCenter.lat, zoneCenter.lng, f.lat, f.lng) * 10
+        ) / 10;
+      }
+
+      return {
+        id: f.id,
+        name: f.name,
+        lga: f.lga || 'Unknown',
+        distance: distFromOrigin,
+        distFromPrevious,
+        sequenceIndex: idx,
+      };
+    });
+
     if (sortInsightsBy === 'distance') {
-      rows.sort((a, b) => a.distance - b.distance);
+      // When optimized, keep the optimized order; otherwise sort by origin distance
+      if (!optimizedOrder) {
+        rows.sort((a, b) => a.distance - b.distance);
+      }
     } else {
       rows.sort((a, b) => a.name.localeCompare(b.name));
     }
     return rows;
-  }, [facilities, selectedFacilityIds, facilityDistances, sortInsightsBy]);
+  }, [facilities, selectedFacilityIds, optimizedOrder, facilityDistances, sortInsightsBy, zoneCenter]);
 
   // Toggle facility selection
   const toggleFacility = useCallback(
@@ -360,6 +604,10 @@ export function SandboxRouteBuilder({ onClose }: SandboxRouteBuilderProps) {
       );
       setOptimizedOrder(null);
       setOptimizedDistance(null);
+      setRoadRoute(null);
+      setComparisonRoutes([]);
+      setSelectedComparisonId(null);
+      setComparisonMode(null);
     },
     []
   );
@@ -369,12 +617,14 @@ export function SandboxRouteBuilder({ onClose }: SandboxRouteBuilderProps) {
     setSelectedFacilityIds(allIds);
     setOptimizedOrder(null);
     setOptimizedDistance(null);
+    setRoadRoute(null);
   };
 
   const handleClearAll = () => {
     setSelectedFacilityIds([]);
     setOptimizedOrder(null);
     setOptimizedDistance(null);
+    setRoadRoute(null);
   };
 
   // Optimize route with config
@@ -384,38 +634,234 @@ export function SandboxRouteBuilder({ onClose }: SandboxRouteBuilderProps) {
       .filter((f) => typeof f.lat === 'number' && typeof f.lng === 'number');
 
     if (selected.length < 2) return;
+    if (!zoneCenter) return;
 
     setIsOptimizing(true);
-    setTimeout(() => {
+    setRoadRoute(null);
+    setTimeout(async () => {
       try {
         const points: GeoPoint[] = selected.map((f) => ({ id: f.id, lat: f.lat, lng: f.lng }));
 
-        // Build matrix based on config
-        const { matrix, algorithmLabel: label } = buildOptimizedMatrix(points, optConfig);
-        const result = solveTSP(matrix, 0);
-        const newOrder = result.order.map((idx) => points[idx].id);
+        // Solve TSP with depot (zone center) as starting point
+        const { orderedIds, algorithmLabel: label } = solveWithConfig(
+          zoneCenter, points, optConfig
+        );
 
-        // Compute real distance for display (always haversine)
-        const rawMatrix = computeDistanceMatrix(points);
-        let realDistance = 0;
-        for (let i = 0; i < result.order.length - 1; i++) {
-          realDistance += rawMatrix[result.order[i]][result.order[i + 1]];
+        // Compute haversine distance for the full route: depot → facilities → depot
+        const orderedFacilities = orderedIds.map(id => points.find(p => p.id === id)!);
+        let haversineDistance = 0;
+        let prev = { lat: zoneCenter.lat, lng: zoneCenter.lng };
+        for (const f of orderedFacilities) {
+          haversineDistance += calculateDistance(prev.lat, prev.lng, f.lat, f.lng);
+          prev = f;
         }
+        haversineDistance += calculateDistance(prev.lat, prev.lng, zoneCenter.lat, zoneCenter.lng);
 
-        // Compute estimated time
-        const estTime = realDistance / AVG_SPEED_KMH + selected.length * SERVICE_TIME_HOURS;
+        const estTime = haversineDistance / AVG_SPEED_KMH + selected.length * SERVICE_TIME_HOURS;
 
-        setOptimizedOrder(newOrder);
-        setOptimizedDistance(Math.round(realDistance * 10) / 10);
+        setOptimizedOrder(orderedIds);
+        setOptimizedDistance(Math.round(haversineDistance * 10) / 10);
         setOptimizedTime(Math.round(estTime * 10) / 10);
         setAlgorithmLabel(label);
-        setSelectedFacilityIds(newOrder);
+        setSelectedFacilityIds(orderedIds);
+        setIsOptimizing(false);
+        // Auto-switch to route tether mode to show the optimized path
+        setTetherMode('route');
+
+        // Fetch real road route from Geoapify (async, non-blocking)
+        setIsFetchingRoad(true);
+        const waypoints = [
+          { lat: zoneCenter.lat, lng: zoneCenter.lng },
+          ...orderedFacilities,
+          { lat: zoneCenter.lat, lng: zoneCenter.lng }, // round trip
+        ];
+
+        try {
+          const road = await getRoadRoute(waypoints);
+          if (road) {
+            setRoadRoute(road);
+            setOptimizedDistance(road.roadDistanceKm);
+            const totalMinutes = road.roadTimeMinutes + selected.length * SERVICE_TIME_HOURS * 60;
+            setOptimizedTime(Math.round((totalMinutes / 60) * 10) / 10);
+          }
+        } catch (roadErr) {
+          console.error('Road route fetch failed:', roadErr);
+        }
+        setIsFetchingRoad(false);
       } catch (err) {
         console.error('Route optimization failed:', err);
-      } finally {
         setIsOptimizing(false);
+        setIsFetchingRoad(false);
       }
     }, 10);
+  };
+
+  // Show alternative road paths for the current optimized facility order
+  const handleShowAlternatives = async () => {
+    if (!zoneCenter || !optimizedOrder || optimizedOrder.length < 2) return;
+
+    setIsFetchingAlternatives(true);
+    setComparisonMode('alternatives');
+    setComparisonRoutes([]);
+    setSelectedComparisonId(null);
+
+    try {
+      const orderedFacilities = optimizedOrder
+        .map(id => facilities.find(f => f.id === id))
+        .filter((f): f is Facility => !!f && !!f.lat && !!f.lng);
+
+      const waypoints = [
+        { lat: zoneCenter.lat, lng: zoneCenter.lng },
+        ...orderedFacilities.map(f => ({ lat: f.lat!, lng: f.lng! })),
+        { lat: zoneCenter.lat, lng: zoneCenter.lng },
+      ];
+
+      const alternatives = await getAlternativeRoadRoutes(waypoints);
+
+      const routes: ComparisonRoute[] = alternatives.map((alt, idx) => ({
+        id: `alt-${alt.routeType}-${idx}`,
+        routeType: alt.routeType,
+        routeTypeLabel: alt.label,
+        algorithmLabel: algorithmLabel || 'Optimized',
+        color: ROUTE_COLORS[alt.routeType],
+        distanceKm: alt.roadDistanceKm,
+        timeMinutes: alt.roadTimeMinutes,
+        geometry: alt.geometry,
+        snappedWaypoints: alt.snappedWaypoints,
+        facilityOrder: optimizedOrder,
+      }));
+
+      setComparisonRoutes(routes);
+      // Auto-select the current (balanced) route
+      const balanced = routes.find(r => r.routeType === 'balanced');
+      if (balanced) setSelectedComparisonId(balanced.id);
+    } catch (err) {
+      console.error('Failed to fetch alternative routes:', err);
+    }
+    setIsFetchingAlternatives(false);
+  };
+
+  // Advanced Planning: run all 4 algorithms × 3 road types
+  const handleAdvancedPlanning = async () => {
+    const selected = facilities
+      .filter(f => selectedFacilityIds.includes(f.id))
+      .filter(f => typeof f.lat === 'number' && typeof f.lng === 'number');
+
+    if (selected.length < 2 || !zoneCenter) return;
+
+    setIsAdvancedPlanning(true);
+    setComparisonMode('advanced');
+    setComparisonRoutes([]);
+    setSelectedComparisonId(null);
+    setTetherMode('route');
+
+    try {
+      const points: GeoPoint[] = selected.map(f => ({ id: f.id, lat: f.lat, lng: f.lng }));
+
+      // Run all 4 optimization strategies
+      const configs: { config: OptimizationConfig; label: string }[] = [
+        { config: { shortestDistance: true, fuelEfficiency: false, timeOptimized: false, clusterPriority: false }, label: 'Shortest Distance' },
+        { config: { shortestDistance: false, fuelEfficiency: true, timeOptimized: false, clusterPriority: false }, label: 'Fuel Efficient' },
+        { config: { shortestDistance: false, fuelEfficiency: false, timeOptimized: true, clusterPriority: false }, label: 'Time Optimized' },
+        { config: { shortestDistance: false, fuelEfficiency: false, timeOptimized: false, clusterPriority: true }, label: 'Cluster Priority' },
+      ];
+
+      // Deduplicate identical orderings
+      const uniqueOrderings = new Map<string, { orderedIds: string[]; algorithmLabel: string }>();
+      for (const { config, label } of configs) {
+        const result = solveWithConfig(zoneCenter, points, config);
+        const key = result.orderedIds.join(',');
+        if (!uniqueOrderings.has(key)) {
+          uniqueOrderings.set(key, { orderedIds: result.orderedIds, algorithmLabel: label });
+        }
+      }
+
+      // Fetch alternative road routes for each unique ordering in parallel
+      const allRoutes: ComparisonRoute[] = [];
+      const promises = [...uniqueOrderings.entries()].map(async ([, { orderedIds, algorithmLabel: algLabel }]) => {
+        const orderedFacilities = orderedIds
+          .map(id => points.find(p => p.id === id))
+          .filter((p): p is GeoPoint => !!p);
+
+        const waypoints = [
+          { lat: zoneCenter.lat, lng: zoneCenter.lng },
+          ...orderedFacilities.map(f => ({ lat: f.lat, lng: f.lng })),
+          { lat: zoneCenter.lat, lng: zoneCenter.lng },
+        ];
+
+        const alternatives = await getAlternativeRoadRoutes(waypoints);
+        const colors = ALGORITHM_COLOR_OFFSET[algLabel] || ALGORITHM_COLOR_OFFSET['Shortest Distance'];
+
+        return alternatives.map((alt, idx) => ({
+          id: `adv-${algLabel}-${alt.routeType}-${idx}`,
+          routeType: alt.routeType,
+          routeTypeLabel: alt.label,
+          algorithmLabel: algLabel,
+          color: colors[idx % colors.length],
+          distanceKm: alt.roadDistanceKm,
+          timeMinutes: alt.roadTimeMinutes,
+          geometry: alt.geometry,
+          snappedWaypoints: alt.snappedWaypoints,
+          facilityOrder: orderedIds,
+        }));
+      });
+
+      const results = await Promise.allSettled(promises);
+      for (const result of results) {
+        if (result.status === 'fulfilled') {
+          allRoutes.push(...result.value);
+        }
+      }
+
+      // Sort by distance
+      allRoutes.sort((a, b) => a.distanceKm - b.distanceKm);
+      setComparisonRoutes(allRoutes);
+
+      // Auto-select the shortest
+      if (allRoutes.length > 0) {
+        setSelectedComparisonId(allRoutes[0].id);
+        // Also update the main optimization state to match the best route
+        const best = allRoutes[0];
+        setOptimizedOrder(best.facilityOrder);
+        setSelectedFacilityIds(best.facilityOrder);
+        setOptimizedDistance(best.distanceKm);
+        setOptimizedTime(Math.round((best.timeMinutes / 60) * 10) / 10);
+        setAlgorithmLabel(best.algorithmLabel);
+        setRoadRoute({
+          roadDistanceKm: best.distanceKm,
+          roadTimeMinutes: best.timeMinutes,
+          geometry: best.geometry,
+          snappedWaypoints: best.snappedWaypoints,
+        });
+      }
+    } catch (err) {
+      console.error('Advanced planning failed:', err);
+    }
+    setIsAdvancedPlanning(false);
+  };
+
+  // When user selects a comparison route, update the main route state
+  const handleSelectComparison = (id: string) => {
+    setSelectedComparisonId(id);
+    const route = comparisonRoutes.find(r => r.id === id);
+    if (!route) return;
+
+    setOptimizedOrder(route.facilityOrder);
+    setSelectedFacilityIds(route.facilityOrder);
+    setOptimizedDistance(route.distanceKm);
+    setOptimizedTime(Math.round((route.timeMinutes / 60) * 10) / 10);
+    setRoadRoute({
+      roadDistanceKm: route.distanceKm,
+      roadTimeMinutes: route.timeMinutes,
+      geometry: route.geometry,
+      snappedWaypoints: route.snappedWaypoints,
+    });
+  };
+
+  const handleDismissComparison = () => {
+    setComparisonRoutes([]);
+    setSelectedComparisonId(null);
+    setComparisonMode(null);
   };
 
   const toggleOptCriteria = (key: keyof OptimizationConfig) => {
@@ -425,6 +871,10 @@ export function SandboxRouteBuilder({ onClose }: SandboxRouteBuilderProps) {
     setOptimizedDistance(null);
     setOptimizedTime(null);
     setAlgorithmLabel(null);
+    setRoadRoute(null);
+    setComparisonRoutes([]);
+    setSelectedComparisonId(null);
+    setComparisonMode(null);
   };
 
   // Save route
@@ -439,6 +889,12 @@ export function SandboxRouteBuilder({ onClose }: SandboxRouteBuilderProps) {
       facility_ids: optimizedOrder || selectedFacilityIds,
       is_sandbox: true,
       algorithm_used: optimizedOrder ? (algorithmLabel || 'nearest_neighbor_2opt') : undefined,
+      total_distance_km: optimizedDistance ?? undefined,
+      estimated_duration_min: optimizedTime ? Math.round(optimizedTime * 60) : undefined,
+      optimized_geometry: roadRoute ? {
+        type: 'LineString',
+        coordinates: roadRoute.geometry,
+      } : undefined,
     });
     onClose();
   };
@@ -468,22 +924,105 @@ export function SandboxRouteBuilder({ onClose }: SandboxRouteBuilderProps) {
         type: 'geojson',
         data: { type: 'FeatureCollection', features: [] },
       });
+      // Connector lines: thin dashed lines from facility markers to road
+      map.addSource('connectors', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+      });
+      map.addLayer({
+        id: 'connector-lines',
+        type: 'line',
+        source: 'connectors',
+        paint: {
+          'line-color': tw.emerald[500],
+          'line-width': 1.5,
+          'line-opacity': 0.6,
+          'line-dasharray': [3, 3],
+        },
+      });
       map.addLayer({
         id: 'tether-lines',
         type: 'line',
         source: 'tethers',
         paint: {
           'line-color': tw.blue[500],
-          'line-width': 2,
-          'line-dasharray': [4, 3],
-          'line-opacity': 0.7,
+          'line-width': 3,
+          'line-opacity': 0.8,
         },
       });
+
+      // Alternative routes layer (rendered below main route)
+      map.addSource('alt-routes', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+      });
+      map.addLayer({
+        id: 'alt-route-lines',
+        type: 'line',
+        source: 'alt-routes',
+        paint: {
+          'line-color': ['get', 'color'],
+          'line-width': ['get', 'width'],
+          'line-opacity': ['get', 'opacity'],
+        },
+      }, 'connector-lines'); // insert below connectors
+
+      // Show route info popup on click
+      map.on('click', 'alt-route-lines', (e) => {
+        const props = e.features?.[0]?.properties;
+        if (!props?.routeLabel) return;
+
+        const timeStr = props.timeMinutes < 60
+          ? `${props.timeMinutes} min`
+          : `${(props.timeMinutes / 60).toFixed(1)} hrs`;
+
+        new maplibregl.Popup({ closeButton: false, maxWidth: '200px' })
+          .setLngLat(e.lngLat)
+          .setHTML(`
+            <div style="font-size:12px;line-height:1.4">
+              <strong style="color:${props.color || '#333'}">${props.routeLabel}</strong><br/>
+              ${props.distanceKm} km &middot; ${timeStr}
+            </div>
+          `)
+          .addTo(map);
+      });
+
+      // Click-to-reveal on tether lines (main route)
+      map.on('click', 'tether-lines', (e) => {
+        const props = e.features?.[0]?.properties;
+        if (!props?.routeLabel) return;
+
+        const timeStr = props.timeMinutes < 60
+          ? `${props.timeMinutes} min`
+          : `${(props.timeMinutes / 60).toFixed(1)} hrs`;
+
+        new maplibregl.Popup({ closeButton: false, maxWidth: '200px' })
+          .setLngLat(e.lngLat)
+          .setHTML(`
+            <div style="font-size:12px;line-height:1.4">
+              <strong style="color:${props.color || '#333'}">${props.routeLabel}</strong><br/>
+              ${props.distanceKm} km &middot; ${timeStr}
+            </div>
+          `)
+          .addTo(map);
+      });
+
+      // Pointer cursor on hover over route lines
+      for (const layerId of ['alt-route-lines', 'tether-lines']) {
+        map.on('mouseenter', layerId, () => {
+          map.getCanvas().style.cursor = 'pointer';
+        });
+        map.on('mouseleave', layerId, () => {
+          map.getCanvas().style.cursor = '';
+        });
+      }
     });
 
     return () => {
       markersRef.current.forEach((m) => m.remove());
       markersRef.current.clear();
+      infoMarkersRef.current.forEach((m) => m.remove());
+      infoMarkersRef.current = [];
       map.remove();
       mapRef.current = null;
     };
@@ -527,6 +1066,8 @@ export function SandboxRouteBuilder({ onClose }: SandboxRouteBuilderProps) {
     facilities.forEach((f) => {
       if (!f.lat || !f.lng) return;
       const isSelected = selectedFacilityIds.includes(f.id);
+      // In focus mode, skip unselected facilities
+      if (focusSelected && !isSelected) return;
       const visitIndex = visitIndexByFacilityId.get(f.id);
 
       const el = document.createElement('div');
@@ -592,56 +1133,387 @@ export function SandboxRouteBuilder({ onClose }: SandboxRouteBuilderProps) {
       }> = [];
 
       if (tetherMode === 'route') {
-        const orderedIds = optimizedOrder || selectedFacilityIds;
-        const orderedFacilities = orderedIds
-          .map((id) => facilities.find((f) => f.id === id))
-          .filter((f): f is Facility => !!f && !!f.lat && !!f.lng);
-
-        if (orderedFacilities.length >= 1) {
-          const coords: [number, number][] = [
-            [zoneCenter.lng, zoneCenter.lat],
-            ...orderedFacilities.map((f) => [f.lng, f.lat] as [number, number]),
-            [zoneCenter.lng, zoneCenter.lat],
-          ];
-
+        // Waypoint mode: show complete round trip via road geometry only — NO straight-line fallback
+        if (roadRoute && roadRoute.geometry.length > 0) {
           features = [
             {
               type: 'Feature',
-              properties: { mode: 'route' },
+              properties: { mode: 'route', routeLabel: 'Optimized Route', distanceKm: roadRoute.roadDistanceKm, timeMinutes: roadRoute.roadTimeMinutes, color: ROUTE_COLORS.balanced },
               geometry: {
                 type: 'LineString',
-                coordinates: coords,
+                coordinates: roadRoute.geometry,
+              },
+            },
+          ];
+
+          // Draw connector lines from each facility marker to its snapped position on the road
+          if (roadRoute.snappedWaypoints.length > 0) {
+            const orderedIds = optimizedOrder || selectedFacilityIds;
+            const orderedFacilities = orderedIds
+              .map((id) => facilities.find((f) => f.id === id))
+              .filter((f): f is Facility => !!f && !!f.lat && !!f.lng);
+
+            const connectorFeatures: typeof features = [];
+
+            connectorFeatures.push({
+              type: 'Feature',
+              properties: { mode: 'connector' },
+              geometry: {
+                type: 'LineString',
+                coordinates: [
+                  [zoneCenter.lng, zoneCenter.lat],
+                  roadRoute.snappedWaypoints[0],
+                ],
+              },
+            });
+
+            orderedFacilities.forEach((f, idx) => {
+              const snappedIdx = idx + 1;
+              if (snappedIdx < roadRoute.snappedWaypoints.length) {
+                connectorFeatures.push({
+                  type: 'Feature',
+                  properties: { mode: 'connector' },
+                  geometry: {
+                    type: 'LineString',
+                    coordinates: [
+                      [f.lng, f.lat],
+                      roadRoute.snappedWaypoints[snappedIdx],
+                    ],
+                  },
+                });
+              }
+            });
+
+            if (map.getSource('connectors')) {
+              (map.getSource('connectors') as maplibregl.GeoJSONSource).setData({
+                type: 'FeatureCollection',
+                features: connectorFeatures,
+              });
+            }
+          }
+        } else if (waypointRoad && waypointRoad.geometry.length > 0) {
+          // Pre-optimization: use waypoint road geometry (real roads through selection order)
+          features = [
+            {
+              type: 'Feature',
+              properties: { mode: 'route', routeLabel: 'Fastest', distanceKm: waypointRoad.roadDistanceKm, timeMinutes: waypointRoad.roadTimeMinutes, color: ROUTE_COLORS.balanced },
+              geometry: {
+                type: 'LineString',
+                coordinates: waypointRoad.geometry,
+              },
+            },
+          ];
+
+          // Draw connector lines from each facility to its snapped road position
+          if (waypointRoad.snappedWaypoints.length > 0) {
+            const orderedFacilities = selectedFacilityIds
+              .map((id) => facilities.find((f) => f.id === id))
+              .filter((f): f is Facility => !!f && !!f.lat && !!f.lng);
+
+            const connectorFeatures: typeof features = [];
+
+            connectorFeatures.push({
+              type: 'Feature',
+              properties: { mode: 'connector' },
+              geometry: {
+                type: 'LineString',
+                coordinates: [
+                  [zoneCenter.lng, zoneCenter.lat],
+                  waypointRoad.snappedWaypoints[0],
+                ],
+              },
+            });
+
+            orderedFacilities.forEach((f, idx) => {
+              const snappedIdx = idx + 1;
+              if (snappedIdx < waypointRoad.snappedWaypoints.length) {
+                connectorFeatures.push({
+                  type: 'Feature',
+                  properties: { mode: 'connector' },
+                  geometry: {
+                    type: 'LineString',
+                    coordinates: [
+                      [f.lng, f.lat],
+                      waypointRoad.snappedWaypoints[snappedIdx],
+                    ],
+                  },
+                });
+              }
+            });
+
+            if (map.getSource('connectors')) {
+              (map.getSource('connectors') as maplibregl.GeoJSONSource).setData({
+                type: 'FeatureCollection',
+                features: connectorFeatures,
+              });
+            }
+          }
+        }
+        // No else — if road geometry hasn't loaded yet, show nothing (no straight lines)
+
+        // Clear alt-routes layer in route mode (only one route shown)
+        if (map.getSource('alt-routes')) {
+          (map.getSource('alt-routes') as maplibregl.GeoJSONSource).setData({
+            type: 'FeatureCollection',
+            features: [],
+          });
+        }
+      } else if (tetherMode === 'alternatives') {
+        // Alternatives mode: show ONLY the selected comparison route, or all if none selected
+        if (comparisonRoutes.length > 0 && map.getSource('alt-routes')) {
+          const routesToShow = selectedComparisonId
+            ? comparisonRoutes.filter(r => r.id === selectedComparisonId)
+            : comparisonRoutes;
+
+          const altFeatures = routesToShow
+            .filter(r => r.geometry.length > 0)
+            .map(r => ({
+              type: 'Feature' as const,
+              properties: {
+                id: r.id,
+                color: r.color,
+                width: 4,
+                opacity: 0.9,
+                routeLabel: r.routeTypeLabel,
+                distanceKm: r.distanceKm,
+                timeMinutes: r.timeMinutes,
+              },
+              geometry: {
+                type: 'LineString' as const,
+                coordinates: r.geometry,
+              },
+            }));
+
+          (map.getSource('alt-routes') as maplibregl.GeoJSONSource).setData({
+            type: 'FeatureCollection',
+            features: altFeatures,
+          });
+        } else if (waypointAlternatives.length > 0 && map.getSource('alt-routes')) {
+          // Pre-optimization alternatives (waypoint road alternatives)
+          const altFeatures = waypointAlternatives.map((alt, idx) => {
+            const color = ROUTE_COLORS[alt.routeType] || '#3b82f6';
+            const label = ROUTE_TYPE_LABELS[alt.routeType] || alt.label;
+            return {
+              type: 'Feature' as const,
+              properties: {
+                color,
+                width: idx === 0 ? 4 : 3,
+                opacity: idx === 0 ? 0.9 : 0.7,
+                routeLabel: label,
+                distanceKm: alt.roadDistanceKm,
+                timeMinutes: alt.roadTimeMinutes,
+              },
+              geometry: {
+                type: 'LineString' as const,
+                coordinates: alt.geometry,
+              },
+            };
+          });
+
+          (map.getSource('alt-routes') as maplibregl.GeoJSONSource).setData({
+            type: 'FeatureCollection',
+            features: altFeatures,
+          });
+        }
+
+        // Show the selected route in the main tether layer (with connectors)
+        const activeRoute = selectedComparisonId
+          ? comparisonRoutes.find(r => r.id === selectedComparisonId)
+          : null;
+
+        if (activeRoute && activeRoute.geometry.length > 0) {
+          features = [
+            {
+              type: 'Feature',
+              properties: { mode: 'route', routeLabel: activeRoute.routeTypeLabel, distanceKm: activeRoute.distanceKm, timeMinutes: activeRoute.timeMinutes, color: activeRoute.color },
+              geometry: {
+                type: 'LineString',
+                coordinates: activeRoute.geometry,
+              },
+            },
+          ];
+
+          // Connectors for the selected route
+          if (activeRoute.snappedWaypoints.length > 0) {
+            const orderedIds = activeRoute.facilityOrder;
+            const orderedFacilities = orderedIds
+              .map((id) => facilities.find((f) => f.id === id))
+              .filter((f): f is Facility => !!f && !!f.lat && !!f.lng);
+
+            const connectorFeatures: typeof features = [];
+
+            connectorFeatures.push({
+              type: 'Feature',
+              properties: { mode: 'connector' },
+              geometry: {
+                type: 'LineString',
+                coordinates: [
+                  [zoneCenter.lng, zoneCenter.lat],
+                  activeRoute.snappedWaypoints[0],
+                ],
+              },
+            });
+
+            orderedFacilities.forEach((f, idx) => {
+              const snappedIdx = idx + 1;
+              if (snappedIdx < activeRoute.snappedWaypoints.length) {
+                connectorFeatures.push({
+                  type: 'Feature',
+                  properties: { mode: 'connector' },
+                  geometry: {
+                    type: 'LineString',
+                    coordinates: [
+                      [f.lng, f.lat],
+                      activeRoute.snappedWaypoints[snappedIdx],
+                    ],
+                  },
+                });
+              }
+            });
+
+            if (map.getSource('connectors')) {
+              (map.getSource('connectors') as maplibregl.GeoJSONSource).setData({
+                type: 'FeatureCollection',
+                features: connectorFeatures,
+              });
+            }
+          }
+        } else if (roadRoute && roadRoute.geometry.length > 0) {
+          // Fallback to the main roadRoute if no comparison selection
+          features = [
+            {
+              type: 'Feature',
+              properties: { mode: 'route', routeLabel: 'Optimized Route', distanceKm: roadRoute.roadDistanceKm, timeMinutes: roadRoute.roadTimeMinutes, color: ROUTE_COLORS.balanced },
+              geometry: {
+                type: 'LineString',
+                coordinates: roadRoute.geometry,
               },
             },
           ];
         }
       } else {
-        // Cardinal mode: zone center radiates to each selected facility
-        features = facilities
-          .filter((f) => selectedFacilityIds.includes(f.id) && f.lat && f.lng)
-          .map((f) => ({
-            type: 'Feature' as const,
-            properties: { mode: 'cardinal' },
-            geometry: {
-              type: 'LineString' as const,
-              coordinates: [
-                [zoneCenter.lng, zoneCenter.lat],
-                [f.lng, f.lat],
-              ],
-            },
-          }));
+        // Cardinal mode: zone center → each selected facility via road paths
+        // Before optimization: show ALL paths (primary + alternatives) for full visibility
+        // After optimization: show only primary path to reduce noise
+        const isOptimized = !!optimizedOrder;
+        const connectorFeatures: typeof features = [];
+        const tetherPathFeatures: typeof features = [];
+        const altPathFeatures: Array<{
+          type: 'Feature';
+          properties: Record<string, unknown>;
+          geometry: { type: 'LineString'; coordinates: [number, number][] };
+        }> = [];
+
+        const selectedFacs = facilities.filter(
+          (f) => selectedFacilityIds.includes(f.id) && f.lat && f.lng
+        );
+
+        for (const f of selectedFacs) {
+          const paths = cardinalRoads[f.id];
+          if (paths && paths.length > 0) {
+            // Primary path always goes into tethers layer
+            const primary = paths[0];
+            const primaryColor = ROUTE_COLORS[primary.routeType] || '#3b82f6';
+            const primaryLabel = ROUTE_TYPE_LABELS[primary.routeType] || primary.routeType;
+            tetherPathFeatures.push({
+              type: 'Feature',
+              properties: {
+                mode: 'route',
+                routeLabel: `${f.name}: ${primaryLabel}`,
+                distanceKm: primary.distanceKm,
+                timeMinutes: primary.timeMinutes,
+                color: primaryColor,
+              },
+              geometry: {
+                type: 'LineString',
+                coordinates: primary.geometry,
+              },
+            });
+
+            // Alternative paths go into alt-routes layer (only before optimization)
+            if (!isOptimized) {
+              for (let i = 1; i < paths.length; i++) {
+                const alt = paths[i];
+                const color = ROUTE_COLORS[alt.routeType] || '#22c55e';
+                altPathFeatures.push({
+                  type: 'Feature' as const,
+                  properties: {
+                    color,
+                    width: 3,
+                    opacity: 0.6,
+                    routeLabel: `${f.name}: ${ROUTE_TYPE_LABELS[alt.routeType] || alt.routeType}`,
+                    distanceKm: alt.distanceKm,
+                    timeMinutes: alt.timeMinutes,
+                  },
+                  geometry: {
+                    type: 'LineString' as const,
+                    coordinates: alt.geometry,
+                  },
+                });
+              }
+            }
+
+            // Connectors: facility → road end, zone center → road start
+            connectorFeatures.push({
+              type: 'Feature' as const,
+              properties: { mode: 'connector' },
+              geometry: {
+                type: 'LineString' as const,
+                coordinates: [
+                  [f.lng, f.lat],
+                  primary.geometry[primary.geometry.length - 1],
+                ],
+              },
+            });
+            connectorFeatures.push({
+              type: 'Feature' as const,
+              properties: { mode: 'connector' },
+              geometry: {
+                type: 'LineString' as const,
+                coordinates: [
+                  [zoneCenter.lng, zoneCenter.lat],
+                  primary.geometry[0],
+                ],
+              },
+            });
+          }
+          // No straight-line fallback — skip facilities whose road geometry hasn't loaded yet
+        }
+
+        features = tetherPathFeatures;
+
+        if (map.getSource('connectors')) {
+          (map.getSource('connectors') as maplibregl.GeoJSONSource).setData({
+            type: 'FeatureCollection',
+            features: connectorFeatures,
+          });
+        }
+
+        if (map.getSource('alt-routes')) {
+          (map.getSource('alt-routes') as maplibregl.GeoJSONSource).setData({
+            type: 'FeatureCollection',
+            features: altPathFeatures,
+          });
+        }
       }
 
       (map.getSource('tethers') as maplibregl.GeoJSONSource).setData({
         type: 'FeatureCollection',
         features,
       });
+
+      // Clean up previous info markers (no longer auto-shown; popups used instead)
+      infoMarkersRef.current.forEach(m => m.remove());
+      infoMarkersRef.current = [];
     }
 
     // Fit bounds
     const points: [number, number][] = [];
     if (zoneCenter) points.push([zoneCenter.lng, zoneCenter.lat]);
-    facilities.forEach((f) => {
+    const facilitySet = focusSelected
+      ? facilities.filter((f) => selectedFacilityIds.includes(f.id))
+      : facilities;
+    facilitySet.forEach((f) => {
       if (f.lat && f.lng) points.push([f.lng, f.lat]);
     });
     if (points.length >= 2) {
@@ -649,7 +1521,7 @@ export function SandboxRouteBuilder({ onClose }: SandboxRouteBuilderProps) {
       points.forEach((p) => bounds.extend(p));
       map.fitBounds(bounds, { padding: 50, maxZoom: 13 });
     }
-  }, [facilities, selectedFacilityIds, zoneCenter, zoneId, toggleFacility, selectedZone?.name, tetherMode, optimizedOrder]);
+  }, [facilities, selectedFacilityIds, zoneCenter, zoneId, toggleFacility, selectedZone?.name, tetherMode, optimizedOrder, roadRoute, waypointRoad, waypointAlternatives, focusSelected, cardinalRoads, comparisonRoutes, selectedComparisonId]);
 
   const canSave = zoneId && routeName.trim() && selectedFacilityIds.length > 0;
 
@@ -727,22 +1599,72 @@ export function SandboxRouteBuilder({ onClose }: SandboxRouteBuilderProps) {
         /* 3-column layout */
         <div className="grid grid-cols-1 lg:grid-cols-[2fr_3fr_2fr] gap-4 flex-1 min-h-0">
           {/* Left: Map */}
-          <div className="rounded-lg border overflow-hidden min-h-0 relative">
+          <div className={
+            isMapFullscreen
+              ? 'fixed inset-0 z-50 bg-background'
+              : 'rounded-lg border overflow-hidden min-h-0 relative'
+          }>
             <div className="absolute left-3 top-3 z-10">
               <ToggleGroup
                 type="single"
                 value={tetherMode}
-                onValueChange={(v) => v && setTetherMode(v as TetherMode)}
+                onValueChange={(v) => {
+                  if (!v) return;
+                  const mode = v as TetherMode;
+                  setTetherMode(mode);
+                  // Auto-fetch alternative paths when switching to alternatives mode
+                  if (mode === 'alternatives' && optimizedOrder && optimizedOrder.length >= 2 && comparisonRoutes.length === 0) {
+                    handleShowAlternatives();
+                  }
+                }}
                 className="bg-background border rounded-md p-1 shadow-sm"
               >
-                <ToggleGroupItem value="cardinal" className="px-2" aria-label="Cardinal tether">
-                  <Radar className="h-4 w-4" />
-                </ToggleGroupItem>
-                <ToggleGroupItem value="route" className="px-2" aria-label="Route tether">
-                  <Route className="h-4 w-4" />
-                </ToggleGroupItem>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <ToggleGroupItem value="cardinal" className="px-2" aria-label="Cardinal: origin to each facility">
+                      <Radar className="h-4 w-4" />
+                    </ToggleGroupItem>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">Cardinal — Route from origin to each facility</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <ToggleGroupItem value="route" className="px-2" aria-label="Waypoint: complete round trip">
+                      <Route className="h-4 w-4" />
+                    </ToggleGroupItem>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">Waypoint — Complete trip & return to origin</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <ToggleGroupItem
+                      value="alternatives"
+                      className="px-2"
+                      aria-label="Alternatives: compare multiple routes"
+                      disabled={!optimizedOrder || optimizedOrder.length < 2 || isFetchingAlternatives}
+                    >
+                      {isFetchingAlternatives ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Split className="h-4 w-4" />
+                      )}
+                    </ToggleGroupItem>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">Alternatives — Compare multiple routes</TooltipContent>
+                </Tooltip>
               </ToggleGroup>
             </div>
+            <MapOverlayControls
+              isFullscreen={isMapFullscreen}
+              onToggleFullscreen={() => {
+                setIsMapFullscreen((v) => !v);
+                setTimeout(() => mapRef.current?.resize(), 100);
+              }}
+              isFocusMode={focusSelected}
+              onToggleFocusMode={() => setFocusSelected((v) => !v)}
+              hasSelection={selectedFacilityIds.length > 0}
+              className="absolute right-[10px] top-[79px] z-10"
+            />
             <div ref={mapContainerRef} className="h-full w-full" />
           </div>
 
@@ -876,7 +1798,7 @@ export function SandboxRouteBuilder({ onClose }: SandboxRouteBuilderProps) {
                       <Card>
                         <CardContent className="p-3 text-center">
                           <p className="text-2xl font-bold">{insights.totalDistance}</p>
-                          <p className="text-xs text-muted-foreground">Total km (radial)</p>
+                          <p className="text-xs text-muted-foreground">Total km (straight-line)</p>
                         </CardContent>
                       </Card>
                       <Card>
@@ -966,15 +1888,54 @@ export function SandboxRouteBuilder({ onClose }: SandboxRouteBuilderProps) {
                       Optimize Route
                     </Button>
 
+                    {/* Advanced Planning button */}
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={handleAdvancedPlanning}
+                      disabled={
+                        isAdvancedPlanning ||
+                        isFetchingAlternatives ||
+                        selectedFacilityIds.length < 2
+                      }
+                    >
+                      {isAdvancedPlanning ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Brain className="mr-2 h-4 w-4" />
+                      )}
+                      Advanced Planning
+                    </Button>
+
+                    {/* Route Comparison Panel */}
+                    {comparisonRoutes.length > 0 && (
+                      <RouteComparisonPanel
+                        routes={comparisonRoutes}
+                        selectedId={selectedComparisonId}
+                        onSelect={handleSelectComparison}
+                        onDismiss={handleDismissComparison}
+                        title={comparisonMode === 'advanced' ? 'Advanced Planning' : 'Alternative Routes'}
+                        grouped={comparisonMode === 'advanced'}
+                      />
+                    )}
+
                     {optimizedDistance !== null && (
                       <Card className="border-green-200 bg-green-50/50 dark:bg-green-950/20 dark:border-green-800">
                         <CardContent className="p-3 space-y-2">
                           <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium">Optimized Distance</span>
+                            <span className="text-sm font-medium">
+                              {roadRoute ? 'Road Distance' : 'Optimized Distance'}
+                            </span>
                             <span className="text-lg font-bold text-green-600">
                               {optimizedDistance} km
                             </span>
                           </div>
+                          {isFetchingRoad && (
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                              Fetching road route...
+                            </div>
+                          )}
                           {optimizedTime !== null && (
                             <div className="flex items-center justify-between">
                               <span className="text-sm text-muted-foreground">Est. Time</span>
@@ -982,6 +1943,16 @@ export function SandboxRouteBuilder({ onClose }: SandboxRouteBuilderProps) {
                                 {Math.floor(optimizedTime)}h {Math.round((optimizedTime % 1) * 60)}m
                               </span>
                             </div>
+                          )}
+                          {roadRoute && (
+                            <Badge variant="outline" className="text-xs text-green-600 border-green-300">
+                              Road route
+                            </Badge>
+                          )}
+                          {!roadRoute && !isFetchingRoad && optimizedDistance !== null && (
+                            <Badge variant="outline" className="text-xs text-muted-foreground">
+                              Straight-line estimate
+                            </Badge>
                           )}
                           {algorithmLabel && (
                             <div className="flex flex-wrap gap-1 mt-1">
@@ -1009,7 +1980,7 @@ export function SandboxRouteBuilder({ onClose }: SandboxRouteBuilderProps) {
                             className="text-xs h-6 px-2"
                             onClick={() => setSortInsightsBy('distance')}
                           >
-                            Distance
+                            {optimizedOrder ? 'Route' : 'Distance'}
                           </Button>
                           <Button
                             variant={sortInsightsBy === 'name' ? 'secondary' : 'ghost'}
@@ -1022,26 +1993,55 @@ export function SandboxRouteBuilder({ onClose }: SandboxRouteBuilderProps) {
                         </div>
                       </div>
 
-                      <div className="space-y-1">
-                        {insightRows.map((row, idx) => (
-                          <div
-                            key={row.id}
-                            className="flex items-center gap-2 p-2 rounded-md bg-muted/30 text-sm"
-                          >
-                            {optimizedOrder && (
-                              <span className="text-xs font-mono text-muted-foreground w-5 text-right shrink-0">
-                                {idx + 1}.
-                              </span>
+                      <div className="space-y-0">
+                        {insightRows.map((row, idx) => {
+                          const visitIdx = visitIndexByFacilityId.get(row.id);
+                          return (
+                          <div key={row.id}>
+                            {/* Inter-facility distance connector */}
+                            {idx > 0 && row.distFromPrevious != null && (
+                              <div className="flex items-center gap-2 py-1.5 px-2">
+                                <div className="w-5 flex justify-center shrink-0">
+                                  <div className="w-px h-6 bg-muted-foreground/30" />
+                                </div>
+                                <div className="flex-1 flex items-center gap-1.5">
+                                  <div className="h-px flex-1 bg-muted-foreground/20" />
+                                  <span className="text-[10px] text-muted-foreground font-medium whitespace-nowrap">
+                                    {row.distFromPrevious} km between
+                                  </span>
+                                  <div className="h-px flex-1 bg-muted-foreground/20" />
+                                </div>
+                              </div>
                             )}
-                            <div className="flex-1 min-w-0">
-                              <p className="truncate font-medium">{row.name}</p>
-                              <p className="text-xs text-muted-foreground">{row.lga}</p>
+                            {/* First facility: show distance from origin */}
+                            {idx === 0 && row.distFromPrevious != null && (
+                              <div className="flex items-center gap-2 py-1.5 px-2">
+                                <div className="w-5 flex justify-center shrink-0">
+                                  <div className="w-px h-4 bg-blue-400/50" />
+                                </div>
+                                <span className="text-[10px] text-blue-500 font-medium">
+                                  {row.distFromPrevious} km from origin
+                                </span>
+                              </div>
+                            )}
+                            {/* Facility row */}
+                            <div className="flex items-center gap-2 p-2 rounded-md bg-muted/30 text-sm">
+                              {visitIdx != null && (
+                                <span className="flex items-center justify-center w-5 h-5 rounded-full bg-emerald-500 text-white text-[10px] font-bold shrink-0">
+                                  {visitIdx}
+                                </span>
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <p className="truncate font-medium">{row.name}</p>
+                                <p className="text-xs text-muted-foreground">{row.lga}</p>
+                              </div>
+                              <Badge variant="outline" className="shrink-0 text-xs">
+                                {row.distance} km
+                              </Badge>
                             </div>
-                            <Badge variant="outline" className="shrink-0 text-xs">
-                              {row.distance} km
-                            </Badge>
                           </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   </>

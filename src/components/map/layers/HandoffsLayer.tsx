@@ -91,7 +91,7 @@ export function HandoffsLayer({
               <Popup>
                 <div className="p-2 min-w-[250px]">
                   <h3 className="font-semibold mb-2 flex items-center gap-2">
-                    <HandshakeIcon className="w-4 h-4 text-biko-secondary" />
+                    <HandshakeIcon className="w-4 h-4 text-secondary-foreground" />
                     Handoff Point
                   </h3>
 

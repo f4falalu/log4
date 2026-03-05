@@ -92,14 +92,14 @@ export function EventStreamDrawer({ open, onClose }: EventStreamDrawerProps) {
                 return (
                   <div
                     key={event.id}
-                    className="p-4 border border-biko-border/20 rounded-lg space-y-3 bg-biko-surface hover:bg-biko-accent/5 transition-colors"
+                    className="p-4 border border-border/20 rounded-lg space-y-3 bg-muted hover:bg-accent/5 transition-colors"
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-start gap-3 flex-1">
-                        <EventIcon className="w-5 h-5 mt-0.5 text-biko-primary" aria-hidden="true" />
+                        <EventIcon className="w-5 h-5 mt-0.5 text-primary" aria-hidden="true" />
                         <div className="flex-1 space-y-1">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <p className="font-medium text-sm text-biko-foreground capitalize">
+                            <p className="font-medium text-sm text-foreground capitalize">
                               {event.event.replace(/_/g, ' ')}
                             </p>
                             {getSeverityBadge(event.severity)}
@@ -108,15 +108,15 @@ export function EventStreamDrawer({ open, onClose }: EventStreamDrawerProps) {
                             </Badge>
                           </div>
                           {event.data?.notes && (
-                            <p className="text-sm text-biko-muted">{event.data.notes}</p>
+                            <p className="text-sm text-muted-foreground">{event.data.notes}</p>
                           )}
                           {event.data?.name && (
-                            <p className="text-sm text-biko-muted">
+                            <p className="text-sm text-muted-foreground">
                               {event.type === 'batch' ? 'Batch: ' : ''}
                               {event.data.name}
                             </p>
                           )}
-                          <p className="text-xs text-biko-muted">
+                          <p className="text-xs text-muted-foreground">
                             {format(new Date(event.timestamp), 'MMM d, yyyy HH:mm:ss')}
                           </p>
                         </div>

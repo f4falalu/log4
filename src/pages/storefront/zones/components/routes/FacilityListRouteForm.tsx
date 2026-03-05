@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { ArrowLeft, ArrowRight, Check, Loader2, Zap, MapPin, List, Search, TrendingUp, ChevronLeft, ChevronRight, X, Building2 } from 'lucide-react';
+import { MapOverlayControls } from '@/components/map/MapOverlayControls';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,6 +18,7 @@ import { useCreateRoute } from '@/hooks/useRoutes';
 import { useFacilities } from '@/hooks/useFacilities';
 import { computeDistanceMatrix, type GeoPoint } from '@/lib/algorithms/distanceMatrix';
 import { solveTSP } from '@/lib/algorithms/tsp';
+import { getRoadRoute, getAlternativeRoadRoutes, type RoadRouteResult, type AlternativeRoadRoute } from '@/lib/geoapify';
 import { LeftColumn, MiddleColumn, RightColumn, ThreeColumnLayout } from '@/components/unified-workflow/schedule/ThreeColumnLayout';
 import { MAP_CONFIG, getMapLibreStyle } from '@/lib/mapConfig';
 import { useTheme } from 'next-themes';
@@ -48,6 +50,20 @@ export function FacilityListRouteForm({ onSuccess, isSandbox = false }: Facility
   const [optimizedOrder, setOptimizedOrder] = useState<string[] | null>(null);
   const [optimizedDistance, setOptimizedDistance] = useState<number | null>(null);
   const [isOptimizing, setIsOptimizing] = useState(false);
+  const [roadRoute, setRoadRoute] = useState<RoadRouteResult | null>(null);
+  const [isFetchingRoad, setIsFetchingRoad] = useState(false);
+  const [isMapFullscreen, setIsMapFullscreen] = useState(false);
+  const [focusSelected, setFocusSelected] = useState(false);
+
+  // Per-facility road paths cache: facilityId → array of alternative road paths from warehouse/SA
+  interface CardinalPath {
+    routeType: string;
+    geometry: Array<[number, number]>;
+    distanceKm: number;
+    timeMinutes: number;
+  }
+  const [cardinalRoads, setCardinalRoads] = useState<Record<string, CardinalPath[]>>({});
+  const cardinalFetchingRef = useRef<Set<string>>(new Set());
 
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -91,6 +107,64 @@ export function FacilityListRouteForm({ onSuccess, isSandbox = false }: Facility
 
     mapRef.current.addControl(new maplibregl.NavigationControl(), 'top-right');
 
+    // Add GeoJSON sources/layers for road tethers and alternatives
+    mapRef.current.on('load', () => {
+      const m = mapRef.current;
+      if (!m) return;
+      m.addSource('tethers', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+      });
+      m.addSource('alt-routes', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+      });
+      m.addLayer({
+        id: 'alt-route-lines',
+        type: 'line',
+        source: 'alt-routes',
+        paint: {
+          'line-color': ['get', 'color'],
+          'line-width': ['get', 'width'],
+          'line-opacity': ['get', 'opacity'],
+        },
+      });
+      m.addLayer({
+        id: 'tether-lines',
+        type: 'line',
+        source: 'tethers',
+        paint: {
+          'line-color': '#3b82f6',
+          'line-width': 3,
+          'line-opacity': 0.8,
+        },
+      });
+
+      // Click-to-reveal route info popup
+      const handleRouteClick = (e: maplibregl.MapMouseEvent & { features?: maplibregl.MapGeoJSONFeature[] }) => {
+        const props = e.features?.[0]?.properties;
+        if (!props?.routeLabel) return;
+        const timeStr = props.timeMinutes < 60
+          ? `${props.timeMinutes} min`
+          : `${(props.timeMinutes / 60).toFixed(1)} hrs`;
+        new maplibregl.Popup({ closeButton: false, maxWidth: '200px' })
+          .setLngLat(e.lngLat)
+          .setHTML(`
+            <div style="font-size:12px;line-height:1.4">
+              <strong style="color:${props.color || '#333'}">${props.routeLabel}</strong><br/>
+              ${props.distanceKm} km &middot; ${timeStr}
+            </div>
+          `)
+          .addTo(m);
+      };
+      m.on('click', 'alt-route-lines', handleRouteClick);
+      m.on('click', 'tether-lines', handleRouteClick);
+      for (const layerId of ['alt-route-lines', 'tether-lines']) {
+        m.on('mouseenter', layerId, () => { m.getCanvas().style.cursor = 'pointer'; });
+        m.on('mouseleave', layerId, () => { m.getCanvas().style.cursor = ''; });
+      }
+    });
+
     return () => {
       markersRef.current.forEach((m) => m.remove());
       markersRef.current = [];
@@ -109,6 +183,7 @@ export function FacilityListRouteForm({ onSuccess, isSandbox = false }: Facility
 
     const points = filteredFacilities
       .filter((f: any) => typeof f.lat === 'number' && typeof f.lng === 'number')
+      .filter((f: any) => !focusSelected || facilityIds.includes(f.id))
       .map((f: any) => ({
         id: f.id as string,
         name: f.name as string,
@@ -151,9 +226,176 @@ export function FacilityListRouteForm({ onSuccess, isSandbox = false }: Facility
     }
 
     map.fitBounds(bounds, { padding: 48, duration: 0 });
-  }, [facilityIds, filteredFacilities, step]);
+  }, [facilityIds, filteredFacilities, step, focusSelected]);
 
-  // Remove old currentIdx logic - no longer needed
+  // Fetch road geometry for each selected facility (warehouse/SA center → facility)
+  const warehouseCoords = useMemo(() => {
+    if (selectedSA?.warehouses?.lat != null && selectedSA?.warehouses?.lng != null) {
+      return { lat: selectedSA.warehouses.lat, lng: selectedSA.warehouses.lng };
+    }
+    if (selectedZone?.region_center) return selectedZone.region_center;
+    return null;
+  }, [selectedSA, selectedZone]);
+
+  useEffect(() => {
+    if (!warehouseCoords || facilityIds.length === 0) return;
+
+    const needFetch = facilityIds.filter(id => {
+      if (cardinalRoads[id]) return false;
+      if (cardinalFetchingRef.current.has(id)) return false;
+      const f = facilities.find((fac: any) => fac.id === id);
+      return f && f.lat && f.lng;
+    });
+
+    if (needFetch.length === 0) return;
+
+    needFetch.forEach(id => cardinalFetchingRef.current.add(id));
+
+    const batch = needFetch.slice(0, 3);
+    Promise.all(
+      batch.map(async (facId) => {
+        const f = facilities.find((fac: any) => fac.id === facId);
+        if (!f || !f.lat || !f.lng) return null;
+        try {
+          const waypoints = [
+            { lat: warehouseCoords.lat, lng: warehouseCoords.lng },
+            { lat: f.lat, lng: f.lng },
+          ];
+          const alternatives = await getAlternativeRoadRoutes(waypoints);
+          if (alternatives.length > 0) {
+            const paths: CardinalPath[] = alternatives.map(alt => ({
+              routeType: alt.routeType,
+              geometry: alt.geometry,
+              distanceKm: alt.roadDistanceKm,
+              timeMinutes: alt.roadTimeMinutes,
+            }));
+            return { facId, paths };
+          }
+        } catch (err) {
+          console.error(`[FacilityListRouteForm] Cardinal road fetch failed for ${facId}:`, err);
+        }
+        return null;
+      })
+    ).then(results => {
+      const newRoads: Record<string, CardinalPath[]> = {};
+      let hasNew = false;
+      for (const r of results) {
+        if (!r) continue;
+        hasNew = true;
+        newRoads[r.facId] = r.paths;
+      }
+      if (hasNew) {
+        setCardinalRoads(prev => ({ ...prev, ...newRoads }));
+      }
+      batch.forEach(id => cardinalFetchingRef.current.delete(id));
+    });
+  }, [facilityIds, warehouseCoords, facilities, cardinalRoads]);
+
+  // Route type labels and colors (matching SandboxRouteBuilder)
+  const ROUTE_COLORS: Record<string, string> = {
+    balanced: '#3b82f6',
+    short: '#22c55e',
+    less_maneuvers: '#f97316',
+  };
+  const ROUTE_TYPE_LABELS: Record<string, string> = {
+    balanced: 'Fastest',
+    short: 'Shortest',
+    less_maneuvers: 'Fewest Turns',
+  };
+
+  // Update tether lines with road geometry + alt-routes for alternatives
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !warehouseCoords) return;
+    if (!map.getSource('tethers')) return;
+
+    // Use full road route if optimized
+    if (roadRoute && roadRoute.geometry.length > 0) {
+      (map.getSource('tethers') as maplibregl.GeoJSONSource).setData({
+        type: 'FeatureCollection',
+        features: [{
+          type: 'Feature',
+          properties: { routeLabel: 'Optimized Route', distanceKm: roadRoute.roadDistanceKm, timeMinutes: roadRoute.roadTimeMinutes, color: '#3b82f6' },
+          geometry: { type: 'LineString', coordinates: roadRoute.geometry },
+        }],
+      });
+      // Clear alt-routes when showing optimized route
+      if (map.getSource('alt-routes')) {
+        (map.getSource('alt-routes') as maplibregl.GeoJSONSource).setData({
+          type: 'FeatureCollection', features: [],
+        });
+      }
+      return;
+    }
+
+    // Cardinal mode: show primary paths in tethers, alternatives in alt-routes
+    const tetherFeatures: any[] = [];
+    const altFeatures: any[] = [];
+
+    facilityIds.forEach(id => {
+      const f = facilities.find((fac: any) => fac.id === id);
+      if (!f || !f.lat || !f.lng) return;
+
+      const paths = cardinalRoads[id];
+      if (paths && paths.length > 0) {
+        // Primary (first) path goes into tethers
+        const primary = paths[0];
+        tetherFeatures.push({
+          type: 'Feature',
+          properties: {
+            routeLabel: ROUTE_TYPE_LABELS[primary.routeType] || 'Route',
+            distanceKm: primary.distanceKm,
+            timeMinutes: primary.timeMinutes,
+            color: ROUTE_COLORS[primary.routeType] || '#3b82f6',
+          },
+          geometry: { type: 'LineString', coordinates: primary.geometry },
+        });
+
+        // Additional alternative paths go into alt-routes layer
+        for (let i = 1; i < paths.length; i++) {
+          const alt = paths[i];
+          const color = ROUTE_COLORS[alt.routeType] || '#22c55e';
+          altFeatures.push({
+            type: 'Feature',
+            properties: {
+              color,
+              width: 3,
+              opacity: 0.7,
+              routeLabel: ROUTE_TYPE_LABELS[alt.routeType] || 'Alternative',
+              distanceKm: alt.distanceKm,
+              timeMinutes: alt.timeMinutes,
+            },
+            geometry: { type: 'LineString', coordinates: alt.geometry },
+          });
+        }
+      } else {
+        // Fallback: straight line while road geometry loads
+        tetherFeatures.push({
+          type: 'Feature',
+          properties: {},
+          geometry: {
+            type: 'LineString',
+            coordinates: [
+              [warehouseCoords.lng, warehouseCoords.lat],
+              [f.lng, f.lat],
+            ],
+          },
+        });
+      }
+    });
+
+    (map.getSource('tethers') as maplibregl.GeoJSONSource).setData({
+      type: 'FeatureCollection',
+      features: tetherFeatures,
+    });
+
+    if (map.getSource('alt-routes')) {
+      (map.getSource('alt-routes') as maplibregl.GeoJSONSource).setData({
+        type: 'FeatureCollection',
+        features: altFeatures,
+      });
+    }
+  }, [facilityIds, warehouseCoords, facilities, cardinalRoads, roadRoute]);
 
   // Build a map of facility id -> facility data for quick lookups
   const facilityMap = useMemo(() => {
@@ -170,8 +412,9 @@ export function FacilityListRouteForm({ onSuccess, isSandbox = false }: Facility
     if (selectedFacilities.length < 2) return;
 
     setIsOptimizing(true);
+    setRoadRoute(null);
     // Run in a microtask to allow UI to update
-    setTimeout(() => {
+    setTimeout(async () => {
       try {
         const points: GeoPoint[] = selectedFacilities.map(f => ({
           id: f.id,
@@ -185,12 +428,31 @@ export function FacilityListRouteForm({ onSuccess, isSandbox = false }: Facility
         const newOrder = result.order.map(idx => points[idx].id);
         setOptimizedOrder(newOrder);
         setOptimizedDistance(Math.round(result.totalDistance * 10) / 10);
-        // Reorder facilityIds to match optimized order
         setFacilityIds(newOrder);
+        setIsOptimizing(false);
+
+        // Fetch real road route (async, non-blocking)
+        const warehouse = selectedSA?.warehouse_id ? facilities.find((f: any) => f.warehouse_id) : null;
+        const orderedFacilities = result.order.map(idx => points[idx]);
+        // Use first facility as origin if no warehouse coords available
+        const origin = orderedFacilities[0];
+        const waypoints = [
+          origin,
+          ...orderedFacilities,
+          origin, // round trip
+        ];
+
+        setIsFetchingRoad(true);
+        const road = await getRoadRoute(waypoints);
+        if (road) {
+          setRoadRoute(road);
+          setOptimizedDistance(road.roadDistanceKm);
+        }
+        setIsFetchingRoad(false);
       } catch (err) {
         console.error('Route optimization failed:', err);
-      } finally {
         setIsOptimizing(false);
+        setIsFetchingRoad(false);
       }
     }, 10);
   };
@@ -240,6 +502,12 @@ export function FacilityListRouteForm({ onSuccess, isSandbox = false }: Facility
       facility_ids: optimizedOrder || facilityIds,
       is_sandbox: isSandbox,
       algorithm_used: optimizedOrder ? 'nearest_neighbor_2opt' : undefined,
+      total_distance_km: optimizedDistance ?? undefined,
+      estimated_duration_min: roadRoute ? roadRoute.roadTimeMinutes : undefined,
+      optimized_geometry: roadRoute ? {
+        type: 'LineString',
+        coordinates: roadRoute.geometry,
+      } : undefined,
     });
     onSuccess();
   };
@@ -340,7 +608,11 @@ export function FacilityListRouteForm({ onSuccess, isSandbox = false }: Facility
     <div className="flex flex-col h-[calc(90vh-280px)] min-h-[500px]">
       <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1.6fr_1fr] gap-4 p-4 flex-1 min-h-0">
         {/* Left: Map */}
-        <div className="flex flex-col border rounded-lg overflow-hidden bg-muted/30">
+        <div className={
+          isMapFullscreen
+            ? 'fixed inset-0 z-50 bg-background flex flex-col'
+            : 'flex flex-col border rounded-lg overflow-hidden bg-muted/30'
+        }>
           <div className="px-4 py-3 border-b bg-background">
             <h3 className="text-sm font-semibold flex items-center gap-2">
               <MapPin className="h-4 w-4" />
@@ -348,6 +620,17 @@ export function FacilityListRouteForm({ onSuccess, isSandbox = false }: Facility
             </h3>
           </div>
           <div className="flex-1 min-h-0 relative">
+            <MapOverlayControls
+              isFullscreen={isMapFullscreen}
+              onToggleFullscreen={() => {
+                setIsMapFullscreen((v) => !v);
+                setTimeout(() => mapRef.current?.resize(), 100);
+              }}
+              isFocusMode={focusSelected}
+              onToggleFocusMode={() => setFocusSelected((v) => !v)}
+              hasSelection={facilityIds.length > 0}
+              className="absolute right-[10px] top-[79px] z-10"
+            />
             <div ref={mapContainerRef} className="h-full w-full" />
           </div>
         </div>
@@ -560,17 +843,38 @@ export function FacilityListRouteForm({ onSuccess, isSandbox = false }: Facility
             {optimizedDistance ? (
               <>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Distance</span>
+                  <span className="text-muted-foreground">
+                    {roadRoute ? 'Road Distance' : 'Distance (est.)'}
+                  </span>
                   <span className="font-medium text-green-600">
                     {optimizedDistance} km
                   </span>
                 </div>
+                {isFetchingRoad && (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Fetching road route...
+                  </div>
+                )}
+                {roadRoute && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Road Time</span>
+                    <span className="font-medium">
+                      {Math.floor(roadRoute.roadTimeMinutes / 60)}h {roadRoute.roadTimeMinutes % 60}m
+                    </span>
+                  </div>
+                )}
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Algorithm</span>
                   <Badge variant="secondary" className="text-xs">
                     2-opt TSP
                   </Badge>
                 </div>
+                {roadRoute && (
+                  <Badge variant="outline" className="text-xs text-green-600 border-green-300">
+                    Road route
+                  </Badge>
+                )}
               </>
             ) : (
               <p className="text-muted-foreground text-center py-6">

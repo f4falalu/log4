@@ -19,11 +19,11 @@ interface PayloadVisualizerProps {
   showVisual?: boolean;
 }
 
-export function PayloadVisualizer({ 
-  items, 
-  vehicleCapacityWeight = 1000, 
+export function PayloadVisualizer({
+  items,
+  vehicleCapacityWeight = 1000,
   vehicleCapacityVolume = 10,
-  showVisual = true 
+  showVisual = true
 }: PayloadVisualizerProps) {
   const stats = useMemo(() => {
     const totalWeight = items.reduce((sum, item) => sum + item.weight_kg * item.quantity, 0);
@@ -31,7 +31,7 @@ export function PayloadVisualizer({
     const weightUtilization = (totalWeight / vehicleCapacityWeight) * 100;
     const volumeUtilization = (totalVolume / vehicleCapacityVolume) * 100;
     const utilizationPct = Math.max(weightUtilization, volumeUtilization);
-    
+
     return {
       totalWeight,
       totalVolume,
@@ -45,9 +45,9 @@ export function PayloadVisualizer({
   }, [items, vehicleCapacityWeight, vehicleCapacityVolume]);
 
   const getStatusColor = () => {
-    if (stats.utilizationPct > 90) return 'text-biko-danger';
-    if (stats.utilizationPct > 70) return 'text-biko-warning';
-    return 'text-biko-success';
+    if (stats.utilizationPct > 90) return 'text-destructive';
+    if (stats.utilizationPct > 70) return 'text-warning';
+    return 'text-success';
   };
 
   const getStatusIcon = () => {
@@ -59,10 +59,10 @@ export function PayloadVisualizer({
   const StatusIcon = getStatusIcon();
 
   return (
-    <Card className="border-biko-border/20">
+    <Card className="border-border/20">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-biko-foreground">
-          <Package className="w-5 h-5 text-biko-primary" />
+        <CardTitle className="flex items-center gap-2 text-foreground">
+          <Package className="w-5 h-5 text-primary" />
           Payload Overview
         </CardTitle>
       </CardHeader>
@@ -70,20 +70,20 @@ export function PayloadVisualizer({
         {/* Summary Stats */}
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1">
-            <p className="text-sm text-biko-muted">Total Weight</p>
-            <p className="text-2xl font-bold text-biko-foreground">
+            <p className="text-sm text-muted-foreground">Total Weight</p>
+            <p className="text-2xl font-bold text-foreground">
               {stats.totalWeight.toFixed(0)}
-              <span className="text-sm font-normal text-biko-muted ml-1">kg</span>
+              <span className="text-sm font-normal text-muted-foreground ml-1">kg</span>
             </p>
-            <p className="text-xs text-biko-muted">of {vehicleCapacityWeight}kg capacity</p>
+            <p className="text-xs text-muted-foreground">of {vehicleCapacityWeight}kg capacity</p>
           </div>
           <div className="space-y-1">
-            <p className="text-sm text-biko-muted">Total Volume</p>
-            <p className="text-2xl font-bold text-biko-foreground">
+            <p className="text-sm text-muted-foreground">Total Volume</p>
+            <p className="text-2xl font-bold text-foreground">
               {stats.totalVolume.toFixed(2)}
-              <span className="text-sm font-normal text-biko-muted ml-1">m³</span>
+              <span className="text-sm font-normal text-muted-foreground ml-1">m³</span>
             </p>
-            <p className="text-xs text-biko-muted">of {vehicleCapacityVolume}m³ capacity</p>
+            <p className="text-xs text-muted-foreground">of {vehicleCapacityVolume}m³ capacity</p>
           </div>
         </div>
 
@@ -91,8 +91,8 @@ export function PayloadVisualizer({
         <div className="space-y-4">
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
-              <span className="text-biko-muted">Weight Utilization</span>
-              <span className={`font-medium ${stats.isOverweight ? 'text-biko-danger' : 'text-biko-foreground'}`}>
+              <span className="text-muted-foreground">Weight Utilization</span>
+              <span className={`font-medium ${stats.isOverweight ? 'text-destructive' : 'text-foreground'}`}>
                 {stats.weightUtilization.toFixed(1)}%
               </span>
             </div>
@@ -104,8 +104,8 @@ export function PayloadVisualizer({
 
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
-              <span className="text-biko-muted">Volume Utilization</span>
-              <span className={`font-medium ${stats.isOvervolume ? 'text-biko-danger' : 'text-biko-foreground'}`}>
+              <span className="text-muted-foreground">Volume Utilization</span>
+              <span className={`font-medium ${stats.isOvervolume ? 'text-destructive' : 'text-foreground'}`}>
                 {stats.volumeUtilization.toFixed(1)}%
               </span>
             </div>
@@ -117,19 +117,19 @@ export function PayloadVisualizer({
         </div>
 
         {/* Status Badge */}
-        <div className="flex items-center justify-between p-4 rounded-lg bg-biko-surface/50 border border-biko-border/20">
+        <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50 border border-border/20">
           <div className="flex items-center gap-3">
             <StatusIcon className={`w-5 h-5 ${getStatusColor()}`} />
             <div>
-              <p className="font-medium text-biko-foreground">
+              <p className="font-medium text-foreground">
                 {stats.utilizationPct > 90 ? 'Overloaded' : stats.utilizationPct > 70 ? 'Near Capacity' : 'Optimal Load'}
               </p>
-              <p className="text-sm text-biko-muted">
+              <p className="text-sm text-muted-foreground">
                 {stats.itemCount} items across {items.length} entries
               </p>
             </div>
           </div>
-          <Badge 
+          <Badge
             variant={stats.utilizationPct > 90 ? 'destructive' : 'secondary'}
             className="text-lg px-4 py-2"
           >
@@ -139,12 +139,12 @@ export function PayloadVisualizer({
 
         {/* Warnings */}
         {(stats.isOverweight || stats.isOvervolume) && (
-          <div className="p-4 rounded-lg bg-biko-danger/10 border border-biko-danger/20">
+          <div className="p-4 rounded-lg bg-destructive/10 border border-destructive/20">
             <div className="flex items-start gap-3">
-              <AlertTriangle className="w-5 h-5 text-biko-danger mt-0.5" />
+              <AlertTriangle className="w-5 h-5 text-destructive mt-0.5" />
               <div className="space-y-1">
-                <p className="font-medium text-biko-danger">Vehicle Overload Warning</p>
-                <p className="text-sm text-biko-muted">
+                <p className="font-medium text-destructive">Vehicle Overload Warning</p>
+                <p className="text-sm text-muted-foreground">
                   {stats.isOverweight && 'Weight exceeds vehicle capacity. '}
                   {stats.isOvervolume && 'Volume exceeds vehicle capacity. '}
                   Consider redistributing items or selecting a larger vehicle.
@@ -157,8 +157,8 @@ export function PayloadVisualizer({
         {/* Visual Representation */}
         {showVisual && items.length > 0 && (
           <div className="space-y-2">
-            <p className="text-sm font-medium text-biko-foreground">Cargo Distribution</p>
-            <div className="relative w-full h-32 border-2 border-biko-border/20 rounded-lg overflow-hidden bg-biko-surface/30">
+            <p className="text-sm font-medium text-foreground">Cargo Distribution</p>
+            <div className="relative w-full h-32 border-2 border-border/20 rounded-lg overflow-hidden bg-muted/30">
               {items.map((item, index) => {
                 const itemPercentage = ((item.volume_m3 * item.quantity) / stats.totalVolume) * 100;
                 return (
@@ -176,7 +176,7 @@ export function PayloadVisualizer({
                 );
               })}
             </div>
-            <p className="text-xs text-biko-muted text-center">
+            <p className="text-xs text-muted-foreground text-center">
               Visual representation of payload volume distribution
             </p>
           </div>

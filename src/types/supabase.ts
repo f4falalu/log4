@@ -9165,20 +9165,6 @@ export type Database = {
         }
         Relationships: []
       }
-      mv_user_permissions: {
-        Row: {
-          action: string | null
-          category: string | null
-          is_dangerous: boolean | null
-          permission_code: string | null
-          permission_id: string | null
-          resource: string | null
-          role_code: string | null
-          source: string | null
-          user_id: string | null
-        }
-        Relationships: []
-      }
       pending_invitations_view: {
         Row: {
           email: string | null
@@ -10522,6 +10508,13 @@ export type Database = {
         Returns: boolean
       }
       build_batch_snapshot: { Args: { p_batch_id: string }; Returns: Json }
+      bulk_insert_facilities: {
+        Args: { facilities: Json }
+        Returns: {
+          error_message: string
+          inserted_count: number
+        }[]
+      }
       calculate_cargo_volume: {
         Args: { height_cm: number; length_cm: number; width_cm: number }
         Returns: number
@@ -10562,14 +10555,6 @@ export type Database = {
           _permission_code: string
           _user_id: string
           _warehouse_id: string
-        }
-        Returns: boolean
-      }
-      can_transition_requisition_status: {
-        Args: {
-          _new_status: string
-          _requisition_id: string
-          _user_id?: string
         }
         Returns: boolean
       }
@@ -10841,10 +10826,6 @@ export type Database = {
           id: string
           name: string
         }[]
-      }
-      get_available_requisition_states: {
-        Args: { _requisition_id: string; _user_id?: string }
-        Returns: string[]
       }
       get_batch_slot_assignments: {
         Args: { p_batch_id: string }
@@ -11452,10 +11433,12 @@ export type Database = {
         }
         Returns: string
       }
+      is_admin: { Args: never; Returns: boolean }
       is_dangerous_permission: {
         Args: { _permission_code: string }
         Returns: boolean
       }
+      is_fleet_manager: { Args: never; Returns: boolean }
       is_slot_available: {
         Args: { p_batch_id?: string; p_slot_key: string; p_vehicle_id: string }
         Returns: boolean
@@ -11463,6 +11446,7 @@ export type Database = {
       is_system_admin:
         | { Args: never; Returns: boolean }
         | { Args: { _user_id: string }; Returns: boolean }
+      is_warehouse_officer: { Args: never; Returns: boolean }
       is_workspace_admin: {
         Args: { p_user_id?: string; p_workspace_id: string }
         Returns: boolean
@@ -11475,6 +11459,7 @@ export type Database = {
         Args: { p_user_id?: string; p_workspace_id: string }
         Returns: boolean
       }
+      is_zone_manager: { Args: never; Returns: boolean }
       link_user_to_mod4: {
         Args: {
           p_link_method?: string
@@ -11484,6 +11469,7 @@ export type Database = {
         Returns: string
       }
       longtransactionsenabled: { Args: never; Returns: boolean }
+      manages_zone: { Args: { _zone_id: string }; Returns: boolean }
       mark_requisition_ready_for_dispatch: {
         Args: { p_requisition_id: string }
         Returns: boolean

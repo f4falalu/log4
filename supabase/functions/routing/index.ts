@@ -8,6 +8,7 @@ import { corsHeaders } from "../_shared/cors.ts"
 interface RoutingRequest {
   waypoints: Array<{ lat: number; lon: number }>;
   mode?: string;
+  routeType?: 'balanced' | 'short' | 'less_maneuvers';
 }
 
 serve(async (req) => {
@@ -22,7 +23,7 @@ serve(async (req) => {
       throw new Error('GEOAPIFY_API_KEY not configured')
     }
 
-    const { waypoints, mode = 'drive' }: RoutingRequest = await req.json()
+    const { waypoints, mode = 'drive', routeType }: RoutingRequest = await req.json()
 
     if (!waypoints || waypoints.length < 2) {
       throw new Error('At least 2 waypoints are required')
@@ -33,7 +34,10 @@ serve(async (req) => {
       .map(w => `${w.lat},${w.lon}`)
       .join('|')
 
-    const url = `https://api.geoapify.com/v1/routing?waypoints=${waypointsParam}&mode=${mode}`
+    let url = `https://api.geoapify.com/v1/routing?waypoints=${waypointsParam}&mode=${mode}`
+    if (routeType && routeType !== 'balanced') {
+      url += `&type=${routeType}`
+    }
 
     // Call Geoapify API with server-side key (as query parameter)
     const urlWithKey = `${url}&apiKey=${GEOAPIFY_API_KEY}`

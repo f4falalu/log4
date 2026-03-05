@@ -183,7 +183,7 @@ function parseGeoCoordinates(value: string, columnName?: string): { latitude?: n
 /**
  * Normalize column names to match expected field names
  */
-function normalizeColumnNames(row: any, generateDiagnostics: boolean = false): { normalized: any; diagnostics?: ColumnMappingDiagnostic[] } {
+export function normalizeColumnNames(row: any, generateDiagnostics: boolean = false): { normalized: any; diagnostics?: ColumnMappingDiagnostic[] } {
   const normalized: any = {};
   const columnMappingMetadata: Record<string, string> = {}; // Track which original column mapped to each field
   const diagnostics: ColumnMappingDiagnostic[] = [];
@@ -721,21 +721,19 @@ export function validateParsedData(
   }>
 ): ValidationResult[] {
   const allIssues: ValidationResult[] = [];
-  const codesInFile = new Set<string>();
+  // Single mutable Set — add codes as we go instead of creating a new Set per row
+  const allCodes = new Set<string>(existingWarehouseCodes);
 
   parsedData.rows.forEach((row, index) => {
-    // Check for duplicates within the file itself
-    const combined = new Set([...existingWarehouseCodes, ...codesInFile]);
-
     // Get DB match results for this row if available
     const dbMatchResults = normalizedRows?.[index]?.dbMatches;
 
-    // Validate row
-    const issues = validateFacilityRow(row, index, combined, skipConfig, dbMatchResults);
+    // Validate row against the running set of all known codes
+    const issues = validateFacilityRow(row, index, allCodes, skipConfig, dbMatchResults);
 
-    // Track warehouse codes in this file
+    // Track warehouse codes in this file (add AFTER validation so it doesn't flag itself)
     if (row.warehouse_code && String(row.warehouse_code).trim() !== '') {
-      codesInFile.add(String(row.warehouse_code).trim());
+      allCodes.add(String(row.warehouse_code).trim());
     }
 
     allIssues.push(...issues);

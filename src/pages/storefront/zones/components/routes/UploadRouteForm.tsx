@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { ArrowLeft, ArrowRight, Check, FileSpreadsheet, Loader2, Upload, X } from 'lucide-react';
+import { MapOverlayControls } from '@/components/map/MapOverlayControls';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -31,6 +32,7 @@ import { ColumnMapper, type ColumnMapperResult } from '@/pages/storefront/facili
 import { calculateDistance } from '@/lib/routeOptimization';
 import { computeDistanceMatrix, type GeoPoint } from '@/lib/algorithms/distanceMatrix';
 import { solveTSP } from '@/lib/algorithms/tsp';
+import { getAlternativeRoadRoutes, getRoadRoute, type RoadRouteResult } from '@/lib/geoapify';
 import { LeftColumn, MiddleColumn, RightColumn, ThreeColumnLayout } from '@/components/unified-workflow/schedule/ThreeColumnLayout';
 import { MAP_CONFIG, getMapLibreStyle } from '@/lib/mapConfig';
 import { useTheme } from 'next-themes';
@@ -68,6 +70,31 @@ export function UploadRouteForm({ onSuccess }: UploadRouteFormProps) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [optimizedOrder, setOptimizedOrder] = useState<string[] | null>(null);
   const [isOptimizing, setIsOptimizing] = useState(false);
+  const [isMapFullscreen, setIsMapFullscreen] = useState(false);
+  const [focusSelected, setFocusSelected] = useState(false);
+  const [roadRoute, setRoadRoute] = useState<RoadRouteResult | null>(null);
+  const [isFetchingRoad, setIsFetchingRoad] = useState(false);
+
+  // Per-facility road paths cache: facilityId → array of alternative road paths
+  interface CardinalPath {
+    routeType: string;
+    geometry: Array<[number, number]>;
+    distanceKm: number;
+    timeMinutes: number;
+  }
+  const [cardinalRoads, setCardinalRoads] = useState<Record<string, CardinalPath[]>>({});
+  const cardinalFetchingRef = useRef<Set<string>>(new Set());
+
+  const ROUTE_COLORS: Record<string, string> = {
+    balanced: '#3b82f6',
+    short: '#22c55e',
+    less_maneuvers: '#f97316',
+  };
+  const ROUTE_TYPE_LABELS: Record<string, string> = {
+    balanced: 'Fastest',
+    short: 'Shortest',
+    less_maneuvers: 'Fewest Turns',
+  };
 
   const { theme } = useTheme();
   const { zones } = useOperationalZones();
@@ -142,11 +169,12 @@ export function UploadRouteForm({ onSuccess }: UploadRouteFormProps) {
   const handleOptimize = () => {
     if (selectedIds.length < 2) return;
     setIsOptimizing(true);
-    setTimeout(() => {
+    setRoadRoute(null);
+    setTimeout(async () => {
       try {
-        const map = new Map(facilities.map((f) => [f.id, f] as const));
+        const facMap = new Map(facilities.map((f) => [f.id, f] as const));
         const points: GeoPoint[] = selectedIds
-          .map((id) => map.get(id))
+          .map((id) => facMap.get(id))
           .filter((f): f is ProvisionalFacility => !!f)
           .map((f) => ({ id: f.id, lat: f.lat, lng: f.lng }));
         if (points.length < 2) return;
@@ -155,8 +183,21 @@ export function UploadRouteForm({ onSuccess }: UploadRouteFormProps) {
         const newOrder = result.order.map((idx) => points[idx].id);
         setOptimizedOrder(newOrder);
         setSelectedIds(newOrder);
-      } finally {
         setIsOptimizing(false);
+
+        // Fetch real road route (async, non-blocking)
+        const orderedFacilities = result.order.map(idx => points[idx]);
+        const origin = warehouseCoords || orderedFacilities[0];
+        const waypoints = [origin, ...orderedFacilities, origin];
+
+        setIsFetchingRoad(true);
+        const road = await getRoadRoute(waypoints);
+        if (road) setRoadRoute(road);
+        setIsFetchingRoad(false);
+      } catch (err) {
+        console.error('Route optimization failed:', err);
+        setIsOptimizing(false);
+        setIsFetchingRoad(false);
       }
     }, 10);
   };
@@ -290,6 +331,64 @@ export function UploadRouteForm({ onSuccess }: UploadRouteFormProps) {
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
     mapRef.current = map;
 
+    // Add GeoJSON sources + layers for road tethers and alternatives
+    map.on('load', () => {
+      if (!mapRef.current) return;
+      const m = mapRef.current;
+      m.addSource('tethers', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+      });
+      m.addSource('alt-routes', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+      });
+      m.addLayer({
+        id: 'alt-route-lines',
+        type: 'line',
+        source: 'alt-routes',
+        paint: {
+          'line-color': ['get', 'color'],
+          'line-width': ['get', 'width'],
+          'line-opacity': ['get', 'opacity'],
+        },
+      });
+      m.addLayer({
+        id: 'tether-lines',
+        type: 'line',
+        source: 'tethers',
+        paint: {
+          'line-color': '#3b82f6',
+          'line-width': 3,
+          'line-opacity': 0.8,
+        },
+      });
+
+      // Route info popup on click
+      const handleRouteClick = (e: maplibregl.MapMouseEvent & { features?: maplibregl.MapGeoJSONFeature[] }) => {
+        const props = e.features?.[0]?.properties;
+        if (!props?.routeLabel) return;
+        const timeStr = props.timeMinutes < 60
+          ? `${props.timeMinutes} min`
+          : `${(props.timeMinutes / 60).toFixed(1)} hrs`;
+        new maplibregl.Popup({ closeButton: false, maxWidth: '200px' })
+          .setLngLat(e.lngLat)
+          .setHTML(`
+            <div style="font-size:12px;line-height:1.4">
+              <strong style="color:${props.color || '#333'}">${props.routeLabel}</strong><br/>
+              ${props.distanceKm} km &middot; ${timeStr}
+            </div>
+          `)
+          .addTo(m);
+      };
+      m.on('click', 'alt-route-lines', handleRouteClick);
+      m.on('click', 'tether-lines', handleRouteClick);
+      for (const layerId of ['alt-route-lines', 'tether-lines']) {
+        m.on('mouseenter', layerId, () => { m.getCanvas().style.cursor = 'pointer'; });
+        m.on('mouseleave', layerId, () => { m.getCanvas().style.cursor = ''; });
+      }
+    });
+
     return () => {
       markersRef.current.forEach((m) => m.remove());
       markersRef.current.clear();
@@ -311,6 +410,8 @@ export function UploadRouteForm({ onSuccess }: UploadRouteFormProps) {
 
     facilities.forEach((f) => {
       const isSelected = selectedIds.includes(f.id);
+      // In focus mode, skip unselected facilities
+      if (focusSelected && !isSelected) return;
       const el = document.createElement('div');
       el.style.cursor = 'pointer';
       el.innerHTML = `
@@ -347,7 +448,151 @@ export function UploadRouteForm({ onSuccess }: UploadRouteFormProps) {
     if (any) {
       map.fitBounds(bounds, { padding: 50, maxZoom: 12 });
     }
-  }, [facilities, selectedIds, step]);
+  }, [facilities, selectedIds, step, focusSelected]);
+
+  // Warehouse/origin coordinates for cardinal road fetching
+  const warehouseCoords = useMemo(() => {
+    if (selectedSA?.warehouses?.lat != null && selectedSA?.warehouses?.lng != null) {
+      return { lat: selectedSA.warehouses.lat, lng: selectedSA.warehouses.lng };
+    }
+    if (selectedZone?.region_center) return selectedZone.region_center;
+    return null;
+  }, [selectedSA, selectedZone]);
+
+  // Fetch cardinal road geometry for each selected facility
+  useEffect(() => {
+    if (!warehouseCoords || selectedIds.length === 0) return;
+
+    const needFetch = selectedIds.filter(id => {
+      if (cardinalRoads[id]) return false;
+      if (cardinalFetchingRef.current.has(id)) return false;
+      const f = facilities.find(fac => fac.id === id);
+      return f && f.lat && f.lng;
+    });
+
+    if (needFetch.length === 0) return;
+
+    needFetch.forEach(id => cardinalFetchingRef.current.add(id));
+
+    const batch = needFetch.slice(0, 6);
+    Promise.all(
+      batch.map(async (facId) => {
+        const f = facilities.find(fac => fac.id === facId);
+        if (!f || !f.lat || !f.lng) return null;
+        try {
+          const waypoints = [
+            { lat: warehouseCoords.lat, lng: warehouseCoords.lng },
+            { lat: f.lat, lng: f.lng },
+          ];
+          const alternatives = await getAlternativeRoadRoutes(waypoints);
+          if (alternatives.length > 0) {
+            const paths: CardinalPath[] = alternatives.map(alt => ({
+              routeType: alt.routeType,
+              geometry: alt.geometry,
+              distanceKm: alt.roadDistanceKm,
+              timeMinutes: alt.roadTimeMinutes,
+            }));
+            return { facId, paths };
+          }
+        } catch (err) {
+          console.error(`[UploadRouteForm] Cardinal road fetch failed for ${facId}:`, err);
+        }
+        return null;
+      })
+    ).then(results => {
+      const newRoads: Record<string, CardinalPath[]> = {};
+      let hasNew = false;
+      for (const r of results) {
+        if (!r) continue;
+        hasNew = true;
+        newRoads[r.facId] = r.paths;
+      }
+      if (hasNew) {
+        setCardinalRoads(prev => ({ ...prev, ...newRoads }));
+      }
+      batch.forEach(id => cardinalFetchingRef.current.delete(id));
+    });
+  }, [selectedIds, warehouseCoords, facilities, cardinalRoads]);
+
+  // Update tether lines with road geometry
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !warehouseCoords) return;
+    if (!map.getSource('tethers')) return;
+
+    // If optimized + road route available, show that
+    if (roadRoute && roadRoute.geometry.length > 0) {
+      (map.getSource('tethers') as maplibregl.GeoJSONSource).setData({
+        type: 'FeatureCollection',
+        features: [{
+          type: 'Feature',
+          properties: { routeLabel: 'Optimized Route', distanceKm: roadRoute.roadDistanceKm, timeMinutes: roadRoute.roadTimeMinutes, color: '#3b82f6' },
+          geometry: { type: 'LineString', coordinates: roadRoute.geometry },
+        }],
+      });
+      if (map.getSource('alt-routes')) {
+        (map.getSource('alt-routes') as maplibregl.GeoJSONSource).setData({
+          type: 'FeatureCollection', features: [],
+        });
+      }
+      return;
+    }
+
+    // Cardinal mode: primary in tethers, alternatives in alt-routes
+    const tetherFeatures: any[] = [];
+    const altFeatures: any[] = [];
+
+    selectedIds.forEach(id => {
+      const f = facilities.find(fac => fac.id === id);
+      if (!f || !f.lat || !f.lng) return;
+
+      const paths = cardinalRoads[id];
+      if (paths && paths.length > 0) {
+        const primary = paths[0];
+        tetherFeatures.push({
+          type: 'Feature',
+          properties: {
+            routeLabel: ROUTE_TYPE_LABELS[primary.routeType] || 'Route',
+            distanceKm: primary.distanceKm,
+            timeMinutes: primary.timeMinutes,
+            color: ROUTE_COLORS[primary.routeType] || '#3b82f6',
+          },
+          geometry: { type: 'LineString', coordinates: primary.geometry },
+        });
+
+        // Show alternatives before optimization
+        if (!optimizedOrder) {
+          for (let i = 1; i < paths.length; i++) {
+            const alt = paths[i];
+            altFeatures.push({
+              type: 'Feature',
+              properties: {
+                color: ROUTE_COLORS[alt.routeType] || '#22c55e',
+                width: 3,
+                opacity: 0.7,
+                routeLabel: ROUTE_TYPE_LABELS[alt.routeType] || 'Alternative',
+                distanceKm: alt.distanceKm,
+                timeMinutes: alt.timeMinutes,
+              },
+              geometry: { type: 'LineString', coordinates: alt.geometry },
+            });
+          }
+        }
+      }
+    });
+
+    (map.getSource('tethers') as maplibregl.GeoJSONSource).setData({
+      type: 'FeatureCollection',
+      features: tetherFeatures,
+    });
+
+    if (map.getSource('alt-routes')) {
+      (map.getSource('alt-routes') as maplibregl.GeoJSONSource).setData({
+        type: 'FeatureCollection',
+        features: altFeatures,
+      });
+    }
+  }, [selectedIds, warehouseCoords, facilities, cardinalRoads, roadRoute, optimizedOrder]);
 
   return (
     <div className="space-y-4 py-2">
@@ -455,8 +700,25 @@ export function UploadRouteForm({ onSuccess }: UploadRouteFormProps) {
         <div className="space-y-4">
           <ThreeColumnLayout className="min-h-[600px]">
             <LeftColumn title="Map" subtitle="Selected facilities are highlighted">
-              <div className="h-[520px] w-full overflow-hidden rounded-md border bg-background">
-                <div ref={mapContainerRef} className="h-full w-full" />
+              <div className={
+                isMapFullscreen
+                  ? 'fixed inset-0 z-50 bg-background'
+                  : 'h-[520px] w-full overflow-hidden rounded-md border bg-background'
+              }>
+                <div className="h-full w-full relative">
+                  <MapOverlayControls
+                    isFullscreen={isMapFullscreen}
+                    onToggleFullscreen={() => {
+                      setIsMapFullscreen((v) => !v);
+                      setTimeout(() => mapRef.current?.resize(), 100);
+                    }}
+                    isFocusMode={focusSelected}
+                    onToggleFocusMode={() => setFocusSelected((v) => !v)}
+                    hasSelection={selectedIds.length > 0}
+                    className="absolute right-[10px] top-[79px] z-10"
+                  />
+                  <div ref={mapContainerRef} className="h-full w-full" />
+                </div>
               </div>
             </LeftColumn>
 

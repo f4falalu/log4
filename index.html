@@ -23,9 +23,9 @@
   </head>
 
   <body>
-    <!-- Unregister any lingering service workers that may cache stale assets -->
+    <!-- Unregister stale service workers (skip if PWA mode is active) -->
     <script>
-      if ('serviceWorker' in navigator) {
+      if ('serviceWorker' in navigator && !window.__BIKO_PWA_ACTIVE) {
         navigator.serviceWorker.getRegistrations().then(function(registrations) {
           registrations.forEach(function(registration) { registration.unregister(); });
         });

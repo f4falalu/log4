@@ -3,45 +3,65 @@
  */
 
 /**
- * Calculate Levenshtein distance between two strings
- * Used for fuzzy matching of names
+ * Calculate Levenshtein distance between two strings with early termination.
+ * If maxDistance is provided, returns early once it's clear the result will exceed it.
  */
-export function levenshteinDistance(str1: string, str2: string): number {
+export function levenshteinDistance(str1: string, str2: string, maxDistance?: number): number {
   const len1 = str1.length;
   const len2 = str2.length;
-  const matrix: number[][] = [];
 
-  // Initialize matrix
-  for (let i = 0; i <= len1; i++) {
-    matrix[i] = [i];
-  }
-  for (let j = 0; j <= len2; j++) {
-    matrix[0][j] = j;
+  // Quick length-based rejection
+  if (maxDistance !== undefined && Math.abs(len1 - len2) > maxDistance) {
+    return maxDistance + 1;
   }
 
-  // Fill matrix
+  // Use two single-row arrays instead of full matrix (O(n) memory vs O(n×m))
+  let prev = new Array(len2 + 1);
+  let curr = new Array(len2 + 1);
+
+  for (let j = 0; j <= len2; j++) prev[j] = j;
+
   for (let i = 1; i <= len1; i++) {
+    curr[0] = i;
+    let rowMin = curr[0];
+
     for (let j = 1; j <= len2; j++) {
       const cost = str1[i - 1] === str2[j - 1] ? 0 : 1;
-      matrix[i][j] = Math.min(
-        matrix[i - 1][j] + 1, // deletion
-        matrix[i][j - 1] + 1, // insertion
-        matrix[i - 1][j - 1] + cost // substitution
+      curr[j] = Math.min(
+        prev[j] + 1,       // deletion
+        curr[j - 1] + 1,   // insertion
+        prev[j - 1] + cost  // substitution
       );
+      if (curr[j] < rowMin) rowMin = curr[j];
     }
+
+    // Early termination: if the best possible score in this row already exceeds max, bail out
+    if (maxDistance !== undefined && rowMin > maxDistance) {
+      return maxDistance + 1;
+    }
+
+    // Swap rows
+    [prev, curr] = [curr, prev];
   }
 
-  return matrix[len1][len2];
+  return prev[len2];
 }
 
 /**
- * Calculate similarity score between two strings (0-1, higher is more similar)
+ * Calculate similarity score between two strings (0-1, higher is more similar).
+ * Accepts an optional threshold — if provided, uses early termination when the
+ * score can't possibly meet the threshold.
  */
-export function similarityScore(str1: string, str2: string): number {
+export function similarityScore(str1: string, str2: string, threshold?: number): number {
   const maxLen = Math.max(str1.length, str2.length);
   if (maxLen === 0) return 1.0;
 
-  const distance = levenshteinDistance(str1.toLowerCase(), str2.toLowerCase());
+  // Convert threshold to max allowable distance for early termination
+  const maxDistance = threshold !== undefined
+    ? Math.floor(maxLen * (1 - threshold))
+    : undefined;
+
+  const distance = levenshteinDistance(str1.toLowerCase(), str2.toLowerCase(), maxDistance);
   return 1 - distance / maxLen;
 }
 
@@ -54,6 +74,22 @@ export function similarityScore(str1: string, str2: string): number {
  * @param threshold - Minimum similarity score (0-1), default 0.7
  * @param accessor - Function to extract string from option object
  */
+// Pre-built lookup maps for O(1) exact matching, keyed by accessor identity
+const exactMatchMaps = new WeakMap<readonly any[], Map<string, any>>();
+
+function getExactMatchMap<T>(options: T[], accessor: (option: T) => string): Map<string, T> {
+  // Use the options array reference as cache key
+  let map = exactMatchMaps.get(options as readonly any[]) as Map<string, T> | undefined;
+  if (!map) {
+    map = new Map();
+    for (const option of options) {
+      map.set(accessor(option).trim().toLowerCase(), option);
+    }
+    exactMatchMaps.set(options as readonly any[], map);
+  }
+  return map;
+}
+
 export function fuzzyMatch<T>(
   value: string | null | undefined,
   options: T[],
@@ -63,20 +99,22 @@ export function fuzzyMatch<T>(
   if (!value || !options.length) return null;
 
   const normalized = value.trim().toLowerCase();
+
+  // O(1) exact match via pre-built map
+  const exactMap = getExactMatchMap(options, accessor);
+  const exact = exactMap.get(normalized);
+  if (exact) {
+    return { match: exact, score: 1.0, isExact: true };
+  }
+
   let bestMatch: T | null = null;
   let bestScore = 0;
-  let isExact = false;
 
   for (const option of options) {
     const optionStr = accessor(option).trim().toLowerCase();
 
-    // Check for exact match first
-    if (optionStr === normalized) {
-      return { match: option, score: 1.0, isExact: true };
-    }
-
-    // Calculate similarity
-    const score = similarityScore(normalized, optionStr);
+    // Calculate similarity with early termination using threshold
+    const score = similarityScore(normalized, optionStr, threshold);
     if (score > bestScore) {
       bestScore = score;
       bestMatch = option;

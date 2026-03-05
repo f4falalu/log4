@@ -400,11 +400,38 @@ export function cleanFacilityRow(
 }
 
 /**
- * Batch clean multiple facility rows
+ * Yield control to the browser event loop so the UI stays responsive.
  */
-export function cleanFacilityRows(
+function yieldToMain(): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, 0));
+}
+
+/**
+ * Batch clean multiple facility rows.
+ * Processes in chunks of CHUNK_SIZE, yielding to the main thread between chunks
+ * so the UI doesn't freeze on large files (700+ rows).
+ *
+ * @param onProgress - Optional callback reporting progress (0-100)
+ */
+export async function cleanFacilityRows(
   rows: Record<string, any>[],
-  dbTables: DBTables
-): NormalizedRow[] {
-  return rows.map((row) => cleanFacilityRow(row, dbTables));
+  dbTables: DBTables,
+  onProgress?: (percent: number) => void
+): Promise<NormalizedRow[]> {
+  const CHUNK_SIZE = 100;
+  const results: NormalizedRow[] = new Array(rows.length);
+
+  for (let i = 0; i < rows.length; i += CHUNK_SIZE) {
+    const end = Math.min(i + CHUNK_SIZE, rows.length);
+    for (let j = i; j < end; j++) {
+      results[j] = cleanFacilityRow(rows[j], dbTables);
+    }
+    onProgress?.(Math.round((end / rows.length) * 100));
+    // Yield to main thread between chunks
+    if (end < rows.length) {
+      await yieldToMain();
+    }
+  }
+
+  return results;
 }
