@@ -187,7 +187,7 @@ export function UserScopeBindingsEditor({ userId }: UserScopeBindingsEditorProps
                           </Badge>
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          Added {new Date(binding.created_at).toLocaleDateString()}
+                          Added {binding.assigned_at ? new Date(binding.assigned_at).toLocaleDateString() : 'N/A'}
                         </p>
                       </div>
                     </div>
@@ -258,9 +258,9 @@ export function UserScopeBindingsEditor({ userId }: UserScopeBindingsEditorProps
                       <SelectItem key={option.id} value={option.id}>
                         <div>
                           <span className="font-medium">{option.name}</span>
-                          {option.code && (
+                          {(option.code || option.warehouse_code) && (
                             <span className="text-xs text-muted-foreground ml-2">
-                              ({option.code})
+                              ({option.code || option.warehouse_code})
                             </span>
                           )}
                         </div>
