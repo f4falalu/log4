@@ -37,11 +37,12 @@ export function AddMemberDialog({
   const [search, setSearch] = useState('');
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [selectedRole, setSelectedRole] = useState<'owner' | 'admin' | 'member' | 'viewer'>('member');
-  const { data: users = [], isLoading } = useUsers({ search });
+  const { data: usersData, isLoading } = useUsers({ search });
+  const users = usersData?.users || [];
   const addMember = useAddWorkspaceMember();
 
-  const availableUsers = users.filter((u: User) => !existingMemberIds.includes(u.user_id));
-  const selectedUser = users.find((u: User) => u.user_id === selectedUserId);
+  const availableUsers = users.filter((u: User) => !existingMemberIds.includes(u.id));
+  const selectedUser = users.find((u: User) => u.id === selectedUserId);
 
   const handleAdd = async () => {
     if (!selectedUserId) return;
@@ -93,11 +94,11 @@ export function AddMemberDialog({
             <div className="max-h-48 overflow-auto border rounded-lg divide-y">
               {availableUsers.slice(0, 10).map((user: User) => (
                 <div
-                  key={user.user_id}
+                  key={user.id}
                   className={`p-3 cursor-pointer hover:bg-muted/50 ${
-                    selectedUserId === user.user_id ? 'bg-muted' : ''
+                    selectedUserId === user.id ? 'bg-muted' : ''
                   }`}
-                  onClick={() => setSelectedUserId(user.user_id)}
+                  onClick={() => setSelectedUserId(user.id)}
                 >
                   <p className="font-medium">{user.full_name}</p>
                   <p className="text-sm text-muted-foreground">{user.email}</p>

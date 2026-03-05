@@ -7,7 +7,8 @@ import { useFacilities } from '@/hooks/useFacilities';
 
 const Index = () => {
   const [deliveries] = useState<Delivery[]>([]);
-  const { data: facilities = [] } = useFacilities();
+  const { data: facilitiesData } = useFacilities();
+  const facilities = facilitiesData?.facilities || [];
 
   return (
     <Layout>

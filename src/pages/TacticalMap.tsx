@@ -39,7 +39,8 @@ import 'leaflet-draw';
 export default function TacticalMap() {
   const { data: drivers = [] } = useDrivers();
   const { data: zones = [], refetch: refetchZones } = useServiceZones();
-  const { data: facilities = [] } = useFacilities();
+  const { data: facilitiesData } = useFacilities();
+  const facilities = facilitiesData?.facilities || [];
   const { data: warehousesData } = useWarehouses();
   const warehouses = warehousesData?.warehouses || [];
   const { data: vehicles = [] } = useVehicles();

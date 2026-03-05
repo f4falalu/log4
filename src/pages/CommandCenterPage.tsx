@@ -5,7 +5,8 @@ import { useDeliveryBatches } from '@/hooks/useDeliveryBatches';
 import CommandCenter from '@/pages/CommandCenter';
 
 export default function CommandCenterPage() {
-  const { data: facilities = [] } = useFacilities();
+  const { data: facilitiesData } = useFacilities();
+  const facilities = facilitiesData?.facilities || [];
   const { data: warehousesData } = useWarehouses();
   const warehouses = warehousesData?.warehouses || [];
   const { data: batches = [] } = useDeliveryBatches();

@@ -21,7 +21,8 @@ interface CreateBatchDialogProps {
 export function CreateBatchDialog({ open, onOpenChange }: CreateBatchDialogProps) {
   const { data: warehousesData } = useWarehouses();
   const warehouses = warehousesData?.warehouses || [];
-  const { data: facilities = [] } = useFacilities();
+  const { data: facilitiesData } = useFacilities();
+  const facilities = facilitiesData?.facilities || [];
   const { data: vehicles = [] } = useVehicles();
   const { data: drivers = [] } = useDrivers();
   const createBatch = useCreateDeliveryBatch();
