@@ -6,7 +6,8 @@ import { useFacilities } from '@/hooks/useFacilities';
 
 export default function DashboardPage() {
   const [deliveries] = useState<Delivery[]>([]);
-  const { data: facilities = [] } = useFacilities();
+  const { data: facilitiesData } = useFacilities();
+  const facilities = facilitiesData?.facilities || [];
 
   return (
     <Layout>

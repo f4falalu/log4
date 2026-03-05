@@ -4,6 +4,21 @@ export default {
   darkMode: ["class"],
   content: ["./pages/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./app/**/*.{ts,tsx}", "./src/**/*.{ts,tsx}"],
   prefix: "",
+  safelist: [
+    // Status/role badge colors used via dynamic object lookups (e.g. STATUS_COLORS[status])
+    // These must be safelisted because Tailwind's purge can't trace object property access.
+    { pattern: /^bg-(red|blue|green|yellow|orange|purple|indigo|cyan|lime|amber|gray)-(50|100|500|800|900)/ },
+    { pattern: /^text-(red|blue|green|yellow|orange|purple|indigo|cyan|lime|amber|gray)-(200|400|600|800)/ },
+    { pattern: /^border-(red|blue|green|yellow|orange|purple|indigo|cyan|lime|amber|gray)-200/ },
+    { pattern: /^dark:bg-(red|blue|green|yellow|orange|purple|indigo|cyan|lime|amber|gray)-900/ },
+    { pattern: /^dark:text-(red|blue|green|yellow|orange|purple|indigo|cyan|lime|amber|gray)-(200|400)/ },
+    // Alert marker colors (AlertsLayer)
+    'bg-red-400', 'bg-blue-400', 'bg-orange-400', 'bg-yellow-400', 'bg-gray-400',
+    'bg-red-500', 'bg-blue-500', 'bg-orange-500', 'bg-yellow-500', 'bg-gray-500',
+    // Role badge opacity variants
+    'bg-red-500/10', 'bg-blue-500/10', 'bg-green-500/10', 'bg-purple-500/10', 'bg-gray-500/10',
+    'bg-amber-500/10', 'bg-green-500/10',
+  ],
   theme: {
     container: {
       center: true,

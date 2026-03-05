@@ -34,7 +34,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { parseCsvBoolean, parseCsvNumber } from '@/lib/facility-validation';
 import { toast } from 'sonner';
 import {
-  parseFile,
   validateParsedData,
   validateSingleRow,
   getValidationSummary,
@@ -45,6 +44,9 @@ import {
 } from '@/lib/file-import';
 import { ColumnMapper, type ColumnMapping, type ColumnMapperResult } from './ColumnMapper';
 import { cleanFacilityRows, type DBTables, type NormalizedRow, fuzzyMatchCache } from '@/lib/data-cleaners';
+import { SourceSelector } from '@/components/import/SourceSelector';
+import { ConflictResolver, type ConflictResolution } from '@/components/import/ConflictResolver';
+import type { MultiSourceResult, MergeResult } from '@/lib/multi-source-parser';
 import { useFacilityTypes } from '@/hooks/useFacilityTypes';
 import { useLevelsOfCare } from '@/hooks/useLevelsOfCare';
 import { useOperationalZones } from '@/hooks/useOperationalZones';
@@ -57,7 +59,7 @@ interface EnhancedCSVImportDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-type ImportStep = 'upload' | 'mapping' | 'preview' | 'importing' | 'complete';
+type ImportStep = 'upload' | 'conflicts' | 'mapping' | 'preview' | 'importing' | 'complete';
 
 interface ImportResult {
   total: number;
@@ -68,7 +70,6 @@ interface ImportResult {
 
 export function EnhancedCSVImportDialog({ open, onOpenChange }: EnhancedCSVImportDialogProps) {
   const [step, setStep] = useState<ImportStep>('upload');
-  const [file, setFile] = useState<File | null>(null);
   const [parsedData, setParsedData] = useState<ParsedFile | null>(null);
   const [columnMappings, setColumnMappings] = useState<ColumnMapping>({});
   const [skipConfig, setSkipConfig] = useState<SkipConfig>({});
@@ -81,6 +82,7 @@ export function EnhancedCSVImportDialog({ open, onOpenChange }: EnhancedCSVImpor
   const [skipValidation, setSkipValidation] = useState(false);
   const [cancelImport, setCancelImport] = useState(false);
   const [importStats, setImportStats] = useState({ processed: 0, currentBatch: 0, totalBatches: 0 });
+  const [mergeResult, setMergeResult] = useState<MergeResult | null>(null);
 
   const queryClient = useQueryClient();
 
@@ -90,71 +92,77 @@ export function EnhancedCSVImportDialog({ open, onOpenChange }: EnhancedCSVImpor
   const { data: zones = [] } = useOperationalZones();
   const { data: lgas = [] } = useLGAs();
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target?.files?.[0];
-    if (!selectedFile) return;
+  const proceedToMapping = useCallback((data: ParsedFile) => {
+    // Auto-detect mappings from headers
+    const autoMappings: ColumnMapping = {};
+    const headerSet = new Set(data.headers);
 
-    // File size validation (10MB soft limit, 20MB hard limit)
-    const fileSizeMB = selectedFile.size / (1024 * 1024);
-    const MAX_SIZE_MB = 20;
-    const WARN_SIZE_MB = 10;
+    if (data.columnMappings) {
+      data.columnMappings.forEach((diag) => {
+        if (diag.isRecognized && diag.mappedTo && headerSet.has(diag.mappedTo)) {
+          autoMappings[diag.mappedTo] = diag.mappedTo;
+        }
+      });
+    }
 
-    if (fileSizeMB > MAX_SIZE_MB) {
-      toast.error(
-        `File size (${fileSizeMB.toFixed(1)}MB) exceeds the ${MAX_SIZE_MB}MB limit. Please split your file into smaller chunks.`
-      );
-      e.target.value = ''; // Clear file input
+    const knownFields = [
+      'name', 'address', 'latitude', 'longitude', 'lga', 'ward',
+      'service_zone', 'level_of_care', 'type', 'state', 'warehouse_code',
+      'ip_name', 'funding_source', 'programme', 'phone', 'email',
+      'contact_person', 'capacity', 'storage_capacity', 'operating_hours',
+      'pcr_service', 'cd4_service', 'type_of_service', 'designation',
+      'contact_name_pharmacy', 'phone_pharmacy', 'geo_coordinates',
+    ];
+    for (const field of knownFields) {
+      if (headerSet.has(field) && !autoMappings[field]) {
+        autoMappings[field] = field;
+      }
+    }
+
+    setColumnMappings(autoMappings);
+
+    const requiredFields = ['name', 'address', 'latitude', 'longitude', 'lga'];
+    const missingRequired = requiredFields.filter(field => !autoMappings[field]);
+
+    if (missingRequired.length > 0) {
+      toast.info(`Please map ${missingRequired.length} required fields`);
+    } else {
+      toast.success('All required fields auto-detected. Please review mappings.');
+    }
+
+    setStep('mapping');
+  }, []);
+
+  const handleSourcesReady = useCallback((result: MultiSourceResult) => {
+    setParsedData(result);
+    setMergeResult(result.mergeResult || null);
+
+    // If there are merge conflicts, show the conflict resolution step
+    if (result.mergeResult && result.mergeResult.conflicts.length > 0) {
+      setStep('conflicts');
       return;
     }
 
-    if (fileSizeMB > WARN_SIZE_MB) {
-      toast.warning(
-        `Large file detected (${fileSizeMB.toFixed(1)}MB). Processing may take longer than usual.`
-      );
-    }
+    proceedToMapping(result);
+  }, [proceedToMapping]);
 
-    setFile(selectedFile);
-    toast.loading('Parsing file...');
+  const handleConflictsResolved = useCallback((resolution: ConflictResolution) => {
+    if (!parsedData) return;
 
-    try {
-      const parsed = await parseFile(selectedFile);
-      setParsedData(parsed);
+    // Rebuild parsedData with resolved rows
+    const resolvedData: ParsedFile = {
+      ...parsedData,
+      rows: resolution.rows,
+      headers: Array.from(new Set(resolution.rows.flatMap(r => Object.keys(r)))),
+    };
+    setParsedData(resolvedData);
+    setMergeResult(null);
 
-      // Extract auto-detected mappings from column diagnostics
-      const autoMappings: ColumnMapping = {};
-      if (parsed.columnMappings) {
-        parsed.columnMappings.forEach((diag) => {
-          if (diag.isRecognized && diag.mappedTo) {
-            autoMappings[diag.mappedTo] = diag.originalHeader;
-          }
-        });
-      }
-      setColumnMappings(autoMappings);
+    toast.success(`Conflicts resolved. ${resolution.rows.length} facilities ready.`);
+    proceedToMapping(resolvedData);
+  }, [parsedData, proceedToMapping]);
 
-      toast.dismiss();
-      toast.success(`File parsed: ${parsed.rows.length} rows found`);
-
-      // ALWAYS show mapping step (per requirement)
-      // This allows users to review and confirm auto-detected mappings
-      const requiredFields = ['name', 'address', 'latitude', 'longitude', 'lga'];
-      const missingRequired = requiredFields.filter(field => !autoMappings[field]);
-
-      if (missingRequired.length > 0) {
-        toast.info(`Please map ${missingRequired.length} required fields`);
-      } else {
-        toast.success('All required fields auto-detected. Please review mappings.');
-      }
-
-      // Always go to mapping step
-      setStep('mapping');
-    } catch (error: any) {
-      toast.dismiss();
-      toast.error(`Failed to parse file: ${error.message}`);
-      setFile(null);
-    }
-  };
-
-  const handleMappingsConfirmed = (result: ColumnMapperResult) => {
+  const handleMappingsConfirmed = async (result: ColumnMapperResult) => {
     if (!parsedData) return;
 
     const { mappings, skipConfig: newSkipConfig, autoGenerateWarehouseCode: autoGenerate } = result;
@@ -177,8 +185,17 @@ export function EnhancedCSVImportDialog({ open, onOpenChange }: EnhancedCSVImpor
       levelsOfCare,
     };
 
-    // Clean and normalize all rows with DB matching
-    const cleaned = cleanFacilityRows(mappedData.rows, dbTables);
+    // Clean and normalize all rows with DB matching (async, yields to UI between chunks)
+    const cleaningToastId = mappedData.rows.length > 200
+      ? toast.loading('Cleaning data... 0%')
+      : undefined;
+    const cleaned = await cleanFacilityRows(mappedData.rows, dbTables, (percent) => {
+      // Update toast with progress for large files
+      if (cleaningToastId) {
+        toast.loading(`Cleaning data... ${percent}%`, { id: cleaningToastId });
+      }
+    });
+    if (cleaningToastId) toast.dismiss(cleaningToastId);
     setNormalizedRows(cleaned);
 
     // Apply normalized values back to parsed data for preview
@@ -274,6 +291,30 @@ export function EnhancedCSVImportDialog({ open, onOpenChange }: EnhancedCSVImpor
   });
 
   /**
+   * Map free-text facility type values to the Postgres facility_type enum.
+   * Valid enum values: hospital, clinic, health_center, pharmacy, lab, other
+   */
+  const VALID_FACILITY_TYPES = new Set(['hospital', 'clinic', 'health_center', 'pharmacy', 'lab', 'warehouse', 'other']);
+
+  const mapFacilityType = (rawType: any): string => {
+    if (!rawType) return 'clinic'; // DB default
+    const lower = String(rawType).trim().toLowerCase();
+
+    // Direct enum match
+    if (VALID_FACILITY_TYPES.has(lower)) return lower;
+
+    // Common variations → enum
+    if (lower.includes('hospital') || lower.includes('general hospital')) return 'hospital';
+    if (lower.includes('health center') || lower.includes('health centre') || lower.includes('phc') || lower.includes('primary health')) return 'health_center';
+    if (lower.includes('pharmacy') || lower.includes('chemist') || lower.includes('drug')) return 'pharmacy';
+    if (lower.includes('lab') || lower.includes('laboratory') || lower.includes('diagnostic')) return 'lab';
+    if (lower.includes('clinic') || lower.includes('dispensary')) return 'clinic';
+    if (lower.includes('warehouse')) return 'warehouse';
+
+    return 'other';
+  };
+
+  /**
    * Build a DB-ready insert object from a CSV row.
    * Only includes columns that exist in the facilities table (all snake_case).
    */
@@ -286,7 +327,6 @@ export function EnhancedCSVImportDialog({ open, onOpenChange }: EnhancedCSVImpor
       address: String(row.address || '').trim() || null,
       lat: isNaN(lat) ? 0 : lat,
       lng: isNaN(lng) ? 0 : lng,
-      type: row.type || null,
       phone: row.phone || null,
       contact_person: row.contactPerson || row.contact_person || null,
       capacity: parseCsvNumber(String(row.capacity ?? '')) || null,
@@ -376,61 +416,71 @@ export function EnhancedCSVImportDialog({ open, onOpenChange }: EnhancedCSVImpor
         buildDbFacility(item.row, item.normalizedRow)
       );
 
-      // Split into batches and insert
+      // Split into batches and insert via SECURITY DEFINER RPC (bypasses RLS)
       const batches = chunk(dbFacilities, BATCH_SIZE);
       const totalBatches = batches.length;
+      const CONCURRENCY = 3;
       setImportStats({ processed: 0, currentBatch: 0, totalBatches });
 
-      for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
-        // Check for cancel request
+      let completedBatches = 0;
+
+      for (let startIdx = 0; startIdx < batches.length; startIdx += CONCURRENCY) {
         if (cancelImport) {
           toast.info('Import cancelled');
           break;
         }
 
-        const batch = batches[batchIndex];
-        const batchStartIndex = batchIndex * BATCH_SIZE;
+        const concurrentBatches = batches.slice(startIdx, startIdx + CONCURRENCY);
 
-        try {
-          // Batch insert - much faster than individual inserts
-          const { data, error } = await supabase
-            .from('facilities')
-            .insert(batch)
-            .select('id');
+        const batchPromises = concurrentBatches.map(async (batch, offsetInGroup) => {
+          const batchIndex = startIdx + offsetInGroup;
+          const batchStartIndex = batchIndex * BATCH_SIZE;
 
-          if (error) throw error;
+          try {
+            const { data, error } = await supabase.rpc('bulk_insert_facilities', {
+              facilities: batch,
+            });
 
-          result.success += batch.length;
+            if (error) throw error;
 
-          // Update progress every batch (not every row)
-          const processed = (batchIndex + 1) * BATCH_SIZE;
-          setImportStats({
-            processed: Math.min(processed, preparedRows.length),
-            currentBatch: batchIndex + 1,
-            totalBatches,
-          });
-          setImportProgress(Math.round(((result.success + result.failed) / preparedRows.length) * 100));
-        } catch (error: any) {
-          // If batch fails, retry row by row for this batch
-          console.error(`Batch ${batchIndex + 1} failed, retrying individually:`, error);
+            const row = Array.isArray(data) ? data[0] : data;
+            const insertedCount = row?.inserted_count ?? 0;
+            const failedCount = row?.failed_count ?? 0;
+            const errMsg = row?.error_message;
 
-          for (let i = 0; i < batch.length; i++) {
-            if (cancelImport) break;
+            result.success += insertedCount;
+            result.failed += failedCount;
 
-            try {
-              await supabase.from('facilities').insert(batch[i]);
-              result.success++;
-            } catch (rowError: any) {
-              result.failed++;
-              result.errors.push({
-                row: batchStartIndex + i + 1,
-                error: rowError.message || 'Unknown error',
+            // Surface per-row errors from the RPC
+            if (errMsg) {
+              const rowErrors = errMsg.split('; ');
+              rowErrors.forEach((msg: string) => {
+                result.errors.push({
+                  row: batchStartIndex + 1,
+                  error: msg,
+                });
               });
             }
+          } catch (error: any) {
+            console.error(`Batch ${batchIndex + 1} failed:`, error);
+            result.failed += batch.length;
+            result.errors.push({
+              row: batchStartIndex + 1,
+              error: error.message || 'Unknown error',
+            });
           }
+        });
 
-          setImportProgress(Math.round(((result.success + result.failed) / preparedRows.length) * 100));
-        }
+        await Promise.all(batchPromises);
+
+        completedBatches += concurrentBatches.length;
+        const processed = Math.min(completedBatches * BATCH_SIZE, preparedRows.length);
+        setImportStats({
+          processed,
+          currentBatch: completedBatches,
+          totalBatches,
+        });
+        setImportProgress(Math.round(((result.success + result.failed) / preparedRows.length) * 100));
       }
     } catch (error: any) {
       toast.error(`Import failed: ${error.message}`);
@@ -453,7 +503,6 @@ export function EnhancedCSVImportDialog({ open, onOpenChange }: EnhancedCSVImpor
 
   const handleClose = () => {
     setStep('upload');
-    setFile(null);
     setParsedData(null);
     setColumnMappings({});
     setSkipConfig({});
@@ -466,6 +515,7 @@ export function EnhancedCSVImportDialog({ open, onOpenChange }: EnhancedCSVImpor
     setSkipValidation(false);
     setCancelImport(false);
     setImportStats({ processed: 0, currentBatch: 0, totalBatches: 0 });
+    setMergeResult(null);
 
     // Clear fuzzy match cache on dialog close
     fuzzyMatchCache.clear();
@@ -496,41 +546,37 @@ export function EnhancedCSVImportDialog({ open, onOpenChange }: EnhancedCSVImpor
         </DialogHeader>
 
         {/* Step Indicator */}
-        <div className="flex items-center justify-center gap-2 py-4">
-          <StepIndicator active={step === 'upload'} completed={['mapping', 'preview', 'importing', 'complete'].includes(step)}>
+        <div className="flex items-center justify-center gap-2 py-4 flex-wrap">
+          <StepIndicator active={step === 'upload'} completed={['conflicts', 'mapping', 'preview', 'importing', 'complete'].includes(step)}>
             1. Upload
           </StepIndicator>
           <ArrowRight className="h-4 w-4 text-muted-foreground" />
+          {(mergeResult?.conflicts.length ?? 0) > 0 && (
+            <>
+              <StepIndicator active={step === 'conflicts'} completed={['mapping', 'preview', 'importing', 'complete'].includes(step)}>
+                2. Resolve
+              </StepIndicator>
+              <ArrowRight className="h-4 w-4 text-muted-foreground" />
+            </>
+          )}
           <StepIndicator active={step === 'mapping'} completed={['preview', 'importing', 'complete'].includes(step)}>
-            2. Map Columns
+            {mergeResult?.conflicts.length ? '3' : '2'}. Map Columns
           </StepIndicator>
           <ArrowRight className="h-4 w-4 text-muted-foreground" />
           <StepIndicator active={step === 'preview'} completed={['importing', 'complete'].includes(step)}>
-            3. Preview
+            {mergeResult?.conflicts.length ? '4' : '3'}. Preview
           </StepIndicator>
           <ArrowRight className="h-4 w-4 text-muted-foreground" />
           <StepIndicator active={step === 'importing'} completed={step === 'complete'}>
-            4. Import
+            {mergeResult?.conflicts.length ? '5' : '4'}. Import
           </StepIndicator>
         </div>
 
         <div className="flex-1 overflow-y-auto">
-          {/* Step 1: Upload */}
+          {/* Step 1: Upload & Source Selection */}
           {step === 'upload' && (
             <div className="space-y-4">
-              <div>
-                <Label htmlFor="file-upload">Select File</Label>
-                <Input
-                  id="file-upload"
-                  type="file"
-                  accept=".csv,.xlsx,.xls"
-                  onChange={handleFileChange}
-                  className="mt-2"
-                />
-                <p className="text-sm text-muted-foreground mt-1">
-                  Supported formats: CSV (.csv), Excel (.xlsx, .xls)
-                </p>
-              </div>
+              <SourceSelector onSourcesReady={handleSourcesReady} />
 
               <Alert>
                 <AlertCircle className="h-4 w-4" />
@@ -540,14 +586,29 @@ export function EnhancedCSVImportDialog({ open, onOpenChange }: EnhancedCSVImpor
                     <li>Required fields: name, address, latitude, longitude</li>
                     <li>Recommended: LGA, service_zone, level_of_care</li>
                     <li>Warehouse codes will be auto-generated if not provided</li>
-                    <li>You'll be able to review and edit data before importing</li>
+                    <li>For Excel files with multiple sheets, select which sheets to import</li>
                   </ul>
                 </AlertDescription>
               </Alert>
             </div>
           )}
 
-          {/* Step 2: Map Columns */}
+          {/* Step 2 (conditional): Resolve Merge Conflicts */}
+          {step === 'conflicts' && mergeResult && (
+            <div className="space-y-4">
+              <h3 className="text-sm font-medium">Resolve Merge Conflicts</h3>
+              <p className="text-xs text-muted-foreground">
+                Data from multiple sheets has been merged. Some entries need your review.
+              </p>
+              <ConflictResolver
+                mergeResult={mergeResult}
+                onResolved={handleConflictsResolved}
+                onBack={() => setStep('upload')}
+              />
+            </div>
+          )}
+
+          {/* Step 2/3: Map Columns */}
           {step === 'mapping' && parsedData && (
             <ColumnMapper
               csvHeaders={parsedData.headers}

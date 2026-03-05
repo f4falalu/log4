@@ -69,13 +69,13 @@ export default defineConfig(({ mode }) => ({
             type: 'image/x-icon',
           },
           {
-            src: '/map/sprites/map-icons.png',
+            src: '/map/sprites/operational.png',
             sizes: '192x192',
             type: 'image/png',
             purpose: 'any maskable',
           },
           {
-            src: '/map/sprites/map-icons@2x.png',
+            src: '/map/sprites/operational@2x.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any maskable',
@@ -143,22 +143,22 @@ export default defineConfig(({ mode }) => ({
             return 'vendor';
           }
 
-          // Application code chunks by module (temporarily disabled for debugging)
-          // if (id.includes('src/pages/fleetops/vlms')) {
-          //   return 'pages-vlms';
-          // }
-          // if (id.includes('src/pages/fleetops')) {
-          //   return 'pages-fleetops';
-          // }
-          // if (id.includes('src/pages/storefront')) {
-          //   return 'pages-storefront';
-          // }
-          // if (id.includes('src/components/map')) {
-          //   return 'components-map';
-          // }
-          // if (id.includes('src/components/vlms')) {
-          //   return 'components-vlms';
-          // }
+          // Application code chunks by module
+          if (id.includes('src/pages/fleetops/vlms')) {
+            return 'pages-vlms';
+          }
+          if (id.includes('src/pages/storefront')) {
+            return 'pages-storefront';
+          }
+          if (id.includes('src/pages/admin')) {
+            return 'pages-admin';
+          }
+          if (id.includes('src/pages/mod4')) {
+            return 'pages-mod4';
+          }
+          if (id.includes('src/components/map') || id.includes('src/maps-v3')) {
+            return 'components-map';
+          }
         },
       },
     },

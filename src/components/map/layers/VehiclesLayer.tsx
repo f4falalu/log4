@@ -62,7 +62,7 @@ function VehicleMarker({ vehicle, selected, onClick }: VehicleMarkerProps) {
       <Tooltip direction="top" offset={[0, -10]} opacity={0.95}>
         <div className="min-w-[200px] p-2">
           <div className="flex items-center gap-2 mb-2">
-            <Truck className="w-4 h-4 text-biko-primary" />
+            <Truck className="w-4 h-4 text-primary" />
             <span className="font-semibold">{vehicle.plateNumber}</span>
           </div>
           

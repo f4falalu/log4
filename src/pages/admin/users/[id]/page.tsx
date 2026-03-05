@@ -4,14 +4,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, ArrowLeft, Edit, User, Shield, Lock, FileText } from 'lucide-react';
+import { Loader2, ArrowLeft, Edit, User, Shield, Key, Lock, Bell, Building2, FileText } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useUserRoles } from '@/hooks/rbac';
+import { useUserRoles, useRoles, useUserGroups, type Role } from '@/hooks/rbac';
 import { UserRoleAssignment } from './components/UserRoleAssignment';
 import { UserPermissionSetsManagement } from './components/UserPermissionSetsManagement';
+import { UserPermissionsEditor } from './components/UserPermissionsEditor';
 import { UserScopeBindingsEditor } from './components/UserScopeBindingsEditor';
+import { UserNotificationPreferences } from './components/UserNotificationPreferences';
+import { UserLoginRights } from './components/UserLoginRights';
 import { UserAuditHistory } from './components/UserAuditHistory';
+import { CopyPermissionsDialog } from './components/CopyPermissionsDialog';
+import { UserGroupMembership } from './components/UserGroupMembership';
 
 export default function UserDetailPageEnhanced() {
   const { id } = useParams<{ id: string }>();
@@ -26,6 +31,7 @@ export default function UserDetailPageEnhanced() {
         .from('admin_users_view')
         .select('*')
         .eq('id', id!)
+        .limit(1)
         .single();
 
       if (error) throw error;
@@ -34,9 +40,15 @@ export default function UserDetailPageEnhanced() {
     enabled: !!id,
   });
 
-  // Fetch user's current role from new RBAC system
+  // Fetch user's current roles from RBAC system
   const { data: userRoles } = useUserRoles(id);
-  const currentRole = userRoles?.[0] || null;
+  const { data: allRoles } = useRoles();
+
+  // Resolve the full Role object from role_code
+  const currentRoleCode = userRoles?.[0]?.role_code;
+  const currentRole: Role | null = currentRoleCode && allRoles
+    ? allRoles.find((r) => r.code === currentRoleCode) || null
+    : null;
 
   if (profileLoading) {
     return (
@@ -66,7 +78,7 @@ export default function UserDetailPageEnhanced() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/admin/users')}>
+          <Button variant="ghost" size="icon" onClick={() => navigate('/admin/members')}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
@@ -74,30 +86,48 @@ export default function UserDetailPageEnhanced() {
             <p className="text-muted-foreground">User Management</p>
           </div>
         </div>
-        <Button onClick={() => navigate(`/admin/users/${id}/edit`)}>
-          <Edit className="h-4 w-4 mr-2" />
-          Edit Profile
-        </Button>
+        <div className="flex items-center gap-2">
+          <CopyPermissionsDialog
+            targetUserId={id!}
+            targetUserName={profile.full_name || profile.email}
+          />
+          <Button onClick={() => navigate(`/admin/users/${id}/edit`)}>
+            <Edit className="h-4 w-4 mr-2" />
+            Edit Profile
+          </Button>
+        </div>
       </div>
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="profile" className="flex items-center gap-2">
-            <User className="h-4 w-4" />
+        <TabsList className="grid w-full grid-cols-7">
+          <TabsTrigger value="profile" className="flex items-center gap-1.5 text-xs">
+            <User className="h-3.5 w-3.5" />
             Profile
           </TabsTrigger>
-          <TabsTrigger value="permissions" className="flex items-center gap-2">
-            <Shield className="h-4 w-4" />
-            Roles & Permissions
+          <TabsTrigger value="roles" className="flex items-center gap-1.5 text-xs">
+            <Shield className="h-3.5 w-3.5" />
+            Role & Group
           </TabsTrigger>
-          <TabsTrigger value="scopes" className="flex items-center gap-2">
-            <Lock className="h-4 w-4" />
-            Scope Bindings
+          <TabsTrigger value="permissions" className="flex items-center gap-1.5 text-xs">
+            <Key className="h-3.5 w-3.5" />
+            Permissions
           </TabsTrigger>
-          <TabsTrigger value="audit" className="flex items-center gap-2">
-            <FileText className="h-4 w-4" />
-            Audit History
+          <TabsTrigger value="scopes" className="flex items-center gap-1.5 text-xs">
+            <Lock className="h-3.5 w-3.5" />
+            Scopes
+          </TabsTrigger>
+          <TabsTrigger value="notifications" className="flex items-center gap-1.5 text-xs">
+            <Bell className="h-3.5 w-3.5" />
+            Notifications
+          </TabsTrigger>
+          <TabsTrigger value="login-rights" className="flex items-center gap-1.5 text-xs">
+            <Building2 className="h-3.5 w-3.5" />
+            Login Rights
+          </TabsTrigger>
+          <TabsTrigger value="audit" className="flex items-center gap-1.5 text-xs">
+            <FileText className="h-3.5 w-3.5" />
+            Audit
           </TabsTrigger>
         </TabsList>
 
@@ -163,15 +193,31 @@ export default function UserDetailPageEnhanced() {
           </Card>
         </TabsContent>
 
-        {/* Roles & Permissions Tab */}
-        <TabsContent value="permissions" className="space-y-4">
+        {/* Role & Group Tab */}
+        <TabsContent value="roles" className="space-y-4">
           <UserRoleAssignment userId={id!} currentRole={currentRole} />
+          <UserGroupMembership userId={id!} />
           <UserPermissionSetsManagement userId={id!} />
+        </TabsContent>
+
+        {/* Permissions Tab */}
+        <TabsContent value="permissions">
+          <UserPermissionsEditor userId={id!} />
         </TabsContent>
 
         {/* Scope Bindings Tab */}
         <TabsContent value="scopes">
           <UserScopeBindingsEditor userId={id!} />
+        </TabsContent>
+
+        {/* Notifications Tab */}
+        <TabsContent value="notifications">
+          <UserNotificationPreferences userId={id!} />
+        </TabsContent>
+
+        {/* Login Rights Tab */}
+        <TabsContent value="login-rights">
+          <UserLoginRights userId={id!} />
         </TabsContent>
 
         {/* Audit History Tab */}

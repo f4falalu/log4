@@ -47,15 +47,15 @@ export function AlertsLayer({ map, onAlertClick }: AlertsLayerProps) {
       if (!layerRef.current) return;
 
       try {
-        // Determine alert color
-        const alertColor = getAlertColor(alert);
+        // Determine alert colors (static classes for Tailwind purge safety)
+        const { bg400, bg500 } = getAlertColors(alert);
 
         // Create marker icon
         const icon = L.divIcon({
           html: `
             <div class="relative flex items-center justify-center">
-              <div class="${alert.acknowledged ? '' : 'animate-ping absolute'} inline-flex h-full w-full rounded-full bg-${alertColor}-400 opacity-75"></div>
-              <div class="relative inline-flex rounded-full h-6 w-6 bg-${alertColor}-500 border-2 border-white shadow-lg items-center justify-center">
+              <div class="${alert.acknowledged ? '' : 'animate-ping absolute'} inline-flex h-full w-full rounded-full ${bg400} opacity-75"></div>
+              <div class="relative inline-flex rounded-full h-6 w-6 ${bg500} border-2 border-white shadow-lg items-center justify-center">
                 <span class="text-white text-xs font-bold">!</span>
               </div>
             </div>
@@ -156,19 +156,20 @@ export function AlertsLayer({ map, onAlertClick }: AlertsLayerProps) {
 }
 
 /**
- * Determine alert color based on event type and status
+ * Determine alert colors based on event type and status.
+ * Returns full static Tailwind class names so they survive production purging.
  */
-function getAlertColor(alert: ZoneAlert): string {
-  if (alert.acknowledged) return 'gray';
-  
+function getAlertColors(alert: ZoneAlert): { bg400: string; bg500: string } {
+  if (alert.acknowledged) return { bg400: 'bg-gray-400', bg500: 'bg-gray-500' };
+
   switch (alert.event_type) {
     case 'entry':
-      return 'blue';
+      return { bg400: 'bg-blue-400', bg500: 'bg-blue-500' };
     case 'exit':
-      return 'orange';
+      return { bg400: 'bg-orange-400', bg500: 'bg-orange-500' };
     case 'violation':
-      return 'red';
+      return { bg400: 'bg-red-400', bg500: 'bg-red-500' };
     default:
-      return 'yellow';
+      return { bg400: 'bg-yellow-400', bg500: 'bg-yellow-500' };
   }
 }

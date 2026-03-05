@@ -39,29 +39,7 @@ export function useUsers(params: UseUsersParams = {}) {
     queryKey: ['admin-users', search, roleFilter, limit, offset],
     queryFn: async () => {
       try {
-        // Step 1: Get current user's workspace IDs
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          throw new Error('User not authenticated');
-        }
-
-        const { data: workspaceMemberships, error: workspaceError } = await supabase
-          .from('workspace_members')
-          .select('workspace_id')
-          .eq('user_id', user.id);
-
-        if (workspaceError) {
-          console.error('Error fetching workspace memberships:', workspaceError);
-          throw workspaceError;
-        }
-
-        const workspaceIds = (workspaceMemberships || []).map(wm => wm.workspace_id);
-
-        if (workspaceIds.length === 0) {
-          return { users: [], total: 0 };
-        }
-
-        // Step 2: Query users in the same workspaces
+        // The admin_users_view already filters by workspace using auth.uid()
         let query = supabase
           .from('admin_users_view')
           .select(`
@@ -75,11 +53,10 @@ export function useUsers(params: UseUsersParams = {}) {
             full_name,
             avatar_url,
             organization,
-            workspace_id,
             roles,
-            role_count
+            role_count,
+            workspace_count
           `, { count: 'exact' })
-          .in('workspace_id', workspaceIds)
           .order('created_at', { ascending: false });
 
         // Apply search filter
@@ -113,7 +90,7 @@ export function useUsers(params: UseUsersParams = {}) {
           last_sign_in_at: user.last_sign_in_at,
           organization: user.organization || 'default',
           roles: user.roles || [],
-          workspace_count: 1, // User is in their own workspace (already filtered)
+          workspace_count: user.workspace_count || 1,
           user_metadata: {
             ...user.user_metadata,
             organization: user.organization || 'default',
@@ -121,7 +98,7 @@ export function useUsers(params: UseUsersParams = {}) {
           app_metadata: {
             ...user.app_metadata,
             roles: user.roles || [],
-            workspace_count: 1,
+            workspace_count: user.workspace_count || 1,
             organization: user.organization || 'default',
           },
         }));

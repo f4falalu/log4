@@ -3,6 +3,7 @@ import { Upload, FileText, Check, AlertTriangle, X, Download, FileSpreadsheet, F
 import ExcelJS from 'exceljs';
 import mammoth from 'mammoth';
 import * as pdfjsLib from 'pdfjs-dist';
+import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import {
   Dialog,
   DialogContent,
@@ -37,8 +38,8 @@ import { useBulkCreateItems } from '@/hooks/useItems';
 import type { ItemCategory, ItemFormData, ItemProgram } from '@/types/items';
 import { ITEM_CATEGORIES, ITEM_PROGRAMS } from '@/types/items';
 
-// Configure PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+// Configure PDF.js worker (bundled locally, no CDN dependency)
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
 interface UploadItemsDialogProps {
   open: boolean;

@@ -24,13 +24,30 @@ export function useUserDetail(userId: string) {
 
       if (authError) throw authError;
 
-      // Fetch roles
-      const { data: roles, error: rolesError } = await supabase
+      // Fetch roles (two-step: user_roles → roles table)
+      const { data: userRoleRows, error: urError } = await supabase
         .from('user_roles')
-        .select('role, assigned_by, assigned_at')
+        .select('role_id, assigned_by, assigned_at')
         .eq('user_id', userId);
 
-      if (rolesError) throw rolesError;
+      if (urError) throw urError;
+
+      let roles: any[] = [];
+      const roleIds = (userRoleRows || []).map(ur => ur.role_id).filter(Boolean);
+      if (roleIds.length > 0) {
+        const { data: roleDetails, error: rdError } = await supabase
+          .from('roles')
+          .select('id, code, name')
+          .in('id', roleIds);
+
+        if (rdError) throw rdError;
+
+        const roleMap = new Map((roleDetails || []).map(r => [r.id, r]));
+        roles = (userRoleRows || []).map(ur => ({
+          ...ur,
+          roles: roleMap.get(ur.role_id) || null,
+        }));
+      }
 
       // Fetch workspaces
       const { data: workspaces, error: workspacesError } = await supabase

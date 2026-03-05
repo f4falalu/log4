@@ -1776,6 +1776,75 @@ export type Database = {
           },
         ]
       }
+      group_members: {
+        Row: {
+          added_at: string
+          group_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          added_at?: string
+          group_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          added_at?: string
+          group_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "user_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_permissions: {
+        Row: {
+          group_id: string
+          id: string
+          permission_id: string
+        }
+        Insert: {
+          group_id: string
+          id?: string
+          permission_id: string
+        }
+        Update: {
+          group_id?: string
+          id?: string
+          permission_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_permissions_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "user_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_permissions_permission_id_fkey"
+            columns: ["permission_id"]
+            isOneToOne: false
+            referencedRelation: "permissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       handoffs: {
         Row: {
           actual_time: string | null
@@ -2664,6 +2733,44 @@ export type Database = {
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_preferences: {
+        Row: {
+          channel: string
+          created_at: string
+          enabled: boolean
+          id: string
+          notification_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          channel?: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          notification_type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          notification_type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
             referencedColumns: ["id"]
           },
         ]
@@ -5884,6 +5991,36 @@ export type Database = {
           },
         ]
       }
+      user_groups: {
+        Row: {
+          code: string
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          organization_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          organization_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          organization_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_invitations: {
         Row: {
           accepted_at: string | null
@@ -6025,6 +6162,52 @@ export type Database = {
           },
           {
             foreignKeyName: "user_permission_sets_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_permissions: {
+        Row: {
+          created_at: string
+          granted_by: string | null
+          id: string
+          permission_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          granted_by?: string | null
+          id?: string
+          permission_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          granted_by?: string | null
+          id?: string
+          permission_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_permissions_granted_by_fkey"
+            columns: ["granted_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_permissions_permission_id_fkey"
+            columns: ["permission_id"]
+            isOneToOne: false
+            referencedRelation: "permissions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_permissions_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "admin_users_view"
@@ -10251,6 +10434,63 @@ export type Database = {
             }
             Returns: string
           }
+      admin_assign_role: {
+        Args: { _role_code: string; _target_user_id: string }
+        Returns: undefined
+      }
+      admin_bulk_set_user_permissions: {
+        Args: { _permission_ids: string[]; _target_user_id: string }
+        Returns: undefined
+      }
+      admin_copy_user_permissions: {
+        Args: {
+          _copy_direct?: boolean
+          _copy_groups?: boolean
+          _copy_role?: boolean
+          _source_user_id: string
+          _target_user_id: string
+        }
+        Returns: Json
+      }
+      admin_get_user_effective_permissions: {
+        Args: { _target_user_id: string }
+        Returns: {
+          action: string
+          category: string
+          description: string
+          is_dangerous: boolean
+          permission_code: string
+          permission_id: string
+          resource: string
+          source: string
+          source_name: string
+        }[]
+      }
+      admin_get_user_roles: {
+        Args: { _target_user_id: string }
+        Returns: {
+          role_code: string
+          role_description: string
+          role_id: string
+          role_name: string
+        }[]
+      }
+      admin_remove_role: {
+        Args: { _role_code: string; _target_user_id: string }
+        Returns: undefined
+      }
+      admin_set_group_permissions: {
+        Args: { _group_id: string; _permission_ids: string[] }
+        Returns: undefined
+      }
+      admin_set_user_permission: {
+        Args: {
+          _grant: boolean
+          _permission_id: string
+          _target_user_id: string
+        }
+        Returns: undefined
+      }
       advance_org_status: {
         Args: { p_workspace_id: string }
         Returns: Database["public"]["Enums"]["org_status"]
@@ -10268,6 +10508,13 @@ export type Database = {
         Returns: boolean
       }
       build_batch_snapshot: { Args: { p_batch_id: string }; Returns: Json }
+      bulk_insert_facilities: {
+        Args: { facilities: Json }
+        Returns: {
+          error_message: string
+          inserted_count: number
+        }[]
+      }
       calculate_cargo_volume: {
         Args: { height_cm: number; length_cm: number; width_cm: number }
         Returns: number
@@ -10308,14 +10555,6 @@ export type Database = {
           _permission_code: string
           _user_id: string
           _warehouse_id: string
-        }
-        Returns: boolean
-      }
-      can_transition_requisition_status: {
-        Args: {
-          _new_status: string
-          _requisition_id: string
-          _user_id?: string
         }
         Returns: boolean
       }
@@ -10587,10 +10826,6 @@ export type Database = {
           id: string
           name: string
         }[]
-      }
-      get_available_requisition_states: {
-        Args: { _requisition_id: string; _user_id?: string }
-        Returns: string[]
       }
       get_batch_slot_assignments: {
         Args: { p_batch_id: string }
@@ -10872,6 +11107,7 @@ export type Database = {
           user_name: string
         }[]
       }
+      get_my_roles: { Args: never; Returns: string[] }
       get_packaging_type_distribution: {
         Args: { p_end_date?: string; p_start_date?: string }
         Returns: {
@@ -11153,6 +11389,7 @@ export type Database = {
         Returns: boolean
       }
       has_role:
+        | { Args: { _role_code: string }; Returns: boolean }
         | {
             Args: {
               _role: Database["public"]["Enums"]["app_role"]
@@ -11161,7 +11398,6 @@ export type Database = {
             Returns: boolean
           }
         | { Args: { _role_code: string; _user_id: string }; Returns: boolean }
-        | { Args: { role_code_param: string }; Returns: boolean }
       ingest_gps_events: {
         Args: { events: Json }
         Returns: {
@@ -11197,10 +11433,12 @@ export type Database = {
         }
         Returns: string
       }
+      is_admin: { Args: never; Returns: boolean }
       is_dangerous_permission: {
         Args: { _permission_code: string }
         Returns: boolean
       }
+      is_fleet_manager: { Args: never; Returns: boolean }
       is_slot_available: {
         Args: { p_batch_id?: string; p_slot_key: string; p_vehicle_id: string }
         Returns: boolean
@@ -11208,6 +11446,7 @@ export type Database = {
       is_system_admin:
         | { Args: never; Returns: boolean }
         | { Args: { _user_id: string }; Returns: boolean }
+      is_warehouse_officer: { Args: never; Returns: boolean }
       is_workspace_admin: {
         Args: { p_user_id?: string; p_workspace_id: string }
         Returns: boolean
@@ -11220,11 +11459,17 @@ export type Database = {
         Args: { p_user_id?: string; p_workspace_id: string }
         Returns: boolean
       }
+      is_zone_manager: { Args: never; Returns: boolean }
       link_user_to_mod4: {
-        Args: { p_link_method?: string; p_user_id: string }
+        Args: {
+          p_link_method?: string
+          p_user_id: string
+          p_workspace_id?: string
+        }
         Returns: string
       }
       longtransactionsenabled: { Args: never; Returns: boolean }
+      manages_zone: { Args: { _zone_id: string }; Returns: boolean }
       mark_requisition_ready_for_dispatch: {
         Args: { p_requisition_id: string }
         Returns: boolean
@@ -11269,6 +11514,7 @@ export type Database = {
       }
       postgis_version: { Args: never; Returns: string }
       postgis_wagyu_version: { Args: never; Returns: string }
+      refresh_user_permissions_fn: { Args: never; Returns: undefined }
       remove_user_role: {
         Args: { p_role: string; p_user_id: string }
         Returns: boolean

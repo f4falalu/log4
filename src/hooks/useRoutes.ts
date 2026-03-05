@@ -139,12 +139,18 @@ export function useCreateRoute() {
 
   return useMutation({
     mutationFn: async (input: CreateRouteInput) => {
-      const { facility_ids, ...routeData } = input;
+      const { facility_ids, total_distance_km, estimated_duration_min, optimized_geometry, ...routeData } = input;
+      const routePayload = {
+        ...routeData,
+        ...(total_distance_km != null && { total_distance_km }),
+        ...(estimated_duration_min != null && { estimated_duration_min }),
+        ...(optimized_geometry != null && { optimized_geometry }),
+      };
 
       // Insert route
       const { data: route, error: routeError } = await supabase
         .from('routes')
-        .insert([routeData])
+        .insert([routePayload])
         .select()
         .single();
 

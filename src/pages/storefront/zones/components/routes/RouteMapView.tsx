@@ -14,6 +14,7 @@ import { useOperationalZones } from '@/hooks/useOperationalZones';
 import { supabase } from '@/integrations/supabase/client';
 import { computeConvexHull } from '@/lib/algorithms/convexHull';
 import { calculateDistance } from '@/lib/routeOptimization';
+import { getRoadRoute } from '@/lib/geoapify';
 import type { Route } from '@/types/routes';
 import type { FacilityClickPayload } from '@/components/map/layers/RoutePolylinesLayer';
 import type { ServiceAreaPolygon } from '@/components/map/layers/ServiceAreasLayer';
@@ -136,6 +137,86 @@ export function RouteMapView({ onRouteClick }: RouteMapViewProps) {
     return m;
   }, [allRouteFacilities]);
 
+  // ── On-the-fly road geometry fetching for routes that lack it ──
+  const [fetchedGeometries, setFetchedGeometries] = useState<
+    Record<string, { type: string; coordinates: Array<[number, number]> }>
+  >({});
+  const handledRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (!routes || routes.length === 0) return;
+
+    const routesNeedingGeometry = routes.filter(route => {
+      if (route.optimized_geometry) return false;
+      if (handledRef.current.has(route.id)) return false;
+
+      const wh = route.warehouses;
+      if (!wh || wh.lat == null || wh.lng == null) return false;
+
+      const facilities = facilitiesByRoute.get(route.id) || [];
+      return facilities.length >= 1;
+    });
+
+    if (routesNeedingGeometry.length === 0) return;
+
+    // Mark all as handled immediately to prevent re-fetching
+    routesNeedingGeometry.forEach(r => handledRef.current.add(r.id));
+
+    // Fetch road geometry for each route in parallel (max 3)
+    const batch = routesNeedingGeometry.slice(0, 3);
+
+    Promise.all(
+      batch.map(async (route) => {
+        const wh = route.warehouses!;
+        const facilities = facilitiesByRoute.get(route.id) || [];
+        const sorted = [...facilities].sort((a, b) => a.sequence_order - b.sequence_order);
+
+        const waypoints = [
+          { lat: wh.lat!, lng: wh.lng! },
+          ...sorted.map(f => ({ lat: f.lat, lng: f.lng })),
+          { lat: wh.lat!, lng: wh.lng! },
+        ];
+
+        try {
+          const road = await getRoadRoute(waypoints);
+          if (road && road.geometry.length > 0) {
+            const geometry = { type: 'LineString' as const, coordinates: road.geometry };
+            return { routeId: route.id, geometry, road };
+          }
+        } catch (err) {
+          console.error(`[RouteMapView] Road route fetch failed for ${route.id}:`, err);
+        }
+        return null;
+      })
+    ).then(results => {
+      const newGeometries: Record<string, { type: string; coordinates: Array<[number, number]> }> = {};
+      let hasNew = false;
+
+      for (const r of results) {
+        if (!r) continue;
+        hasNew = true;
+        newGeometries[r.routeId] = r.geometry;
+
+        // Persist to DB (fire-and-forget)
+        supabase
+          .from('routes')
+          .update({
+            optimized_geometry: r.geometry,
+            total_distance_km: r.road.roadDistanceKm,
+            estimated_duration_min: r.road.roadTimeMinutes,
+          })
+          .eq('id', r.routeId)
+          .then(({ error }) => {
+            if (error) console.error(`[RouteMapView] Failed to persist geometry for ${r.routeId}:`, error);
+          });
+      }
+
+      if (hasNew) {
+        setFetchedGeometries(prev => ({ ...prev, ...newGeometries }));
+      }
+    });
+  }, [routes, facilitiesByRoute]); // no fetchedGeometries dep — use handledRef instead
+
   const routePolylineData = useMemo(() => (routes || []).map((route) => ({
     id: route.id,
     name: route.name,
@@ -145,7 +226,10 @@ export function RouteMapView({ onRouteClick }: RouteMapViewProps) {
       ? { lat: route.warehouses.lat, lng: route.warehouses.lng, name: route.warehouses.name }
       : null,
     facilities: facilitiesByRoute.get(route.id) || [],
-  })), [routes, facilitiesByRoute]);
+    optimized_geometry: (route.optimized_geometry as { type: string; coordinates: Array<[number, number]> } | null)
+      || fetchedGeometries[route.id]
+      || null,
+  })), [routes, facilitiesByRoute, fetchedGeometries]);
 
   // ── Group SA facilities by service_area_id ──
   const facilitiesBySA = useMemo(() => {

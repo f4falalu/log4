@@ -76,6 +76,42 @@ export {
   type ScopeBindingDetailed,
 } from './useScopeBindings';
 
+// User Permission Hooks (direct per-user grants)
+export {
+  useUserDirectPermissions,
+  useUserEffectivePermissions,
+  useSetUserPermission,
+  useBulkSetUserPermissions,
+  useCopyPermissions,
+  type EffectivePermission,
+} from './useUserPermissions';
+
+// Group Hooks
+export {
+  useGroups,
+  useGroup,
+  useUserGroups,
+  useCreateGroup,
+  useDeleteGroup,
+  useAddGroupMember,
+  useRemoveGroupMember,
+  useUpdateGroupPermissions,
+  type UserGroup,
+  type GroupWithDetails,
+  type GroupMember,
+} from './useGroups';
+
+// Notification Preference Hooks
+export {
+  useNotificationPreferences,
+  useUpdateNotificationPreference,
+  NOTIFICATION_TYPES,
+  NOTIFICATION_CHANNELS,
+  type NotificationPreference,
+  type NotificationType,
+  type NotificationChannel,
+} from './useNotificationPreferences';
+
 // Workflow State Guard Hooks
 export {
   useCanTransitionRequisition,

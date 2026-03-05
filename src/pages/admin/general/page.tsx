@@ -100,19 +100,8 @@ export default function AdminGeneralSettings() {
         return ws as CurrentWorkspace;
       }
 
-      // Fallback for system admins who aren't workspace members:
-      // get the first active workspace
-      const { data: ws, error: wsError } = await supabase
-        .from('workspaces')
-        .select('id, name, slug, description, settings')
-        .eq('is_active', true)
-        .order('created_at', { ascending: true })
-        .limit(1)
-        .maybeSingle();
-
-      if (wsError) throw new Error(`Failed to load workspaces: ${wsError.message}`);
-      if (!ws) throw new Error('No workspaces found. Create a workspace first.');
-      return ws as CurrentWorkspace;
+      // No workspace membership found
+      throw new Error('No workspace membership found. Contact an administrator to be added to a workspace.');
     },
     retry: 1,
   });

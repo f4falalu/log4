@@ -56,24 +56,34 @@ export function ZoneManagerAssignment({
   const { data: eligibleUsers = [], isLoading: loadingUsers } = useQuery({
     queryKey: ['zone-manager-users'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Get eligible role IDs from the roles table
+      const { data: roleRows, error: roleError } = await supabase
+        .from('roles')
+        .select('id')
+        .in('code', ['zonal_manager', 'system_admin', 'operations_user', 'fleetops_user']);
+
+      if (roleError) throw roleError;
+      const roleIds = (roleRows || []).map(r => r.id);
+      if (roleIds.length === 0) return [];
+
+      // Get user IDs with those roles
+      const { data: userRoleRows, error: urError } = await supabase
         .from('user_roles')
-        .select(`
-          user_id,
-          profiles:user_id (
-            id,
-            full_name,
-            email
-          )
-        `)
-        .in('role', ['zone_manager', 'admin', 'super_admin']);
+        .select('user_id')
+        .in('role_id', roleIds);
 
-      if (error) throw error;
+      if (urError) throw urError;
+      const userIds = [...new Set((userRoleRows || []).map(r => r.user_id))];
+      if (userIds.length === 0) return [];
 
-      // Extract profiles and filter out nulls
-      return data
-        .map(item => item.profiles)
-        .filter((profile): profile is Profile => profile !== null);
+      // Fetch profiles for those users
+      const { data: profiles, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .in('id', userIds);
+
+      if (profileError) throw profileError;
+      return (profiles || []).filter((p): p is Profile => p !== null);
     },
     enabled: isOpen
   });

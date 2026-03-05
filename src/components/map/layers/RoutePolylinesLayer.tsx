@@ -3,6 +3,24 @@ import L from 'leaflet';
 import { MapUtils } from '@/lib/mapUtils';
 import { calculateDistance } from '@/lib/routeOptimization';
 
+/** Find the closest point in a polyline to a given target (Leaflet [lat, lng] coords). */
+function findNearestPoint(
+  target: [number, number],
+  polyline: [number, number][]
+): [number, number] | null {
+  if (polyline.length === 0) return null;
+  let nearest = polyline[0];
+  let minDist = Infinity;
+  for (const pt of polyline) {
+    const d = (pt[0] - target[0]) ** 2 + (pt[1] - target[1]) ** 2;
+    if (d < minDist) {
+      minDist = d;
+      nearest = pt;
+    }
+  }
+  return nearest;
+}
+
 export interface RoutePolylineData {
   id: string;
   name: string;
@@ -17,6 +35,10 @@ export interface RoutePolylineData {
     type?: string;
     lga?: string;
   }>;
+  optimized_geometry?: {
+    type: string;
+    coordinates: Array<[number, number]>; // [lng, lat] pairs
+  } | null;
 }
 
 export interface FacilityClickPayload {
@@ -91,17 +113,23 @@ export function RoutePolylinesLayer({
           (a, b) => a.sequence_order - b.sequence_order
         );
 
-        const coords: [number, number][] = [
-          [route.warehouse.lat, route.warehouse.lng],
-          ...sortedFacilities.map(f => [f.lat, f.lng] as [number, number]),
-        ];
+        // Use road geometry if available, otherwise straight lines
+        const hasRoadGeometry = route.optimized_geometry?.coordinates?.length > 0;
+        const coords: [number, number][] = hasRoadGeometry
+          ? route.optimized_geometry!.coordinates.map(
+              (c: [number, number]) => [c[1], c[0]] as [number, number] // [lng,lat] → [lat,lng] for Leaflet
+            )
+          : [
+              [route.warehouse.lat, route.warehouse.lng],
+              ...sortedFacilities.map(f => [f.lat, f.lng] as [number, number]),
+            ];
 
-        // Route polyline
+        // Route polyline — solid when road geometry, dashed when straight-line
         const polyline = L.polyline(coords, {
           color: isSelected ? baseColor : statusStyle.color,
           weight: isSelected ? 5 : 3,
           opacity: isSelected ? 1 : 0.7,
-          dashArray: statusStyle.dashArray,
+          dashArray: hasRoadGeometry ? '' : statusStyle.dashArray,
         });
 
         polyline.bindPopup(`
@@ -116,6 +144,36 @@ export function RoutePolylinesLayer({
 
         try {
           polyline.addTo(layerRef.current);
+
+          // When road geometry is available, draw thin connector lines from each facility
+          // to the nearest point on the road (facilities may be off-road)
+          if (hasRoadGeometry) {
+            // Connector from warehouse to nearest road point
+            const whCoord: [number, number] = [route.warehouse.lat, route.warehouse.lng];
+            const nearestToWh = findNearestPoint(whCoord, coords);
+            if (nearestToWh) {
+              L.polyline([whCoord, nearestToWh], {
+                color: statusStyle.color,
+                weight: 1,
+                opacity: 0.5,
+                dashArray: '3, 3',
+              }).addTo(layerRef.current!);
+            }
+
+            // Connector from each facility to nearest road point
+            sortedFacilities.forEach(f => {
+              const facCoord: [number, number] = [f.lat, f.lng];
+              const nearestPt = findNearestPoint(facCoord, coords);
+              if (nearestPt) {
+                L.polyline([facCoord, nearestPt], {
+                  color: '#10b981',
+                  weight: 1,
+                  opacity: 0.5,
+                  dashArray: '3, 3',
+                }).addTo(layerRef.current!);
+              }
+            });
+          }
         } catch (e) {
           console.error('[RoutePolylinesLayer] Failed to add polyline:', e);
         }

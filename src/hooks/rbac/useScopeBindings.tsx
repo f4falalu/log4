@@ -9,8 +9,8 @@ export interface ScopeBinding {
   user_id: string;
   scope_type: ScopeType;
   scope_id: string;
-  created_at: string;
-  created_by: string | null;
+  assigned_at: string;
+  assigned_by: string | null;
 }
 
 export interface ScopeBindingDetailed extends ScopeBinding {
@@ -29,7 +29,7 @@ export function useUserScopeBindings(userId: string | undefined) {
         .from('user_scopes_detailed')
         .select('*')
         .eq('user_id', userId)
-        .order('created_at', { ascending: false });
+        .order('assigned_at', { ascending: false });
 
       if (error) throw error;
       return data as ScopeBindingDetailed[];
@@ -60,7 +60,7 @@ export function useAssignScopeBinding() {
           user_id: userId,
           scope_type: scopeType,
           scope_id: scopeId,
-          created_by: currentUserId || null,
+          assigned_by: currentUserId || null,
         })
         .select()
         .single();
@@ -135,8 +135,8 @@ export function useFacilities() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('facilities')
-        .select('id, name, code')
-        .eq('is_active', true)
+        .select('id, name, warehouse_code')
+        .is('deleted_at', null)
         .order('name')
         .limit(500);
 

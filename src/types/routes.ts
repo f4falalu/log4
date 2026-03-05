@@ -48,6 +48,21 @@ export interface RouteFacility {
   } | null;
 }
 
+// ─── Multi-Route Comparison Types ───
+
+export interface ComparisonRoute {
+  id: string;
+  routeType: 'balanced' | 'short' | 'less_maneuvers';
+  routeTypeLabel: string;
+  algorithmLabel: string;
+  color: string;
+  distanceKm: number;
+  timeMinutes: number;
+  geometry: Array<[number, number]>;
+  snappedWaypoints: Array<[number, number]>;
+  facilityOrder: string[];
+}
+
 export interface CreateRouteInput {
   name: string;
   zone_id: string;
@@ -57,4 +72,7 @@ export interface CreateRouteInput {
   facility_ids: string[];
   is_sandbox?: boolean;
   algorithm_used?: string;
+  total_distance_km?: number;
+  estimated_duration_min?: number;
+  optimized_geometry?: any;
 }

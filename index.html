@@ -23,6 +23,14 @@
   </head>
 
   <body>
+    <!-- Unregister stale service workers (skip if PWA mode is active) -->
+    <script>
+      if ('serviceWorker' in navigator && !window.__BIKO_PWA_ACTIVE) {
+        navigator.serviceWorker.getRegistrations().then(function(registrations) {
+          registrations.forEach(function(registration) { registration.unregister(); });
+        });
+      }
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

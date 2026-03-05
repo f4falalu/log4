@@ -12,13 +12,15 @@ export function useUserRole() {
     queryFn: async () => {
       if (!user) return [];
 
-      const { data, error } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id);
+      // Use SECURITY DEFINER RPC to bypass RLS issues on user_roles/roles tables
+      const { data, error } = await supabase.rpc('get_my_roles' as any);
 
-      if (error) throw error;
-      return data.map(r => r.role) as AppRole[];
+      if (error) {
+        console.error('[useUserRole] get_my_roles RPC failed:', error);
+        throw error;
+      }
+
+      return ((data as string[]) || []).filter(Boolean) as AppRole[];
     },
     enabled: !!user,
     staleTime: 30_000,
@@ -28,8 +30,8 @@ export function useUserRole() {
   // Set default active role when roles are loaded
   useEffect(() => {
     if (roles.length > 0 && !activeRole) {
-      // Default to system_admin if available, otherwise first role
-      const defaultRole = roles.includes('system_admin') ? 'system_admin' : roles[0];
+      // Use the first role returned by the RPC
+      const defaultRole = roles[0];
       setActiveRole(defaultRole);
     }
   }, [roles, activeRole, setActiveRole]);

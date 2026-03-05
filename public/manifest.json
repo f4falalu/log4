@@ -123,15 +123,5 @@
     "notifications",
     "background-sync"
   ],
-  "serviceworker": {
-    "src": "/sw.js",
-    "scope": "/",
-    "update_via_cache": "none"
-  },
-  "offline_enabled": true,
-  "cache_digests": {
-    "static": "v1",
-    "tiles": "v1",
-    "telemetry": "v1"
-  }
+  "offline_enabled": false
 }

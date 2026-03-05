@@ -34,6 +34,7 @@ import AdminLocationsPage from "./pages/admin/LocationManagement";
 import AdminIntegrationPage from "./pages/admin/integration/page";
 import AdminRolesPage from "./pages/admin/roles/page";
 import AdminPermissionSetsPage from "./pages/admin/permission-sets/page";
+import AdminGroupsPage from "./pages/admin/groups/page";
 import LiveMapPage from "./pages/map/live/page";
 import PlaybackMapPage from "./pages/map/playback/page";
 
@@ -60,16 +61,18 @@ import Auth from "./pages/Auth";
 import AuthCallback from "./pages/AuthCallback";
 import NotFound from "./pages/NotFound";
 import ErrorBoundary from "./components/ErrorBoundary";
-import DriverManagement from "./pages/DriverManagement";
+// Lazy load pages that are also dynamically imported by SecondarySidebar
+const DriverManagement = lazy(() => import("./pages/DriverManagement"));
+const DispatchPage = lazy(() => import("./pages/DispatchPage"));
+const BatchManagement = lazy(() => import("./pages/BatchManagement"));
+const VLMSDashboard = lazy(() => import("./pages/fleetops/vlms/page"));
+
 import CommandCenterPage from "./pages/CommandCenterPage";
-import DispatchPage from "./pages/DispatchPage";
 import FacilityManagerPage from "./pages/FacilityManagerPage";
 import VehicleManagementPage from "./pages/VehicleManagementPage";
-import BatchManagement from "./pages/BatchManagement";
 
 // Lazy load Reports page (includes Recharts - ~300 kB uncompressed / 77 kB gzipped)
 const ReportsPageWrapper = lazy(() => import("./pages/ReportsPageWrapper"));
-import VLMSDashboard from "./pages/fleetops/vlms/page";
 import VLMSVehicles from "./pages/fleetops/vlms/vehicles/page";
 import VLMSVehicleOnboard from "./pages/fleetops/vlms/vehicles/onboard/page";
 import VLMSVehicleDetail from "./pages/fleetops/vlms/vehicles/[id]/page";
@@ -108,6 +111,7 @@ const App = () => (
               <Toaster />
               <RadixToaster />
               <MapStateProvider>
+                <Suspense fallback={<div className="flex items-center justify-center h-screen"><Loader2 className="h-8 w-8 animate-spin" /></div>}>
                 <Routes>
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/login" element={<Auth />} />
@@ -253,6 +257,7 @@ const App = () => (
                     {/* RBAC Tab */}
                     <Route path="roles" element={<AdminRolesPage />} />
                     <Route path="permission-sets" element={<AdminPermissionSetsPage />} />
+                    <Route path="groups" element={<AdminGroupsPage />} />
 
                     {/* Integration Tab */}
                     <Route path="integration" element={<AdminIntegrationPage />} />
@@ -283,6 +288,7 @@ const App = () => (
                   {/* Catch-all */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
+                </Suspense>
               </MapStateProvider>
             </TooltipProvider>
           </WorkspaceProvider>

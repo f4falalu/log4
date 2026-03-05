@@ -41,7 +41,8 @@ interface DispatchFormData {
 
 export default function EnhancedDispatchScheduler() {
   const { data: vehicles = [], isLoading: vehiclesLoading } = useVehicles();
-  const { data: facilities = [], isLoading: facilitiesLoading } = useFacilities();
+  const { data: facilitiesData, isLoading: facilitiesLoading } = useFacilities();
+  const facilities = facilitiesData?.facilities || [];
   const { data: batches = [], isLoading: batchesLoading } = useDeliveryBatches();
   
   const createBatchMutation = useCreateDeliveryBatch();
