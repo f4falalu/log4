@@ -4,15 +4,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Building2, MapPin, Users, Edit, Trash2, TrendingUp, Globe } from 'lucide-react';
+import { MapPin, Users, Edit, Trash2, TrendingUp, Globe } from 'lucide-react';
 import { OperationalZone } from '@/types/zones';
 import { useZoneSummary } from '@/hooks/useOperationalZones';
 import { useLGAs } from '@/hooks/useLGAs';
-import { useWarehouses } from '@/hooks/useWarehouses';
 import { useFacilities } from '@/hooks/useFacilities';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EditZoneDialog } from './EditZoneDialog.tsx';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useDeleteZone } from '@/hooks/useOperationalZones';
 
 interface ZoneDetailDialogProps {
@@ -26,22 +25,22 @@ export function ZoneDetailDialog({ zone, open, onOpenChange }: ZoneDetailDialogP
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   
   const { data: summary, isLoading: summaryLoading } = useZoneSummary(zone.id);
-  const { data: lgas, isLoading: lgasLoading } = useLGAs(zone.id);
-  const { data: warehousesData } = useWarehouses();
+  const { data: lgas, isLoading: lgasLoading } = useLGAs({ zone_id: zone.id });
   const { data: facilitiesData } = useFacilities();
   
   const deleteZone = useDeleteZone();
 
-  const zoneWarehouses = warehousesData?.warehouses?.filter((w: any) => w.zone_id === zone.id) || [];
   const zoneFacilities = facilitiesData?.facilities?.filter((f: any) => f.zone_id === zone.id) || [];
 
   const handleDelete = async () => {
     try {
       await deleteZone.mutateAsync(zone.id);
+      // Close AlertDialog first, then the parent Dialog to avoid focus-trap conflicts
       setIsDeleteDialogOpen(false);
       onOpenChange(false);
-    } catch (error) {
-      // Error handled by mutation
+    } catch {
+      // Error toast handled by the mutation's onError callback
+      setIsDeleteDialogOpen(false);
     }
   };
 
@@ -49,70 +48,52 @@ export function ZoneDetailDialog({ zone, open, onOpenChange }: ZoneDetailDialogP
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <div className="flex items-start justify-between">
-              <div>
-                <DialogTitle className="text-2xl flex items-center gap-2">
-                  {zone.name}
-                  {!zone.is_active && <Badge variant="secondary">Inactive</Badge>}
-                </DialogTitle>
-                {zone.code && (
-                  <DialogDescription className="text-base mt-1">
-                    Code: {zone.code}
-                  </DialogDescription>
-                )}
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsEditDialogOpen(true)}
-                >
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit
-                </Button>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => setIsDeleteDialogOpen(true)}
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete
-                </Button>
-              </div>
-            </div>
+          <DialogHeader className="pr-8">
+            <DialogTitle className="text-2xl flex items-center gap-2">
+              {zone.name}
+              {!zone.is_active && <Badge variant="secondary">Inactive</Badge>}
+            </DialogTitle>
+            {zone.code && (
+              <DialogDescription className="text-base">
+                Code: {zone.code}
+              </DialogDescription>
+            )}
             {zone.description && (
-              <DialogDescription className="text-base mt-2">
+              <DialogDescription className="text-base">
                 {zone.description}
               </DialogDescription>
             )}
           </DialogHeader>
 
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsEditDialogOpen(true)}
+            >
+              <Edit className="h-4 w-4 mr-2" />
+              Edit
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setIsDeleteDialogOpen(true)}
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete
+            </Button>
+          </div>
+
           <Tabs defaultValue="overview" className="mt-4">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="warehouses">Warehouses</TabsTrigger>
               <TabsTrigger value="lgas">LGAs</TabsTrigger>
               <TabsTrigger value="facilities">Facilities</TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview" className="space-y-4 mt-4">
               {/* Summary Stats */}
-              <div className="grid gap-4 md:grid-cols-3">
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Warehouses</CardTitle>
-                    <Building2 className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    {summaryLoading ? (
-                      <Skeleton className="h-8 w-16" />
-                    ) : (
-                      <div className="text-2xl font-bold">{summary?.warehouse_count || 0}</div>
-                    )}
-                  </CardContent>
-                </Card>
-
+              <div className="grid gap-4 md:grid-cols-2">
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">LGAs</CardTitle>
@@ -208,39 +189,6 @@ export function ZoneDetailDialog({ zone, open, onOpenChange }: ZoneDetailDialogP
               )}
             </TabsContent>
 
-            <TabsContent value="warehouses" className="mt-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Warehouses in {zone.name}</CardTitle>
-                  <CardDescription>
-                    {zoneWarehouses.length} warehouse(s) assigned to this zone
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {zoneWarehouses.length > 0 ? (
-                    <div className="space-y-3">
-                      {zoneWarehouses.map((warehouse) => (
-                        <div
-                          key={warehouse.id}
-                          className="flex items-center justify-between p-3 border rounded-lg"
-                        >
-                          <div>
-                            <p className="font-medium">{warehouse.name}</p>
-                            <p className="text-sm text-muted-foreground">{warehouse.address}</p>
-                          </div>
-                          <Badge variant="outline">{warehouse.type}</Badge>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-muted-foreground text-center py-8">
-                      No warehouses assigned to this zone yet
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-
             <TabsContent value="lgas" className="mt-4">
               <Card>
                 <CardHeader>
@@ -328,24 +276,25 @@ export function ZoneDetailDialog({ zone, open, onOpenChange }: ZoneDetailDialogP
         onOpenChange={setIsEditDialogOpen}
       />
 
-      {/* Delete Confirmation */}
+      {/* Delete Confirmation — rendered outside the Dialog portal to avoid focus-trap conflicts */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent onPointerDownOutside={(e) => e.preventDefault()}>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Zone</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{zone.name}"? This action cannot be undone.
+              Are you sure you want to delete &quot;{zone.name}&quot;? This action cannot be undone.
               All warehouses and facilities will be unassigned from this zone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
+            <AlertDialogCancel disabled={deleteZone.isPending}>Cancel</AlertDialogCancel>
+            <Button
+              variant="destructive"
               onClick={handleDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteZone.isPending}
             >
               {deleteZone.isPending ? 'Deleting...' : 'Delete'}
-            </AlertDialogAction>
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
