@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Building2, MapPin, Clock, AlertTriangle, Pencil, Trash2 } from 'lucide-react';
 import {
   Dialog,
@@ -6,6 +7,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -42,18 +52,24 @@ export function ServiceAreaDetailDialog({
   onOpenChange,
   onEdit,
 }: ServiceAreaDetailDialogProps) {
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const { data: facilities, isLoading: facilitiesLoading } = useServiceAreaFacilities(serviceArea.id);
   const deleteMutation = useDeleteServiceArea();
 
-  const handleDelete = () => {
-    if (confirm('Are you sure you want to delete this service area? This will also remove all facility assignments.')) {
-      deleteMutation.mutate(serviceArea.id, {
-        onSuccess: () => onOpenChange(false),
-      });
+  const handleDelete = async () => {
+    try {
+      await deleteMutation.mutateAsync(serviceArea.id);
+      // Close AlertDialog first, then the parent Dialog to avoid focus-trap conflicts
+      setIsDeleteDialogOpen(false);
+      onOpenChange(false);
+    } catch {
+      // Error toast handled by the mutation's onError callback
+      setIsDeleteDialogOpen(false);
     }
   };
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
@@ -68,7 +84,7 @@ export function ServiceAreaDetailDialog({
               <Button variant="outline" size="sm" onClick={() => onEdit(serviceArea)}>
                 <Pencil className="mr-2 h-4 w-4" /> Edit
               </Button>
-              <Button variant="destructive" size="sm" onClick={handleDelete} disabled={deleteMutation.isPending}>
+              <Button variant="destructive" size="sm" onClick={() => setIsDeleteDialogOpen(true)}>
                 <Trash2 className="mr-2 h-4 w-4" /> Delete
               </Button>
             </div>
@@ -199,5 +215,29 @@ export function ServiceAreaDetailDialog({
         </Tabs>
       </DialogContent>
     </Dialog>
+
+    {/* Delete Confirmation — rendered outside the Dialog portal to avoid focus-trap conflicts */}
+    <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+      <AlertDialogContent onPointerDownOutside={(e) => e.preventDefault()}>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete Service Area</AlertDialogTitle>
+          <AlertDialogDescription>
+            Are you sure you want to delete &quot;{serviceArea.name}&quot;? This action cannot be undone.
+            This will also remove all facility assignments.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={deleteMutation.isPending}>Cancel</AlertDialogCancel>
+          <Button
+            variant="destructive"
+            onClick={handleDelete}
+            disabled={deleteMutation.isPending}
+          >
+            {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
+          </Button>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  </>
   );
 }

@@ -15,6 +15,7 @@ export function useOperationalZones(options?: { enabled?: boolean }) {
       const { data, error } = await supabase
         .from('zones' as any)
         .select('*')
+        .eq('is_active', true)
         .order('name', { ascending: true });
 
       if (error) throw error;
@@ -66,12 +67,19 @@ export function useZoneMetrics() {
 
       let totalLGAs = 0;
       try {
-        const { count } = await supabase
-          .from('lgas' as any)
-          .select('*', { count: 'exact', head: true });
-        totalLGAs = count || 0;
+        // Count distinct LGA values from facilities (lgas table may be empty)
+        const { data: lgaData } = await supabase
+          .from('facilities')
+          .select('lga')
+          .is('deleted_at', null)
+          .not('lga', 'is', null);
+
+        if (lgaData) {
+          const uniqueLGAs = new Set(lgaData.map((f: any) => f.lga));
+          totalLGAs = uniqueLGAs.size;
+        }
       } catch {
-        // lgas table may not exist
+        // fallback if query fails
       }
 
       return {
@@ -97,13 +105,7 @@ export function useZoneSummary(zoneId: string | null) {
         return res.count || 0;
       };
 
-      const [lgaCount, facilityCount, fleetCount] = await Promise.all([
-        safeCount(
-          supabase
-            .from('lgas' as any)
-            .select('id', { count: 'exact', head: true })
-            .eq('zone_id', zoneId)
-        ),
+      const [facilityCount, fleetCount, lgaCount] = await Promise.all([
         safeCount(
           supabase
             .from('facilities')
@@ -116,6 +118,14 @@ export function useZoneSummary(zoneId: string | null) {
             .from('fleets' as any)
             .select('id', { count: 'exact', head: true })
             .eq('zone_id', zoneId)
+        ),
+        safeCount(
+          supabase
+            .from('admin_units')
+            .select('id', { count: 'exact', head: true })
+            .eq('zone_id', zoneId)
+            .eq('admin_level', 6) // LGA level
+            .eq('is_active', true)
         ),
       ]);
 

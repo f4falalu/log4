@@ -82,9 +82,9 @@ export function FacilityDetailDialog({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => {
+                onClick={async () => {
                   if (confirm('Delete this facility?')) {
-                    onDelete(facility.id);
+                    await onDelete(facility.id);
                     onOpenChange(false);
                   }
                 }}

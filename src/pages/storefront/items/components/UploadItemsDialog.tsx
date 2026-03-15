@@ -205,12 +205,27 @@ export function UploadItemsDialog({ open, onOpenChange, onSuccess }: UploadItems
     if (!skipped.has('category')) {
       if (!item.category?.trim()) {
         errors.push('Category is required');
-      } else if (!ITEM_CATEGORIES.includes(item.category as ItemCategory)) {
-        errors.push(`Invalid category: ${item.category}`);
+      } else {
+        // Case-insensitive category matching
+        const matchedCategory = ITEM_CATEGORIES.find(
+          c => c.toLowerCase() === item.category!.trim().toLowerCase()
+        );
+        if (matchedCategory) {
+          item.category = matchedCategory;
+        } else {
+          errors.push(`Invalid category: ${item.category}`);
+        }
       }
     }
-    if (item.program && !ITEM_PROGRAMS.includes(item.program as ItemProgram)) {
-      errors.push(`Invalid program: ${item.program}`);
+    if (item.program) {
+      const matchedProgram = ITEM_PROGRAMS.find(
+        p => p.toLowerCase() === item.program!.trim().toLowerCase()
+      );
+      if (matchedProgram) {
+        item.program = matchedProgram;
+      } else {
+        errors.push(`Invalid program: ${item.program}`);
+      }
     }
     if (!skipped.has('stock_on_hand')) {
       if (item.stock_on_hand === undefined || isNaN(item.stock_on_hand) || item.stock_on_hand < 0) {
@@ -631,7 +646,7 @@ export function UploadItemsDialog({ open, onOpenChange, onSuccess }: UploadItems
           <DialogDescription className="sr-only">Upload and import items from a file</DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-hidden">
+        <div className="overflow-hidden">
           {/* Step 1: Upload */}
           {step === 'upload' && (
             <div className="space-y-4">
@@ -720,9 +735,9 @@ export function UploadItemsDialog({ open, onOpenChange, onSuccess }: UploadItems
 
           {/* Step 2: Column Mapping */}
           {step === 'mapping' && (
-            <div className="space-y-4 h-full flex flex-col">
+            <div className="space-y-4">
               {/* File info header */}
-              <div className="flex items-center justify-between flex-shrink-0">
+              <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2">
                     {getFileIcon()}
@@ -739,13 +754,13 @@ export function UploadItemsDialog({ open, onOpenChange, onSuccess }: UploadItems
               </div>
 
               {/* 2-column layout: Mapping + Preview */}
-              <div className="flex-1 grid grid-cols-2 gap-4 min-h-0 max-h-[calc(90vh-220px)]">
+              <div className="grid grid-cols-2 gap-4">
                 {/* Left column: Field Mapping */}
-                <div className="flex flex-col min-h-0 overflow-hidden">
-                  <div className="text-sm text-muted-foreground mb-2 flex-shrink-0">
+                <div>
+                  <div className="text-sm text-muted-foreground mb-2">
                     Map your file columns to the required fields. Check "Skip" to add data later.
                   </div>
-                  <ScrollArea className="flex-1 border rounded-lg p-4 h-full">
+                  <ScrollArea className="h-[calc(90vh-280px)] border rounded-lg p-4">
                     <div className="space-y-3">
                       {FIELD_DEFINITIONS.map((field) => {
                         const isSkipped = skippedFields.has(field.key);
@@ -819,69 +834,65 @@ export function UploadItemsDialog({ open, onOpenChange, onSuccess }: UploadItems
                 </div>
 
                 {/* Right column: File Preview Snapshot */}
-                <div className="flex flex-col min-h-0 overflow-hidden">
-                  <div className="text-sm text-muted-foreground mb-2 flex-shrink-0">
+                <div>
+                  <div className="text-sm text-muted-foreground mb-2">
                     File Preview (scroll to see more)
                   </div>
-                  <div className="flex-1 border rounded-lg overflow-hidden min-h-0">
-                    <ScrollArea className="h-full max-h-full">
-                      <div className="overflow-x-auto">
-                        <Table>
-                          <TableHeader>
-                            <TableRow className="bg-muted/50">
-                              <TableHead className="text-xs font-medium text-muted-foreground w-10 sticky left-0 bg-muted/50">
-                                #
-                              </TableHead>
-                              {headers.map((header, i) => (
-                                <TableHead
-                                  key={i}
-                                  className="text-xs whitespace-nowrap min-w-[100px] max-w-[150px]"
-                                >
-                                  <div className="flex flex-col">
-                                    <span className="text-muted-foreground text-[10px]">
-                                      {i < 26
-                                        ? String.fromCharCode(65 + i)
-                                        : String.fromCharCode(64 + Math.floor(i / 26)) + String.fromCharCode(65 + (i % 26))}
-                                    </span>
-                                    <span className="truncate">{header}</span>
-                                  </div>
-                                </TableHead>
-                              ))}
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {rawData.slice(0, 10).map((row, i) => (
-                              <TableRow key={i} className={i % 2 === 0 ? 'bg-background' : 'bg-muted/20'}>
-                                <TableCell className="text-xs text-muted-foreground font-mono w-10 sticky left-0 bg-inherit">
-                                  {i + 1}
-                                </TableCell>
-                                {row.map((cell, j) => (
-                                  <TableCell
-                                    key={j}
-                                    className="text-xs py-1.5 min-w-[100px] max-w-[150px] truncate"
-                                    title={cell || '-'}
-                                  >
-                                    {cell || <span className="text-muted-foreground">-</span>}
-                                  </TableCell>
-                                ))}
-                              </TableRow>
+                  <div className="h-[calc(90vh-280px)] border rounded-lg overflow-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-muted/50">
+                          <TableHead className="text-xs font-medium text-muted-foreground w-10 sticky left-0 bg-muted/50">
+                            #
+                          </TableHead>
+                          {headers.map((header, i) => (
+                            <TableHead
+                              key={i}
+                              className="text-xs whitespace-nowrap min-w-[100px] max-w-[150px]"
+                            >
+                              <div className="flex flex-col">
+                                <span className="text-muted-foreground text-[10px]">
+                                  {i < 26
+                                    ? String.fromCharCode(65 + i)
+                                    : String.fromCharCode(64 + Math.floor(i / 26)) + String.fromCharCode(65 + (i % 26))}
+                                </span>
+                                <span className="truncate">{header}</span>
+                              </div>
+                            </TableHead>
+                          ))}
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {rawData.slice(0, 10).map((row, i) => (
+                          <TableRow key={i} className={i % 2 === 0 ? 'bg-background' : 'bg-muted/20'}>
+                            <TableCell className="text-xs text-muted-foreground font-mono w-10 sticky left-0 bg-inherit">
+                              {i + 1}
+                            </TableCell>
+                            {row.map((cell, j) => (
+                              <TableCell
+                                key={j}
+                                className="text-xs py-1.5 min-w-[100px] max-w-[150px] truncate"
+                                title={cell || '-'}
+                              >
+                                {cell || <span className="text-muted-foreground">-</span>}
+                              </TableCell>
                             ))}
-                          </TableBody>
-                        </Table>
-                      </div>
-                    </ScrollArea>
-                    {rawData.length > 10 && (
-                      <div className="text-xs text-muted-foreground text-center py-1 border-t bg-muted/30">
-                        Showing 10 of {rawData.length} rows
-                      </div>
-                    )}
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
                   </div>
+                  {rawData.length > 10 && (
+                    <div className="text-xs text-muted-foreground text-center py-1">
+                      Showing 10 of {rawData.length} rows
+                    </div>
+                  )}
                 </div>
               </div>
 
               {/* Skipped fields warning */}
               {skippedFields.size > 0 && (
-                <div className="flex items-center gap-2 text-xs text-amber-600 bg-amber-50 p-2 rounded-md flex-shrink-0">
+                <div className="flex items-center gap-2 text-xs text-amber-600 bg-amber-50 p-2 rounded-md">
                   <AlertTriangle className="h-3.5 w-3.5" />
                   <span>
                     {skippedFields.size} required field(s) skipped. You can add this data later by editing individual items.
@@ -893,8 +904,8 @@ export function UploadItemsDialog({ open, onOpenChange, onSuccess }: UploadItems
 
           {/* Step 3: Preview */}
           {step === 'preview' && (
-            <div className="space-y-4 h-full flex flex-col">
-              <div className="flex items-center justify-between flex-shrink-0">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2">
                     {getFileIcon()}
@@ -919,7 +930,7 @@ export function UploadItemsDialog({ open, onOpenChange, onSuccess }: UploadItems
                 </div>
               </div>
 
-              <ScrollArea className="flex-1 max-h-[calc(90vh-280px)] border rounded-lg">
+              <ScrollArea className="h-[calc(90vh-280px)] border rounded-lg">
                 <Table>
                   <TableHeader>
                     <TableRow>

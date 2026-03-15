@@ -7,6 +7,7 @@ import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import { formatCurrency } from '@/lib/formatCurrency';
 import type { Item } from '@/types/items';
 import { useItemAnalytics, useItemShipmentHistory } from '@/hooks/useItems';
 import { ItemCategoryBadge } from './ItemCategoryBadge';
@@ -20,14 +21,6 @@ interface ItemDetailPanelProps {
 export function ItemDetailPanel({ item, onClose, onEdit }: ItemDetailPanelProps) {
   const { data: analytics } = useItemAnalytics(item.id);
   const { data: shipments = [] } = useItemShipmentHistory(item.id);
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-NG', {
-      style: 'currency',
-      currency: 'NGN',
-      minimumFractionDigits: 0,
-    }).format(value);
-  };
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return '-';

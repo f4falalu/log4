@@ -41,6 +41,7 @@ import { exportFacilitiesToCSV, generateExportFilename, downloadCSVTemplate } fr
 import { toast } from 'sonner';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useFacilitiesRealtime } from '@/hooks/useFacilitiesRealtime';
+import { useStates } from '@/hooks/useAdminUnits';
 import { PaginationControls } from '@/components/ui/pagination-controls';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
@@ -93,6 +94,9 @@ export default function StorefrontFacilities() {
   // Programs for dynamic filter
   const { data: programsData } = usePrograms();
   const programs = programsData?.programs || [];
+
+  // States from admin_units for dynamic filter
+  const { data: adminStates = [] } = useStates();
 
   // Choose filters based on view mode
   const activeFilters = viewMode === 'map' ? mapFilters : { ...filters, search: searchTerm };
@@ -206,9 +210,7 @@ export default function StorefrontFacilities() {
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm('Are you sure you want to delete this facility?')) {
-      await deleteFacility.mutateAsync(id);
-    }
+    await deleteFacility.mutateAsync(id);
   };
 
   const handleBulkDelete = async () => {
@@ -616,7 +618,11 @@ export default function StorefrontFacilities() {
                 <SelectValue placeholder="State" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="kano">Kano</SelectItem>
+                {adminStates.map((state) => (
+                  <SelectItem key={state.id} value={state.name}>
+                    {state.name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
 

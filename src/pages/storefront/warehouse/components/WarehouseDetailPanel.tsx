@@ -1,11 +1,11 @@
 import { format } from 'date-fns';
-import { X, Edit, MapPin, Phone, Mail, Clock, Package, Warehouse as WarehouseIcon } from 'lucide-react';
+import { X, Edit, MapPin, Phone, Mail, Clock, Package, ArrowUpRight, ArrowDownRight, Activity } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import type { Warehouse } from '@/types/warehouse';
 import { STORAGE_ZONE_TYPES } from '@/types/warehouse';
@@ -35,18 +35,34 @@ export function WarehouseDetailPanel({ warehouse, onClose, onEdit }: WarehouseDe
   };
 
   const utilization = getUtilization();
+  const usedCapacity = warehouse.used_capacity_m3 || 0;
+  const totalCapacity = warehouse.total_capacity_m3 || 0;
+  const availableCapacity = totalCapacity - usedCapacity;
+
+  const getUtilizationColor = (pct: number) => {
+    if (pct > 80) return { text: 'text-red-600', bar: '[&>div]:bg-red-500', bg: 'bg-red-50', label: 'Congested' };
+    if (pct > 50) return { text: 'text-amber-600', bar: '[&>div]:bg-amber-500', bg: 'bg-amber-50', label: 'Monitor' };
+    return { text: 'text-green-600', bar: '[&>div]:bg-green-500', bg: 'bg-green-50', label: 'Available' };
+  };
+
+  const colorConfig = getUtilizationColor(utilization);
 
   const getZoneTypeConfig = (type: string) => {
     return STORAGE_ZONE_TYPES.find(z => z.value === type) || STORAGE_ZONE_TYPES[4];
   };
 
+  // Placeholder supply flow data (replace with real data when available)
+  const inbound = 0;
+  const outbound = 0;
+  const netFlow = inbound - outbound;
+
   return (
-    <div className="w-96 border-l bg-background flex flex-col h-full">
+    <div className="w-[340px] shrink-0 border-l bg-background flex flex-col h-full">
       {/* Header */}
       <div className="flex-shrink-0 p-4 border-b">
         <div className="flex items-start justify-between">
           <div className="flex-1 min-w-0">
-            <h2 className="text-lg font-semibold">{warehouse.name}</h2>
+            <h2 className="text-lg font-semibold truncate">{warehouse.name}</h2>
             <div className="flex items-center gap-2 mt-1">
               <Badge variant="outline" className="font-mono">{warehouse.code}</Badge>
               <Badge
@@ -66,44 +82,123 @@ export function WarehouseDetailPanel({ warehouse, onClose, onEdit }: WarehouseDe
       {/* Content */}
       <ScrollArea className="flex-1">
         <div className="p-4 space-y-4">
-          {/* Capacity Overview */}
+          {/* Capacity Utilization */}
           <div className="space-y-3">
-            <h3 className="text-sm font-semibold text-muted-foreground">Capacity</h3>
-            <div className="p-4 bg-muted rounded-lg space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Utilization</span>
-                <span className={cn(
-                  'text-lg font-bold',
-                  utilization > 90 && 'text-red-600',
-                  utilization > 70 && utilization <= 90 && 'text-yellow-600'
-                )}>
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-muted-foreground">Capacity Utilization</h3>
+              <Badge variant="outline" className={cn('text-xs', colorConfig.text, colorConfig.bg)}>
+                {colorConfig.label}
+              </Badge>
+            </div>
+            <div className="p-4 bg-muted/50 rounded-lg space-y-3">
+              <div className="flex items-baseline justify-between">
+                <span className={cn('text-3xl font-bold tabular-nums', colorConfig.text)}>
                   {utilization.toFixed(1)}%
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  of {totalCapacity.toLocaleString()} m³
                 </span>
               </div>
               <Progress
                 value={utilization}
-                className={cn(
-                  'h-3',
-                  utilization > 90 && '[&>div]:bg-red-500',
-                  utilization > 70 && utilization <= 90 && '[&>div]:bg-yellow-500'
-                )}
+                className={cn('h-3 rounded-full', colorConfig.bar)}
               />
-              <div className="flex items-center justify-between text-sm">
-                <span>{(warehouse.used_capacity_m3 || 0).toLocaleString()} m³ used</span>
-                <span>{(warehouse.total_capacity_m3 || 0).toLocaleString()} m³ total</span>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-2.5 bg-background rounded-md border">
+                  <p className="text-xs text-muted-foreground">Used</p>
+                  <p className="text-sm font-semibold tabular-nums">
+                    {usedCapacity.toLocaleString()} m³
+                  </p>
+                </div>
+                <div className="p-2.5 bg-background rounded-md border">
+                  <p className="text-xs text-muted-foreground">Available</p>
+                  <p className="text-sm font-semibold tabular-nums text-green-600">
+                    {availableCapacity.toLocaleString()} m³
+                  </p>
+                </div>
               </div>
             </div>
           </div>
 
           <Separator />
 
+          {/* Supply Flow */}
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold text-muted-foreground">Supply Flow (Today)</h3>
+            <div className="grid grid-cols-3 gap-2">
+              <div className="p-2.5 bg-muted/50 rounded-md text-center">
+                <ArrowDownRight className="h-3.5 w-3.5 text-blue-500 mx-auto mb-1" />
+                <p className="text-xs text-muted-foreground">Inbound</p>
+                <p className="text-sm font-semibold tabular-nums">{inbound.toLocaleString()}</p>
+              </div>
+              <div className="p-2.5 bg-muted/50 rounded-md text-center">
+                <ArrowUpRight className="h-3.5 w-3.5 text-orange-500 mx-auto mb-1" />
+                <p className="text-xs text-muted-foreground">Outbound</p>
+                <p className="text-sm font-semibold tabular-nums">{outbound.toLocaleString()}</p>
+              </div>
+              <div className="p-2.5 bg-muted/50 rounded-md text-center">
+                <Activity className="h-3.5 w-3.5 text-muted-foreground mx-auto mb-1" />
+                <p className="text-xs text-muted-foreground">Net</p>
+                <p className={cn(
+                  'text-sm font-semibold tabular-nums',
+                  netFlow > 0 && 'text-blue-600',
+                  netFlow < 0 && 'text-orange-600'
+                )}>
+                  {netFlow > 0 ? '+' : ''}{netFlow.toLocaleString()}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Storage Zones */}
+          {warehouse.storage_zones && warehouse.storage_zones.length > 0 && (
+            <>
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold text-muted-foreground">Zone Distribution</h3>
+                <div className="space-y-2">
+                  {warehouse.storage_zones.map((zone, index) => {
+                    const config = getZoneTypeConfig(zone.type);
+                    const zoneUtilization = zone.capacity_m3 > 0
+                      ? (zone.used_m3 / zone.capacity_m3) * 100
+                      : 0;
+                    const zoneColor = getUtilizationColor(zoneUtilization);
+
+                    return (
+                      <div key={zone.id || index} className="p-2.5 border rounded-lg">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <div className="flex items-center gap-1.5">
+                            <Badge className={cn('font-normal text-xs px-1.5 py-0', config.color)}>
+                              {config.label}
+                            </Badge>
+                            <span className="text-xs font-medium truncate">{zone.name}</span>
+                          </div>
+                          <span className={cn('text-xs font-semibold tabular-nums', zoneColor.text)}>
+                            {zoneUtilization.toFixed(0)}%
+                          </span>
+                        </div>
+                        <Progress value={zoneUtilization} className={cn('h-1.5', zoneColor.bar)} />
+                        <div className="flex items-center justify-between mt-1 text-[10px] text-muted-foreground">
+                          <span>{zone.used_m3.toLocaleString()} / {zone.capacity_m3.toLocaleString()} m³</span>
+                          {zone.temp_range && <span>{zone.temp_range}</span>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              <Separator />
+            </>
+          )}
+
           {/* Location */}
           <div className="space-y-3">
             <h3 className="text-sm font-semibold text-muted-foreground">Location</h3>
             {warehouse.address && (
               <div className="flex items-start gap-2">
-                <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
-                <div>
+                <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                <div className="min-w-0">
                   <p className="text-sm">{warehouse.address}</p>
                   {(warehouse.city || warehouse.state) && (
                     <p className="text-sm text-muted-foreground">
@@ -151,62 +246,19 @@ export function WarehouseDetailPanel({ warehouse, onClose, onEdit }: WarehouseDe
             )}
           </div>
 
-          {/* Storage Zones */}
-          {warehouse.storage_zones && warehouse.storage_zones.length > 0 && (
-            <>
-              <Separator />
-              <div className="space-y-3">
-                <h3 className="text-sm font-semibold text-muted-foreground">Storage Zones</h3>
-                <div className="space-y-2">
-                  {warehouse.storage_zones.map((zone, index) => {
-                    const config = getZoneTypeConfig(zone.type);
-                    const zoneUtilization = zone.capacity_m3 > 0
-                      ? (zone.used_m3 / zone.capacity_m3) * 100
-                      : 0;
-
-                    return (
-                      <div key={zone.id || index} className="p-3 border rounded-lg">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <Badge className={cn('font-normal', config.color)}>
-                              {config.label}
-                            </Badge>
-                            <span className="text-sm font-medium">{zone.name}</span>
-                          </div>
-                          {zone.temp_range && (
-                            <span className="text-xs text-muted-foreground">{zone.temp_range}</span>
-                          )}
-                        </div>
-                        <div className="space-y-1">
-                          <div className="flex items-center justify-between text-xs">
-                            <span>{zoneUtilization.toFixed(0)}%</span>
-                            <span className="text-muted-foreground">
-                              {zone.used_m3} / {zone.capacity_m3} m³
-                            </span>
-                          </div>
-                          <Progress value={zoneUtilization} className="h-1.5" />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </>
-          )}
-
           {/* Inventory Summary */}
           <Separator />
           <div className="space-y-3">
             <h3 className="text-sm font-semibold text-muted-foreground">Inventory</h3>
             <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium flex items-center gap-2">
-                  <Package className="h-4 w-4" />
-                  Items in Warehouse
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-bold">{inventoryData?.total || 0}</p>
+              <CardContent className="p-3 flex items-center gap-3">
+                <div className="h-8 w-8 rounded-md bg-muted flex items-center justify-center">
+                  <Package className="h-4 w-4 text-muted-foreground" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Items in Warehouse</p>
+                  <p className="text-lg font-bold tabular-nums">{inventoryData?.total || 0}</p>
+                </div>
               </CardContent>
             </Card>
           </div>

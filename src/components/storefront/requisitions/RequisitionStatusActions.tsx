@@ -21,10 +21,25 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Loader2, ChevronDown, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
 import {
-  useAvailableRequisitionStates,
   useTransitionRequisitionStatus,
   REQUISITION_STATUS_META,
 } from '@/hooks/rbac';
+
+// Client-side state transition map (replaces dropped get_available_requisition_states RPC)
+const ALLOWED_TRANSITIONS: Record<string, string[]> = {
+  pending: ['approved', 'rejected', 'cancelled'],
+  approved: ['packaged', 'cancelled'],
+  packaged: ['ready_for_dispatch', 'cancelled'],
+  ready_for_dispatch: ['assigned_to_batch', 'cancelled'],
+  assigned_to_batch: ['in_transit', 'cancelled'],
+  in_transit: ['fulfilled', 'partially_delivered', 'failed'],
+  partially_delivered: ['fulfilled', 'failed'],
+  // Terminal states — no transitions
+  fulfilled: [],
+  failed: [],
+  rejected: [],
+  cancelled: [],
+};
 
 interface RequisitionStatusActionsProps {
   requisitionId: string;
@@ -41,8 +56,9 @@ export function RequisitionStatusActions({
   const [notes, setNotes] = useState('');
   const [showDialog, setShowDialog] = useState(false);
 
-  const { data: availableStates, isLoading } = useAvailableRequisitionStates(requisitionId);
   const transitionStatus = useTransitionRequisitionStatus();
+
+  const availableStates = ALLOWED_TRANSITIONS[currentStatus] || [];
 
   const handleSelectStatus = (status: string) => {
     setSelectedStatus(status);
@@ -69,22 +85,13 @@ export function RequisitionStatusActions({
     setNotes('');
   };
 
-  if (isLoading) {
-    return (
-      <Badge variant="secondary">
-        <Loader2 className="h-3 w-3 animate-spin mr-1" />
-        Loading...
-      </Badge>
-    );
-  }
-
   const currentMeta = REQUISITION_STATUS_META[currentStatus as keyof typeof REQUISITION_STATUS_META];
   const selectedMeta = selectedStatus
     ? REQUISITION_STATUS_META[selectedStatus as keyof typeof REQUISITION_STATUS_META]
     : null;
 
-  // If no available states, user can't transition (no permissions or terminal state)
-  if (!availableStates || availableStates.length === 0) {
+  // If no available states, user can't transition (terminal state)
+  if (availableStates.length === 0) {
     return (
       <Badge variant="outline" className="font-normal">
         {currentMeta?.label || currentStatus}

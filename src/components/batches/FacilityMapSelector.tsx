@@ -14,6 +14,7 @@ import { useFacilities } from '@/hooks/useFacilities';
 import { MAP_CONFIG, getMapLibreStyle } from '@/lib/mapConfig';
 import type { Facility } from '@/types';
 import type { Warehouse } from '@/types/warehouse';
+import { DEFAULT_MAP_CENTER } from '@/lib/constants';
 
 /**
  * Calculate haversine distance between two coordinates in kilometers
@@ -144,10 +145,10 @@ export function FacilityMapSelector({
     });
 
     if (points.length === 0) {
-      // Default to Kano, Nigeria
+      // Default bounds around Kano, Nigeria
       return {
-        sw: [8.4, 11.9] as [number, number],
-        ne: [8.7, 12.1] as [number, number],
+        sw: [DEFAULT_MAP_CENTER[0] - 0.2, DEFAULT_MAP_CENTER[1] - 0.1] as [number, number],
+        ne: [DEFAULT_MAP_CENTER[0] + 0.2, DEFAULT_MAP_CENTER[1] + 0.1] as [number, number],
       };
     }
 

@@ -128,7 +128,11 @@ export function useGenerateOTP() {
       return result.otp as string;
     },
     onSuccess: () => {
+      // Invalidate admin integration queries
       queryClient.invalidateQueries({ queryKey: ['admin-integration', 'otps'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-integration', 'linked'] });
+      // Invalidate driver profile queries for real-time sync
+      queryClient.invalidateQueries({ queryKey: ['driver-mod4-link'] });
     },
     onError: (error) => {
       console.error('Failed to generate OTP:', error);
@@ -152,6 +156,8 @@ export function useSuspendLink() {
     onSuccess: () => {
       toast.success('Driver link suspended');
       queryClient.invalidateQueries({ queryKey: ['admin-integration'] });
+      // Sync with driver profile view
+      queryClient.invalidateQueries({ queryKey: ['driver-mod4-link'] });
     },
     onError: (error) => {
       console.error('Failed to suspend link:', error);
@@ -175,6 +181,8 @@ export function useRevokeLink() {
     onSuccess: () => {
       toast.success('Driver link revoked');
       queryClient.invalidateQueries({ queryKey: ['admin-integration'] });
+      // Sync with driver profile view
+      queryClient.invalidateQueries({ queryKey: ['driver-mod4-link'] });
     },
     onError: (error) => {
       console.error('Failed to revoke link:', error);

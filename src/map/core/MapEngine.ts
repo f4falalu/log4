@@ -9,6 +9,7 @@ import maplibregl, { Map as MapLibreMap, MapOptions } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { MapStateMachine, MapState, MapStateEvent } from './MapState';
 import { MAPLIBRE_CONFIG } from '@/lib/mapDesignSystem';
+import { DEFAULT_MAP_CENTER } from '@/lib/constants';
 
 /**
  * Map Engine Configuration
@@ -50,7 +51,7 @@ export class MapEngine {
 
     this.config = {
       style: MAPLIBRE_CONFIG.tiles.style,
-      center: [8.5, 12.0], // Nigeria center
+      center: DEFAULT_MAP_CENTER,
       zoom: 6,
       pitch: 0,
       bearing: 0,

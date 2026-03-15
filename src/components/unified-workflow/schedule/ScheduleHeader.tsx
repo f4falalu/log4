@@ -135,7 +135,7 @@ export function ScheduleHeader({
         {/* Planned Date */}
         <div className="md:col-span-1">
           <Label className="text-xs font-medium">Planned Date</Label>
-          <Popover>
+          <Popover modal={false}>
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
@@ -148,7 +148,7 @@ export function ScheduleHeader({
                 {selectedDate ? format(selectedDate, 'PPP') : 'Pick a date'}
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
+            <PopoverContent className="w-auto p-0 z-[10000]" align="start">
               <Calendar
                 mode="single"
                 selected={selectedDate}

@@ -47,11 +47,13 @@ export function usePreBatches(options: UsePreBatchesOptions = {}) {
   return useQuery({
     queryKey: preBatchKeys.list(filters),
     queryFn: async () => {
+      // Note: start_location_id has no FK to warehouses (polymorphic column),
+      // so we cannot use PostgREST embedded selects for it.
+      // suggested_vehicle_id and converted_batch_id have proper FKs.
       let query = supabase
         .from('scheduler_pre_batches')
         .select(`
           *,
-          start_location:warehouses!start_location_id(id, name, address, lat, lng),
           suggested_vehicle:vehicles!suggested_vehicle_id(id, model, plate_number, capacity, max_weight),
           converted_batch:delivery_batches!converted_batch_id(id, name, status)
         `)
@@ -114,7 +116,6 @@ export function usePreBatch(id: string | null, options: UsePreBatchOptions = {})
         .from('scheduler_pre_batches')
         .select(`
           *,
-          start_location:warehouses!start_location_id(id, name, address, lat, lng),
           suggested_vehicle:vehicles!suggested_vehicle_id(id, model, plate_number, capacity, max_weight),
           converted_batch:delivery_batches!converted_batch_id(id, name, status)
         `)
@@ -406,11 +407,55 @@ export function useConvertPreBatchToBatch() {
 
       if (updateError) throw updateError;
 
+      // 4. Update requisition statuses from 'ready_for_dispatch' to 'assigned_to_batch'
+      // so they no longer appear in "Available Facility Orders"
+      const facilityIds = preBatch.facility_order as string[] | null;
+      const requisitionMap = preBatch.facility_requisition_map as Record<string, string[]> | null;
+
+      if (requisitionMap) {
+        // Collect all requisition IDs from the facility-requisition map
+        const allRequisitionIds = Object.values(requisitionMap).flat();
+        if (allRequisitionIds.length > 0) {
+          const { error: reqError } = await supabase
+            .from('requisitions')
+            .update({
+              status: 'assigned_to_batch',
+              batch_id: batch.id,
+              assigned_to_batch_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            })
+            .in('id', allRequisitionIds);
+
+          if (reqError) {
+            console.error('Failed to update requisition statuses:', reqError);
+            // Non-blocking: batch was created successfully, log but don't throw
+          }
+        }
+      } else if (facilityIds && facilityIds.length > 0) {
+        // Fallback: update all ready_for_dispatch requisitions for these facilities
+        const { error: reqError } = await supabase
+          .from('requisitions')
+          .update({
+            status: 'assigned_to_batch',
+            batch_id: batch.id,
+            assigned_to_batch_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .in('facility_id', facilityIds)
+          .eq('status', 'ready_for_dispatch');
+
+        if (reqError) {
+          console.error('Failed to update requisition statuses:', reqError);
+        }
+      }
+
       return batch;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: preBatchKeys.lists() });
       queryClient.invalidateQueries({ queryKey: ['delivery-batches'] });
+      queryClient.invalidateQueries({ queryKey: ['ready-consignments'] });
+      queryClient.invalidateQueries({ queryKey: ['requisitions'] });
       toast.success('Batch created successfully');
       return data;
     },

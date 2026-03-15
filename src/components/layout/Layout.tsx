@@ -6,7 +6,7 @@ import {
   Building, 
   BarChart3,
   Truck,
-  Route,
+
   Package,
   User,
   FileText,
@@ -50,12 +50,6 @@ const Layout = ({ children }: LayoutProps) => {
       label: 'Facilities', 
       icon: Building,
       permission: 'manage_facilities' as Permission
-    },
-    { 
-      path: '/dispatch', 
-      label: 'Dispatch', 
-      icon: Route,
-      permission: 'assign_drivers' as Permission
     },
     { 
       path: '/drivers', 

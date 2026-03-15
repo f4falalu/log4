@@ -31,6 +31,7 @@ import { MapUtils } from '@/lib/mapUtils';
 import L from 'leaflet';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { DEFAULT_WORKSPACE_ID } from '@/lib/constants';
 import { useFacilities } from '@/hooks/useFacilities';
 
 interface RouteSketchToolProps {
@@ -235,8 +236,14 @@ export function RouteSketchTool({ map, active, onClose }: RouteSketchToolProps) 
         coordinates,
       };
 
-      // TODO: Get actual workspace_id from context when workspace system is implemented
-      const workspaceId = '00000000-0000-0000-0000-000000000000'; // Mock workspace ID
+      // Get workspace_id from user's membership
+      const { data: membership } = await supabase
+        .from('workspace_members')
+        .select('workspace_id')
+        .eq('user_id', user.id)
+        .limit(1)
+        .maybeSingle();
+      const workspaceId = membership?.workspace_id || DEFAULT_WORKSPACE_ID;
 
       // Prepare waypoints data
       const waypointsData = waypoints.map((wp, index) => ({

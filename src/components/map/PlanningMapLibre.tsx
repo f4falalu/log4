@@ -25,6 +25,7 @@ import { useTheme } from 'next-themes';
 import type { Facility, Warehouse } from '@/types';
 import type { Feature, Polygon } from 'geojson';
 import type { PlanningMetric } from '@/components/map/ui/MetricsTogglePanel';
+import { DEFAULT_MAP_CENTER } from '@/lib/constants';
 
 // ============================================================================
 // TYPES
@@ -71,7 +72,7 @@ export interface PlanningMapLibreProps {
 export function PlanningMapLibre({
   facilities = [],
   warehouses = [],
-  center = [8.6753, 9.082], // Nigeria center [lng, lat]
+  center = DEFAULT_MAP_CENTER,
   zoom = 6,
   enableZoneDrawing = false,
   zones = [],

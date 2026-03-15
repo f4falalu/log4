@@ -17,3 +17,8 @@ export const DEFAULT_ADMIN_UNIT_KANO_STATE_ID = '00000000-0000-0000-0000-0000000
 // Default values for queries
 export const DEFAULT_COUNTRY_ID = DEFAULT_COUNTRY_NIGERIA_ID;
 export const DEFAULT_WORKSPACE_ID = DEFAULT_WORKSPACE_KANO_PHARMA_ID;
+
+// Default map center [longitude, latitude] — MapLibre format
+// Used as fallback when workspace_settings.map_center is not available
+export const DEFAULT_MAP_CENTER: [number, number] = [8.5167, 12.0]; // Kano, Nigeria
+export const DEFAULT_MAP_ZOOM = 11;

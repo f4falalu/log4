@@ -1,30 +1,43 @@
 import { Driver } from '@/types';
 import { useDriverVehicles } from '@/hooks/useDriverVehicles';
+import { useDriverBatches } from '@/hooks/useDriverBatches';
+import { useSingleDriverGPS } from '@/hooks/useDriverGPS';
+import { generateMockStatistics } from '@/lib/mockStatisticsData';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Phone, MessageSquare, MoreVertical, FileText, CheckCircle2, XCircle } from 'lucide-react';
+import { Phone, MessageSquare, MoreVertical, FileText, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import { VehicleIllustration } from '@/components/vehicle/VehicleIllustration';
-import { RouteCard } from '@/components/dispatch/RouteCard';
+import { BatchCard } from '@/components/driver/BatchCard';
 import { DriverStatisticsCharts } from '@/components/driver/DriverStatisticsCharts';
-import { generateMockRoutes } from '@/lib/mockRouteData';
-import { generateMockStatistics } from '@/lib/mockStatisticsData';
+import { DriverLocationMap } from '@/components/driver/DriverLocationMap';
+import { DriverMobileIntegration } from '@/components/driver/DriverMobileIntegration';
 
 interface DriverDetailViewProps {
   driver: Driver;
 }
 
 export function DriverDetailView({ driver }: DriverDetailViewProps) {
-  const { data: vehicles, isLoading: vehiclesLoading } = useDriverVehicles(driver.id);
+  const { data: vehicles } = useDriverVehicles(driver.id);
   const currentVehicle = vehicles?.find(v => v.isCurrent);
-  
-  const routes = generateMockRoutes(driver.id);
+
+  const { data: batches, isLoading: batchesLoading } = useDriverBatches(driver.id);
+  const activeBatches = batches?.filter(b => b.status === 'assigned' || b.status === 'in-progress') || [];
+  const completedBatches = batches?.filter(b => b.status === 'completed' || b.status === 'cancelled') || [];
+
   const statistics = generateMockStatistics(driver.id);
-  const activeRoutes = routes.filter(r => r.status !== 'completed');
+
+  // Real-time GPS position
+  const gpsData = useSingleDriverGPS(driver.id);
+  const gpsPosition = gpsData.getDriverPosition(driver.id);
+  const gpsLat = gpsPosition?.lat ?? driver.currentLocation?.lat;
+  const gpsLng = gpsPosition?.lng ?? driver.currentLocation?.lng;
+  const isOnline = gpsPosition
+    ? Date.now() - gpsPosition.capturedAt.getTime() < 5 * 60 * 1000
+    : false;
 
   const initials = driver.name
     .split(' ')
@@ -78,12 +91,26 @@ export function DriverDetailView({ driver }: DriverDetailViewProps) {
           </div>
         </div>
 
+        {/* Driver Location Map */}
+        <Card className="mb-6">
+          <CardContent className="p-0 h-[200px]">
+            <DriverLocationMap
+              lat={gpsLat}
+              lng={gpsLng}
+              driverName={driver.name}
+              heading={gpsPosition?.heading ?? undefined}
+              lastUpdate={gpsPosition?.capturedAt}
+              isOnline={isOnline}
+            />
+          </CardContent>
+        </Card>
+
         {/* Vehicle Display */}
         {currentVehicle && (
           <Card className="mb-6">
             <CardContent className="p-6">
               <h2 className="text-lg font-semibold mb-4">{currentVehicle.model}</h2>
-              
+
               {/* Vehicle Image */}
               <div className="relative aspect-video mb-4 rounded-lg overflow-hidden bg-muted">
                 {currentVehicle.photoUrl ? (
@@ -135,23 +162,28 @@ export function DriverDetailView({ driver }: DriverDetailViewProps) {
 
         {/* Tabs */}
         <Tabs defaultValue="routes" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="routes">Routes</TabsTrigger>
             <TabsTrigger value="history">History</TabsTrigger>
-            <TabsTrigger value="statistics">Driver Statistics</TabsTrigger>
+            <TabsTrigger value="statistics">Statistics</TabsTrigger>
+            <TabsTrigger value="mobile">Mobile</TabsTrigger>
           </TabsList>
 
           <TabsContent value="routes" className="space-y-4 mt-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold uppercase text-muted-foreground">
-                Now on the way
+                Active Routes
               </h3>
-              <Badge variant="secondary">{activeRoutes.length} active</Badge>
+              <Badge variant="secondary">{activeBatches.length} active</Badge>
             </div>
-            {activeRoutes.length > 0 ? (
+            {batchesLoading ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : activeBatches.length > 0 ? (
               <div className="space-y-4">
-                {activeRoutes.map(route => (
-                  <RouteCard key={route.id} route={route} />
+                {activeBatches.map(batch => (
+                  <BatchCard key={batch.id} batch={batch} />
                 ))}
               </div>
             ) : (
@@ -167,14 +199,17 @@ export function DriverDetailView({ driver }: DriverDetailViewProps) {
             <h3 className="text-sm font-semibold uppercase text-muted-foreground mb-4">
               Delivery History
             </h3>
-            <div className="space-y-4">
-              {routes
-                .filter(r => r.status === 'completed')
-                .map(route => (
-                  <RouteCard key={route.id} route={route} />
+            {batchesLoading ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : completedBatches.length > 0 ? (
+              <div className="space-y-4">
+                {completedBatches.map(batch => (
+                  <BatchCard key={batch.id} batch={batch} />
                 ))}
-            </div>
-            {routes.filter(r => r.status === 'completed').length === 0 && (
+              </div>
+            ) : (
               <Card>
                 <CardContent className="p-12 text-center text-muted-foreground">
                   No completed deliveries yet
@@ -185,6 +220,10 @@ export function DriverDetailView({ driver }: DriverDetailViewProps) {
 
           <TabsContent value="statistics" className="mt-6">
             <DriverStatisticsCharts statistics={statistics} />
+          </TabsContent>
+
+          <TabsContent value="mobile" className="mt-6">
+            <DriverMobileIntegration driverId={driver.id} driverEmail={driver.email} />
           </TabsContent>
         </Tabs>
       </div>

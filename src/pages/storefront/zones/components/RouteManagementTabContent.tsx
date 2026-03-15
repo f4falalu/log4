@@ -8,6 +8,7 @@ import { RouteTable } from './routes/RouteTable';
 import { RouteMapView } from './routes/RouteMapView';
 import { CreateRouteWizard } from './routes/CreateRouteWizard';
 import { RouteDetailDialog } from './routes/RouteDetailDialog';
+import { EditRouteDialog } from './routes/EditRouteDialog';
 import { SandboxRouteBuilder } from './routes/SandboxRouteBuilder';
 
 type ViewMode = 'table' | 'map';
@@ -15,6 +16,7 @@ type ViewMode = 'table' | 'map';
 export function RouteManagementTabContent() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [detailRoute, setDetailRoute] = useState<Route | null>(null);
+  const [editRoute, setEditRoute] = useState<Route | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [sandboxMode, setSandboxMode] = useState(false);
 
@@ -53,7 +55,7 @@ export function RouteManagementTabContent() {
 
       {/* Content */}
       {viewMode === 'table' ? (
-        <RouteTable onViewDetail={setDetailRoute} />
+        <RouteTable onViewDetail={setDetailRoute} onEdit={setEditRoute} />
       ) : (
         <RouteMapView onRouteClick={setDetailRoute} />
       )}
@@ -70,6 +72,14 @@ export function RouteManagementTabContent() {
           route={detailRoute}
           open={!!detailRoute}
           onOpenChange={(open) => !open && setDetailRoute(null)}
+        />
+      )}
+
+      {editRoute && (
+        <EditRouteDialog
+          route={editRoute}
+          open={!!editRoute}
+          onOpenChange={(open) => !open && setEditRoute(null)}
         />
       )}
     </div>

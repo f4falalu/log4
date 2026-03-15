@@ -14,6 +14,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import type { BaseLayer } from '../layers/BaseLayer';
 import { getBasemapStyle } from '../styles/basemap';
 import type { MapKernelEvents, MapOptions } from './types';
+import { DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM } from '@/lib/constants';
 
 export class LiveMapKernel {
   private map: maplibregl.Map | null = null;
@@ -42,8 +43,8 @@ export class LiveMapKernel {
 
     const {
       container,
-      center = [8.5167, 12.0], // Kano, Nigeria
-      zoom = 11,
+      center = DEFAULT_MAP_CENTER,
+      zoom = DEFAULT_MAP_ZOOM,
       minZoom = 3,
       maxZoom = 18,
     } = options;

@@ -1,27 +1,20 @@
 import { z } from 'zod';
 
 // =====================================================
-// Enum Schemas
+// Enum Schemas — DB-driven
 // =====================================================
+// These fields are now populated from lookup tables
+// (facility_types, implementing_partners, funding_sources,
+// programme_categories, levels_of_care, zones).
+// Validation accepts any string; actual values are
+// constrained by the dropdown options fetched from the DB.
 
-export const facilityTypeSchema = z.enum([
-  'hospital',
-  'clinic',
-  'health_center',
-  'pharmacy',
-  'lab',
-  'other',
-]);
-
-export const ipNameSchema = z.enum(['smoh', 'ace-2', 'crs']);
-
-export const fundingSourceSchema = z.enum(['unfpa', 'pepfar--usaid', 'global-fund']);
-
-export const programmeSchema = z.enum(['Family Planning', 'DRF', 'HIV/AIDS', 'Malaria']);
-
-export const levelOfCareSchema = z.enum(['Tertiary', 'Secondary', 'Primary']);
-
-export const serviceZoneSchema = z.enum(['Central', 'Gaya', 'Danbatta', 'Gwarzo', 'Rano']);
+export const facilityTypeSchema = z.string();
+export const ipNameSchema = z.string();
+export const fundingSourceSchema = z.string();
+export const programmeSchema = z.string();
+export const levelOfCareSchema = z.string();
+export const serviceZoneSchema = z.string();
 
 // =====================================================
 // Warehouse Code Validation
@@ -162,12 +155,12 @@ export type CSVFacilityData = z.infer<typeof csvFacilitySchema>;
 export const facilityFilterSchema = z.object({
   search: z.string().optional(),
   state: z.string().optional(),
-  ip_name: ipNameSchema.optional(),
-  funding_source: fundingSourceSchema.optional(),
-  programme: programmeSchema.optional(),
+  ip_name: z.string().optional(),
+  funding_source: z.string().optional(),
+  programme: z.string().optional(),
   zone_id: z.string().optional(),
-  service_zone: serviceZoneSchema.optional(),
-  level_of_care: levelOfCareSchema.optional(),
+  service_zone: z.string().optional(),
+  level_of_care: z.string().optional(),
   lga: z.string().optional(),
   type: facilityTypeSchema.optional(),
   pcr_service: z.boolean().optional(),
@@ -221,21 +214,21 @@ export function transformCsvToFacility(csv: CSVFacilityData): Partial<FacilityFo
     address: csv.address,
     lat: parseFloat(csv.latitude),
     lng: parseFloat(csv.longitude),
-    type: csv.type as any,
+    type: csv.type,
     phone: csv.phone,
     contactPerson: csv.contactPerson,
     capacity: parseCsvNumber(csv.capacity),
     operatingHours: csv.operatingHours,
     warehouse_code: csv.warehouse_code,
     state: csv.state || 'kano',
-    ip_name: csv.ip_name as any,
-    funding_source: csv.funding_source as any,
-    programme: csv.programme as any,
+    ip_name: csv.ip_name,
+    funding_source: csv.funding_source,
+    programme: csv.programme,
     pcr_service: parseCsvBoolean(csv.pcr_service),
     cd4_service: parseCsvBoolean(csv.cd4_service),
     type_of_service: csv.type_of_service,
-    service_zone: csv.service_zone as any,
-    level_of_care: csv.level_of_care as any,
+    service_zone: csv.service_zone,
+    level_of_care: csv.level_of_care,
     lga: csv.lga,
     ward: csv.ward,
     contact_name_pharmacy: csv.contact_name_pharmacy,

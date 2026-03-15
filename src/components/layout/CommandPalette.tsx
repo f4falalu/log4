@@ -13,7 +13,7 @@ import {
   Package,
   LayoutDashboard,
   Users,
-  Truck,
+
   MapPin,
   Car,
   GitBranch,
@@ -66,15 +66,6 @@ const commands: CommandItem[] = [
     href: '/fleetops/drivers',
     workspace: 'fleetops',
     keywords: ['personnel', 'staff', 'team'],
-  },
-  {
-    id: 'fleetops-dispatch',
-    label: 'Dispatch',
-    description: 'Coordinate deliveries and routes',
-    icon: Truck,
-    href: '/fleetops/dispatch',
-    workspace: 'fleetops',
-    keywords: ['routing', 'coordination', 'assignment'],
   },
   {
     id: 'fleetops-tactical',

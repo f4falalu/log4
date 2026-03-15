@@ -36,22 +36,13 @@ export const ITEM_CATEGORIES: ItemCategory[] = [
   'Device',
 ];
 
-// Common programs for pharmaceutical items
-export const ITEM_PROGRAMS = [
-  'Essential Medicines',
-  'Reproductive Health',
-  'Malaria Control',
-  'HIV/AIDS',
-  'Tuberculosis',
-  'Immunization',
-  'Family Planning',
-  'Maternal Health',
-  'Child Health',
-  'Nutrition',
-  'Other',
-] as const;
+// Item programs — now DB-driven via programme_categories table.
+// Use useProgrammeCategories() hook to fetch values.
+// Kept as type alias for backward compatibility.
+export type ItemProgram = string;
 
-export type ItemProgram = (typeof ITEM_PROGRAMS)[number];
+// @deprecated Use useProgrammeCategories() hook instead
+export const ITEM_PROGRAMS: readonly string[] = [] as const;
 
 export interface Item {
   id: string;

@@ -47,6 +47,7 @@ import { useWarehouses } from '@/hooks/useWarehouses';
 import { useVehicles } from '@/hooks/useVehicles';
 import { useDrivers } from '@/hooks/useDrivers';
 import { useCreatePreBatch, useConvertPreBatchToBatch } from '@/hooks/usePreBatch';
+import { useReadyConsignments } from '@/hooks/useReadyConsignments';
 
 import type { FacilityCandidate } from './schedule/SourceOfTruthColumn';
 
@@ -102,31 +103,17 @@ export function UnifiedWorkflowDialog({
   const actions = useWorkflowActions();
 
   // Data hooks
-  const { data: facilitiesData, isLoading: facilitiesLoading } = useFacilities();
+  const { data: facilitiesData } = useFacilities();
   const { data: warehousesData } = useWarehouses();
   const { data: vehiclesData } = useVehicles();
   const { data: driversData } = useDrivers();
 
+  // Fetch ready consignments (facilities with requisitions ready for dispatch)
+  const { data: facilityCandidates = [], isLoading: facilitiesLoading } = useReadyConsignments();
+
   // Mutations
   const createPreBatch = useCreatePreBatch();
   const convertToBatch = useConvertPreBatchToBatch();
-
-  // Transform facilities to candidates for left column
-  const facilityCandidates: FacilityCandidate[] = React.useMemo(() => {
-    if (!facilitiesData?.facilities) return [];
-    return facilitiesData.facilities.map((f: any) => ({
-      id: f.id,
-      name: f.name,
-      code: f.warehouse_code,
-      lga: f.lga,
-      zone: f.service_zone,
-      lat: f.lat,
-      lng: f.lng,
-      requisition_ids: [],
-      slot_demand: 1,
-      weight_kg: 0,
-    }));
-  }, [facilitiesData]);
 
   // Transform warehouses
   const warehouses = React.useMemo(() => {
@@ -164,6 +151,41 @@ export function UnifiedWorkflowDialog({
       licenseType: d.licenseType || d.license_type,
     }));
   }, [driversData]);
+
+  // Calculate vehicle suggestions based on working set demand
+  const vehicleSuggestions = React.useMemo(() => {
+    if (workingSet.length === 0 || vehicles.length === 0) return [];
+
+    const totalSlots = workingSet.reduce((sum, item) => sum + (item.slot_demand || 1), 0);
+
+    const available = vehicles.filter(v => v.status === 'available' || v.status === 'active');
+    if (available.length === 0) return [];
+
+    return available
+      .map(v => {
+        const capacitySlots = v.capacity > 0 ? Math.floor(v.capacity) : 10;
+        const utilization = Math.min(Math.round((totalSlots / capacitySlots) * 100), 100);
+        const fitScore = Math.max(0, 100 - Math.abs(utilization - 80) * 2);
+
+        return {
+          vehicle_id: v.id,
+          vehicle_model: v.model,
+          vehicle_plate: v.plateNumber || '',
+          total_slots: capacitySlots,
+          available_slots: Math.max(0, capacitySlots - totalSlots),
+          capacity_kg: v.maxWeight || 0,
+          capacity_m3: 0,
+          utilization_pct: utilization,
+          fit_score: fitScore,
+          reason: utilization <= 100
+            ? `${utilization}% capacity utilization`
+            : 'Over capacity',
+        };
+      })
+      .filter(s => s.utilization_pct <= 100)
+      .sort((a, b) => b.fit_score - a.fit_score)
+      .slice(0, 3);
+  }, [vehicles, workingSet]);
 
   // Get selected vehicle/driver names for review (memoized to prevent infinite loops)
   const selectedVehicle = React.useMemo(
@@ -355,6 +377,7 @@ export function UnifiedWorkflowDialog({
             onAiOptionsChange={actions.setAiOptimizationOptions}
             suggestedVehicleId={suggestedVehicleId}
             onSuggestedVehicleChange={actions.setSuggestedVehicle}
+            vehicleSuggestions={vehicleSuggestions}
           />
         );
 

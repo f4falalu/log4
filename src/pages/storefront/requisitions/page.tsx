@@ -17,7 +17,7 @@ export default function RequisitionsPage() {
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
   // Selection state
-  const [selectedRequisition, setSelectedRequisition] = useState<Requisition | null>(null);
+  const [selectedRequisitionId, setSelectedRequisitionId] = useState<string | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
 
   // Accordion state
@@ -73,13 +73,13 @@ export default function RequisitionsPage() {
 
   // Handlers
   const handleRequisitionClick = (requisition: Requisition) => {
-    setSelectedRequisition(requisition);
+    setSelectedRequisitionId(requisition.id);
     setIsDetailOpen(true);
   };
 
   const handleCloseDetail = () => {
     setIsDetailOpen(false);
-    setSelectedRequisition(null);
+    setSelectedRequisitionId(null);
   };
 
   const handleClearFilters = () => {
@@ -110,7 +110,7 @@ export default function RequisitionsPage() {
             requisitions={filteredRequisitions}
             isLoading={isLoading}
             onRequisitionClick={handleRequisitionClick}
-            selectedRequisitionId={selectedRequisition?.id}
+            selectedRequisitionId={selectedRequisitionId}
             openAccordions={openAccordions}
             onAccordionsChange={setOpenAccordions}
           />
@@ -120,9 +120,9 @@ export default function RequisitionsPage() {
         }
       >
         {/* Detail Panel */}
-        {isDetailOpen && selectedRequisition && (
+        {isDetailOpen && selectedRequisitionId && (
           <RequisitionDetailPanel
-            requisition={selectedRequisition}
+            requisitionId={selectedRequisitionId}
             onClose={handleCloseDetail}
           />
         )}

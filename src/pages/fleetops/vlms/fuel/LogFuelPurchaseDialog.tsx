@@ -180,7 +180,7 @@ export function LogFuelPurchaseDialog({ open, onOpenChange }: LogFuelPurchaseDia
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="unit-price">Unit Price (₦/L) *</Label>
+              <Label htmlFor="unit-price">Unit Price (per litre) *</Label>
               <Input
                 id="unit-price"
                 type="number"
@@ -193,7 +193,7 @@ export function LogFuelPurchaseDialog({ open, onOpenChange }: LogFuelPurchaseDia
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="total-cost">Total Cost (₦)</Label>
+              <Label htmlFor="total-cost">Total Cost</Label>
               <Input
                 id="total-cost"
                 type="text"

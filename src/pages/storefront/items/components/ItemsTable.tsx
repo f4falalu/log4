@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
+import { formatCurrency } from '@/lib/formatCurrency';
 import type { Item } from '@/types/items';
 import { useDeleteItem } from '@/hooks/useItems';
 import { ItemCategoryBadge } from './ItemCategoryBadge';
@@ -47,14 +48,6 @@ export function ItemsTable({
   onPageChange,
 }: ItemsTableProps) {
   const deleteItem = useDeleteItem();
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-NG', {
-      style: 'currency',
-      currency: 'NGN',
-      minimumFractionDigits: 0,
-    }).format(value);
-  };
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return '-';

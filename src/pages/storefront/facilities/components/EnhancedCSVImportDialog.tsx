@@ -50,7 +50,7 @@ import type { MultiSourceResult, MergeResult } from '@/lib/multi-source-parser';
 import { useFacilityTypes } from '@/hooks/useFacilityTypes';
 import { useLevelsOfCare } from '@/hooks/useLevelsOfCare';
 import { useOperationalZones } from '@/hooks/useOperationalZones';
-import { useLGAs } from '@/hooks/useLGAs';
+import { useAllLGAsWithZones } from '@/hooks/useAdminUnits';
 import { batchGenerateWarehouseCodes } from '@/lib/warehouse-code-generator';
 import { chunk } from '@/lib/utils';
 
@@ -90,7 +90,7 @@ export function EnhancedCSVImportDialog({ open, onOpenChange }: EnhancedCSVImpor
   const { data: facilityTypes = [] } = useFacilityTypes();
   const { data: levelsOfCare = [] } = useLevelsOfCare();
   const { data: zones = [] } = useOperationalZones();
-  const { data: lgas = [] } = useLGAs();
+  const { data: lgas = [] } = useAllLGAsWithZones();
 
   const proceedToMapping = useCallback((data: ParsedFile) => {
     // Auto-detect mappings from headers

@@ -108,9 +108,36 @@ export function useAdminUnitsByLevel(
 
 /**
  * Fetch States (admin_level = 4) for Nigeria
+ * Deduplicates by name since seed migrations may have created duplicate entries
  */
 export function useStates(countryId: string = DEFAULT_COUNTRY_ID) {
-  return useAdminUnitsByLevel(4, countryId);
+  return useQuery({
+    queryKey: ['states', countryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('admin_units')
+        .select('*')
+        .eq('country_id', countryId)
+        .eq('admin_level', 4)
+        .eq('is_active', true)
+        .order('name', { ascending: true });
+
+      if (error) {
+        throw new Error(`Failed to fetch states: ${error.message}`);
+      }
+
+      // Deduplicate by name (keep first occurrence)
+      const seen = new Set<string>();
+      const unique = (data as AdminUnit[]).filter((s) => {
+        if (seen.has(s.name)) return false;
+        seen.add(s.name);
+        return true;
+      });
+
+      return unique;
+    },
+    staleTime: 1000 * 60 * 5,
+  });
 }
 
 /**
@@ -142,6 +169,69 @@ export function useLGAsByState(
       }
 
       return data as AdminUnit[];
+    },
+    enabled: !!countryId,
+    staleTime: 1000 * 60 * 5,
+  });
+}
+
+/**
+ * Fetch all LGAs (admin_level = 6) with zone assignment support
+ * Used for zone management - shows all LGAs with their zone assignments
+ */
+export function useAllLGAsWithZones(
+  filters?: {
+    zone_id?: string;
+    stateId?: string;
+    search?: string;
+  },
+  countryId: string = DEFAULT_COUNTRY_ID
+) {
+  return useQuery({
+    queryKey: ['all-lgas-with-zones', filters, countryId],
+    queryFn: async () => {
+      let query = supabase
+        .from('admin_units')
+        .select(`
+          *,
+          zones:zone_id (
+            id,
+            name,
+            code
+          ),
+          parent:parent_id (
+            id,
+            name,
+            admin_level
+          )
+        `)
+        .eq('country_id', countryId)
+        .eq('admin_level', 6) // LGA level
+        .eq('is_active', true)
+        .order('name', { ascending: true });
+
+      if (filters?.zone_id) {
+        query = query.eq('zone_id', filters.zone_id);
+      }
+
+      if (filters?.stateId) {
+        query = query.eq('parent_id', filters.stateId);
+      }
+
+      if (filters?.search) {
+        query = query.ilike('name', `%${filters.search}%`);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        throw new Error(`Failed to fetch LGAs: ${error.message}`);
+      }
+
+      return data as (AdminUnit & {
+        zones?: { id: string; name: string; code: string } | null;
+        parent?: { id: string; name: string; admin_level: number } | null;
+      })[];
     },
     enabled: !!countryId,
     staleTime: 1000 * 60 * 5,

@@ -26,14 +26,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useInviteUser } from '@/hooks/useInvitations';
+import { useInviteUser, buildInvitationUrl } from '@/hooks/useInvitations';
+import { supabase } from '@/integrations/supabase/client';
 import { UserPlus, Mail, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import type { WorkspaceRole } from '@/types/onboarding';
 import { WORKSPACE_ROLES } from '@/types/onboarding';
 import type { AppRole } from '@/types';
 
 interface InviteUserDialogProps {
   workspaceId: string;
+  workspaceName?: string;
   trigger?: React.ReactNode;
   onSuccess?: () => void;
 }
@@ -46,7 +49,7 @@ const APP_ROLES: { value: AppRole; label: string; description: string }[] = [
   { value: 'viewer', label: 'Viewer', description: 'Read-only access' },
 ];
 
-export function InviteUserDialog({ workspaceId, trigger, onSuccess }: InviteUserDialogProps) {
+export function InviteUserDialog({ workspaceId, workspaceName, trigger, onSuccess }: InviteUserDialogProps) {
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState('');
   const [appRole, setAppRole] = useState<AppRole | ''>('');
@@ -61,13 +64,51 @@ export function InviteUserDialog({ workspaceId, trigger, onSuccess }: InviteUser
     if (!email || !appRole) return;
 
     try {
-      await inviteUser.mutateAsync({
+      // 1. Create invitation record in DB
+      const invitationId = await inviteUser.mutateAsync({
         email,
         workspace_id: workspaceId,
         app_role: appRole,
         workspace_role: workspaceRole,
         personal_message: personalMessage || undefined,
       });
+
+      // 2. Fetch the invitation token via pending_invitations_view (bypasses RLS)
+      const { data: invitation } = await supabase
+        .from('pending_invitations_view')
+        .select('invitation_token')
+        .eq('workspace_id', workspaceId)
+        .eq('email', email)
+        .order('invited_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (invitation?.invitation_token) {
+        // 3. Send invitation email via Edge Function
+        const { error: emailError } = await supabase.functions.invoke('invite-user', {
+          body: {
+            email,
+            invitation_token: invitation.invitation_token,
+            workspace_name: workspaceName,
+          },
+        });
+
+        if (emailError) {
+          // Email failed but invitation was created - show link for manual sharing
+          const inviteUrl = buildInvitationUrl(invitation.invitation_token);
+          toast.warning('Invitation created but email could not be sent', {
+            description: 'Copy the invitation link to share manually.',
+            action: {
+              label: 'Copy Link',
+              onClick: () => {
+                navigator.clipboard.writeText(inviteUrl);
+                toast.success('Link copied to clipboard');
+              },
+            },
+            duration: 10000,
+          });
+        }
+      }
 
       // Reset form and close dialog
       setEmail('');

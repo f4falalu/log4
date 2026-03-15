@@ -18,6 +18,7 @@ import type {
   WorkingSetItem,
   AiOptimizationOptions,
   SourceSubOption,
+  VehicleSuggestion,
 } from '@/types/unified-workflow';
 import type { TimeWindow } from '@/types/scheduler';
 
@@ -54,6 +55,7 @@ interface Step2ScheduleProps {
   // Vehicle suggestion
   suggestedVehicleId: string | null;
   onSuggestedVehicleChange: (vehicleId: string | null) => void;
+  vehicleSuggestions?: VehicleSuggestion[];
 }
 
 export function Step2Schedule({
@@ -80,6 +82,7 @@ export function Step2Schedule({
   onAiOptionsChange,
   suggestedVehicleId,
   onSuggestedVehicleChange,
+  vehicleSuggestions = [],
 }: Step2ScheduleProps) {
   // Get selected facility IDs for the left column
   const selectedFacilityIds = React.useMemo(
@@ -158,6 +161,7 @@ export function Step2Schedule({
               onAiOptionsChange={onAiOptionsChange}
               suggestedVehicleId={suggestedVehicleId}
               onSuggestedVehicleChange={onSuggestedVehicleChange}
+              vehicleSuggestions={vehicleSuggestions}
             />
           </RightColumn>
         </ThreeColumnLayout>

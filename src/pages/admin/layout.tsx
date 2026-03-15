@@ -11,6 +11,7 @@ import {
   BarChart3,
   KeyRound,
   Link2,
+  Mail,
 } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { SecondarySidebar, NavigationGroup } from '@/components/layout/SecondarySidebar';
@@ -44,7 +45,7 @@ const sidebarByTab: Record<string, NavigationGroup[]> = {
       label: 'USERS',
       items: [
         { label: 'All Members', href: '/admin/members', icon: Users, end: true },
-        { label: 'Create User', href: '/admin/members/create', icon: Users },
+        { label: 'Invitations', href: '/admin/invitations', icon: Mail },
         { label: 'Groups', href: '/admin/groups', icon: Shield },
       ],
     },
@@ -131,7 +132,7 @@ export function AdminLayout() {
   // Determine active tab based on path
   const activeTab = useMemo(() => {
     const path = location.pathname;
-    if (path.startsWith('/admin/members') || path.startsWith('/admin/users') || path.startsWith('/admin/groups')) return 'members';
+    if (path.startsWith('/admin/members') || path.startsWith('/admin/users') || path.startsWith('/admin/groups') || path.startsWith('/admin/invitations')) return 'members';
     if (path.startsWith('/admin/permissions') || path.startsWith('/admin/workspaces')) return 'permissions';
     if (path.startsWith('/admin/sessions') || path.startsWith('/admin/audit')) return 'sessions';
     if (path.startsWith('/admin/analytics')) return 'analytics';

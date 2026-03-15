@@ -17,7 +17,8 @@ export interface ServiceAreaFilters {
 }
 
 /**
- * Fetch all service areas with optional filters and joins
+ * Fetch all service areas with optional filters, resolving related names separately
+ * to avoid PostgREST schema cache issues with embedded selects.
  */
 export function useServiceAreas(filters?: ServiceAreaFilters) {
   return useQuery({
@@ -25,11 +26,7 @@ export function useServiceAreas(filters?: ServiceAreaFilters) {
     queryFn: async () => {
       let query = supabase
         .from('service_areas')
-        .select(`
-          *,
-          zones:zone_id (id, name, code),
-          warehouses:warehouse_id (id, name, lat, lng)
-        `)
+        .select('*')
         .order('name', { ascending: true });
 
       if (filters?.zone_id) {
@@ -51,23 +48,38 @@ export function useServiceAreas(filters?: ServiceAreaFilters) {
       const { data, error } = await query;
       if (error) throw new Error(`Failed to fetch service areas: ${error.message}`);
 
-      // Enrich with facility counts
       const serviceAreas = (data || []) as unknown as ServiceArea[];
-      if (serviceAreas.length > 0) {
-        const ids = serviceAreas.map(sa => sa.id);
-        const { data: facCounts } = await supabase
-          .from('service_area_facilities')
-          .select('service_area_id')
-          .in('service_area_id', ids);
+      if (serviceAreas.length === 0) return serviceAreas;
 
-        const countMap: Record<string, number> = {};
-        facCounts?.forEach(f => {
-          countMap[f.service_area_id] = (countMap[f.service_area_id] || 0) + 1;
-        });
-        serviceAreas.forEach(sa => {
-          sa.facility_count = countMap[sa.id] || 0;
-        });
-      }
+      // Collect unique FK IDs
+      const zoneIds = [...new Set(serviceAreas.map(sa => sa.zone_id).filter(Boolean))];
+      const whIds = [...new Set(serviceAreas.map(sa => sa.warehouse_id).filter(Boolean))];
+      const saIds = serviceAreas.map(sa => sa.id);
+
+      // Batch-fetch related data in parallel
+      const [zonesRes, whRes, facRes] = await Promise.all([
+        zoneIds.length > 0
+          ? supabase.from('zones').select('id, name, code').in('id', zoneIds)
+          : { data: [] },
+        whIds.length > 0
+          ? supabase.from('warehouses').select('id, name, lat, lng').in('id', whIds)
+          : { data: [] },
+        supabase.from('service_area_facilities').select('service_area_id').in('service_area_id', saIds),
+      ]);
+
+      const zoneMap = new Map((zonesRes.data || []).map(z => [z.id, z]));
+      const whMap = new Map((whRes.data || []).map(w => [w.id, w]));
+
+      const countMap: Record<string, number> = {};
+      (facRes.data || []).forEach(f => {
+        countMap[f.service_area_id] = (countMap[f.service_area_id] || 0) + 1;
+      });
+
+      serviceAreas.forEach(sa => {
+        sa.zones = zoneMap.get(sa.zone_id) || null;
+        sa.warehouses = whMap.get(sa.warehouse_id) || null;
+        sa.facility_count = countMap[sa.id] || 0;
+      });
 
       return serviceAreas;
     },
@@ -86,16 +98,27 @@ export function useServiceArea(id: string | null | undefined) {
 
       const { data, error } = await supabase
         .from('service_areas')
-        .select(`
-          *,
-          zones:zone_id (id, name, code),
-          warehouses:warehouse_id (id, name, lat, lng)
-        `)
+        .select('*')
         .eq('id', id)
         .single();
 
       if (error) throw new Error(`Failed to fetch service area: ${error.message}`);
-      return data as unknown as ServiceArea;
+
+      const sa = data as unknown as ServiceArea;
+
+      const [zoneRes, whRes] = await Promise.all([
+        sa.zone_id
+          ? supabase.from('zones').select('id, name, code').eq('id', sa.zone_id).single()
+          : { data: null },
+        sa.warehouse_id
+          ? supabase.from('warehouses').select('id, name, lat, lng').eq('id', sa.warehouse_id).single()
+          : { data: null },
+      ]);
+
+      sa.zones = zoneRes.data || null;
+      sa.warehouses = whRes.data || null;
+
+      return sa;
     },
     enabled: !!id,
     staleTime: 1000 * 60 * 5,
@@ -113,16 +136,26 @@ export function useServiceAreaFacilities(serviceAreaId: string | null | undefine
 
       const { data, error } = await supabase
         .from('service_area_facilities')
-        .select(`
-          *,
-          facilities:facility_id (
-            id, name, lat, lng, type, level_of_care, lga
-          )
-        `)
+        .select('*')
         .eq('service_area_id', serviceAreaId);
 
       if (error) throw new Error(`Failed to fetch service area facilities: ${error.message}`);
-      return (data || []) as unknown as ServiceAreaFacility[];
+
+      const saFacilities = (data || []) as unknown as ServiceAreaFacility[];
+      if (saFacilities.length === 0) return saFacilities;
+
+      const facilityIds = [...new Set(saFacilities.map(f => f.facility_id))];
+      const { data: facilities } = await supabase
+        .from('facilities')
+        .select('id, name, lat, lng, type, level_of_care, lga')
+        .in('id', facilityIds);
+
+      const facilityMap = new Map((facilities || []).map(f => [f.id, f]));
+      saFacilities.forEach(saf => {
+        saf.facilities = facilityMap.get(saf.facility_id) || null;
+      });
+
+      return saFacilities;
     },
     enabled: !!serviceAreaId,
     staleTime: 1000 * 60 * 5,
@@ -281,19 +314,30 @@ export function useServiceAreaMetrics() {
   return useQuery({
     queryKey: ['service-area-metrics'],
     queryFn: async () => {
-      const { data: areas, error } = await supabase
-        .from('service_areas')
-        .select('id, priority, max_distance_km, is_active');
+      const [areasResult, facilityCountResult, routesResult] = await Promise.all([
+        supabase.from('service_areas').select('id, priority, max_distance_km, is_active'),
+        supabase.from('service_area_facilities').select('*', { count: 'exact', head: true }),
+        supabase.from('routes').select('total_distance_km, is_sandbox').eq('is_sandbox', false),
+      ]);
 
-      if (error) throw error;
+      if (areasResult.error) throw areasResult.error;
 
-      const { count: facilityCount } = await supabase
-        .from('service_area_facilities')
-        .select('*', { count: 'exact', head: true });
+      const areas = areasResult.data;
+      const facilityCount = facilityCountResult.count;
+      const routes = routesResult.data || [];
 
       const activeAreas = areas?.filter(a => a.is_active) || [];
       const criticalCount = areas?.filter(a => a.priority === 'critical').length || 0;
-      const distances = areas?.map(a => a.max_distance_km).filter(Boolean) as number[];
+
+      // Use actual route distances; fall back to max_distance_km configs
+      const routeDistances = routes
+        .map(r => r.total_distance_km)
+        .filter(Boolean) as number[];
+      const configDistances = areas
+        ?.map(a => a.max_distance_km)
+        .filter(Boolean) as number[];
+
+      const distances = routeDistances.length > 0 ? routeDistances : configDistances;
       const avgDistance = distances.length > 0
         ? distances.reduce((s, d) => s + d, 0) / distances.length
         : 0;

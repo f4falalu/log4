@@ -18,6 +18,7 @@ import { MapLoadingSkeleton } from './MapLoadingSkeleton';
 import { getMapLibreStyle } from '@/lib/mapConfig';
 import { Badge } from '@/components/ui/badge';
 import type { Vehicle, Driver, Route } from '@/types';
+import { DEFAULT_MAP_CENTER } from '@/lib/constants';
 
 /**
  * Forensic Map Props
@@ -77,7 +78,7 @@ export function ForensicMapLibre({
   startTime = new Date(Date.now() - 24 * 60 * 60 * 1000), // 24 hours ago
   endTime = new Date(),
   currentTime = new Date(),
-  center = [8.6753, 9.0820], // Nigeria center
+  center = DEFAULT_MAP_CENTER,
   zoom = 6,
   isPlaying = false,
   playbackSpeed = 1,

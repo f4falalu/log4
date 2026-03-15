@@ -150,12 +150,12 @@ export function AssignmentDialog({ open, onOpenChange, batch }: AssignmentDialog
               <User className="h-4 w-4" />
               Driver
             </Label>
-            <Select value={selectedDriverId} onValueChange={setSelectedDriverId}>
+            <Select value={selectedDriverId || '__unassigned__'} onValueChange={(v) => setSelectedDriverId(v === '__unassigned__' ? '' : v)}>
               <SelectTrigger>
                 <SelectValue placeholder="Select a driver" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Unassigned</SelectItem>
+                <SelectItem value="__unassigned__">Unassigned</SelectItem>
 
                 {availableDrivers.length > 0 && (
                   <>
@@ -230,12 +230,12 @@ export function AssignmentDialog({ open, onOpenChange, batch }: AssignmentDialog
               <Truck className="h-4 w-4" />
               Vehicle
             </Label>
-            <Select value={selectedVehicleId} onValueChange={setSelectedVehicleId}>
+            <Select value={selectedVehicleId || '__unassigned__'} onValueChange={(v) => setSelectedVehicleId(v === '__unassigned__' ? '' : v)}>
               <SelectTrigger>
                 <SelectValue placeholder="Select a vehicle" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Unassigned</SelectItem>
+                <SelectItem value="__unassigned__">Unassigned</SelectItem>
 
                 {availableVehicles.length > 0 && (
                   <>

@@ -15,7 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { useFacilityTypes } from '@/hooks/useFacilityTypes';
 import { useLevelsOfCare } from '@/hooks/useLevelsOfCare';
 import { useOperationalZones } from '@/hooks/useOperationalZones';
-import { useLGAs } from '@/hooks/useLGAs';
+import { useAllLGAsWithZones } from '@/hooks/useAdminUnits';
 import { fuzzyMatch } from '@/lib/fuzzy-match';
 import type { SkipConfig } from '@/lib/file-import';
 
@@ -79,7 +79,7 @@ export function ColumnMapper({
   const { data: facilityTypes = [] } = useFacilityTypes();
   const { data: levelsOfCare = [] } = useLevelsOfCare();
   const { data: zones = [] } = useOperationalZones();
-  const { data: lgas = [] } = useLGAs();
+  const { data: lgas = [] } = useAllLGAsWithZones();
 
   // Validate that all required fields are mapped
   useEffect(() => {

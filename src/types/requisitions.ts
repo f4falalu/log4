@@ -99,6 +99,7 @@ export interface Requisition {
     id: string;
     name: string;
   };
+  item_count?: number;
   items?: RequisitionItem[];
   // RFC-012: Packaging reference
   packaging?: RequisitionPackaging;

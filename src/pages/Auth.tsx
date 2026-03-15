@@ -33,6 +33,7 @@ import {
   Shield,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { DEFAULT_WORKSPACE_ID } from '@/lib/constants';
 import {
   InputOTP,
   InputOTPGroup,
@@ -154,6 +155,25 @@ export default function Auth() {
 
   // Check for invitation token in URL
   const inviteToken = searchParams.get('invite');
+
+  // Pre-fill email from invitation when arriving with ?invite=TOKEN
+  useEffect(() => {
+    if (inviteToken && !formData.email) {
+      const fetchInvitationEmail = async () => {
+        try {
+          const { data, error } = await supabase.rpc('get_invitation_by_token', {
+            p_token: inviteToken,
+          });
+          if (data && !error && data.email) {
+            setFormData((prev) => ({ ...prev, email: data.email }));
+          }
+        } catch {
+          // Silently fail — user can still type email manually
+        }
+      };
+      fetchInvitationEmail();
+    }
+  }, [inviteToken]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Redirect if already logged in
   useEffect(() => {
@@ -277,10 +297,18 @@ export default function Auth() {
         // Check if user was auto-logged in (email confirmation not required)
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
-          toast.success('Account Created', {
-            description: "Let's set up your workspace!",
-          });
-          navigate('/onboarding');
+          if (inviteToken) {
+            // User signed up from an invitation — go accept it
+            toast.success('Account Created', {
+              description: 'Accepting your invitation...',
+            });
+            navigate(`/invite/${inviteToken}`);
+          } else {
+            toast.success('Account Created', {
+              description: "Let's set up your workspace!",
+            });
+            navigate('/onboarding');
+          }
         } else {
           // Email verification required — show verification prompt
           setStep('complete');
@@ -332,7 +360,14 @@ export default function Auth() {
 
     setLoading(true);
     try {
-      const { error } = await sendDriverOtp(otpEmail, '00000000-0000-0000-0000-000000000000');
+      // TODO: Support multi-workspace — resolve workspace from driver's membership
+      const { data: membership } = await supabase
+        .from('workspace_members')
+        .select('workspace_id')
+        .limit(1)
+        .maybeSingle();
+      const wsId = membership?.workspace_id || DEFAULT_WORKSPACE_ID;
+      const { error } = await sendDriverOtp(otpEmail, wsId);
 
       if (error) {
         toast.error('Failed to send OTP', {

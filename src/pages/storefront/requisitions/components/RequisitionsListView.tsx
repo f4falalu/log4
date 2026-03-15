@@ -186,9 +186,9 @@ export function RequisitionsListView({
                           <p className="text-sm">
                             {formatDate(req.requested_delivery_date)}
                           </p>
-                          {req.items && req.items.length > 0 && (
+                          {(req.item_count ?? 0) > 0 && (
                             <p className="text-xs text-muted-foreground">
-                              {req.items.length} item{req.items.length > 1 ? 's' : ''}
+                              {req.item_count} item{req.item_count! > 1 ? 's' : ''}
                             </p>
                           )}
                         </div>

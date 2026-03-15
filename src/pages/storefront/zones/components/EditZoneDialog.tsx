@@ -8,10 +8,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { MapPin, Users, Plus, X, Check } from 'lucide-react';
+import { MapPin, Users, Plus, X, Check, Search } from 'lucide-react';
 import { useUpdateZone } from '@/hooks/useOperationalZones';
 import { useFacilities } from '@/hooks/useFacilities';
-import { useLGAs, useUpdateLGA } from '@/hooks/useLGAs';
+import { useAllLGAsWithZones } from '@/hooks/useAdminUnits';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { OperationalZone, UpdateZoneInput } from '@/types/zones';
@@ -30,15 +30,18 @@ export function EditZoneDialog({ zone, open, onOpenChange }: EditZoneDialogProps
     code: zone.code || undefined,
     description: zone.description || undefined,
     is_active: zone.is_active,
+    region_center: zone.region_center || undefined,
   });
   const [saving, setSaving] = useState(false);
+  const [facilitySearch, setFacilitySearch] = useState('');
+  const [lgaSearch, setLgaSearch] = useState('');
 
   const updateZone = useUpdateZone();
   const queryClient = useQueryClient();
 
   const { data: facilitiesData } = useFacilities();
-  const { data: allLGAs } = useLGAs();
-  const { data: zoneLGAs } = useLGAs({ zone_id: zone.id });
+  const { data: allLGAs } = useAllLGAsWithZones();
+  const { data: zoneLGAs } = useAllLGAsWithZones({ zone_id: zone.id });
 
   const allFacilities = facilitiesData?.facilities || [];
 
@@ -47,13 +50,40 @@ export function EditZoneDialog({ zone, open, onOpenChange }: EditZoneDialogProps
     [allFacilities, zone.id]
   );
   const unassignedFacilities = useMemo(
-    () => allFacilities.filter((f: any) => !f.zone_id),
-    [allFacilities]
+    () => {
+      // Show all facilities that are NOT in the current zone (includes unassigned and assigned to other zones)
+      let filtered = allFacilities.filter((f: any) => f.zone_id !== zone.id);
+
+      if (facilitySearch.trim()) {
+        const search = facilitySearch.toLowerCase();
+        filtered = filtered.filter((f: any) =>
+          f.name?.toLowerCase().includes(search) ||
+          f.address?.toLowerCase().includes(search) ||
+          f.lga?.toLowerCase().includes(search)
+        );
+      }
+
+      return filtered;
+    },
+    [allFacilities, facilitySearch, zone.id]
   );
 
   const unassignedLGAs = useMemo(
-    () => (allLGAs || []).filter((l: any) => !l.zone_id),
-    [allLGAs]
+    () => {
+      // Show all LGAs that are NOT in the current zone (includes unassigned and assigned to other zones)
+      let filtered = (allLGAs || []).filter((l: any) => l.zone_id !== zone.id);
+
+      if (lgaSearch.trim()) {
+        const search = lgaSearch.toLowerCase();
+        filtered = filtered.filter((l: any) =>
+          l.name?.toLowerCase().includes(search) ||
+          l.state?.toLowerCase().includes(search)
+        );
+      }
+
+      return filtered;
+    },
+    [allLGAs, lgaSearch, zone.id]
   );
 
   useEffect(() => {
@@ -63,6 +93,7 @@ export function EditZoneDialog({ zone, open, onOpenChange }: EditZoneDialogProps
       code: zone.code || undefined,
       description: zone.description || undefined,
       is_active: zone.is_active,
+      region_center: zone.region_center || undefined,
     });
   }, [zone]);
 
@@ -119,14 +150,43 @@ export function EditZoneDialog({ zone, open, onOpenChange }: EditZoneDialogProps
   const assignLGA = async (lgaId: string) => {
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from('lgas')
+      // Find the LGA name to match facilities
+      const lga = allLGAs?.find((l: any) => l.id === lgaId);
+      if (!lga) {
+        toast.error('LGA not found');
+        return;
+      }
+
+      // Assign the LGA to the zone in admin_units table
+      const { error: lgaError } = await supabase
+        .from('admin_units')
         .update({ zone_id: zone.id })
         .eq('id', lgaId);
-      if (error) throw error;
-      queryClient.invalidateQueries({ queryKey: ['lgas'] });
+      if (lgaError) throw lgaError;
+
+      // Also assign all facilities with matching LGA name to the zone
+      const facilitiesInLGA = allFacilities.filter(
+        (f: any) => f.lga?.toLowerCase() === lga.name?.toLowerCase()
+      );
+
+      if (facilitiesInLGA.length > 0) {
+        const facilityIds = facilitiesInLGA.map((f: any) => f.id);
+        const { error: facilitiesError } = await supabase
+          .from('facilities')
+          .update({ zone_id: zone.id })
+          .in('id', facilityIds);
+
+        if (facilitiesError) throw facilitiesError;
+
+        toast.success(`LGA assigned to zone (${facilitiesInLGA.length} facilities auto-assigned)`);
+      } else {
+        toast.success('LGA assigned to zone');
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['all-lgas-with-zones'] });
+      queryClient.invalidateQueries({ queryKey: ['lgas-by-state'] });
+      queryClient.invalidateQueries({ queryKey: ['facilities'] });
       queryClient.invalidateQueries({ queryKey: ['zone-summary', zone.id] });
-      toast.success('LGA assigned to zone');
     } catch (err: any) {
       toast.error(`Failed to assign LGA: ${err.message}`);
     } finally {
@@ -137,14 +197,45 @@ export function EditZoneDialog({ zone, open, onOpenChange }: EditZoneDialogProps
   const unassignLGA = async (lgaId: string) => {
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from('lgas')
+      // Find the LGA name to match facilities
+      const lga = zoneLGAs?.find((l: any) => l.id === lgaId);
+      if (!lga) {
+        toast.error('LGA not found');
+        return;
+      }
+
+      // Remove the LGA from the zone in admin_units table
+      const { error: lgaError } = await supabase
+        .from('admin_units')
         .update({ zone_id: null })
         .eq('id', lgaId);
-      if (error) throw error;
-      queryClient.invalidateQueries({ queryKey: ['lgas'] });
+      if (lgaError) throw lgaError;
+
+      // Also remove zone assignment from facilities with matching LGA name
+      const facilitiesInLGA = allFacilities.filter(
+        (f: any) =>
+          f.lga?.toLowerCase() === lga.name?.toLowerCase() &&
+          f.zone_id === zone.id
+      );
+
+      if (facilitiesInLGA.length > 0) {
+        const facilityIds = facilitiesInLGA.map((f: any) => f.id);
+        const { error: facilitiesError } = await supabase
+          .from('facilities')
+          .update({ zone_id: null })
+          .in('id', facilityIds);
+
+        if (facilitiesError) throw facilitiesError;
+
+        toast.success(`LGA removed from zone (${facilitiesInLGA.length} facilities unassigned)`);
+      } else {
+        toast.success('LGA removed from zone');
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['all-lgas-with-zones'] });
+      queryClient.invalidateQueries({ queryKey: ['lgas-by-state'] });
+      queryClient.invalidateQueries({ queryKey: ['facilities'] });
       queryClient.invalidateQueries({ queryKey: ['zone-summary', zone.id] });
-      toast.success('LGA removed from zone');
     } catch (err: any) {
       toast.error(`Failed to remove LGA: ${err.message}`);
     } finally {
@@ -162,9 +253,9 @@ export function EditZoneDialog({ zone, open, onOpenChange }: EditZoneDialogProps
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs defaultValue="details" className="mt-2">
+        <Tabs defaultValue="overview" className="mt-2">
           <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="details">Details</TabsTrigger>
+            <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="lgas">
               LGAs
               {(zoneLGAs?.length || 0) > 0 && (
@@ -183,8 +274,8 @@ export function EditZoneDialog({ zone, open, onOpenChange }: EditZoneDialogProps
             </TabsTrigger>
           </TabsList>
 
-          {/* Details Tab */}
-          <TabsContent value="details" className="mt-4">
+          {/* Overview Tab */}
+          <TabsContent value="overview" className="mt-4">
             <form onSubmit={handleSubmit}>
               <div className="grid gap-4">
                 <div className="grid gap-2">
@@ -220,6 +311,52 @@ export function EditZoneDialog({ zone, open, onOpenChange }: EditZoneDialogProps
                     onChange={(e) => handleChange('description', e.target.value)}
                     rows={3}
                   />
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="grid gap-2">
+                    <Label htmlFor="edit-latitude">Latitude</Label>
+                    <Input
+                      id="edit-latitude"
+                      type="number"
+                      step="any"
+                      placeholder="e.g., 11.9984"
+                      value={formData.region_center?.lat || ''}
+                      onChange={(e) => {
+                        const lat = e.target.value ? parseFloat(e.target.value) : undefined;
+                        handleChange('region_center', {
+                          ...formData.region_center,
+                          lat: lat || 0,
+                          lng: formData.region_center?.lng || 0,
+                        });
+                      }}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Center latitude coordinate
+                    </p>
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label htmlFor="edit-longitude">Longitude</Label>
+                    <Input
+                      id="edit-longitude"
+                      type="number"
+                      step="any"
+                      placeholder="e.g., 8.5919"
+                      value={formData.region_center?.lng || ''}
+                      onChange={(e) => {
+                        const lng = e.target.value ? parseFloat(e.target.value) : undefined;
+                        handleChange('region_center', {
+                          lat: formData.region_center?.lat || 0,
+                          lng: lng || 0,
+                          ...formData.region_center,
+                        });
+                      }}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Center longitude coordinate
+                    </p>
+                  </div>
                 </div>
 
                 <div className="flex items-center justify-between">
@@ -276,7 +413,7 @@ export function EditZoneDialog({ zone, open, onOpenChange }: EditZoneDialogProps
                         <div>
                           <p className="font-medium text-sm">{lga.name}</p>
                           <p className="text-xs text-muted-foreground">
-                            {lga.state}
+                            Kano State
                             {lga.population && ` · Pop: ${lga.population.toLocaleString()}`}
                           </p>
                         </div>
@@ -299,18 +436,28 @@ export function EditZoneDialog({ zone, open, onOpenChange }: EditZoneDialogProps
               </CardContent>
             </Card>
 
-            {unassignedLGAs.length > 0 && (
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Plus className="h-4 w-4" />
-                    Available LGAs
-                  </CardTitle>
-                  <CardDescription>
-                    {unassignedLGAs.length} unassigned LGA(s)
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
+<Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Plus className="h-4 w-4" />
+                  Available LGAs
+                </CardTitle>
+                <CardDescription>
+                  {unassignedLGAs.length} available LGA(s)
+                  {lgaSearch && ` (filtered)`}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="relative mb-3">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search LGAs..."
+                    className="pl-8"
+                    value={lgaSearch}
+                    onChange={(e) => setLgaSearch(e.target.value)}
+                  />
+                </div>
+                {unassignedLGAs.length > 0 ? (
                   <div className="space-y-2 max-h-48 overflow-y-auto">
                     {unassignedLGAs.map((lga: any) => (
                       <div
@@ -319,7 +466,12 @@ export function EditZoneDialog({ zone, open, onOpenChange }: EditZoneDialogProps
                       >
                         <div>
                           <p className="font-medium text-sm">{lga.name}</p>
-                          <p className="text-xs text-muted-foreground">{lga.state}</p>
+                          <p className="text-xs text-muted-foreground">
+                            Kano State
+                            {lga.zone_id && lga.zones?.name && (
+                              <span className="text-orange-600"> · Currently in: {lga.zones.name}</span>
+                            )}
+                          </p>
                         </div>
                         <Button
                           variant="ghost"
@@ -332,9 +484,13 @@ export function EditZoneDialog({ zone, open, onOpenChange }: EditZoneDialogProps
                       </div>
                     ))}
                   </div>
-                </CardContent>
-              </Card>
-            )}
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    {lgaSearch ? 'No LGAs match your search' : 'All LGAs are in this zone'}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* Facilities Tab */}
@@ -384,18 +540,28 @@ export function EditZoneDialog({ zone, open, onOpenChange }: EditZoneDialogProps
               </CardContent>
             </Card>
 
-            {unassignedFacilities.length > 0 && (
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Plus className="h-4 w-4" />
-                    Available Facilities
-                  </CardTitle>
-                  <CardDescription>
-                    {unassignedFacilities.length} unassigned facilit{unassignedFacilities.length === 1 ? 'y' : 'ies'}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
+<Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Plus className="h-4 w-4" />
+                  Available Facilities
+                </CardTitle>
+                <CardDescription>
+                  {unassignedFacilities.length} available facilit{unassignedFacilities.length === 1 ? 'y' : 'ies'}
+                  {facilitySearch && ` (filtered)`}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="relative mb-3">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search by name, address, or LGA..."
+                    className="pl-8"
+                    value={facilitySearch}
+                    onChange={(e) => setFacilitySearch(e.target.value)}
+                  />
+                </div>
+                {unassignedFacilities.length > 0 ? (
                   <div className="space-y-2 max-h-48 overflow-y-auto">
                     {unassignedFacilities.map((facility: any) => (
                       <div
@@ -404,7 +570,10 @@ export function EditZoneDialog({ zone, open, onOpenChange }: EditZoneDialogProps
                       >
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-sm truncate">{facility.name}</p>
-                          <p className="text-xs text-muted-foreground truncate">{facility.address}</p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {facility.address}
+                            {facility.lga && ` · LGA: ${facility.lga}`}
+                          </p>
                         </div>
                         <Button
                           variant="ghost"
@@ -418,9 +587,13 @@ export function EditZoneDialog({ zone, open, onOpenChange }: EditZoneDialogProps
                       </div>
                     ))}
                   </div>
-                </CardContent>
-              </Card>
-            )}
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    {facilitySearch ? 'No facilities match your search' : 'All facilities are in this zone'}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </DialogContent>

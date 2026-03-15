@@ -3,6 +3,7 @@ import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { Facility } from '@/types';
 import { facilityPriorityColors, popupColors, tw } from '@/lib/colors';
+import { DEFAULT_MAP_CENTER } from '@/lib/constants';
 
 interface FacilitiesMapViewProps {
   facilities: Facility[];
@@ -31,7 +32,7 @@ export function FacilitiesMapView({
 
     const defaultCenter: [number, number] = facilities.length > 0
       ? [facilities[0].lng, facilities[0].lat]
-      : [8.52, 12.0]; // Kano, Nigeria (lng, lat for MapLibre)
+      : DEFAULT_MAP_CENTER;
 
     const map = new maplibregl.Map({
       container: containerRef.current,

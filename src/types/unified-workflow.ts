@@ -133,9 +133,9 @@ export interface PreBatchWithRelations extends PreBatch {
   suggested_vehicle?: {
     id: string;
     model: string;
-    plateNumber: string;
+    plate_number: string;
     capacity: number;
-    maxWeight: number;
+    max_weight: number;
   };
   converted_batch?: {
     id: string;

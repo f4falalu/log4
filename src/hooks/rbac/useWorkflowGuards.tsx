@@ -221,18 +221,33 @@ export function useTransitionSchedulerBatchStatus() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
+  // Map scheduler UI statuses back to pre_batches statuses
+  const toPreBatchStatus = (uiStatus: string): string => {
+    const map: Record<string, string> = {
+      draft: 'draft',
+      ready: 'ready',
+      scheduled: 'converted',
+      published: 'converted',
+      cancelled: 'cancelled',
+    };
+    return map[uiStatus] || uiStatus;
+  };
+
   return useMutation({
     mutationFn: async ({
-      schedulerId,
+      batchId,
       newStatus,
+      notes,
     }: {
-      schedulerId: string;
-      newStatus: 'draft' | 'ready' | 'scheduled' | 'published' | 'cancelled';
+      batchId: string;
+      newStatus: string;
+      notes?: string;
     }) => {
+      const preBatchStatus = toPreBatchStatus(newStatus);
       const { data, error } = await supabase
-        .from('scheduler_batches')
-        .update({ status: newStatus })
-        .eq('id', schedulerId)
+        .from('pre_batches')
+        .update({ status: preBatchStatus, ...(notes ? { notes } : {}) })
+        .eq('id', batchId)
         .select()
         .single();
 
@@ -249,8 +264,7 @@ export function useTransitionSchedulerBatchStatus() {
       return data;
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['scheduler-batch', variables.schedulerId] });
-      queryClient.invalidateQueries({ queryKey: ['scheduler-batches'] });
+      queryClient.invalidateQueries({ queryKey: ['pre-batches'] });
 
       toast({
         title: 'Status updated',

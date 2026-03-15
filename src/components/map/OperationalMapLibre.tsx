@@ -26,6 +26,7 @@ import { ControlRail } from './ui/ControlRail';
 import { useDebouncedMapData } from '@/hooks/useDebouncedMapData';
 import { getMapLibreStyle } from '@/lib/mapConfig';
 import { AlertCircle, Sliders } from 'lucide-react';
+import { DEFAULT_MAP_CENTER } from '@/lib/constants';
 import { Button } from '@/components/ui/button';
 import {
   Sheet,
@@ -99,7 +100,7 @@ export function OperationalMapLibre({
   alerts = [],
   batches = [],
   pendingHandoffs = [],
-  center = [8.6753, 9.082], // Nigeria center
+  center = DEFAULT_MAP_CENTER,
   zoom = 6,
   onVehicleClick,
   onDriverClick,

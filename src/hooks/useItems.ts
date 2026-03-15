@@ -44,17 +44,13 @@ function mapDbToItem(dbItem: any): Item {
 
 function mapItemToDb(item: ItemFormData) {
   return {
-    product_code: item.product_code,
-    item_name: item.item_name,
+    serial_number: item.serial_number || item.product_code,
+    description: item.description || item.item_name,
     unit_pack: item.unit_pack || null,
     category: item.category,
     program: item.program || null,
     weight_kg: item.weight_kg || null,
     volume_m3: item.volume_m3 || null,
-    is_active: item.is_active !== undefined ? item.is_active : true,
-    // Legacy fields for backward compatibility
-    serial_number: item.serial_number || item.product_code,
-    description: item.description || item.item_name,
     batch_number: item.batch_number || null,
     mfg_date: item.mfg_date || null,
     expiry_date: item.expiry_date || null,

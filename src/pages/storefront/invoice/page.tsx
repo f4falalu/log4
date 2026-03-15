@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { formatCurrency } from '@/lib/formatCurrency';
 import { Plus, Search, FileText, CheckCircle, Package, Truck, Check, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -95,14 +96,6 @@ export default function InvoicePage() {
   const handleCloseDetail = () => {
     setIsDetailOpen(false);
     setSelectedInvoice(null);
-  };
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-NG', {
-      style: 'currency',
-      currency: 'NGN',
-      minimumFractionDigits: 0,
-    }).format(value);
   };
 
   return (

@@ -3,8 +3,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ZoneTabContent } from './components/ZoneTabContent';
 import { ServiceAreaTabContent } from './components/ServiceAreaTabContent';
 import { RouteManagementTabContent } from './components/RouteManagementTabContent';
+import { FacilityTableView } from './components/FacilityTableView';
 
-const VALID_TABS = ['zones', 'service-areas', 'routes'] as const;
+const VALID_TABS = ['zones', 'service-areas', 'routes', 'facility-audit'] as const;
 type TabValue = (typeof VALID_TABS)[number];
 
 export default function ZonesPage() {
@@ -31,10 +32,11 @@ export default function ZonesPage() {
       </div>
 
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="zones">Zones</TabsTrigger>
           <TabsTrigger value="service-areas">Service Areas</TabsTrigger>
           <TabsTrigger value="routes">Route Management</TabsTrigger>
+          <TabsTrigger value="facility-audit">Facility Audit</TabsTrigger>
         </TabsList>
 
         <TabsContent value="zones" className="mt-6">
@@ -45,6 +47,9 @@ export default function ZonesPage() {
         </TabsContent>
         <TabsContent value="routes" className="mt-6">
           <RouteManagementTabContent />
+        </TabsContent>
+        <TabsContent value="facility-audit" className="mt-6">
+          <FacilityTableView />
         </TabsContent>
       </Tabs>
     </div>

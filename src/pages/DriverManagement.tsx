@@ -20,6 +20,7 @@ export default function DriverManagement() {
   const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [onboardingOpen, setOnboardingOpen] = useState(false);
+  const [editDriverData, setEditDriverData] = useState<Driver | null>(null);
   const { data: drivers, isLoading: driversLoading, error: driversError } = useDrivers();
   const { data: allVehicles, isLoading: vehiclesLoading, error: vehiclesError } = useAllDriverVehicles();
   const { favorites, toggleFavorite } = useDriverFavorites();
@@ -76,6 +77,18 @@ export default function DriverManagement() {
     }
   };
 
+  const handleEditDriver = (driver: Driver) => {
+    setEditDriverData(driver);
+    setOnboardingOpen(true);
+  };
+
+  const handleDialogClose = (open: boolean) => {
+    setOnboardingOpen(open);
+    if (!open) {
+      setEditDriverData(null);
+    }
+  };
+
   return (
     <div className="flex h-full w-full overflow-hidden flex-col">
       {/* Page Header - Only show in table view */}
@@ -102,7 +115,12 @@ export default function DriverManagement() {
       )}
 
       {/* Driver Onboarding Dialog */}
-      <DriverOnboardingDialog open={onboardingOpen} onOpenChange={setOnboardingOpen} />
+      <DriverOnboardingDialog
+        open={onboardingOpen}
+        onOpenChange={handleDialogClose}
+        driver={editDriverData}
+        mode={editDriverData ? 'edit' : 'create'}
+      />
 
       {/* Table View */}
       {viewMode === 'table' ? (
@@ -110,6 +128,7 @@ export default function DriverManagement() {
           <DriverManagementTable
             onDriverSelect={handleDriverSelect}
             onViewChange={setViewMode}
+            onEditDriver={handleEditDriver}
           />
         </div>
       ) : (

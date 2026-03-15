@@ -45,10 +45,17 @@ export default function AcceptInvitationPage() {
       const result = await acceptInvitation.mutateAsync(token);
       setAccepted(true);
 
-      // Redirect to dashboard after a short delay
+      // Redirect to profile completion after a short delay
       setTimeout(() => {
-        navigate('/');
-        window.location.reload(); // Reload to apply new workspace/role context
+        navigate('/onboarding/profile', {
+          replace: true,
+          state: {
+            fromInvitation: true,
+            workspaceName: result.workspace_name,
+            appRole: result.app_role,
+            workspaceRole: result.workspace_role,
+          },
+        });
       }, 2000);
     } catch (error) {
       // Error handled by mutation
@@ -127,7 +134,7 @@ export default function AcceptInvitationPage() {
           </CardHeader>
           <CardContent className="text-center">
             <p className="text-muted-foreground">
-              Redirecting you to the dashboard...
+              Redirecting you to complete your profile...
             </p>
             <Loader2 className="h-6 w-6 animate-spin mx-auto mt-4 text-primary" />
           </CardContent>

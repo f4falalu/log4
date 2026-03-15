@@ -6,6 +6,7 @@ import {
   Calendar,
   User,
   Package,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -23,16 +24,27 @@ import { cn } from '@/lib/utils';
 import type { Requisition } from '@/types/requisitions';
 import { REQUISITION_STATUS_CONFIG, REQUISITION_PURPOSES } from '@/types/requisitions';
 import { RequisitionStatusActions } from '@/components/storefront/requisitions/RequisitionStatusActions';
+import { useRequisition } from '@/hooks/useRequisitions';
 
 interface RequisitionDetailPanelProps {
-  requisition: Requisition;
+  requisitionId: string;
   onClose: () => void;
 }
 
 export function RequisitionDetailPanel({
-  requisition,
+  requisitionId,
   onClose,
 }: RequisitionDetailPanelProps) {
+  const { data: requisition, isLoading } = useRequisition(requisitionId);
+
+  if (isLoading || !requisition) {
+    return (
+      <div className="w-96 border-l bg-background flex flex-col h-full items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
   const statusConfig = REQUISITION_STATUS_CONFIG[requisition.status];
   const purposeConfig = REQUISITION_PURPOSES.find(p => p.value === requisition.purpose);
 

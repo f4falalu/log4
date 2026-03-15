@@ -238,12 +238,21 @@ export const useVehiclesStore = create<VehiclesState>()(
           const userId = user.user.id;
 
           // Map form data to database schema
+          // Map fuel_type to valid DB enum values (diesel | petrol | electric)
+          const normalizeFuelType = (ft?: string): 'diesel' | 'petrol' | 'electric' => {
+            if (!ft) return 'diesel';
+            if (ft === 'gasoline' || ft === 'lpg' || ft === 'cng') return 'petrol';
+            if (ft === 'hybrid') return 'electric';
+            if (ft === 'diesel' || ft === 'petrol' || ft === 'electric') return ft;
+            return 'diesel';
+          };
+
           const vehicleData = {
             ...data,
             capacity_m3: (data as any).capacity_m3 ?? 0,
             capacity_kg: (data as any).capacity_kg ?? 0,
             capacity: (data as any).capacity ?? 0, // Legacy field
-            fuel_type: data.fuel_type === 'gasoline' ? 'petrol' : data.fuel_type,
+            fuel_type: normalizeFuelType(data.fuel_type),
             status: normalizeStatus(data.status) as 'available' | 'in-use' | 'maintenance',
             created_by: userId,
             updated_by: userId,
@@ -282,10 +291,19 @@ export const useVehiclesStore = create<VehiclesState>()(
 
           const userId = user.user.id;
 
+          // Map fuel_type to valid DB enum values (diesel | petrol | electric)
+          const normalizeFuelType = (ft?: string): 'diesel' | 'petrol' | 'electric' | undefined => {
+            if (!ft) return undefined;
+            if (ft === 'gasoline' || ft === 'lpg' || ft === 'cng') return 'petrol';
+            if (ft === 'hybrid') return 'electric';
+            if (ft === 'diesel' || ft === 'petrol' || ft === 'electric') return ft;
+            return 'diesel';
+          };
+
           // Create update payload with proper type mapping
           const updateData: Partial<Vehicle> = {
             ...data,
-            fuel_type: data.fuel_type === 'gasoline' ? 'petrol' : data.fuel_type as any,
+            fuel_type: normalizeFuelType(data.fuel_type) as any,
             status: data.status ? (normalizeStatus(data.status) as 'available' | 'in-use' | 'maintenance') : undefined,
             updated_by: userId,
           };

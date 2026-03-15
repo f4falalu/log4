@@ -32,11 +32,13 @@ import { useCreateFacility, useUpdateFacility } from '@/hooks/useFacilities';
 import { useFacilityTypes } from '@/hooks/useFacilityTypes';
 import { useLevelsOfCare } from '@/hooks/useLevelsOfCare';
 import { useOperationalZones } from '@/hooks/useOperationalZones';
-import { useLGAs } from '@/hooks/useLGAs';
 import { useStates, useLGAsByState, useFindAdminUnitByPoint } from '@/hooks/useAdminUnits';
 import { facilityFormSchema, FacilityFormData } from '@/lib/facility-validation';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { DEFAULT_COUNTRY_ID } from '@/lib/constants';
+import { useFundingSources } from '@/hooks/useFundingSources';
+import { useImplementingPartners } from '@/hooks/useImplementingPartners';
+import { useProgrammeCategories } from '@/hooks/useProgrammeCategories';
 
 interface FacilityFormDialogProps {
   facility?: Facility;
@@ -57,7 +59,9 @@ export function FacilityFormDialog({
   const { data: facilityTypes = [], isLoading: loadingTypes } = useFacilityTypes();
   const { data: levelsOfCare = [], isLoading: loadingLevels } = useLevelsOfCare();
   const { data: zones = [], isLoading: loadingZones } = useOperationalZones();
-  const { data: lgas = [], isLoading: loadingLGAs } = useLGAs();
+  const { data: fundingSources = [] } = useFundingSources();
+  const { data: implementingPartners = [] } = useImplementingPartners();
+  const { data: programmeCategories = [] } = useProgrammeCategories();
 
   // New admin_units model - cascading State → LGA selection
   const [selectedStateId, setSelectedStateId] = useState<string | null>(null);
@@ -131,10 +135,20 @@ export function FacilityFormDialog({
         email: facility.email,
         storage_capacity: facility.storage_capacity,
       });
+      // Pre-select state for cascading LGA dropdown when editing
+      if (facility.state && states.length > 0) {
+        const matchingState = states.find(
+          (s) => s.name.toLowerCase() === facility.state?.toLowerCase()
+        );
+        if (matchingState) {
+          setSelectedStateId(matchingState.id);
+        }
+      }
     } else if (!open) {
       form.reset();
+      setSelectedStateId(null);
     }
-  }, [facility, open, form]);
+  }, [facility, open, form, states]);
 
   const onSubmit = async (data: FacilityFormData) => {
     try {
@@ -290,6 +304,9 @@ export function FacilityFormDialog({
                         value={selectedStateId || undefined}
                         onValueChange={(value) => {
                           setSelectedStateId(value);
+                          // Set the state name on the form field
+                          const stateName = states.find((s) => s.id === value)?.name;
+                          if (stateName) form.setValue('state', stateName);
                           // Clear LGA when state changes
                           form.setValue('lga', '');
                         }}
@@ -321,19 +338,21 @@ export function FacilityFormDialog({
                           <Select
                             onValueChange={field.onChange}
                             value={field.value}
-                            disabled={selectedStateId ? loadingLGAsByState : loadingLGAs}
+                            disabled={!selectedStateId || loadingLGAsByState}
                           >
                             <FormControl>
                               <SelectTrigger>
                                 <SelectValue placeholder={
-                                  selectedStateId
-                                    ? (loadingLGAsByState ? "Loading..." : "Select LGA")
-                                    : "Select State first"
+                                  !selectedStateId
+                                    ? "Select State first"
+                                    : loadingLGAsByState
+                                      ? "Loading..."
+                                      : "Select LGA"
                                 } />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              {(selectedStateId ? lgasByState : lgas).map((lga) => (
+                              {lgasByState.map((lga) => (
                                 <SelectItem key={lga.id} value={lga.name}>
                                   {lga.name}
                                 </SelectItem>
@@ -343,7 +362,7 @@ export function FacilityFormDialog({
                           <FormMessage />
                           {adminUnitByPoint && (
                             <p className="text-xs text-success">
-                              ✓ Auto-filled from coordinates
+                              Auto-filled from coordinates
                             </p>
                           )}
                         </FormItem>
@@ -457,9 +476,9 @@ export function FacilityFormDialog({
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="smoh">SMOH</SelectItem>
-                              <SelectItem value="ace-2">ACE-2</SelectItem>
-                              <SelectItem value="crs">CRS</SelectItem>
+                              {implementingPartners.map((ip) => (
+                                <SelectItem key={ip.id} value={ip.code}>{ip.name}</SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -480,9 +499,9 @@ export function FacilityFormDialog({
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="unfpa">UNFPA</SelectItem>
-                              <SelectItem value="pepfar--usaid">PEPFAR-USAID</SelectItem>
-                              <SelectItem value="global-fund">Global Fund</SelectItem>
+                              {fundingSources.map((fs) => (
+                                <SelectItem key={fs.id} value={fs.code}>{fs.name}</SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -503,10 +522,9 @@ export function FacilityFormDialog({
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="Family Planning">Family Planning</SelectItem>
-                              <SelectItem value="DRF">DRF</SelectItem>
-                              <SelectItem value="HIV/AIDS">HIV/AIDS</SelectItem>
-                              <SelectItem value="Malaria">Malaria</SelectItem>
+                              {programmeCategories.map((pc) => (
+                                <SelectItem key={pc.id} value={pc.name}>{pc.name}</SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                           <FormMessage />

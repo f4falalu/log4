@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, MoreHorizontal, Eye, Pencil, Lock, Trash2, Archive } from 'lucide-react';
+import { Search, MoreHorizontal, Eye, Lock, Trash2, AlertCircle, Pencil } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -45,15 +45,16 @@ const modeLabels: Record<string, string> = {
 
 interface RouteTableProps {
   onViewDetail: (route: Route) => void;
+  onEdit?: (route: Route) => void;
 }
 
-export function RouteTable({ onViewDetail }: RouteTableProps) {
+export function RouteTable({ onViewDetail, onEdit }: RouteTableProps) {
   const [search, setSearch] = useState('');
   const [zoneFilter, setZoneFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
   const { zones } = useOperationalZones();
-  const { data: routes, isLoading } = useRoutes({
+  const { data: routes, isLoading, error } = useRoutes({
     zone_id: zoneFilter !== 'all' ? zoneFilter : undefined,
     status: statusFilter !== 'all' ? statusFilter : undefined,
     search: search || undefined,
@@ -136,6 +137,15 @@ export function RouteTable({ onViewDetail }: RouteTableProps) {
                   ))}
                 </TableRow>
               ))
+            ) : error ? (
+              <TableRow>
+                <TableCell colSpan={9} className="text-center py-8">
+                  <div className="flex flex-col items-center gap-2 text-destructive">
+                    <AlertCircle className="h-5 w-5" />
+                    <span>Failed to load routes: {error.message}</span>
+                  </div>
+                </TableCell>
+              </TableRow>
             ) : routes && routes.length > 0 ? (
               routes.map((route) => (
                 <TableRow
@@ -176,6 +186,11 @@ export function RouteTable({ onViewDetail }: RouteTableProps) {
                         <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onViewDetail(route); }}>
                           <Eye className="mr-2 h-4 w-4" /> View
                         </DropdownMenuItem>
+                        {route.status !== 'locked' && onEdit && (
+                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(route); }}>
+                            <Pencil className="mr-2 h-4 w-4" /> Edit
+                          </DropdownMenuItem>
+                        )}
                         {route.status !== 'locked' && !route.is_sandbox && (
                           <>
                             <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleLock(route.id); }}>

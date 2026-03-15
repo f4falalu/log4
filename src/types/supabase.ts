@@ -35,6 +35,7 @@ export type Database = {
           population: number | null
           updated_at: string | null
           workspace_id: string | null
+          zone_id: string | null
         }
         Insert: {
           admin_level: number
@@ -56,6 +57,7 @@ export type Database = {
           population?: number | null
           updated_at?: string | null
           workspace_id?: string | null
+          zone_id?: string | null
         }
         Update: {
           admin_level?: number
@@ -77,6 +79,7 @@ export type Database = {
           population?: number | null
           updated_at?: string | null
           workspace_id?: string | null
+          zone_id?: string | null
         }
         Relationships: [
           {
@@ -94,6 +97,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "admin_units_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "zone_facility_hierarchy"
+            referencedColumns: ["lga_id"]
+          },
+          {
             foreignKeyName: "admin_units_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
@@ -105,6 +115,27 @@ export type Database = {
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_units_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "zone_facility_hierarchy"
+            referencedColumns: ["zone_id"]
+          },
+          {
+            foreignKeyName: "admin_units_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "zone_metrics"
+            referencedColumns: ["zone_id"]
+          },
+          {
+            foreignKeyName: "admin_units_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "zones"
             referencedColumns: ["id"]
           },
         ]
@@ -1091,64 +1122,130 @@ export type Database = {
       }
       drivers: {
         Row: {
+          address_line1: string | null
+          address_line2: string | null
+          city: string | null
+          country: string | null
           created_at: string | null
           current_lat: number | null
           current_lng: number | null
+          date_of_birth: string | null
+          documents_complete: boolean | null
+          email: string | null
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
+          employer: string | null
+          employment_type: string | null
+          federal_id: string | null
+          group_name: string | null
           id: string
           license_expiry: string | null
+          license_number: string | null
+          license_state: string | null
           license_type: Database["public"]["Enums"]["license_type"]
           license_verified: boolean | null
           location_updated_at: string | null
           max_hours: number
+          middle_name: string | null
           name: string
           on_time_percentage: number | null
           onboarding_completed: boolean | null
           performance_score: number | null
           phone: string
+          position: string | null
+          postal_code: string | null
+          preferred_services: string | null
+          profile_photo_url: string | null
           shift_end: string
           shift_start: string
+          start_date: string | null
+          state_province: string | null
           status: string | null
           total_deliveries: number | null
           updated_at: string | null
         }
         Insert: {
+          address_line1?: string | null
+          address_line2?: string | null
+          city?: string | null
+          country?: string | null
           created_at?: string | null
           current_lat?: number | null
           current_lng?: number | null
+          date_of_birth?: string | null
+          documents_complete?: boolean | null
+          email?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          employer?: string | null
+          employment_type?: string | null
+          federal_id?: string | null
+          group_name?: string | null
           id?: string
           license_expiry?: string | null
+          license_number?: string | null
+          license_state?: string | null
           license_type?: Database["public"]["Enums"]["license_type"]
           license_verified?: boolean | null
           location_updated_at?: string | null
           max_hours?: number
+          middle_name?: string | null
           name: string
           on_time_percentage?: number | null
           onboarding_completed?: boolean | null
           performance_score?: number | null
           phone: string
+          position?: string | null
+          postal_code?: string | null
+          preferred_services?: string | null
+          profile_photo_url?: string | null
           shift_end: string
           shift_start: string
+          start_date?: string | null
+          state_province?: string | null
           status?: string | null
           total_deliveries?: number | null
           updated_at?: string | null
         }
         Update: {
+          address_line1?: string | null
+          address_line2?: string | null
+          city?: string | null
+          country?: string | null
           created_at?: string | null
           current_lat?: number | null
           current_lng?: number | null
+          date_of_birth?: string | null
+          documents_complete?: boolean | null
+          email?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          employer?: string | null
+          employment_type?: string | null
+          federal_id?: string | null
+          group_name?: string | null
           id?: string
           license_expiry?: string | null
+          license_number?: string | null
+          license_state?: string | null
           license_type?: Database["public"]["Enums"]["license_type"]
           license_verified?: boolean | null
           location_updated_at?: string | null
           max_hours?: number
+          middle_name?: string | null
           name?: string
           on_time_percentage?: number | null
           onboarding_completed?: boolean | null
           performance_score?: number | null
           phone?: string
+          position?: string | null
+          postal_code?: string | null
+          preferred_services?: string | null
+          profile_photo_url?: string | null
           shift_end?: string
           shift_start?: string
+          start_date?: string | null
+          state_province?: string | null
           status?: string | null
           total_deliveries?: number | null
           updated_at?: string | null
@@ -1200,7 +1297,9 @@ export type Database = {
           designation: string | null
           email: string | null
           funding_source: string | null
+          funding_source_id: string | null
           id: string
+          implementing_partner_id: string | null
           ip_name: string | null
           lat: number
           level_of_care: string | null
@@ -1212,6 +1311,7 @@ export type Database = {
           phone: string | null
           phone_pharmacy: string | null
           programme: string | null
+          programme_category_id: string | null
           service_zone: string | null
           state: string | null
           storage_capacity: number | null
@@ -1238,7 +1338,9 @@ export type Database = {
           designation?: string | null
           email?: string | null
           funding_source?: string | null
+          funding_source_id?: string | null
           id?: string
+          implementing_partner_id?: string | null
           ip_name?: string | null
           lat: number
           level_of_care?: string | null
@@ -1250,6 +1352,7 @@ export type Database = {
           phone?: string | null
           phone_pharmacy?: string | null
           programme?: string | null
+          programme_category_id?: string | null
           service_zone?: string | null
           state?: string | null
           storage_capacity?: number | null
@@ -1276,7 +1379,9 @@ export type Database = {
           designation?: string | null
           email?: string | null
           funding_source?: string | null
+          funding_source_id?: string | null
           id?: string
+          implementing_partner_id?: string | null
           ip_name?: string | null
           lat?: number
           level_of_care?: string | null
@@ -1288,6 +1393,7 @@ export type Database = {
           phone?: string | null
           phone_pharmacy?: string | null
           programme?: string | null
+          programme_category_id?: string | null
           service_zone?: string | null
           state?: string | null
           storage_capacity?: number | null
@@ -1309,6 +1415,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "facilities_admin_unit_id_fkey"
+            columns: ["admin_unit_id"]
+            isOneToOne: false
+            referencedRelation: "zone_facility_hierarchy"
+            referencedColumns: ["lga_id"]
+          },
+          {
             foreignKeyName: "facilities_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
@@ -1320,6 +1433,27 @@ export type Database = {
             columns: ["deleted_by"]
             isOneToOne: false
             referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "facilities_funding_source_id_fkey"
+            columns: ["funding_source_id"]
+            isOneToOne: false
+            referencedRelation: "funding_sources"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "facilities_implementing_partner_id_fkey"
+            columns: ["implementing_partner_id"]
+            isOneToOne: false
+            referencedRelation: "implementing_partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "facilities_programme_category_id_fkey"
+            columns: ["programme_category_id"]
+            isOneToOne: false
+            referencedRelation: "programme_categories"
             referencedColumns: ["id"]
           },
           {
@@ -1342,6 +1476,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "workspaces"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "facilities_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "zone_facility_hierarchy"
+            referencedColumns: ["zone_id"]
+          },
+          {
+            foreignKeyName: "facilities_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "zone_metrics"
+            referencedColumns: ["zone_id"]
           },
           {
             foreignKeyName: "facilities_zone_id_fkey"
@@ -1421,6 +1569,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "facility_assignments_facility_id_fkey"
+            columns: ["facility_id"]
+            isOneToOne: false
+            referencedRelation: "zone_facility_hierarchy"
+            referencedColumns: ["facility_id"]
+          },
+          {
             foreignKeyName: "facility_assignments_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
@@ -1475,6 +1630,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "facilities"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "facility_audit_log_facility_id_fkey"
+            columns: ["facility_id"]
+            isOneToOne: false
+            referencedRelation: "zone_facility_hierarchy"
+            referencedColumns: ["facility_id"]
           },
           {
             foreignKeyName: "facility_audit_log_performed_by_fkey"
@@ -1533,6 +1695,13 @@ export type Database = {
             referencedRelation: "facilities"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "facility_deliveries_facility_id_fkey"
+            columns: ["facility_id"]
+            isOneToOne: false
+            referencedRelation: "zone_facility_hierarchy"
+            referencedColumns: ["facility_id"]
+          },
         ]
       }
       facility_services: {
@@ -1570,6 +1739,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "facilities"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "facility_services_facility_id_fkey"
+            columns: ["facility_id"]
+            isOneToOne: false
+            referencedRelation: "zone_facility_hierarchy"
+            referencedColumns: ["facility_id"]
           },
         ]
       }
@@ -1614,6 +1790,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "facilities"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "facility_stock_facility_id_fkey"
+            columns: ["facility_id"]
+            isOneToOne: false
+            referencedRelation: "zone_facility_hierarchy"
+            referencedColumns: ["facility_id"]
           },
         ]
       }
@@ -1775,6 +1958,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      funding_sources: {
+        Row: {
+          code: string
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          metadata: Json | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          metadata?: Json | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          metadata?: Json | null
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       group_members: {
         Row: {
@@ -1996,6 +2212,39 @@ export type Database = {
           },
         ]
       }
+      implementing_partners: {
+        Row: {
+          code: string
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          metadata: Json | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          metadata?: Json | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          metadata?: Json | null
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       invoice_line_items: {
         Row: {
           batch_number: string | null
@@ -2168,6 +2417,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "invoices_facility_id_fkey"
+            columns: ["facility_id"]
+            isOneToOne: false
+            referencedRelation: "zone_facility_hierarchy"
+            referencedColumns: ["facility_id"]
+          },
+          {
             foreignKeyName: "invoices_requisition_id_fkey"
             columns: ["requisition_id"]
             isOneToOne: false
@@ -2296,57 +2552,6 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
-      }
-      lgas: {
-        Row: {
-          created_at: string | null
-          id: string
-          metadata: Json | null
-          name: string
-          population: number | null
-          state: string | null
-          updated_at: string | null
-          warehouse_id: string | null
-          zone_id: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          metadata?: Json | null
-          name: string
-          population?: number | null
-          state?: string | null
-          updated_at?: string | null
-          warehouse_id?: string | null
-          zone_id?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          metadata?: Json | null
-          name?: string
-          population?: number | null
-          state?: string | null
-          updated_at?: string | null
-          warehouse_id?: string | null
-          zone_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "lgas_warehouse_id_fkey"
-            columns: ["warehouse_id"]
-            isOneToOne: false
-            referencedRelation: "warehouses"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "lgas_zone_id_fkey"
-            columns: ["zone_id"]
-            isOneToOne: false
-            referencedRelation: "zones"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       map_action_audit: {
         Row: {
@@ -3189,6 +3394,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "payload_items_facility_id_fkey"
+            columns: ["facility_id"]
+            isOneToOne: false
+            referencedRelation: "zone_facility_hierarchy"
+            referencedColumns: ["facility_id"]
+          },
+          {
             foreignKeyName: "payload_items_payload_id_fkey"
             columns: ["payload_id"]
             isOneToOne: false
@@ -3485,12 +3697,46 @@ export type Database = {
           },
         ]
       }
+      programme_categories: {
+        Row: {
+          code: string
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          metadata: Json | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          metadata?: Json | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          metadata?: Json | null
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       programs: {
         Row: {
           code: string
           created_at: string
           description: string | null
           funding_source: string | null
+          funding_source_id: string | null
           id: string
           name: string
           priority_tier: string
@@ -3504,6 +3750,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           funding_source?: string | null
+          funding_source_id?: string | null
           id?: string
           name: string
           priority_tier?: string
@@ -3517,6 +3764,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           funding_source?: string | null
+          funding_source_id?: string | null
           id?: string
           name?: string
           priority_tier?: string
@@ -3525,7 +3773,15 @@ export type Database = {
           status?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "programs_funding_source_id_fkey"
+            columns: ["funding_source_id"]
+            isOneToOne: false
+            referencedRelation: "funding_sources"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       recurring_schedules: {
         Row: {
@@ -3863,6 +4119,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "requisitions_facility_id_fkey"
+            columns: ["facility_id"]
+            isOneToOne: false
+            referencedRelation: "zone_facility_hierarchy"
+            referencedColumns: ["facility_id"]
+          },
+          {
             foreignKeyName: "requisitions_warehouse_id_fkey"
             columns: ["warehouse_id"]
             isOneToOne: false
@@ -3992,6 +4255,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "route_facilities_facility_id_fkey"
+            columns: ["facility_id"]
+            isOneToOne: false
+            referencedRelation: "zone_facility_hierarchy"
+            referencedColumns: ["facility_id"]
+          },
+          {
             foreignKeyName: "route_facilities_route_id_fkey"
             columns: ["route_id"]
             isOneToOne: false
@@ -4075,6 +4345,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "facilities"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "route_history_facility_id_fkey"
+            columns: ["facility_id"]
+            isOneToOne: false
+            referencedRelation: "zone_facility_hierarchy"
+            referencedColumns: ["facility_id"]
           },
           {
             foreignKeyName: "route_history_handoff_id_fkey"
@@ -4165,6 +4442,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "route_sketches_end_facility_id_fkey"
+            columns: ["end_facility_id"]
+            isOneToOne: false
+            referencedRelation: "zone_facility_hierarchy"
+            referencedColumns: ["facility_id"]
+          },
+          {
             foreignKeyName: "route_sketches_reviewed_by_fkey"
             columns: ["reviewed_by"]
             isOneToOne: false
@@ -4177,6 +4461,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "facilities"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "route_sketches_start_facility_id_fkey"
+            columns: ["start_facility_id"]
+            isOneToOne: false
+            referencedRelation: "zone_facility_hierarchy"
+            referencedColumns: ["facility_id"]
           },
           {
             foreignKeyName: "route_sketches_workspace_id_fkey"
@@ -4833,6 +5124,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "service_area_facilities_facility_id_fkey"
+            columns: ["facility_id"]
+            isOneToOne: false
+            referencedRelation: "zone_facility_hierarchy"
+            referencedColumns: ["facility_id"]
+          },
+          {
             foreignKeyName: "service_area_facilities_service_area_id_fkey"
             columns: ["service_area_id"]
             isOneToOne: false
@@ -4917,6 +5215,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "warehouses"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_areas_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "zone_facility_hierarchy"
+            referencedColumns: ["zone_id"]
+          },
+          {
+            foreignKeyName: "service_areas_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "zone_metrics"
+            referencedColumns: ["zone_id"]
           },
           {
             foreignKeyName: "service_areas_zone_id_fkey"
@@ -5040,6 +5352,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "facilities"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "slot_assignments_facility_id_fkey"
+            columns: ["facility_id"]
+            isOneToOne: false
+            referencedRelation: "zone_facility_hierarchy"
+            referencedColumns: ["facility_id"]
           },
           {
             foreignKeyName: "slot_assignments_vehicle_id_fkey"
@@ -5641,6 +5960,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "facilities"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tradeoff_items_facility_id_fkey"
+            columns: ["facility_id"]
+            isOneToOne: false
+            referencedRelation: "zone_facility_hierarchy"
+            referencedColumns: ["facility_id"]
           },
           {
             foreignKeyName: "tradeoff_items_original_driver_id_fkey"
@@ -7044,6 +7370,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "vehicles_current_location_id_fkey"
+            columns: ["current_location_id"]
+            isOneToOne: false
+            referencedRelation: "zone_facility_hierarchy"
+            referencedColumns: ["facility_id"]
+          },
+          {
             foreignKeyName: "vehicles_fleet_id_fkey"
             columns: ["fleet_id"]
             isOneToOne: false
@@ -7256,6 +7589,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "facilities"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vlms_assignments_assigned_location_id_fkey"
+            columns: ["assigned_location_id"]
+            isOneToOne: false
+            referencedRelation: "zone_facility_hierarchy"
+            referencedColumns: ["facility_id"]
           },
           {
             foreignKeyName: "vlms_assignments_assigned_to_id_fkey"
@@ -8312,6 +8652,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "vlms_vehicles_current_location_id_fkey"
+            columns: ["current_location_id"]
+            isOneToOne: false
+            referencedRelation: "zone_facility_hierarchy"
+            referencedColumns: ["facility_id"]
+          },
+          {
             foreignKeyName: "vlms_vehicles_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
@@ -8570,6 +8917,72 @@ export type Database = {
           },
         ]
       }
+      workspace_settings: {
+        Row: {
+          country: string
+          created_at: string | null
+          currency: string
+          currency_symbol: string
+          default_state: string | null
+          id: string
+          locale: string
+          map_center_lat: number | null
+          map_center_lng: number | null
+          map_default_zoom: number | null
+          metadata: Json | null
+          timezone: string | null
+          updated_at: string | null
+          workspace_id: string
+        }
+        Insert: {
+          country?: string
+          created_at?: string | null
+          currency?: string
+          currency_symbol?: string
+          default_state?: string | null
+          id?: string
+          locale?: string
+          map_center_lat?: number | null
+          map_center_lng?: number | null
+          map_default_zoom?: number | null
+          metadata?: Json | null
+          timezone?: string | null
+          updated_at?: string | null
+          workspace_id: string
+        }
+        Update: {
+          country?: string
+          created_at?: string | null
+          currency?: string
+          currency_symbol?: string
+          default_state?: string | null
+          id?: string
+          locale?: string
+          map_center_lat?: number | null
+          map_center_lng?: number | null
+          map_default_zoom?: number | null
+          metadata?: Json | null
+          timezone?: string | null
+          updated_at?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_settings_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: true
+            referencedRelation: "workspace_isolation_audit"
+            referencedColumns: ["workspace_id"]
+          },
+          {
+            foreignKeyName: "workspace_settings_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: true
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workspace_states: {
         Row: {
           admin_unit_id: string
@@ -8596,6 +9009,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "admin_units"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspace_states_admin_unit_id_fkey"
+            columns: ["admin_unit_id"]
+            isOneToOne: false
+            referencedRelation: "zone_facility_hierarchy"
+            referencedColumns: ["lga_id"]
           },
           {
             foreignKeyName: "workspace_states_workspace_id_fkey"
@@ -8989,18 +9409,45 @@ export type Database = {
           role_count: number | null
           roles: string[] | null
           user_metadata: Json | null
+          workspace_count: number | null
+        }
+        Relationships: []
+      }
+      all_invitations_view: {
+        Row: {
+          accepted_at: string | null
+          email: string | null
+          expires_at: string | null
+          id: string | null
+          invitation_token: string | null
+          invited_at: string | null
+          invited_by: string | null
+          invited_by_name: string | null
+          personal_message: string | null
+          pre_assigned_role: Database["public"]["Enums"]["app_role"] | null
+          revoked_at: string | null
+          status: Database["public"]["Enums"]["invitation_status"] | null
           workspace_id: string | null
+          workspace_name: string | null
+          workspace_role: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "workspace_members_workspace_id_fkey"
+            foreignKeyName: "user_invitations_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_invitations_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspace_isolation_audit"
             referencedColumns: ["workspace_id"]
           },
           {
-            foreignKeyName: "workspace_members_workspace_id_fkey"
+            foreignKeyName: "user_invitations_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
@@ -9026,10 +9473,11 @@ export type Database = {
       }
       audit_summary_by_resource: {
         Row: {
-          last_modified_at: string | null
+          critical_actions: number | null
+          high_actions: number | null
+          last_action_at: string | null
           resource: string | null
-          total_changes: number | null
-          unique_resources_affected: number | null
+          total_actions: number | null
           unique_users: number | null
         }
         Relationships: []
@@ -9249,6 +9697,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "facilities"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "slot_assignments_facility_id_fkey"
+            columns: ["facility_id"]
+            isOneToOne: false
+            referencedRelation: "zone_facility_hierarchy"
+            referencedColumns: ["facility_id"]
           },
           {
             foreignKeyName: "slot_assignments_vehicle_id_fkey"
@@ -9632,6 +10087,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "vehicles_current_location_id_fkey"
+            columns: ["current_location_id"]
+            isOneToOne: false
+            referencedRelation: "zone_facility_hierarchy"
+            referencedColumns: ["facility_id"]
+          },
+          {
             foreignKeyName: "vehicles_fleet_id_fkey"
             columns: ["fleet_id"]
             isOneToOne: false
@@ -9837,6 +10299,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "vlms_assignments_assigned_location_id_fkey"
+            columns: ["assigned_location_id"]
+            isOneToOne: false
+            referencedRelation: "zone_facility_hierarchy"
+            referencedColumns: ["facility_id"]
+          },
+          {
             foreignKeyName: "vlms_assignments_assigned_to_id_fkey"
             columns: ["assigned_to_id"]
             isOneToOne: false
@@ -9978,6 +10447,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "facilities"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vlms_vehicles_current_location_id_fkey"
+            columns: ["current_location_id"]
+            isOneToOne: false
+            referencedRelation: "zone_facility_hierarchy"
+            referencedColumns: ["facility_id"]
           },
           {
             foreignKeyName: "vlms_vehicles_updated_by_fkey"
@@ -10300,6 +10776,38 @@ export type Database = {
           },
         ]
       }
+      zone_facility_hierarchy: {
+        Row: {
+          facility_id: string | null
+          facility_lat: number | null
+          facility_lng: number | null
+          facility_name: string | null
+          facility_type: Database["public"]["Enums"]["facility_type"] | null
+          lga_id: string | null
+          lga_name: string | null
+          warehouse_id: string | null
+          warehouse_name: string | null
+          zone_code: string | null
+          zone_id: string | null
+          zone_name: string | null
+        }
+        Relationships: []
+      }
+      zone_metrics: {
+        Row: {
+          created_at: string | null
+          facility_count: number | null
+          fleet_count: number | null
+          is_active: boolean | null
+          lga_count: number | null
+          updated_at: string | null
+          warehouse_count: number | null
+          zone_code: string | null
+          zone_id: string | null
+          zone_name: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       _postgis_deprecate: {
@@ -10512,6 +11020,7 @@ export type Database = {
         Args: { facilities: Json }
         Returns: {
           error_message: string
+          failed_count: number
           inserted_count: number
         }[]
       }
@@ -11033,6 +11542,7 @@ export type Database = {
         Args: { p_end_date?: string; p_start_date?: string }
         Returns: Json
       }
+      get_funding_source_id: { Args: { source_code: string }; Returns: string }
       get_h3_cell_metrics: {
         Args: {
           p_end_date?: string
@@ -11068,6 +11578,10 @@ export type Database = {
           total_demand: number
           warehouses_count: number
         }[]
+      }
+      get_implementing_partner_id: {
+        Args: { partner_code: string }
+        Returns: string
       }
       get_invitation_by_token: { Args: { p_token: string }; Returns: Json }
       get_low_stock_alerts: {
@@ -11134,6 +11648,10 @@ export type Database = {
           total_facilities_served: number
           total_items_delivered: number
         }[]
+      }
+      get_programme_category_id: {
+        Args: { programme_name: string }
+        Returns: string
       }
       get_route_efficiency: {
         Args: { p_end_date?: string; p_start_date?: string }
@@ -11381,6 +11899,17 @@ export type Database = {
           receiving_vehicle_ids: string[]
           source_vehicle_id: string
           status: string
+        }[]
+      }
+      get_zone_summary: {
+        Args: { zone_uuid: string }
+        Returns: {
+          active_dispatches: number
+          facility_count: number
+          fleet_count: number
+          lga_count: number
+          warehouse_count: number
+          zone_name: string
         }[]
       }
       gettransactionid: { Args: never; Returns: unknown }
@@ -12254,6 +12783,7 @@ export type Database = {
         | "pharmacy"
         | "lab"
         | "other"
+        | "warehouse"
       fuel_type: "diesel" | "petrol" | "electric"
       invitation_status: "pending" | "accepted" | "expired" | "revoked"
       license_type: "standard" | "commercial"
@@ -12478,6 +13008,7 @@ export const Constants = {
         "pharmacy",
         "lab",
         "other",
+        "warehouse",
       ],
       fuel_type: ["diesel", "petrol", "electric"],
       invitation_status: ["pending", "accepted", "expired", "revoked"],

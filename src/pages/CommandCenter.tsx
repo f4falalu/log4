@@ -2,11 +2,11 @@ import { useState, useMemo } from 'react';
 import { Facility, Warehouse, DeliveryBatch } from '@/types';
 import KPIMetrics from '@/components/dashboard/KPIMetrics';
 import FleetStatus from '@/components/dashboard/FleetStatus';
-import { UnifiedMapContainer } from '@/components/map/UnifiedMapContainer';
+import { DashboardMapLibre } from '@/components/map/DashboardMapLibre';
 import ActiveDeliveriesPanel from '@/components/delivery/ActiveDeliveriesPanel';
 import ActivityTimeline from '@/components/dashboard/ActivityTimeline';
 import BatchDetailsPanel from '@/components/delivery/BatchDetailsPanel';
-import { RefreshCw, Plus, Truck, Users } from 'lucide-react';
+import { RefreshCw, Plus, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
@@ -88,7 +88,7 @@ const CommandCenter = ({ facilities, warehouses, batches }: CommandCenterProps) 
             <CardDescription>Common operations and workflows</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <Button
                 onClick={() => setWorkflowDialogOpen(true)}
                 variant="default"
@@ -100,19 +100,6 @@ const CommandCenter = ({ facilities, warehouses, batches }: CommandCenterProps) 
                 </div>
                 <span className="text-xs font-normal text-muted-foreground">
                   Start unified dispatch workflow
-                </span>
-              </Button>
-              <Button
-                onClick={() => navigate('/fleetops/dispatch')}
-                variant="outline"
-                className="h-auto py-4 flex flex-col items-start gap-2"
-              >
-                <div className="flex items-center gap-2">
-                  <Truck className="h-4 w-4" />
-                  <span className="font-semibold">Manage Dispatch</span>
-                </div>
-                <span className="text-xs font-normal text-muted-foreground">
-                  Tactical dispatch operations
                 </span>
               </Button>
               <Button
@@ -153,17 +140,11 @@ const CommandCenter = ({ facilities, warehouses, batches }: CommandCenterProps) 
 
           {/* RIGHT: Map + Details */}
           <div className="lg:col-span-2 space-y-4">
-            <UnifiedMapContainer
-              mode="dashboard"
+            <DashboardMapLibre
               facilities={facilities}
               warehouses={warehouses}
               batches={batches}
               selectedBatchId={selectedBatchId}
-              center={[12.0, 8.5]}
-              zoom={7}
-              tileProvider="standard"
-              showToolbar={false}
-              showBottomPanel={false}
               onBatchClick={handleBatchClick}
               className="rounded-lg overflow-hidden shadow-sm border border-border h-[500px]"
             />

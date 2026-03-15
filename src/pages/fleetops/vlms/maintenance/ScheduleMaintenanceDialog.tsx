@@ -188,7 +188,7 @@ export function ScheduleMaintenanceDialog({ open, onOpenChange }: ScheduleMainte
             </div>
 
             <div className="col-span-2 space-y-2">
-              <Label htmlFor="estimated-cost">Estimated Cost (₦)</Label>
+              <Label htmlFor="estimated-cost">Estimated Cost</Label>
               <Input
                 id="estimated-cost"
                 type="number"

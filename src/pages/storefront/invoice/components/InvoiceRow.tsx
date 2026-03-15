@@ -1,4 +1,5 @@
 import { format } from 'date-fns';
+import { formatCurrency } from '@/lib/formatCurrency';
 import { Building2, Warehouse, Calendar } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -13,14 +14,6 @@ interface InvoiceRowProps {
 
 export function InvoiceRow({ invoice, onClick, isSelected }: InvoiceRowProps) {
   const statusConfig = INVOICE_STATUS_CONFIG[invoice.status];
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-NG', {
-      style: 'currency',
-      currency: 'NGN',
-      minimumFractionDigits: 0,
-    }).format(value);
-  };
 
   const formatDate = (dateString: string) => {
     try {

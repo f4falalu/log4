@@ -12,6 +12,7 @@
  */
 
 import type maplibregl from 'maplibre-gl';
+import { DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM } from '@/lib/constants';
 
 /**
  * Base style configurations
@@ -43,8 +44,8 @@ export interface BaseStyleConfig {
 export const DEFAULT_BASE_STYLE: BaseStyleConfig = {
   lightStyle: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
   darkStyle: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
-  defaultCenter: [3.3792, 6.5244], // Lagos, Nigeria
-  defaultZoom: 11,
+  defaultCenter: DEFAULT_MAP_CENTER,
+  defaultZoom: DEFAULT_MAP_ZOOM,
   minZoom: 3,
   maxZoom: 18,
 };

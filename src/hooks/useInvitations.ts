@@ -74,7 +74,7 @@ export function useWorkspaceInvitations(workspaceId: string | null | undefined) 
       if (!workspaceId) return [];
 
       const { data, error } = await supabase
-        .from('user_invitations')
+        .from('all_invitations_view')
         .select('*')
         .eq('workspace_id', workspaceId)
         .order('invited_at', { ascending: false });

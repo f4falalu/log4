@@ -21,6 +21,7 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { useCreateProgram, useUpdateProgram } from '@/hooks/usePrograms';
 import { toast } from 'sonner';
+import { useFundingSources } from '@/hooks/useFundingSources';
 import type { Program, ProgramFormData } from '@/types/program';
 
 interface ProgramFormDialogProps {
@@ -37,6 +38,7 @@ export function ProgramFormDialog({
   const isEditing = !!program;
   const createProgram = useCreateProgram();
   const updateProgram = useUpdateProgram();
+  const { data: fundingSources = [] } = useFundingSources();
 
   const {
     register,
@@ -183,12 +185,9 @@ export function ProgramFormDialog({
                     <SelectValue placeholder="Select funding source" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="usaid-pmm">USAID PMM</SelectItem>
-                    <SelectItem value="usaid-art">USAID ART</SelectItem>
-                    <SelectItem value="global-fund">Global Fund</SelectItem>
-                    <SelectItem value="usaid-nhdp">USAID NHDP</SelectItem>
-                    <SelectItem value="who">WHO</SelectItem>
-                    <SelectItem value="unfpa">UNFPA</SelectItem>
+                    {fundingSources.map((fs) => (
+                      <SelectItem key={fs.id} value={fs.code}>{fs.name}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

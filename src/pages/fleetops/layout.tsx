@@ -1,5 +1,5 @@
 import { Outlet, useLocation } from 'react-router-dom';
-import { Package, LayoutDashboard, Users, Truck, GitBranch, FileBarChart, Wrench, Radio, History } from 'lucide-react';
+import { Package, LayoutDashboard, Users, GitBranch, FileBarChart, Wrench, Radio, History } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { SecondarySidebar, NavigationGroup } from '@/components/layout/SecondarySidebar';
 import { useMemo } from 'react';
@@ -23,11 +23,6 @@ const navigationGroups: NavigationGroup[] = [
         label: 'Batches',
         href: '/fleetops/batches',
         icon: Package
-      },
-      {
-        label: 'Dispatch',
-        href: '/fleetops/dispatch',
-        icon: Truck
       },
     ],
   },

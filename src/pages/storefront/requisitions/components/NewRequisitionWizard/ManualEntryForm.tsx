@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -16,7 +16,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Separator } from '@/components/ui/separator';
 import {
   Table,
   TableBody,
@@ -38,7 +37,9 @@ import {
 import { useFacilities } from '@/hooks/useFacilities';
 import { useWarehouses } from '@/hooks/useWarehouses';
 import { useCreateRequisition } from '@/hooks/useRequisitions';
+import { useItems } from '@/hooks/useItems';
 import { REQUISITION_PURPOSES, type RequisitionPurpose } from '@/types/requisitions';
+import type { Item } from '@/types/items';
 
 const lineItemSchema = z.object({
   item_name: z.string().min(1, 'Item name is required'),
@@ -66,6 +67,110 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
+// Autocomplete input for item names with DB suggestions
+function ItemAutocompleteInput({
+  value,
+  onChange,
+  onSelect,
+  items,
+  placeholder,
+  className,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  onSelect: (item: Item) => void;
+  items: Item[];
+  placeholder?: string;
+  className?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [focusedIndex, setFocusedIndex] = useState(-1);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+
+  const suggestions = useMemo(() => {
+    if (!value || value.length < 1) return [];
+    const search = value.toLowerCase();
+    return items
+      .filter(item =>
+        item.item_name.toLowerCase().includes(search) ||
+        item.product_code?.toLowerCase().includes(search)
+      )
+      .slice(0, 8);
+  }, [value, items]);
+
+  const showDropdown = open && suggestions.length > 0;
+
+  useEffect(() => {
+    setFocusedIndex(-1);
+  }, [suggestions]);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (!showDropdown) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setFocusedIndex(prev => Math.min(prev + 1, suggestions.length - 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setFocusedIndex(prev => Math.max(prev - 1, 0));
+    } else if (e.key === 'Enter' && focusedIndex >= 0) {
+      e.preventDefault();
+      onSelect(suggestions[focusedIndex]);
+      setOpen(false);
+    } else if (e.key === 'Escape') {
+      setOpen(false);
+    }
+  };
+
+  return (
+    <div className="relative">
+      <Input
+        ref={inputRef}
+        value={value}
+        onChange={(e) => {
+          onChange(e.target.value);
+          setOpen(true);
+        }}
+        onFocus={() => value && setOpen(true)}
+        onBlur={() => setTimeout(() => setOpen(false), 200)}
+        onKeyDown={handleKeyDown}
+        placeholder={placeholder}
+        className={className}
+        autoComplete="off"
+      />
+      {showDropdown && (
+        <div
+          ref={listRef}
+          className="absolute top-full left-0 right-0 z-[9999] mt-1 max-h-48 overflow-y-auto rounded-md border bg-popover shadow-md"
+        >
+          {suggestions.map((item, idx) => (
+            <button
+              key={item.id}
+              type="button"
+              className={`w-full text-left px-3 py-2 text-sm hover:bg-accent cursor-pointer ${
+                idx === focusedIndex ? 'bg-accent' : ''
+              }`}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                onSelect(item);
+                setOpen(false);
+              }}
+            >
+              <span className="font-medium">{item.item_name}</span>
+              {item.unit_pack && (
+                <span className="text-muted-foreground ml-2">({item.unit_pack})</span>
+              )}
+              {item.program && (
+                <span className="text-muted-foreground ml-2 text-xs">- {item.program}</span>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 interface ManualEntryFormProps {
   onClose: () => void;
   onSuccess: () => void;
@@ -83,7 +188,10 @@ export function ManualEntryForm({ onClose, onSuccess }: ManualEntryFormProps) {
   
   const { data: facilitiesData, isLoading: facilitiesLoading, error: facilitiesError } = useFacilities();
   const { data: warehousesData, isLoading: warehousesLoading, error: warehousesError } = useWarehouses();
+  const { data: itemsData } = useItems();
   const createRequisition = useCreateRequisition();
+
+  const dbItems = itemsData?.items || [];
 
   const facilities = facilitiesData?.facilities || [];
   const warehouses = warehousesData?.warehouses || [];
@@ -125,8 +233,7 @@ export function ManualEntryForm({ onClose, onSuccess }: ManualEntryFormProps) {
         facility_id: values.facility_id,
         warehouse_id: values.warehouse_id,
         priority: 'medium',
-        requisition_date: values.requisition_date,
-        required_by_date: values.required_by_date || null,
+        requested_delivery_date: values.required_by_date || values.requisition_date,
         notes: values.notes,
         items: values.items.map(item => ({
           item_name: item.item_name,
@@ -376,9 +483,20 @@ export function ManualEntryForm({ onClose, onSuccess }: ManualEntryFormProps) {
                       <TableRow key={field.id}>
                         <TableCell className="font-mono text-xs">{index + 1}</TableCell>
                         <TableCell>
-                          <Input
-                            {...form.register(`items.${index}.item_name`)}
-                            placeholder="Item name"
+                          <ItemAutocompleteInput
+                            value={form.watch(`items.${index}.item_name`) || ''}
+                            onChange={(val) => form.setValue(`items.${index}.item_name`, val)}
+                            onSelect={(item) => {
+                              form.setValue(`items.${index}.item_name`, item.item_name);
+                              if (item.unit_pack) {
+                                form.setValue(`items.${index}.unit_pack`, item.unit_pack);
+                              }
+                              if (item.unit_price) {
+                                form.setValue(`items.${index}.unit_price`, item.unit_price);
+                              }
+                            }}
+                            items={dbItems}
+                            placeholder="Start typing to search..."
                             className="h-8"
                           />
                         </TableCell>

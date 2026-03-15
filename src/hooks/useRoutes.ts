@@ -16,7 +16,8 @@ export interface RouteFilters {
 }
 
 /**
- * Fetch all routes with optional filters and joins
+ * Fetch all routes with optional filters, resolving related names separately
+ * to avoid PostgREST schema cache issues with embedded selects.
  */
 export function useRoutes(filters?: RouteFilters) {
   return useQuery({
@@ -24,12 +25,7 @@ export function useRoutes(filters?: RouteFilters) {
     queryFn: async () => {
       let query = supabase
         .from('routes')
-        .select(`
-          *,
-          zones:zone_id (id, name),
-          service_areas:service_area_id (id, name),
-          warehouses:warehouse_id (id, name, lat, lng)
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (filters?.zone_id) {
@@ -51,23 +47,46 @@ export function useRoutes(filters?: RouteFilters) {
       const { data, error } = await query;
       if (error) throw new Error(`Failed to fetch routes: ${error.message}`);
 
-      // Enrich with facility counts
       const routes = (data || []) as unknown as Route[];
-      if (routes.length > 0) {
-        const ids = routes.map(r => r.id);
-        const { data: facCounts } = await supabase
-          .from('route_facilities')
-          .select('route_id')
-          .in('route_id', ids);
+      if (routes.length === 0) return routes;
 
-        const countMap: Record<string, number> = {};
-        facCounts?.forEach(f => {
-          countMap[f.route_id] = (countMap[f.route_id] || 0) + 1;
-        });
-        routes.forEach(r => {
-          r.facility_count = countMap[r.id] || 0;
-        });
-      }
+      // Collect unique FK IDs
+      const zoneIds = [...new Set(routes.map(r => r.zone_id).filter(Boolean))];
+      const saIds = [...new Set(routes.map(r => r.service_area_id).filter(Boolean))];
+      const whIds = [...new Set(routes.map(r => r.warehouse_id).filter(Boolean))];
+      const routeIds = routes.map(r => r.id);
+
+      // Batch-fetch related data in parallel
+      const [zonesRes, saRes, whRes, facRes] = await Promise.all([
+        zoneIds.length > 0
+          ? supabase.from('zones').select('id, name').in('id', zoneIds)
+          : { data: [] },
+        saIds.length > 0
+          ? supabase.from('service_areas').select('id, name').in('id', saIds)
+          : { data: [] },
+        whIds.length > 0
+          ? supabase.from('warehouses').select('id, name, lat, lng').in('id', whIds)
+          : { data: [] },
+        supabase.from('route_facilities').select('route_id').in('route_id', routeIds),
+      ]);
+
+      // Build lookup maps
+      const zoneMap = new Map((zonesRes.data || []).map(z => [z.id, z]));
+      const saMap = new Map((saRes.data || []).map(s => [s.id, s]));
+      const whMap = new Map((whRes.data || []).map(w => [w.id, w]));
+
+      const facCountMap: Record<string, number> = {};
+      (facRes.data || []).forEach(f => {
+        facCountMap[f.route_id] = (facCountMap[f.route_id] || 0) + 1;
+      });
+
+      // Enrich routes
+      routes.forEach(r => {
+        r.zones = zoneMap.get(r.zone_id) || null;
+        r.service_areas = saMap.get(r.service_area_id) || null;
+        r.warehouses = whMap.get(r.warehouse_id) || null;
+        r.facility_count = facCountMap[r.id] || 0;
+      });
 
       return routes;
     },
@@ -86,17 +105,32 @@ export function useRoute(id: string | null | undefined) {
 
       const { data, error } = await supabase
         .from('routes')
-        .select(`
-          *,
-          zones:zone_id (id, name),
-          service_areas:service_area_id (id, name),
-          warehouses:warehouse_id (id, name, lat, lng)
-        `)
+        .select('*')
         .eq('id', id)
         .single();
 
       if (error) throw new Error(`Failed to fetch route: ${error.message}`);
-      return data as unknown as Route;
+
+      const route = data as unknown as Route;
+
+      // Resolve related names in parallel
+      const [zoneRes, saRes, whRes] = await Promise.all([
+        route.zone_id
+          ? supabase.from('zones').select('id, name').eq('id', route.zone_id).single()
+          : { data: null },
+        route.service_area_id
+          ? supabase.from('service_areas').select('id, name').eq('id', route.service_area_id).single()
+          : { data: null },
+        route.warehouse_id
+          ? supabase.from('warehouses').select('id, name, lat, lng').eq('id', route.warehouse_id).single()
+          : { data: null },
+      ]);
+
+      route.zones = zoneRes.data || null;
+      route.service_areas = saRes.data || null;
+      route.warehouses = whRes.data || null;
+
+      return route;
     },
     enabled: !!id,
     staleTime: 1000 * 60 * 5,
@@ -114,17 +148,28 @@ export function useRouteFacilities(routeId: string | null | undefined) {
 
       const { data, error } = await supabase
         .from('route_facilities')
-        .select(`
-          *,
-          facilities:facility_id (
-            id, name, lat, lng, type, level_of_care, lga
-          )
-        `)
+        .select('*')
         .eq('route_id', routeId)
         .order('sequence_order', { ascending: true });
 
       if (error) throw new Error(`Failed to fetch route facilities: ${error.message}`);
-      return (data || []) as unknown as RouteFacility[];
+
+      const routeFacilities = (data || []) as unknown as RouteFacility[];
+      if (routeFacilities.length === 0) return routeFacilities;
+
+      // Fetch facility details separately
+      const facilityIds = [...new Set(routeFacilities.map(rf => rf.facility_id))];
+      const { data: facilities } = await supabase
+        .from('facilities')
+        .select('id, name, lat, lng, type, level_of_care, lga')
+        .in('id', facilityIds);
+
+      const facilityMap = new Map((facilities || []).map(f => [f.id, f]));
+      routeFacilities.forEach(rf => {
+        rf.facilities = facilityMap.get(rf.facility_id) || null;
+      });
+
+      return routeFacilities;
     },
     enabled: !!routeId,
     staleTime: 1000 * 60 * 5,

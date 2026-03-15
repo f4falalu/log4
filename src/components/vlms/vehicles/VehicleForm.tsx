@@ -29,7 +29,8 @@ interface VehicleFormProps {
 }
 
 export function VehicleForm({ vehicle, onSubmit, onCancel, isSubmitting }: VehicleFormProps) {
-  const { data: facilities } = useFacilities();
+  const { data: facilitiesData } = useFacilities();
+  const facilities = facilitiesData?.facilities;
 
   const {
     register,

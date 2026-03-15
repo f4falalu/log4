@@ -34,7 +34,7 @@ export function AppLayout({ children, sidebar, breadcrumbs, headerActions }: App
       {!isMobile && <PrimarySidebar />}
 
       {/* Secondary Sidebar + Main Content */}
-      <div className={cn('flex-1 flex h-full', !isMobile && 'ml-16')}>
+      <div className={cn('flex-1 flex h-full min-w-0 overflow-hidden', !isMobile && 'ml-16')}>
         <SidebarProvider defaultOpen={true}>
           {/* Secondary Sidebar - Collapsible with offset wrapper for desktop */}
           <div className={cn(!isMobile && 'sidebar-offset-wrapper')}>
@@ -42,7 +42,7 @@ export function AppLayout({ children, sidebar, breadcrumbs, headerActions }: App
           </div>
 
           {/* Main Content Area */}
-          <SidebarInset className="flex flex-col flex-1">
+          <SidebarInset className="flex flex-col flex-1 min-w-0 overflow-hidden">
             {/* Header with Breadcrumbs */}
             <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b bg-background px-4">
               <div className="flex items-center gap-2 flex-1">
@@ -86,7 +86,7 @@ export function AppLayout({ children, sidebar, breadcrumbs, headerActions }: App
             </header>
 
             {/* Page Content */}
-            <main className={cn('flex-1 overflow-auto', isMobile && 'pb-16')}>
+            <main className={cn('flex-1 min-w-0 overflow-auto', isMobile && 'pb-16')}>
               {children}
             </main>
           </SidebarInset>

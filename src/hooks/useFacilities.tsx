@@ -47,6 +47,7 @@ function mapDbToFacility(dbFacility: any): Facility {
     phone_pharmacy: dbFacility.phone_pharmacy || undefined,
     email: dbFacility.email || undefined,
     storage_capacity: dbFacility.storage_capacity || undefined,
+    zone_id: dbFacility.zone_id || undefined,
     created_at: dbFacility.created_at,
     updated_at: dbFacility.updated_at,
     created_by: dbFacility.created_by,

@@ -32,6 +32,7 @@ import { useFacilities } from '@/hooks/useFacilities';
 import { useServiceZones } from '@/hooks/useServiceZones';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { DEFAULT_WORKSPACE_ID } from '@/lib/constants';
 
 interface FacilityAssignerProps {
   active: boolean;
@@ -107,9 +108,14 @@ export function FacilityAssigner({ active, onClose }: FacilityAssignerProps) {
       } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
-      // Get workspace_id (using first available zone's workspace or mock workspace)
-      // TODO: Get actual workspace_id from context when workspace system is implemented
-      const workspaceId = '00000000-0000-0000-0000-000000000000'; // Mock workspace ID
+      // Get workspace_id from user's membership
+      const { data: membership } = await supabase
+        .from('workspace_members')
+        .select('workspace_id')
+        .eq('user_id', user.id)
+        .limit(1)
+        .maybeSingle();
+      const workspaceId = membership?.workspace_id || DEFAULT_WORKSPACE_ID;
 
       // Create facility assignments
       const assignments = Array.from(selectedFacilityIds).map((facilityId) => ({

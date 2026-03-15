@@ -97,10 +97,11 @@ export function VehicleConfigurator({ onSave, onCancel }: VehicleConfiguratorPro
   }, [selectedCategory?.code]);
 
   // Handler for tier count changes
-  const handleTierCountChange = (count: number, tierPreset: TierConfig[]) => {
+  // overrideWeight/overrideVolume are used during initialization to avoid stale closure values
+  const handleTierCountChange = (count: number, tierPreset: TierConfig[], overrideWeight?: number, overrideVolume?: number) => {
     // Calculate weight and volume per tier
-    const totalWeight = payload.max_payload_kg || 0;
-    const totalVolume = calculatedVolume || 0;
+    const totalWeight = overrideWeight ?? payload.max_payload_kg ?? 0;
+    const totalVolume = overrideVolume ?? calculatedVolume ?? 0;
 
     const tiersWithCapacity = tierPreset.map((tier) => ({
       ...tier,
@@ -117,6 +118,12 @@ export function VehicleConfigurator({ onSave, onCancel }: VehicleConfiguratorPro
   React.useEffect(() => {
     if (selectedCategory && vehicleConstraints) {
       const defaultConfig = getDefaultConfig(selectedCategory.code);
+      // Resolve effective payload for tier initialization (default config takes priority over stale state)
+      const effectivePayloadKg = defaultConfig?.payload.max_payload_kg ?? payload.max_payload_kg ?? 0;
+      const effectiveVolumeM3 = defaultConfig
+        ? (defaultConfig.dimensions.length_cm * defaultConfig.dimensions.width_cm * defaultConfig.dimensions.height_cm) / 1_000_000
+        : calculatedVolume ?? 0;
+
       if (defaultConfig) {
         // Only populate if fields are empty
         if (!dimensions.length_cm && !dimensions.width_cm && !dimensions.height_cm) {
@@ -150,7 +157,7 @@ export function VehicleConfigurator({ onSave, onCancel }: VehicleConfiguratorPro
         };
 
         const preset = tierPresets[defaultTierCount] || tierPresets[2];
-        handleTierCountChange(defaultTierCount, preset);
+        handleTierCountChange(defaultTierCount, preset, effectivePayloadKg, effectiveVolumeM3);
       }
     }
   }, [selectedCategory?.code]); // Only depend on category code change

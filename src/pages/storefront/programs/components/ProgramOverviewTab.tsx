@@ -12,6 +12,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { usePrograms } from '@/hooks/usePrograms';
+import { useFundingSources } from '@/hooks/useFundingSources';
 import { ProgramCard } from './ProgramCard';
 import { ProgramFormDialog } from './ProgramFormDialog';
 import { ProgramDetailDialog } from './ProgramDetailDialog';
@@ -26,6 +27,7 @@ export function ProgramOverviewTab() {
   const [selectedProgram, setSelectedProgram] = useState<Program | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
 
+  const { data: fundingSources = [] } = useFundingSources();
   const { data, isLoading, error } = usePrograms({
     search: searchTerm,
     status: statusFilter || undefined,
@@ -88,12 +90,9 @@ export function ProgramOverviewTab() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Funding Sources</SelectItem>
-              <SelectItem value="usaid-pmm">USAID PMM</SelectItem>
-              <SelectItem value="usaid-art">USAID ART</SelectItem>
-              <SelectItem value="global-fund">Global Fund</SelectItem>
-              <SelectItem value="usaid-nhdp">USAID NHDP</SelectItem>
-              <SelectItem value="who">WHO</SelectItem>
-              <SelectItem value="unfpa">UNFPA</SelectItem>
+              {fundingSources.map((fs) => (
+                <SelectItem key={fs.id} value={fs.code}>{fs.name}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
 

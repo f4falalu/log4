@@ -12,6 +12,7 @@ import type {
   DriverStatus,
   EntityType,
 } from '@/types/live-map';
+import { DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM } from '@/lib/constants';
 
 interface LiveMapState {
   // View filters
@@ -79,8 +80,8 @@ const defaultFilters: LiveMapFilters = {
 };
 
 const defaultViewState: MapViewState = {
-  center: [8.5167, 12.0], // Kano, Nigeria
-  zoom: 11,
+  center: DEFAULT_MAP_CENTER,
+  zoom: DEFAULT_MAP_ZOOM,
 };
 
 export const useLiveMapStore = create<LiveMapState>()(

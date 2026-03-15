@@ -80,6 +80,7 @@ import { toast } from 'sonner';
 interface DriverManagementTableProps {
   onDriverSelect?: (driver: Driver) => void;
   onViewChange?: (view: 'table' | 'grid') => void;
+  onEditDriver?: (driver: Driver) => void;
 }
 
 const ITEMS_PER_PAGE = 10;
@@ -107,6 +108,7 @@ function getDriverStatusBadge(status: Driver['status']) {
 export function DriverManagementTable({
   onDriverSelect,
   onViewChange,
+  onEditDriver,
 }: DriverManagementTableProps) {
   const { data: drivers = [], isLoading } = useDrivers();
   const { updateDriver, deleteDriver } = useDriverManagement();
@@ -394,7 +396,10 @@ export function DriverManagementTable({
                             <FileText className="h-4 w-4" />
                             View Profile
                           </DropdownMenuItem>
-                          <DropdownMenuItem className="gap-2">
+                          <DropdownMenuItem
+                            onClick={() => onEditDriver?.(driver)}
+                            className="gap-2"
+                          >
                             <Edit className="h-4 w-4" />
                             Edit Driver
                           </DropdownMenuItem>

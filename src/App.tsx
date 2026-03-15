@@ -24,7 +24,7 @@ import AdminGeneralSettings from "./pages/admin/general/page";
 import AdminUsersPage from "./pages/admin/users/page";
 import AdminUserDetailPage from "./pages/admin/users/[id]/page";
 import AdminUserEditPage from "./pages/admin/users/[id]/edit/page";
-import AdminUserCreatePage from "./pages/admin/users/create/page";
+import AdminInvitationsPage from "./pages/admin/invitations/page";
 import AdminWorkspacesPage from "./pages/admin/workspaces/page";
 import AdminWorkspaceDetailPage from "./pages/admin/workspaces/[id]/page";
 import AdminSessionsPage from "./pages/admin/sessions/page";
@@ -41,6 +41,7 @@ import PlaybackMapPage from "./pages/map/playback/page";
 // Onboarding Pages
 import OnboardingWizardV2 from "./components/onboarding/OnboardingWizardV2";
 import AcceptInvitationPage from "./pages/invite/AcceptInvitationPage";
+import ProfileCompletionPage from "./pages/onboarding/ProfileCompletionPage";
 import FleetOpsHome from "./pages/fleetops/page";
 import StorefrontHome from "./pages/storefront/page";
 import StorefrontFacilities from "./pages/storefront/facilities/page";
@@ -63,7 +64,7 @@ import NotFound from "./pages/NotFound";
 import ErrorBoundary from "./components/ErrorBoundary";
 // Lazy load pages that are also dynamically imported by SecondarySidebar
 const DriverManagement = lazy(() => import("./pages/DriverManagement"));
-const DispatchPage = lazy(() => import("./pages/DispatchPage"));
+
 const BatchManagement = lazy(() => import("./pages/BatchManagement"));
 const VLMSDashboard = lazy(() => import("./pages/fleetops/vlms/page"));
 
@@ -119,6 +120,7 @@ const App = () => (
 
                   {/* Onboarding Routes */}
                   <Route path="/onboarding" element={<ProtectedRoute><OnboardingWizardV2 /></ProtectedRoute>} />
+                  <Route path="/onboarding/profile" element={<ProtectedRoute><ProfileCompletionPage /></ProtectedRoute>} />
                   <Route path="/invite/:token" element={<AcceptInvitationPage />} />
 
                   {/* FleetOps Workspace */}
@@ -129,7 +131,7 @@ const App = () => (
                   }>
                     <Route index element={<FleetOpsHome />} />
                     <Route path="drivers" element={<DriverManagement />} />
-                    <Route path="dispatch" element={<DispatchPage />} />
+
                     <Route path="batches" element={<BatchManagement />} />
                     <Route path="tactical" element={<Navigate to="/map/live" replace />} />
                     <Route path="vehicles" element={<VehicleRegistry />} />
@@ -228,13 +230,13 @@ const App = () => (
 
                     {/* Members Tab */}
                     <Route path="members" element={<AdminUsersPage />} />
-                    <Route path="members/create" element={<AdminUserCreatePage />} />
+                    <Route path="invitations" element={<AdminInvitationsPage />} />
                     <Route path="members/:id" element={<AdminUserDetailPage />} />
                     <Route path="members/:id/edit" element={<AdminUserEditPage />} />
 
                     {/* Legacy user routes - redirect to members */}
                     <Route path="users" element={<Navigate to="/admin/members" replace />} />
-                    <Route path="users/create" element={<Navigate to="/admin/members/create" replace />} />
+                    <Route path="users/create" element={<Navigate to="/admin/invitations" replace />} />
                     <Route path="users/:id" element={<AdminUserDetailPage />} />
                     <Route path="users/:id/edit" element={<AdminUserEditPage />} />
 
@@ -280,7 +282,7 @@ const App = () => (
                   <Route path="/facilities" element={<Navigate to="/storefront/facilities" replace />} />
                   <Route path="/tactical" element={<Navigate to="/fleetops/tactical" replace />} />
                   <Route path="/tactical-map" element={<Navigate to="/fleetops/tactical" replace />} />
-                  <Route path="/dispatch" element={<Navigate to="/fleetops/dispatch" replace />} />
+
                   <Route path="/drivers" element={<Navigate to="/fleetops/drivers" replace />} />
                   <Route path="/vehicles" element={<Navigate to="/fleetops/vehicles" replace />} />
                   <Route path="/reports" element={<Navigate to="/fleetops/reports" replace />} />

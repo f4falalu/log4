@@ -10,7 +10,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
 import { Building2 } from 'lucide-react';
-import { useLGAs } from '@/hooks/useLGAs';
+import { useStates, useLGAsByState } from '@/hooks/useAdminUnits';
 import type { FacilityFilters } from '@/lib/facility-validation';
 import type { Facility } from '@/types';
 
@@ -27,23 +27,16 @@ export function FacilityMapFilterSidebar({
   facilities,
   facilitiesCount,
 }: FacilityMapFilterSidebarProps) {
-  // Fetch all LGAs
-  const { data: allLGAs } = useLGAs({});
+  // Fetch states from admin_units (admin_level = 4)
+  const { data: states = [] } = useStates();
 
-  // Get unique states from LGAs
-  const states = useMemo(() => {
-    if (!allLGAs) return ['kano'];
-    const uniqueStates = [...new Set(allLGAs.map((l) => l.state))].filter(Boolean);
-    return uniqueStates.length > 0 ? uniqueStates : ['kano'];
-  }, [allLGAs]);
+  // Fetch LGAs for selected state from admin_units (admin_level = 6)
+  const selectedStateId = useMemo(() => {
+    if (!filters.state) return null;
+    return states.find((s) => s.name === filters.state)?.id || null;
+  }, [filters.state, states]);
 
-  // Filter LGAs based on selected state
-  const filteredLGAs = useMemo(() => {
-    if (!allLGAs || !filters.state) return [];
-    return allLGAs.filter(
-      (l) => l.state?.toLowerCase() === filters.state?.toLowerCase()
-    );
-  }, [allLGAs, filters.state]);
+  const { data: filteredLGAs = [] } = useLGAsByState(selectedStateId);
 
   // Extract unique wards from facilities in selected LGA
   const availableWards = useMemo(() => {
@@ -140,8 +133,8 @@ export function FacilityMapFilterSidebar({
           <SelectContent>
             <SelectItem value="all">All States</SelectItem>
             {states.map((state) => (
-              <SelectItem key={state} value={state}>
-                {state.charAt(0).toUpperCase() + state.slice(1)}
+              <SelectItem key={state.id} value={state.name}>
+                {state.name}
               </SelectItem>
             ))}
           </SelectContent>
@@ -166,6 +159,7 @@ export function FacilityMapFilterSidebar({
               </SelectItem>
             ))}
           </SelectContent>
+
         </Select>
       </FilterGroup>
 

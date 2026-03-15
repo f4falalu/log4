@@ -9,7 +9,7 @@ export function RequisitionSummaryStrip({ requisitions }: RequisitionSummaryStri
   const totalRequisitions = requisitions.length;
   const pendingCount = requisitions.filter(r => r.status === 'pending').length;
   const approvedCount = requisitions.filter(r => r.status === 'approved').length;
-  const totalItems = requisitions.reduce((sum, r) => sum + (r.items?.length || 0), 0);
+  const totalItems = requisitions.reduce((sum, r) => sum + (r.item_count || r.items?.length || 0), 0);
 
   return (
     <div className="h-12 border-t bg-muted/30 px-4 flex items-center gap-6">

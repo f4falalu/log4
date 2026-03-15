@@ -21,6 +21,8 @@ import { Search, Filter, UserPlus, Loader2, Download, AlertCircle } from 'lucide
 import { useUsers, User } from '@/hooks/admin/useUsers';
 import { AppRole } from '@/types';
 import { toCSV, downloadCSV } from '@/lib/csvExport';
+import { useWorkspaces } from '@/hooks/admin/useWorkspaces';
+import { InviteUserDialog } from '@/components/admin/invitations/InviteUserDialog';
 
 const AVAILABLE_ROLES: AppRole[] = [
   'system_admin',
@@ -52,6 +54,9 @@ export function UserTable() {
   const [roleFilter, setRoleFilter] = useState<string[]>([]);
   const { data: usersData = { users: [], total: 0 }, isLoading, error } = useUsers({ search, roleFilter });
   const users = usersData?.users || [];
+  const { data: workspaces = [] } = useWorkspaces();
+  const primaryWorkspace = workspaces[0];
+  const primaryWorkspaceId = primaryWorkspace?.id;
 
   const exportToCSV = () => {
     if (!users || users.length === 0) return;
@@ -116,10 +121,14 @@ export function UserTable() {
           <Download className="h-4 w-4 mr-2" />
           Export CSV
         </Button>
-        <Button onClick={() => navigate('/admin/members/create')}>
-          <UserPlus className="h-4 w-4 mr-2" />
-          Add User
-        </Button>
+        {primaryWorkspaceId ? (
+          <InviteUserDialog workspaceId={primaryWorkspaceId} workspaceName={primaryWorkspace?.name} />
+        ) : (
+          <Button disabled>
+            <UserPlus className="h-4 w-4 mr-2" />
+            Invite User
+          </Button>
+        )}
       </div>
 
       {/* Table */}

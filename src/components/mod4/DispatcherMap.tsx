@@ -4,6 +4,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { tw } from '@/lib/colors';
 import { useTheme } from 'next-themes';
 import { getMapLibreStyle } from '@/lib/mapConfig';
+import { DEFAULT_MAP_CENTER } from '@/lib/constants';
 
 export interface DriverMarker {
   driver_id: string;
@@ -34,7 +35,7 @@ export function DispatcherMap({
   drivers = [],
   selectedDriverId = null,
   onDriverClick,
-  center = [8.6753, 9.082], // Nigeria center
+  center = DEFAULT_MAP_CENTER,
   zoom = 6,
   height = 'h-full',
 }: DispatcherMapProps) {

@@ -36,7 +36,7 @@ export type NavigationItem = {
 const routePrefetchMap: Record<string, () => Promise<any>> = {
   '/fleetops': () => import('@/pages/fleetops/page'),
   '/fleetops/drivers': () => import('@/pages/DriverManagement'),
-  '/fleetops/dispatch': () => import('@/pages/DispatchPage'),
+
   '/fleetops/batches': () => import('@/pages/BatchManagement'),
   '/fleetops/tactical': () => import('@/pages/TacticalMap'),
   '/fleetops/vehicles': () => import('@/pages/VehicleManagementPage'),

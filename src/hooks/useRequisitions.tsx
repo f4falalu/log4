@@ -20,23 +20,32 @@ export function useRequisitions(status?: RequisitionStatus) {
 
       if (error) throw error;
       
-      // Fetch facilities and warehouses separately
+      // Fetch facilities, warehouses, and item counts separately
       const requisitions = data || [];
       const facilityIds = [...new Set(requisitions.map(r => r.facility_id))];
       const warehouseIds = [...new Set(requisitions.map(r => r.warehouse_id))];
-      
-      const [facilitiesData, warehousesData] = await Promise.all([
-        supabase.from('facilities').select('id, name, address').in('id', facilityIds),
-        supabase.from('warehouses').select('id, name').in('id', warehouseIds)
+      const requisitionIds = requisitions.map(r => r.id);
+
+      const [facilitiesData, warehousesData, itemsData] = await Promise.all([
+        supabase.from('facilities').select('id, name, address').in('id', facilityIds.length > 0 ? facilityIds : ['']),
+        supabase.from('warehouses').select('id, name').in('id', warehouseIds.length > 0 ? warehouseIds : ['']),
+        supabase.from('requisition_items').select('requisition_id').in('requisition_id', requisitionIds.length > 0 ? requisitionIds : ['']),
       ]);
 
       const facilitiesMap = new Map(facilitiesData.data?.map(f => [f.id, f]));
       const warehousesMap = new Map(warehousesData.data?.map(w => [w.id, w]));
 
+      // Count items per requisition
+      const itemCountMap = new Map<string, number>();
+      itemsData.data?.forEach(item => {
+        itemCountMap.set(item.requisition_id, (itemCountMap.get(item.requisition_id) || 0) + 1);
+      });
+
       return requisitions.map(req => ({
         ...req,
         facility: facilitiesMap.get(req.facility_id),
-        warehouse: warehousesMap.get(req.warehouse_id)
+        warehouse: warehousesMap.get(req.warehouse_id),
+        item_count: itemCountMap.get(req.id) || 0,
       })) as Requisition[];
     }
   });

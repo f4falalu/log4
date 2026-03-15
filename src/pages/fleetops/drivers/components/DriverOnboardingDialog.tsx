@@ -26,7 +26,6 @@ import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Upload, User, AlertCircle, Loader2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { useDriverManagement, type DriverFormData } from '@/hooks/useDriverManagement';
 import { useUploadDriverDocument } from '@/hooks/useDriverDocuments';
 import { useStates } from '@/hooks/useAdminUnits';
@@ -35,6 +34,8 @@ import { toast } from 'sonner';
 interface DriverOnboardingDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  driver?: any; // If provided, dialog is in edit mode
+  mode?: 'create' | 'edit';
 }
 
 interface OnboardingFormData {
@@ -123,14 +124,59 @@ const COUNTRIES = [
   'South Africa',
 ];
 
-export function DriverOnboardingDialog({ open, onOpenChange }: DriverOnboardingDialogProps) {
+export function DriverOnboardingDialog({ open, onOpenChange, driver, mode = 'create' }: DriverOnboardingDialogProps) {
   const [formData, setFormData] = useState<OnboardingFormData>(initialFormData);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { createDriver } = useDriverManagement();
+  const { createDriver, updateDriver } = useDriverManagement();
   const uploadDocument = useUploadDriverDocument();
 
   // Fetch states for Nigeria
   const { data: nigeriaStates } = useStates();
+
+  // Populate form when driver prop changes (edit mode)
+  React.useEffect(() => {
+    if (driver && mode === 'edit') {
+      const nameParts = driver.name?.split(' ') || [];
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(-1)[0] || '';
+      const middleName = nameParts.slice(1, -1).join(' ') || '';
+
+      setFormData({
+        firstName,
+        middleName,
+        lastName,
+        dateOfBirth: driver.dateOfBirth || driver.date_of_birth || '',
+        phone: driver.phone || '',
+        email: driver.email || '',
+        employer: driver.employer || 'BIKO Logistics',
+        position: driver.position || 'Driver',
+        employmentType: driver.employmentType || driver.employment_type || 'full-time',
+        startDate: driver.startDate || driver.start_date || '',
+        shiftStart: driver.shiftStart || driver.shift_start || '08:00',
+        shiftEnd: driver.shiftEnd || driver.shift_end || '17:00',
+        maxHours: String(driver.maxHours || driver.max_hours || 8),
+        groupName: driver.groupName || driver.group_name || '',
+        preferredServices: driver.preferredServices || driver.preferred_services || '',
+        federalId: driver.federalId || driver.federal_id || '',
+        licenseType: driver.licenseType || driver.license_type || 'standard',
+        licenseNumber: driver.licenseNumber || driver.license_number || '',
+        licenseExpiry: driver.licenseExpiry || driver.license_expiry || '',
+        licenseState: driver.licenseState || driver.license_state || '',
+        addressLine1: driver.addressLine1 || driver.address_line1 || '',
+        addressLine2: driver.addressLine2 || driver.address_line2 || '',
+        city: driver.city || '',
+        stateProvince: driver.stateProvince || driver.state_province || '',
+        country: driver.country || 'Nigeria',
+        postalCode: driver.postalCode || driver.postal_code || '',
+        emergencyContactName: driver.emergencyContactName || driver.emergency_contact_name || '',
+        emergencyContactPhone: driver.emergencyContactPhone || driver.emergency_contact_phone || '',
+        profilePhoto: null,
+        profilePhotoPreview: driver.profilePhotoUrl || driver.profile_photo_url || null,
+      });
+    } else if (mode === 'create') {
+      setFormData(initialFormData);
+    }
+  }, [driver, mode, open]);
 
   const updateField = (field: keyof OnboardingFormData, value: any) => {
     setFormData((prev) => {
@@ -225,28 +271,45 @@ export function DriverOnboardingDialog({ open, onOpenChange }: DriverOnboardingD
         emergency_contact_phone: formData.emergencyContactPhone || undefined,
       };
 
-      // Create driver first
-      const newDriver = await new Promise<any>((resolve, reject) => {
-        createDriver.mutate(driverData, {
-          onSuccess: (data) => resolve(data),
-          onError: (error) => reject(error),
+      if (mode === 'edit' && driver?.id) {
+        // Update existing driver
+        updateDriver({
+          id: driver.id,
+          data: driverData
         });
-      });
 
-      // Upload profile photo if provided
-      if (formData.profilePhoto && newDriver?.id) {
-        await uploadDocument.mutateAsync({
-          driverId: newDriver.id,
-          file: formData.profilePhoto,
-          documentType: 'profile_photo',
+        // Upload profile photo if provided
+        if (formData.profilePhoto) {
+          await uploadDocument.mutateAsync({
+            driverId: driver.id,
+            file: formData.profilePhoto,
+            documentType: 'profile_photo',
+          });
+        }
+      } else {
+        // Create new driver
+        const newDriver = await new Promise<any>((resolve, reject) => {
+          createDriver.mutate(driverData, {
+            onSuccess: (data) => resolve(data),
+            onError: (error) => reject(error),
+          });
         });
+
+        // Upload profile photo if provided
+        if (formData.profilePhoto && newDriver?.id) {
+          await uploadDocument.mutateAsync({
+            driverId: newDriver.id,
+            file: formData.profilePhoto,
+            documentType: 'profile_photo',
+          });
+        }
       }
 
       // Reset form and close dialog
       setFormData(initialFormData);
       onOpenChange(false);
     } catch (error) {
-      console.error('Onboarding error:', error);
+      console.error('Driver operation error:', error);
     } finally {
       setIsSubmitting(false);
     }
@@ -262,9 +325,13 @@ export function DriverOnboardingDialog({ open, onOpenChange }: DriverOnboardingD
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[1400px] max-h-[90vh] p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 py-4 border-b border-border">
-          <DialogTitle className="text-xl font-semibold">Add New Driver</DialogTitle>
+          <DialogTitle className="text-xl font-semibold">
+            {mode === 'edit' ? 'Edit Driver' : 'Add New Driver'}
+          </DialogTitle>
           <DialogDescription className="text-muted-foreground">
-            Complete all required fields to onboard a new driver
+            {mode === 'edit'
+              ? 'Update driver information below'
+              : 'Complete all required fields to onboard a new driver'}
           </DialogDescription>
         </DialogHeader>
 
@@ -650,7 +717,9 @@ export function DriverOnboardingDialog({ open, onOpenChange }: DriverOnboardingD
                 </Button>
                 <Button onClick={handleSubmit} disabled={isSubmitting} className="gap-2">
                   {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
-                  {isSubmitting ? 'Adding Driver...' : 'Add Driver'}
+                  {isSubmitting
+                    ? (mode === 'edit' ? 'Updating Driver...' : 'Adding Driver...')
+                    : (mode === 'edit' ? 'Update Driver' : 'Add Driver')}
                 </Button>
               </div>
             </div>

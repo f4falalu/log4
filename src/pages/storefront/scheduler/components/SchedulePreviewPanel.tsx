@@ -20,7 +20,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useSchedulerBatch } from '@/hooks/useSchedulerBatches';
 import { SchedulerBatchStatusActions } from '@/components/storefront/scheduler/SchedulerBatchStatusActions';
 import {
   getStatusColor,
@@ -32,36 +31,17 @@ import {
   formatDuration,
   formatCapacity,
 } from '@/lib/schedulerUtils';
+import type { SchedulerBatch } from '@/types/scheduler';
 
 interface SchedulePreviewPanelProps {
-  batchId: string;
+  batch: SchedulerBatch;
   onClose: () => void;
 }
 
 export function SchedulePreviewPanel({
-  batchId,
+  batch,
   onClose,
 }: SchedulePreviewPanelProps) {
-  const { data: batch, isLoading } = useSchedulerBatch(batchId);
-
-  if (isLoading) {
-    return (
-      <div className="flex h-full w-96 flex-col border-l bg-white">
-        <div className="flex items-center justify-between border-b p-4">
-          <div className="h-6 w-32 animate-pulse bg-gray-200 rounded" />
-          <Button variant="ghost" size="icon" onClick={onClose}>
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-        <div className="flex-1 p-6 space-y-4">
-          {[...Array(6)].map((_, i) => (
-            <div key={i} className="h-12 animate-pulse bg-gray-200 rounded" />
-          ))}
-        </div>
-      </div>
-    );
-  }
-
   if (!batch) {
     return (
       <div className="flex h-full w-96 flex-col items-center justify-center border-l bg-white">

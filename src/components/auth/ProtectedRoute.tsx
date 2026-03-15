@@ -14,7 +14,7 @@ import { toast } from 'sonner';
 const PLANNING_ROUTES = [
   '/storefront/schedule-planner',
   '/storefront/scheduler',
-  '/fleetops/dispatch',
+
   '/fleetops/batches',
 ];
 
@@ -37,6 +37,7 @@ export function ProtectedRoute({
 
   // Check if user has a workspace (for onboarding redirect)
   const isOnboardingRoute = location.pathname.startsWith('/onboarding');
+  const isProfileCompletionRoute = location.pathname === '/onboarding/profile';
   const isInviteRoute = location.pathname.startsWith('/invite');
   const { data: onboardingStatus, isLoading: onboardingLoading } = useQuery({
     queryKey: ['onboarding-guard-status'],
@@ -50,7 +51,7 @@ export function ProtectedRoute({
         has_role: boolean;
       };
     },
-    enabled: !!user && !isOnboardingRoute && !isInviteRoute,
+    enabled: !!user && !isOnboardingRoute && !isProfileCompletionRoute && !isInviteRoute,
     staleTime: 30000,
   });
 
@@ -68,7 +69,7 @@ export function ProtectedRoute({
   );
 
   // Combined loading state
-  const isLoading = loading || roleLoading || (shouldCheckReadiness && readinessLoading) || (!isOnboardingRoute && !isInviteRoute && onboardingLoading);
+  const isLoading = loading || roleLoading || (shouldCheckReadiness && readinessLoading) || (!isOnboardingRoute && !isProfileCompletionRoute && !isInviteRoute && onboardingLoading);
 
   if (isLoading) {
     return (

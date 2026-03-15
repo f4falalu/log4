@@ -1,10 +1,10 @@
 /**
  * Invitations List Component
  *
- * Displays a list of pending and past invitations for a workspace.
+ * Displays pending invitations and all invitation history for a workspace.
  */
 
-import { usePendingInvitations, useRevokeInvitation, useResendInvitation, getTimeUntilExpiry, buildInvitationUrl } from '@/hooks/useInvitations';
+import { usePendingInvitations, useWorkspaceInvitations, useRevokeInvitation, useResendInvitation, getTimeUntilExpiry, buildInvitationUrl } from '@/hooks/useInvitations';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -33,6 +33,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import {
   MoreHorizontal,
@@ -43,17 +44,27 @@ import {
   Mail,
   CheckCircle,
   Loader2,
+  Ban,
+  AlertTriangle,
 } from 'lucide-react';
 import { useState } from 'react';
 import { format } from 'date-fns';
-import type { PendingInvitation, WorkspaceRole } from '@/types/onboarding';
+import type { PendingInvitation, UserInvitation, InvitationStatus, WorkspaceRole } from '@/types/onboarding';
 
 interface InvitationsListProps {
   workspaceId: string;
 }
 
+const STATUS_CONFIG: Record<InvitationStatus, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline'; icon: typeof CheckCircle }> = {
+  pending: { label: 'Pending', variant: 'outline', icon: Clock },
+  accepted: { label: 'Accepted', variant: 'default', icon: CheckCircle },
+  expired: { label: 'Expired', variant: 'secondary', icon: AlertTriangle },
+  revoked: { label: 'Revoked', variant: 'destructive', icon: Ban },
+};
+
 export function InvitationsList({ workspaceId }: InvitationsListProps) {
-  const { data: invitations, isLoading, error } = usePendingInvitations(workspaceId);
+  const { data: pendingInvitations, isLoading: pendingLoading } = usePendingInvitations(workspaceId);
+  const { data: allInvitations, isLoading: allLoading } = useWorkspaceInvitations(workspaceId);
   const revokeInvitation = useRevokeInvitation();
   const resendInvitation = useResendInvitation();
 
@@ -101,132 +112,200 @@ export function InvitationsList({ workspaceId }: InvitationsListProps) {
     setRevokeDialogOpen(true);
   };
 
-  if (isLoading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Pending Invitations</CardTitle>
-          <CardDescription>Loading invitations...</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {[1, 2, 3].map((i) => (
-              <Skeleton key={i} className="h-12 w-full" />
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (error) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Pending Invitations</CardTitle>
-          <CardDescription className="text-destructive">Failed to load invitations</CardDescription>
-        </CardHeader>
-      </Card>
-    );
-  }
-
-  if (!invitations || invitations.length === 0) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Pending Invitations</CardTitle>
-          <CardDescription>No pending invitations</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col items-center justify-center py-8 text-center">
-            <Mail className="h-12 w-12 text-muted-foreground/50 mb-4" />
-            <p className="text-muted-foreground">
-              No pending invitations. Use the &quot;Invite User&quot; button to invite team members.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
+  const pendingCount = pendingInvitations?.length ?? 0;
+  const allCount = allInvitations?.length ?? 0;
 
   return (
     <>
-      <Card>
-        <CardHeader>
-          <CardTitle>Pending Invitations</CardTitle>
-          <CardDescription>{invitations.length} invitation{invitations.length !== 1 ? 's' : ''} pending</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Email</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Invited By</TableHead>
-                <TableHead>Expires</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {invitations.map((invitation) => (
-                <TableRow key={invitation.id}>
-                  <TableCell className="font-medium">{invitation.email}</TableCell>
-                  <TableCell>
-                    <div className="space-y-1">
-                      <Badge variant="outline">{invitation.pre_assigned_role.replace('_', ' ')}</Badge>
-                      <Badge variant="secondary" className="text-xs">
-                        {invitation.workspace_role}
-                      </Badge>
-                    </div>
-                  </TableCell>
-                  <TableCell>{invitation.invited_by_name || 'Unknown'}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1 text-sm">
-                      <Clock className="h-3 w-3 text-muted-foreground" />
-                      <span className={invitation.hours_until_expiry < 24 ? 'text-warning' : ''}>
-                        {getTimeUntilExpiry(invitation.expires_at)}
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleCopyLink(invitation)}>
-                          <Copy className="h-4 w-4 mr-2" />
-                          Copy Link
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => handleResend(invitation)}
-                          disabled={resendInvitation.isPending}
-                        >
-                          {resendInvitation.isPending ? (
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          ) : (
-                            <RefreshCw className="h-4 w-4 mr-2" />
-                          )}
-                          Resend
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => openRevokeDialog(invitation)}
-                          className="text-destructive focus:text-destructive"
-                        >
-                          <XCircle className="h-4 w-4 mr-2" />
-                          Revoke
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      <Tabs defaultValue="pending">
+        <TabsList>
+          <TabsTrigger value="pending">
+            Pending
+            {pendingCount > 0 && (
+              <Badge variant="secondary" className="ml-2 text-xs">
+                {pendingCount}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="all">
+            All Invitations
+            {allCount > 0 && (
+              <Badge variant="outline" className="ml-2 text-xs">
+                {allCount}
+              </Badge>
+            )}
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Pending Invitations Tab */}
+        <TabsContent value="pending">
+          <Card>
+            <CardHeader>
+              <CardTitle>Pending Invitations</CardTitle>
+              <CardDescription>
+                {pendingCount > 0
+                  ? `${pendingCount} invitation${pendingCount !== 1 ? 's' : ''} awaiting response`
+                  : 'No pending invitations'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {pendingLoading ? (
+                <div className="space-y-3">
+                  {[1, 2, 3].map((i) => (
+                    <Skeleton key={i} className="h-12 w-full" />
+                  ))}
+                </div>
+              ) : pendingCount === 0 ? (
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <Mail className="h-12 w-12 text-muted-foreground/50 mb-4" />
+                  <p className="text-muted-foreground">
+                    No pending invitations. Use the &quot;Invite User&quot; button to invite team members.
+                  </p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Role</TableHead>
+                      <TableHead>Invited By</TableHead>
+                      <TableHead>Expires</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {pendingInvitations!.map((invitation) => (
+                      <TableRow key={invitation.id}>
+                        <TableCell className="font-medium">{invitation.email}</TableCell>
+                        <TableCell>
+                          <div className="space-y-1">
+                            <Badge variant="outline">{invitation.pre_assigned_role.replace('_', ' ')}</Badge>
+                            <Badge variant="secondary" className="text-xs">
+                              {invitation.workspace_role}
+                            </Badge>
+                          </div>
+                        </TableCell>
+                        <TableCell>{invitation.invited_by_name || 'Unknown'}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1 text-sm">
+                            <Clock className="h-3 w-3 text-muted-foreground" />
+                            <span className={invitation.hours_until_expiry < 24 ? 'text-warning' : ''}>
+                              {getTimeUntilExpiry(invitation.expires_at)}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleCopyLink(invitation)}>
+                                <Copy className="h-4 w-4 mr-2" />
+                                Copy Link
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleResend(invitation)}
+                                disabled={resendInvitation.isPending}
+                              >
+                                {resendInvitation.isPending ? (
+                                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                ) : (
+                                  <RefreshCw className="h-4 w-4 mr-2" />
+                                )}
+                                Resend
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => openRevokeDialog(invitation)}
+                                className="text-destructive focus:text-destructive"
+                              >
+                                <XCircle className="h-4 w-4 mr-2" />
+                                Revoke
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* All Invitations Tab */}
+        <TabsContent value="all">
+          <Card>
+            <CardHeader>
+              <CardTitle>Invitation History</CardTitle>
+              <CardDescription>
+                All invitations sent from this workspace
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {allLoading ? (
+                <div className="space-y-3">
+                  {[1, 2, 3].map((i) => (
+                    <Skeleton key={i} className="h-12 w-full" />
+                  ))}
+                </div>
+              ) : allCount === 0 ? (
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <Mail className="h-12 w-12 text-muted-foreground/50 mb-4" />
+                  <p className="text-muted-foreground">
+                    No invitations have been sent yet.
+                  </p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Role</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Sent</TableHead>
+                      <TableHead>Responded</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {allInvitations!.map((invitation) => {
+                      const statusConfig = STATUS_CONFIG[invitation.status];
+                      const StatusIcon = statusConfig.icon;
+                      return (
+                        <TableRow key={invitation.id}>
+                          <TableCell className="font-medium">{invitation.email}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{invitation.pre_assigned_role.replace('_', ' ')}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={statusConfig.variant} className="gap-1">
+                              <StatusIcon className="h-3 w-3" />
+                              {statusConfig.label}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {format(new Date(invitation.invited_at), 'MMM d, yyyy')}
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {invitation.accepted_at
+                              ? format(new Date(invitation.accepted_at), 'MMM d, yyyy')
+                              : invitation.revoked_at
+                                ? format(new Date(invitation.revoked_at), 'MMM d, yyyy')
+                                : '—'}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       {/* Revoke Confirmation Dialog */}
       <AlertDialog open={revokeDialogOpen} onOpenChange={setRevokeDialogOpen}>

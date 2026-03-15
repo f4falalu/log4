@@ -488,8 +488,8 @@ export function UploadRequisitionDialog({ open, onOpenChange }: UploadRequisitio
 
             {/* Step 2: Column Mapping */}
             {step === 'mapping' && (
-              <div className="space-y-4 h-full flex flex-col">
-                <div className="flex items-center gap-4 flex-shrink-0">
+              <div className="space-y-4">
+                <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2">
                     <FileSpreadsheet className="h-5 w-5 text-green-600" />
                     <span className="font-medium">{selectedFile?.name}</span>
@@ -499,13 +499,13 @@ export function UploadRequisitionDialog({ open, onOpenChange }: UploadRequisitio
                 </div>
 
                 {/* 2-column layout */}
-                <div className="flex-1 grid grid-cols-2 gap-4 min-h-0 max-h-[calc(90vh-280px)]">
+                <div className="grid grid-cols-2 gap-4">
                   {/* Left: Mapping */}
-                  <div className="flex flex-col min-h-0 overflow-hidden">
-                    <div className="text-sm text-muted-foreground mb-2 flex-shrink-0">
+                  <div>
+                    <div className="text-sm text-muted-foreground mb-2">
                       Map columns. Check "Skip" to add data later.
                     </div>
-                    <ScrollArea className="flex-1 border rounded-lg p-4 h-full">
+                    <ScrollArea className="h-[calc(90vh-280px)] border rounded-lg p-4">
                       <div className="space-y-3">
                         {FIELD_DEFINITIONS.map((field) => {
                           const isSkipped = skippedFields.has(field.key);
@@ -579,14 +579,12 @@ export function UploadRequisitionDialog({ open, onOpenChange }: UploadRequisitio
                   </div>
 
                   {/* Right: Preview */}
-                  <div className="flex flex-col min-h-0 overflow-hidden">
-                    <div className="text-sm text-muted-foreground mb-2 flex-shrink-0">
+                  <div>
+                    <div className="text-sm text-muted-foreground mb-2">
                       File Preview (scroll to see more)
                     </div>
-                    <div className="flex-1 border rounded-lg overflow-hidden min-h-0">
-                      <ScrollArea className="h-full max-h-full">
-                        <div className="overflow-x-auto">
-                          <Table>
+                    <div className="h-[calc(90vh-280px)] border rounded-lg overflow-auto">
+                      <Table>
                             <TableHeader>
                               <TableRow className="bg-muted/50">
                                 <TableHead className="text-xs font-medium text-muted-foreground w-10 sticky left-0 bg-muted/50">
@@ -628,19 +626,17 @@ export function UploadRequisitionDialog({ open, onOpenChange }: UploadRequisitio
                               ))}
                             </TableBody>
                           </Table>
-                        </div>
-                      </ScrollArea>
-                      {rawData.length > 10 && (
-                        <div className="text-xs text-muted-foreground text-center py-1 border-t bg-muted/30">
-                          Showing 10 of {rawData.length} rows
-                        </div>
-                      )}
                     </div>
+                    {rawData.length > 10 && (
+                      <div className="text-xs text-muted-foreground text-center py-1">
+                        Showing 10 of {rawData.length} rows
+                      </div>
+                    )}
                   </div>
                 </div>
 
                 {skippedFields.size > 0 && (
-                  <div className="flex items-center gap-2 text-xs text-amber-600 bg-amber-50 p-2 rounded-md flex-shrink-0">
+                  <div className="flex items-center gap-2 text-xs text-amber-600 bg-amber-50 p-2 rounded-md">
                     <AlertTriangle className="h-3.5 w-3.5" />
                     <span>
                       {skippedFields.size} required field(s) skipped. You can add this data later.
@@ -652,7 +648,7 @@ export function UploadRequisitionDialog({ open, onOpenChange }: UploadRequisitio
 
             {/* Step 3: Preview */}
             {step === 'preview' && (
-              <ScrollArea className="h-full max-h-[calc(90vh-220px)]">
+              <ScrollArea className="h-[calc(90vh-220px)]">
                 <ParsedItemsPreview
                   items={parsedItems}
                   warnings={parseWarnings}
@@ -663,7 +659,7 @@ export function UploadRequisitionDialog({ open, onOpenChange }: UploadRequisitio
 
             {/* Step 4: Details */}
             {step === 'details' && (
-              <ScrollArea className="h-full max-h-[calc(90vh-220px)]">
+              <ScrollArea className="h-[calc(90vh-220px)]">
                 <div className="space-y-4 pr-4">
                   <div className="flex items-center gap-2 p-3 border rounded-lg bg-muted/50">
                     <CheckCircle className="h-5 w-5 text-success" />

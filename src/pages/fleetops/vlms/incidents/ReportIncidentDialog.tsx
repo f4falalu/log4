@@ -276,7 +276,7 @@ export function ReportIncidentDialog({ open, onOpenChange }: ReportIncidentDialo
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="estimated-cost">Estimated Repair Cost (₦)</Label>
+              <Label htmlFor="estimated-cost">Estimated Repair Cost</Label>
               <Input
                 id="estimated-cost"
                 type="number"

@@ -1,10 +1,13 @@
-// Facility Types
-export type FacilityType = 'hospital' | 'clinic' | 'health_center' | 'pharmacy' | 'lab' | 'other';
-export type IPName = 'smoh' | 'ace-2' | 'crs';
-export type FundingSource = 'unfpa' | 'pepfar--usaid' | 'global-fund';
-export type Programme = 'Family Planning' | 'DRF' | 'HIV/AIDS' | 'Malaria';
-export type LevelOfCare = 'Tertiary' | 'Secondary' | 'Primary';
-export type ServiceZone = 'Central' | 'Gaya' | 'Danbatta' | 'Gwarzo' | 'Rano';
+// Facility Types — now DB-driven via lookup tables.
+// These type aliases are kept as `string` for backward compatibility.
+// Actual values come from: facility_types, implementing_partners,
+// funding_sources, programme_categories, levels_of_care, zones tables.
+export type FacilityType = string;
+export type IPName = string;
+export type FundingSource = string;
+export type Programme = string;
+export type LevelOfCare = string;
+export type ServiceZone = string;
 
 export interface Facility {
   id: string;
@@ -39,6 +42,7 @@ export interface Facility {
   email?: string; // (18)
   // lat/lng are (19)
   storage_capacity?: number; // Additional field
+  zone_id?: string; // Operational zone assignment
 
   // Metadata
   created_at?: string;

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useSchedulerBatches } from '@/hooks/useSchedulerBatches';
+import { usePreBatches } from '@/hooks/usePreBatch';
 import { useRealtimeScheduler } from '@/hooks/useRealtimeScheduler';
 import { useWarehouses } from '@/hooks/useWarehouses';
 import { SchedulerLayout } from './components/SchedulerLayout';
@@ -9,24 +9,66 @@ import { SchedulePreviewPanel } from './components/SchedulePreviewPanel';
 import { SummaryStrip } from './components/SummaryStrip';
 import { UnifiedWorkflowDialog } from '@/components/unified-workflow';
 import { CalendarView } from './components/CalendarView';
-import type { SchedulerFilters } from '@/types/scheduler';
+import type { SchedulerFilters, SchedulerBatch, SchedulerBatchStatus } from '@/types/scheduler';
+import type { PreBatchWithRelations } from '@/types/unified-workflow';
 import { useDrivers } from '@/hooks/useDrivers';
 import { useVehicles } from '@/hooks/useVehicles';
 import { useFacilities } from '@/hooks/useFacilities.tsx';
 
+/** Map pre-batch records to SchedulerBatch format for the list view */
+function mapPreBatchToSchedulerBatch(pb: PreBatchWithRelations): SchedulerBatch {
+  const statusMap: Record<string, SchedulerBatchStatus> = {
+    draft: 'draft',
+    ready: 'ready',
+    converted: 'scheduled',
+    cancelled: 'cancelled',
+  };
+
+  return {
+    id: pb.id,
+    name: pb.schedule_title,
+    batch_code: pb.id.slice(0, 8).toUpperCase(),
+    warehouse_id: pb.start_location_id,
+    facility_ids: pb.facility_order || [],
+    planned_date: pb.planned_date,
+    time_window: pb.time_window ?? null,
+    driver_id: null,
+    vehicle_id: pb.suggested_vehicle_id,
+    optimized_route: null,
+    total_distance_km: null,
+    estimated_duration_min: null,
+    total_consignments: pb.facility_order?.length || 0,
+    total_weight_kg: null,
+    total_volume_m3: null,
+    capacity_utilization_pct: null,
+    status: statusMap[pb.status] || 'draft',
+    scheduling_mode: pb.source_sub_option === 'ai_optimization' ? 'ai_optimized' : 'manual',
+    priority: 'medium',
+    created_by: pb.created_by,
+    created_at: pb.created_at,
+    updated_at: pb.updated_at,
+    scheduled_at: pb.status === 'converted' ? pb.updated_at : null,
+    published_at: null,
+    published_batch_id: pb.converted_batch_id,
+    notes: pb.notes ?? null,
+    tags: null,
+    zone: null,
+  };
+}
+
 export default function SchedulerPage() {
   // View state
   const [activeView, setActiveView] = useState<ViewMode>('status');
-  
+
   // Status view state
   const [statusFilters, setStatusFilters] = useState<SchedulerFilters>({});
   const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
-  
+
   // Calendar view state
   const [selectedWarehouse, setSelectedWarehouse] = useState<string>('');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [calendarViewMode, setCalendarViewMode] = useState<'day' | 'week' | 'month'>('week');
-  
+
   // Common state
   const [wizardOpen, setWizardOpen] = useState(false);
 
@@ -37,11 +79,31 @@ export default function SchedulerPage() {
   const { data: vehicles = [] } = useVehicles();
   const { data: facilitiesData } = useFacilities();
   const facilities = facilitiesData?.facilities ?? [];
-  
-  // Fetch batches with filters - only for status view
-  const { data: batches = [], isLoading } = useSchedulerBatches({
-    filters: statusFilters,
-  });
+
+  // Fetch pre-batches (the actual data source from the unified workflow)
+  const { data: preBatches = [], isLoading } = usePreBatches();
+
+  // Map pre-batches to SchedulerBatch format and apply status filters
+  const batches = useMemo(() => {
+    let mapped = preBatches.map(mapPreBatchToSchedulerBatch);
+
+    // Apply status filters
+    if (statusFilters.status && statusFilters.status.length > 0) {
+      mapped = mapped.filter(b => statusFilters.status!.includes(b.status));
+    }
+    if (statusFilters.warehouse_id) {
+      mapped = mapped.filter(b => b.warehouse_id === statusFilters.warehouse_id);
+    }
+    if (statusFilters.search) {
+      const search = statusFilters.search.toLowerCase();
+      mapped = mapped.filter(b =>
+        (b.name?.toLowerCase().includes(search)) ||
+        b.batch_code.toLowerCase().includes(search)
+      );
+    }
+
+    return mapped;
+  }, [preBatches, statusFilters]);
 
   const [statusExtras, setStatusExtras] = useState<StatusFilterExtras>({
     assignment: 'any',
@@ -151,12 +213,15 @@ export default function SchedulerPage() {
           facilities={facilities}
         />
       </div>
-      {selectedBatchId && (
-        <SchedulePreviewPanel
-          batchId={selectedBatchId}
-          onClose={() => setSelectedBatchId(null)}
-        />
-      )}
+      {selectedBatchId && (() => {
+        const selectedBatch = filteredBatches.find(b => b.id === selectedBatchId);
+        return selectedBatch ? (
+          <SchedulePreviewPanel
+            batch={selectedBatch}
+            onClose={() => setSelectedBatchId(null)}
+          />
+        ) : null;
+      })()}
     </div>
   ) : (
     <CalendarView

@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { MapPin, Users, Edit, Trash2, TrendingUp, Globe } from 'lucide-react';
 import { OperationalZone } from '@/types/zones';
 import { useZoneSummary } from '@/hooks/useOperationalZones';
-import { useLGAs } from '@/hooks/useLGAs';
+import { useAllLGAsWithZones } from '@/hooks/useAdminUnits';
 import { useFacilities } from '@/hooks/useFacilities';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EditZoneDialog } from './EditZoneDialog.tsx';
@@ -25,12 +25,12 @@ export function ZoneDetailDialog({ zone, open, onOpenChange }: ZoneDetailDialogP
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   
   const { data: summary, isLoading: summaryLoading } = useZoneSummary(zone.id);
-  const { data: lgas, isLoading: lgasLoading } = useLGAs({ zone_id: zone.id });
-  const { data: facilitiesData } = useFacilities();
-  
+  const { data: lgas, isLoading: lgasLoading } = useAllLGAsWithZones({ zone_id: zone.id });
+  const { data: facilitiesData, isLoading: facilitiesLoading } = useFacilities({ zone_id: zone.id });
+
   const deleteZone = useDeleteZone();
 
-  const zoneFacilities = facilitiesData?.facilities?.filter((f: any) => f.zone_id === zone.id) || [];
+  const zoneFacilities = facilitiesData?.facilities || [];
 
   const handleDelete = async () => {
     try {
@@ -214,7 +214,7 @@ export function ZoneDetailDialog({ zone, open, onOpenChange }: ZoneDetailDialogP
                           <div>
                             <p className="font-medium">{lga.name}</p>
                             <p className="text-sm text-muted-foreground">
-                              State: {lga.state}
+                              State: {(lga as any).parent?.name || 'N/A'}
                               {lga.population && ` • Population: ${lga.population.toLocaleString()}`}
                             </p>
                           </div>
@@ -239,7 +239,13 @@ export function ZoneDetailDialog({ zone, open, onOpenChange }: ZoneDetailDialogP
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {zoneFacilities.length > 0 ? (
+                  {facilitiesLoading ? (
+                    <div className="space-y-3">
+                      {[1, 2, 3].map((i) => (
+                        <Skeleton key={i} className="h-16 w-full" />
+                      ))}
+                    </div>
+                  ) : zoneFacilities.length > 0 ? (
                     <div className="space-y-3">
                       {zoneFacilities.map((facility) => (
                         <div

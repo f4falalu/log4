@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Upload, FileText, Check, AlertTriangle, ChevronLeft, ArrowRight, Download, FileSpreadsheet, Trash2 } from 'lucide-react';
 import Papa from 'papaparse';
@@ -28,6 +28,8 @@ import { useWarehouses } from '@/hooks/useWarehouses';
 import { useFacilities } from '@/hooks/useFacilities';
 import { useCreateInvoice } from '@/hooks/useInvoices';
 import type { InvoiceFormData } from '@/types/invoice';
+import { ITEM_CATEGORIES } from '@/types/items';
+import type { ItemCategory } from '@/types/items';
 
 type UploadStep = 'upload' | 'mapping' | 'preview';
 
@@ -275,7 +277,12 @@ export function UploadFileForm({ onClose }: UploadFileFormProps) {
       unit_price,
       total_price: quantity * unit_price,
       serial_number: getValue(columnMapping.serial_number) || undefined,
-      category: getValue(columnMapping.category) || undefined,
+      category: (() => {
+        const raw = getValue(columnMapping.category);
+        if (!raw) return undefined;
+        const matched = ITEM_CATEGORIES.find(c => c.toLowerCase() === raw.toLowerCase());
+        return matched || raw;
+      })(),
       weight_kg: getNum(columnMapping.weight_kg),
       volume_m3: getNum(columnMapping.volume_m3),
       batch_number: getValue(columnMapping.batch_number) || undefined,
@@ -329,7 +336,7 @@ export function UploadFileForm({ onClose }: UploadFileFormProps) {
         unit_price: item.unit_price,
         total_price: item.total_price,
         serial_number: item.serial_number,
-        category: item.category as any,
+        category: item.category as ItemCategory | undefined,
         weight_kg: item.weight_kg,
         volume_m3: item.volume_m3,
         batch_number: item.batch_number,
@@ -434,8 +441,8 @@ export function UploadFileForm({ onClose }: UploadFileFormProps) {
 
         {/* Step 2: Column Mapping */}
         {step === 'mapping' && (
-          <div className="space-y-4 flex flex-col h-full">
-            <div className="flex items-center gap-4 flex-shrink-0">
+          <div className="space-y-4">
+            <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <FileSpreadsheet className="h-5 w-5 text-muted-foreground" />
                 <span className="font-medium text-sm">{file?.name}</span>
@@ -444,13 +451,13 @@ export function UploadFileForm({ onClose }: UploadFileFormProps) {
               <Badge variant="secondary">{headers.length} columns</Badge>
             </div>
 
-            <div className="flex-1 grid grid-cols-2 gap-4 min-h-0 max-h-[50vh]">
+            <div className="grid grid-cols-2 gap-4">
               {/* Mapping */}
-              <div className="flex flex-col min-h-0 overflow-hidden">
-                <p className="text-xs text-muted-foreground mb-2 flex-shrink-0">
+              <div>
+                <p className="text-xs text-muted-foreground mb-2">
                   Map file columns to invoice fields
                 </p>
-                <ScrollArea className="flex-1 border rounded-lg p-3">
+                <ScrollArea className="h-[calc(70vh-200px)] border rounded-lg p-3">
                   <div className="space-y-3">
                     {FIELD_DEFINITIONS.map((field) => {
                       const isMapped = columnMapping[field.key as keyof ColumnMapping] !== undefined;
@@ -491,12 +498,10 @@ export function UploadFileForm({ onClose }: UploadFileFormProps) {
               </div>
 
               {/* Preview */}
-              <div className="flex flex-col min-h-0 overflow-hidden">
-                <p className="text-xs text-muted-foreground mb-2 flex-shrink-0">File Preview</p>
-                <div className="flex-1 border rounded-lg overflow-hidden min-h-0">
-                  <ScrollArea className="h-full">
-                    <div className="overflow-x-auto">
-                      <Table>
+              <div>
+                <p className="text-xs text-muted-foreground mb-2">File Preview</p>
+                <div className="h-[calc(70vh-200px)] border rounded-lg overflow-auto">
+                  <Table>
                         <TableHeader>
                           <TableRow className="bg-muted/50">
                             <TableHead className="text-xs w-10">#</TableHead>
@@ -525,14 +530,12 @@ export function UploadFileForm({ onClose }: UploadFileFormProps) {
                           ))}
                         </TableBody>
                       </Table>
-                    </div>
-                  </ScrollArea>
-                  {rawData.length > 8 && (
-                    <div className="text-xs text-muted-foreground text-center py-1 border-t bg-muted/30">
-                      Showing 8 of {rawData.length} rows
-                    </div>
-                  )}
                 </div>
+                {rawData.length > 8 && (
+                  <div className="text-xs text-muted-foreground text-center py-1">
+                    Showing 8 of {rawData.length} rows
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -540,8 +543,8 @@ export function UploadFileForm({ onClose }: UploadFileFormProps) {
 
         {/* Step 3: Preview */}
         {step === 'preview' && (
-          <div className="space-y-4 flex flex-col h-full">
-            <div className="flex items-center justify-between flex-shrink-0">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <FileText className="h-5 w-5 text-muted-foreground" />
                 <span className="font-medium text-sm">{file?.name}</span>
@@ -564,7 +567,7 @@ export function UploadFileForm({ onClose }: UploadFileFormProps) {
             </div>
 
             {/* Warehouse/Facility selects */}
-            <div className="grid grid-cols-2 gap-4 flex-shrink-0">
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
                 <Label className="text-xs">Source Warehouse *</Label>
                 <Select value={warehouseId} onValueChange={setWarehouseId}>
@@ -597,7 +600,7 @@ export function UploadFileForm({ onClose }: UploadFileFormProps) {
               </div>
             </div>
 
-            <ScrollArea className="flex-1 max-h-[35vh] border rounded-lg">
+            <ScrollArea className="h-[35vh] border rounded-lg">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -646,7 +649,7 @@ export function UploadFileForm({ onClose }: UploadFileFormProps) {
             </ScrollArea>
 
             {invalidCount > 0 && (
-              <p className="text-xs text-yellow-600 flex items-center gap-1 flex-shrink-0">
+              <p className="text-xs text-yellow-600 flex items-center gap-1">
                 <AlertTriangle className="h-3.5 w-3.5" />
                 Invalid items will be excluded from the invoice.
               </p>

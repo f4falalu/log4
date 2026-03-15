@@ -16,6 +16,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { BatchRouteMap } from './BatchRouteMap';
 import { AssignmentDialog } from './AssignmentDialog';
 import { BatchStatusActions } from './BatchStatusActions';
+import { BatchOptimizationPanel } from './BatchOptimizationPanel';
 import { useDrivers } from '@/hooks/useDrivers';
 import { useVehicles } from '@/hooks/useVehicles';
 import { useWarehouses } from '@/hooks/useWarehouses';
@@ -49,10 +50,11 @@ export function BatchDetailsPanel({ batch, open, onOpenChange }: BatchDetailsPan
   const [isEditingNotes, setIsEditingNotes] = useState(false);
   const [editedNotes, setEditedNotes] = useState('');
   const [isAssignmentOpen, setIsAssignmentOpen] = useState(false);
+  const [isMapFullscreen, setIsMapFullscreen] = useState(false);
 
   const { data: drivers = [] } = useDrivers();
   const { data: vehicles = [] } = useVehicles();
-  const { data: warehousesData } = useWarehouses();
+  const { data: warehousesData, isLoading: warehousesLoading } = useWarehouses();
   const warehouses = warehousesData?.warehouses || [];
   const batchUpdate = useBatchUpdate();
 
@@ -60,7 +62,11 @@ export function BatchDetailsPanel({ batch, open, onOpenChange }: BatchDetailsPan
 
   const driver = drivers.find((d) => d.id === batch.driverId);
   const vehicle = vehicles.find((v) => v.id === batch.vehicleId);
-  const warehouse = warehouses.find((w) => w.id === batch.warehouseId);
+  const rawWarehouse = warehouses.find((w) => w.id === batch.warehouseId);
+  // Only pass warehouse to map if it has valid coordinates
+  const warehouse = rawWarehouse && rawWarehouse.lat != null && rawWarehouse.lng != null
+    ? { lat: rawWarehouse.lat, lng: rawWarehouse.lng, name: rawWarehouse.name }
+    : null;
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -193,9 +199,9 @@ export function BatchDetailsPanel({ batch, open, onOpenChange }: BatchDetailsPan
                         Origin Warehouse
                       </h4>
                       <div className="rounded-lg border p-3">
-                        <p className="font-medium">{warehouse?.name || batch.warehouseName}</p>
-                        {warehouse?.address && (
-                          <p className="text-sm text-muted-foreground">{warehouse.address}</p>
+                        <p className="font-medium">{rawWarehouse?.name || batch.warehouseName}</p>
+                        {rawWarehouse?.address && (
+                          <p className="text-sm text-muted-foreground">{rawWarehouse.address}</p>
                         )}
                       </div>
                     </div>
@@ -294,20 +300,36 @@ export function BatchDetailsPanel({ batch, open, onOpenChange }: BatchDetailsPan
               </TabsContent>
 
               <TabsContent value="route" className="h-full mt-4">
-                <div className="space-y-4 h-full">
-                  <div className="h-[300px] rounded-lg overflow-hidden border">
+                <div className="flex flex-col h-full gap-4">
+                  <div
+                    className={
+                      isMapFullscreen
+                        ? 'fixed inset-0 z-50 bg-background'
+                        : 'h-[300px] rounded-lg overflow-hidden border relative shrink-0'
+                    }
+                  >
                     <BatchRouteMap
                       facilities={batch.facilities}
                       warehouse={warehouse}
                       optimizedRoute={batch.optimizedRoute}
+                      enableControls
+                      isFullscreen={isMapFullscreen}
+                      onToggleFullscreen={() => setIsMapFullscreen(v => !v)}
                     />
                   </div>
-                  <div className="text-sm text-muted-foreground">
-                    <p className="flex items-center gap-2">
-                      <Route className="h-4 w-4" />
-                      {batch.facilities.length} stops • {batch.totalDistance} km total distance
-                    </p>
-                  </div>
+                  {!isMapFullscreen && (
+                    <ScrollArea className="flex-1 min-h-0">
+                      <div className="space-y-4 pr-4">
+                        <div className="text-sm text-muted-foreground">
+                          <p className="flex items-center gap-2">
+                            <Route className="h-4 w-4" />
+                            {batch.facilities.length} stops • {batch.totalDistance} km total distance
+                          </p>
+                        </div>
+                        <BatchOptimizationPanel batch={batch} depot={warehouse} />
+                      </div>
+                    </ScrollArea>
+                  )}
                 </div>
               </TabsContent>
 
