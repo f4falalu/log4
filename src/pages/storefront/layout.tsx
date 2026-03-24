@@ -14,8 +14,24 @@ import {
 import { AppLayout } from '@/components/layout/AppLayout';
 import { SecondarySidebar, NavigationGroup } from '@/components/layout/SecondarySidebar';
 import { useMemo } from 'react';
+import { useWorkspace } from '@/contexts/WorkspaceContext';
+import { useAbility } from '@/rbac';
+import type { Permission } from '@/rbac/types';
 
-const navigationGroups: NavigationGroup[] = [
+interface GatedNavItem {
+  label: string;
+  href: string;
+  icon: any;
+  end?: boolean;
+  permission?: Permission;
+}
+
+interface GatedNavGroup {
+  label: string;
+  items: GatedNavItem[];
+}
+
+const navigationGroups: GatedNavGroup[] = [
   {
     label: 'OVERVIEW',
     items: [
@@ -33,17 +49,20 @@ const navigationGroups: NavigationGroup[] = [
       {
         label: 'Items',
         href: '/storefront/items',
-        icon: Package
+        icon: Package,
+        permission: 'item.manage',
       },
       {
         label: 'Requisitions',
         href: '/storefront/requisitions',
-        icon: ShoppingCart
+        icon: ShoppingCart,
+        permission: 'requisitions.read',
       },
       {
         label: 'Invoice',
         href: '/storefront/invoice',
-        icon: FileText
+        icon: FileText,
+        permission: 'invoice.process',
       },
     ],
   },
@@ -53,7 +72,8 @@ const navigationGroups: NavigationGroup[] = [
       {
         label: 'Scheduler',
         href: '/storefront/scheduler',
-        icon: CalendarClock
+        icon: CalendarClock,
+        permission: 'schedule.create',
       },
     ],
   },
@@ -63,22 +83,26 @@ const navigationGroups: NavigationGroup[] = [
       {
         label: 'Zones',
         href: '/storefront/zones',
-        icon: Layers
+        icon: Layers,
+        permission: 'zone.manage',
       },
       {
         label: 'Facilities',
         href: '/storefront/facilities',
-        icon: Building2
+        icon: Building2,
+        permission: 'facility.manage',
       },
       {
         label: 'Warehouse',
         href: '/storefront/warehouse',
-        icon: Warehouse
+        icon: Warehouse,
+        permission: 'inventory.view',
       },
       {
         label: 'Programs',
         href: '/storefront/programs',
-        icon: FolderKanban
+        icon: FolderKanban,
+        permission: 'program.manage',
       },
     ],
   },
@@ -88,7 +112,8 @@ const navigationGroups: NavigationGroup[] = [
       {
         label: 'Stock Reports',
         href: '/storefront/stock-reports',
-        icon: BarChart3
+        icon: BarChart3,
+        permission: 'reports.read',
       },
     ],
   },
@@ -96,6 +121,20 @@ const navigationGroups: NavigationGroup[] = [
 
 export function StorefrontLayout() {
   const location = useLocation();
+  const { workspaceId } = useWorkspace();
+  const { can } = useAbility({ workspaceId });
+
+  // Filter navigation by permission
+  const filteredGroups: NavigationGroup[] = useMemo(() => {
+    return navigationGroups
+      .map((group) => ({
+        ...group,
+        items: group.items.filter((item) =>
+          !item.permission || can(item.permission)
+        ),
+      }))
+      .filter((group) => group.items.length > 0);
+  }, [can]);
 
   // Generate breadcrumbs based on current path
   const breadcrumbs = useMemo(() => {
@@ -125,7 +164,7 @@ export function StorefrontLayout() {
     <SecondarySidebar
       title="Storefront"
       subtitle="Warehouse & Inventory"
-      groups={navigationGroups}
+      groups={filteredGroups}
       searchPlaceholder="Search Storefront..."
     />
   );

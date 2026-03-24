@@ -17,7 +17,7 @@ import { useLiveMapStore } from '@/stores/liveMapStore';
 import { useDebouncedCallback } from 'use-debounce';
 
 interface LiveMapViewProps {
-  onEntitySelect?: (entityId: string, entityType: 'driver' | 'vehicle' | 'delivery') => void;
+  onEntitySelect?: (entityId: string, entityType: 'driver' | 'vehicle' | 'delivery' | 'facility') => void;
 }
 
 export function LiveMapView({ onEntitySelect }: LiveMapViewProps) {
@@ -187,7 +187,7 @@ export function LiveMapView({ onEntitySelect }: LiveMapViewProps) {
 
   // Handle entity click events from layers
   const handleEntityClick = useCallback(
-    (entityId: string, entityType: 'driver' | 'vehicle' | 'delivery') => {
+    (entityId: string, entityType: 'driver' | 'vehicle' | 'delivery' | 'facility') => {
       selectEntity(entityId, entityType);
       onEntitySelect?.(entityId, entityType);
     },
@@ -208,17 +208,22 @@ export function LiveMapView({ onEntitySelect }: LiveMapViewProps) {
     const handleRouteClick = (e: CustomEvent) => {
       handleEntityClick(e.detail.batchId, 'delivery');
     };
+    const handleFacilityClick = (e: CustomEvent) => {
+      handleEntityClick(e.detail.facilityId, 'facility');
+    };
 
     window.addEventListener('driver-marker-click', handleDriverClick as EventListener);
     window.addEventListener('vehicle-marker-click', handleVehicleClick as EventListener);
     window.addEventListener('delivery-marker-click', handleDeliveryClick as EventListener);
     window.addEventListener('route-line-click', handleRouteClick as EventListener);
+    window.addEventListener('facility-marker-click', handleFacilityClick as EventListener);
 
     return () => {
       window.removeEventListener('driver-marker-click', handleDriverClick as EventListener);
       window.removeEventListener('vehicle-marker-click', handleVehicleClick as EventListener);
       window.removeEventListener('delivery-marker-click', handleDeliveryClick as EventListener);
       window.removeEventListener('route-line-click', handleRouteClick as EventListener);
+      window.removeEventListener('facility-marker-click', handleFacilityClick as EventListener);
     };
   }, [handleEntityClick]);
 

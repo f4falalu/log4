@@ -56,15 +56,19 @@ export class VehicleMarkerLayer extends BaseLayer<MapFeatureCollection<VehicleMa
       },
     });
 
-    // Add icon layer (truck symbol) - rendered on top
+    // Add truck text symbol rendered on top of the circle
     this.map.addLayer({
       id: `${LAYER_ID}-icons`,
       type: 'symbol',
       source: SOURCE_ID,
       layout: {
-        'icon-image': 'truck-icon', // Would need to load this
-        'icon-size': 0.5,
-        'icon-allow-overlap': true,
+        'text-field': '\u{1F69A}',
+        'text-size': ['interpolate', ['linear'], ['zoom'], 8, 10, 12, 14, 16, 18],
+        'text-allow-overlap': true,
+        'text-ignore-placement': true,
+      },
+      paint: {
+        'text-opacity': 0.9,
       },
     });
 

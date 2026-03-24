@@ -19,20 +19,19 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Search, Filter, UserPlus, Loader2, Download, AlertCircle } from 'lucide-react';
 import { useUsers, User } from '@/hooks/admin/useUsers';
-import { AppRole } from '@/types';
 import { toCSV, downloadCSV } from '@/lib/csvExport';
 import { useWorkspaces } from '@/hooks/admin/useWorkspaces';
 import { InviteUserDialog } from '@/components/admin/invitations/InviteUserDialog';
 
-const AVAILABLE_ROLES: AppRole[] = [
+const AVAILABLE_ROLES = [
   'system_admin',
   'warehouse_officer',
   'driver',
   'zonal_manager',
   'viewer',
-];
+] as const;
 
-const ROLE_LABELS: Record<AppRole, string> = {
+const ROLE_LABELS: Record<string, string> = {
   system_admin: 'System Admin',
   warehouse_officer: 'Warehouse Officer',
   driver: 'Driver',
@@ -40,7 +39,7 @@ const ROLE_LABELS: Record<AppRole, string> = {
   viewer: 'Viewer',
 };
 
-const ROLE_COLORS: Record<AppRole, string> = {
+const ROLE_COLORS: Record<string, string> = {
   system_admin: 'bg-red-500/10 text-red-600 dark:text-red-400',
   warehouse_officer: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
   driver: 'bg-green-500/10 text-green-600 dark:text-green-400',
@@ -182,10 +181,10 @@ export function UserTable() {
                       {user.roles && user.roles.map((role) => (
                         <Badge
                           key={role}
-                          className={ROLE_COLORS[role as AppRole]}
+                          className={ROLE_COLORS[role] || ''}
                           variant="secondary"
                         >
-                          {ROLE_LABELS[role as AppRole]}
+                          {ROLE_LABELS[role] || role}
                         </Badge>
                       ))}
                       {(!user.roles || user.roles.length === 0) && (

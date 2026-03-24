@@ -2,14 +2,11 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
-import { AppRole } from '@/types';
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  activeRole: AppRole | null;
-  setActiveRole: (role: AppRole) => void;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signInWithGoogle: () => Promise<{ error: any }>;
   signUp: (email: string, password: string, fullName: string, phone?: string) => Promise<{ error: any }>;
@@ -24,17 +21,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeRole, setActiveRoleState] = useState<AppRole | null>(() => {
-    // Load active role from localStorage on init
-    const stored = localStorage.getItem('activeRole');
-    return stored as AppRole | null;
-  });
   const navigate = useNavigate();
-
-  const setActiveRole = (role: AppRole) => {
-    setActiveRoleState(role);
-    localStorage.setItem('activeRole', role);
-  };
 
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -77,7 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = async (email: string, password: string, fullName: string, phone?: string) => {
     const redirectUrl = `${window.location.origin}/auth/callback`;
-    
+
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -94,13 +81,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     await supabase.auth.signOut();
-    localStorage.removeItem('activeRole');
-    setActiveRoleState(null);
     navigate('/auth');
   };
 
   const sendDriverOtp = async (email: string, workspaceId: string) => {
-    // Called by admins to generate an OTP for a driver
     const { data, error } = await supabase.rpc('generate_mod4_otp', {
       p_email: email,
       p_workspace_id: workspaceId,
@@ -109,14 +93,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const verifyDriverOtp = async (identifier: string, otp: string) => {
-    // Clean identifier (strip spaces/dashes for phone, trim for email)
     const isPhone = /^\+?\d[\d\s-]{6,}$/.test(identifier.trim());
     const cleanIdentifier = isPhone
       ? identifier.replace(/[^\d+]/g, '')
       : identifier.trim();
 
-    // Step 1: Verify OTP via RPC (anon-accessible, sets user password to OTP)
-    // Returns the resolved email on success, null on failure
     const { data, error } = await supabase.rpc('verify_mod4_otp', {
       p_email: cleanIdentifier,
       p_otp: otp,
@@ -130,7 +111,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { success: false, error: new Error('Invalid or expired OTP code') };
     }
 
-    // Step 2: Sign in with the resolved email (RPC returns email even for phone input)
     const resolvedEmail = data as string;
     const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
       email: resolvedEmail,
@@ -151,7 +131,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, activeRole, setActiveRole, signIn, signInWithGoogle, signUp, signOut, sendDriverOtp, verifyDriverOtp }}>
+    <AuthContext.Provider value={{ user, session, loading, signIn, signInWithGoogle, signUp, signOut, sendDriverOtp, verifyDriverOtp }}>
       {children}
     </AuthContext.Provider>
   );

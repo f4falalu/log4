@@ -23,7 +23,7 @@ import { Loader2, ChevronDown, CheckCircle2, XCircle, AlertCircle, Play, Users }
 import {
   useTransitionBatchStatus,
   BATCH_STATUS_META,
-} from '@/hooks/rbac';
+} from '@/hooks/useWorkflowTransitions';
 
 interface BatchStatusActionsProps {
   batchId: string;

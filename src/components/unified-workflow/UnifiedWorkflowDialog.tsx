@@ -98,6 +98,7 @@ export function UnifiedWorkflowDialog({
   const totalDistanceKm = useUnifiedWorkflowStore((state) => state.total_distance_km);
   const estimatedDurationMin = useUnifiedWorkflowStore((state) => state.estimated_duration_min);
   const storePreBatchId = useUnifiedWorkflowStore((state) => state.pre_batch_id);
+  const parsedFacilities = useUnifiedWorkflowStore((state) => state.parsed_facilities);
 
   // Get actions separately (memoized with shallow)
   const actions = useWorkflowActions();
@@ -364,6 +365,7 @@ export function UnifiedWorkflowDialog({
             onPlannedDateChange={actions.setPlannedDate}
             timeWindow={timeWindow}
             onTimeWindowChange={actions.setTimeWindow}
+            sourceMethod={sourceMethod}
             warehouses={warehouses}
             candidates={facilityCandidates}
             candidatesLoading={facilitiesLoading}
@@ -378,6 +380,9 @@ export function UnifiedWorkflowDialog({
             suggestedVehicleId={suggestedVehicleId}
             onSuggestedVehicleChange={actions.setSuggestedVehicle}
             vehicleSuggestions={vehicleSuggestions}
+            parsedFacilities={parsedFacilities}
+            onFileParsed={actions.setParsedFacilities}
+            onUpdateParsedRow={actions.updateParsedFacility}
           />
         );
 
@@ -481,6 +486,7 @@ export function UnifiedWorkflowDialog({
     selectedVehicle,
     selectedDriver,
     scheduleNotes,
+    parsedFacilities,
     actions,
     handleOptimizeRoute,
   ]);

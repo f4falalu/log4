@@ -1,11 +1,11 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useWorkspace } from '@/contexts/WorkspaceContext';
+import { useAbility } from '@/rbac';
 import { useCanAccessPlanning } from '@/hooks/useWorkspaceReadiness';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { AppRole } from '@/types';
-import { toast } from 'sonner';
+import type { Permission } from '@/rbac/types';
 
 /**
  * Routes that require full platform readiness (warehouse + vehicle)
@@ -14,25 +14,30 @@ import { toast } from 'sonner';
 const PLANNING_ROUTES = [
   '/storefront/schedule-planner',
   '/storefront/scheduler',
-
   '/fleetops/batches',
 ];
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requiredRole?: AppRole;
+  /** Permission required to access this route */
+  permission?: Permission;
+  /** @deprecated Legacy role check — ignored during v2 transition */
+  requiredRole?: string;
   requiresReadiness?: boolean;
   workspaceId?: string;
 }
 
 export function ProtectedRoute({
   children,
+  permission,
   requiredRole,
   requiresReadiness = false,
-  workspaceId,
+  workspaceId: workspaceIdProp,
 }: ProtectedRouteProps) {
   const { user, loading } = useAuth();
-  const { hasRole, isLoading: roleLoading } = useUserRole();
+  const { workspaceId: contextWorkspaceId } = useWorkspace();
+  const effectiveWorkspaceId = workspaceIdProp || contextWorkspaceId;
+  const { can, isLoading: abilityLoading } = useAbility({ workspaceId: effectiveWorkspaceId });
   const location = useLocation();
 
   // Check if user has a workspace (for onboarding redirect)
@@ -59,17 +64,17 @@ export function ProtectedRoute({
   const isPlanningRoute = PLANNING_ROUTES.some((route) => location.pathname.startsWith(route));
   const shouldCheckReadiness = requiresReadiness || isPlanningRoute;
 
-  // Get workspace ID from context or props
-  // Note: In a real implementation, this would come from WorkspaceContext
-  const effectiveWorkspaceId = workspaceId;
-
   // Only check readiness if needed and we have a workspace ID
   const { data: canAccessPlanning, isLoading: readinessLoading } = useCanAccessPlanning(
     shouldCheckReadiness ? effectiveWorkspaceId : null
   );
 
   // Combined loading state
-  const isLoading = loading || roleLoading || (shouldCheckReadiness && readinessLoading) || (!isOnboardingRoute && !isProfileCompletionRoute && !isInviteRoute && onboardingLoading);
+  const isLoading =
+    loading ||
+    (shouldCheckReadiness && readinessLoading) ||
+    (!isOnboardingRoute && !isProfileCompletionRoute && !isInviteRoute && onboardingLoading) ||
+    (!!permission && abilityLoading);
 
   if (isLoading) {
     return (
@@ -82,15 +87,13 @@ export function ProtectedRoute({
     );
   }
 
-  // Check authentication - redirect mod4 (driver PWA) routes to /login
+  // Check authentication
   if (!user) {
     const redirectTo = location.pathname.startsWith('/mod4') ? '/login' : '/auth';
     return <Navigate to={redirectTo} state={{ from: location }} replace />;
   }
 
   // Check if user needs onboarding (no workspace yet)
-  // Users with both a workspace and a role are existing users — skip onboarding
-  // even if onboarding_completed hasn't been explicitly set (pre-V2 accounts)
   if (
     !isOnboardingRoute &&
     !isInviteRoute &&
@@ -102,15 +105,13 @@ export function ProtectedRoute({
     return <Navigate to="/onboarding" replace />;
   }
 
-  // Check role requirement
-  if (requiredRole && !hasRole(requiredRole)) {
-    toast.error(`Access denied: ${requiredRole} role required`);
+  // Permission check via RBAC v2
+  if (permission && !can(permission)) {
     return <Navigate to="/fleetops" replace />;
   }
 
   // Check readiness for planning routes
   if (shouldCheckReadiness && effectiveWorkspaceId && canAccessPlanning === false) {
-    toast.error('Complete workspace setup to access planning features');
     return <Navigate to="/onboarding/operational" state={{ from: location }} replace />;
   }
 

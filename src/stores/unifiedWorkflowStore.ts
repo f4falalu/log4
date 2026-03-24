@@ -695,12 +695,11 @@ export const useUnifiedWorkflowStore = create<UnifiedWorkflowStore>()(
                 state.start_location_id !== null &&
                 state.planned_date !== null;
 
-              // For upload method, check parsed facilities
+              // For upload method, check parsed facilities AND working set
               if (state.source_method === 'upload') {
                 return (
                   hasScheduleDetails &&
-                  state.parsed_facilities !== null &&
-                  state.parsed_facilities.filter((f) => f.is_valid).length > 0
+                  state.working_set.length > 0
                 );
               }
 
@@ -752,16 +751,10 @@ export const useUnifiedWorkflowStore = create<UnifiedWorkflowStore>()(
               if (!state.planned_date) {
                 errors.push('Planned date is required');
               }
-              if (state.source_method === 'upload') {
-                if (!state.parsed_facilities || state.parsed_facilities.length === 0) {
-                  errors.push('Please upload and verify facility file');
-                }
-                const validFacilities = state.parsed_facilities?.filter((f) => f.is_valid) ?? [];
-                if (validFacilities.length === 0) {
-                  errors.push('No valid facilities found in uploaded file');
-                }
-              } else {
-                if (state.working_set.length === 0) {
+              if (state.working_set.length === 0) {
+                if (state.source_method === 'upload') {
+                  errors.push('Please upload a file and add matched facilities to the schedule');
+                } else {
                   errors.push('Please add at least one facility to the schedule');
                 }
               }
@@ -917,8 +910,7 @@ export const useCanProceed = () =>
         if (state.source_method === 'upload') {
           return (
             hasScheduleDetails &&
-            state.parsed_facilities !== null &&
-            state.parsed_facilities.filter((f) => f.is_valid).length > 0
+            state.working_set.length > 0
           );
         }
 
@@ -968,16 +960,10 @@ export const useValidationErrors = () =>
         if (!state.planned_date) {
           errors.push('Planned date is required');
         }
-        if (state.source_method === 'upload') {
-          if (!state.parsed_facilities || state.parsed_facilities.length === 0) {
-            errors.push('Please upload and verify facility file');
-          }
-          const validFacilities = state.parsed_facilities?.filter((f) => f.is_valid) ?? [];
-          if (validFacilities.length === 0) {
-            errors.push('No valid facilities found in uploaded file');
-          }
-        } else {
-          if (state.working_set.length === 0) {
+        if (state.working_set.length === 0) {
+          if (state.source_method === 'upload') {
+            errors.push('Please upload a file and add matched facilities to the schedule');
+          } else {
             errors.push('Please add at least one facility to the schedule');
           }
         }

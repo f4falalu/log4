@@ -3,6 +3,7 @@
  * Step 4: Enter vehicle registration and identification details
  */
 
+import { useRef, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,8 +11,11 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { ArrowRight, ArrowLeft } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
+import { ArrowRight, ArrowLeft, Satellite, Upload, X, FileText, Image as ImageIcon } from 'lucide-react';
 import { useVehicleOnboardState } from '@/hooks/useVehicleOnboardState';
+import { useOnboardingFilesStore } from '@/stores/vlms/onboardingFilesStore';
 
 export function RegistrationForm() {
   const registrationData = useVehicleOnboardState((state) => state.registrationData);
@@ -20,8 +24,38 @@ export function RegistrationForm() {
   const goToPreviousStep = useVehicleOnboardState((state) => state.goToPreviousStep);
   const canGoNext = useVehicleOnboardState((state) => state.canGoNext());
 
+  // File staging for documents and photos
+  const { stagedDocuments, stagedPhotos, addDocuments, addPhotos, removeDocument, removePhoto } =
+    useOnboardingFilesStore();
+  const docInputRef = useRef<HTMLInputElement>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+
   const handleChange = (field: string, value: any) => {
     updateRegistrationData({ [field]: value });
+  };
+
+  const handleDocumentSelect = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = Array.from(e.target.files || []);
+      addDocuments(files);
+      if (docInputRef.current) docInputRef.current.value = '';
+    },
+    [addDocuments]
+  );
+
+  const handlePhotoSelect = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = Array.from(e.target.files || []);
+      addPhotos(files);
+      if (photoInputRef.current) photoInputRef.current.value = '';
+    },
+    [addPhotos]
+  );
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
   return (
@@ -319,6 +353,117 @@ export function RegistrationForm() {
 
         <Separator />
 
+        {/* Telemetry / Tracker Configuration */}
+        <div className="space-y-4">
+          <h3 className="font-semibold flex items-center gap-2">
+            <Satellite className="h-4 w-4" />
+            Telemetry / Tracker Configuration
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            Configure the GPS tracker and telematics device for real-time vehicle monitoring.
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="telematics-provider">Telematics Provider</Label>
+              <Select
+                value={registrationData.telematics_provider || ''}
+                onValueChange={(value) => handleChange('telematics_provider', value)}
+              >
+                <SelectTrigger id="telematics-provider">
+                  <SelectValue placeholder="Select provider" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="biko_native">Biko Native</SelectItem>
+                  <SelectItem value="teltonika">Teltonika</SelectItem>
+                  <SelectItem value="queclink">Queclink</SelectItem>
+                  <SelectItem value="ruptela">Ruptela</SelectItem>
+                  <SelectItem value="coban">Coban</SelectItem>
+                  <SelectItem value="concox">Concox</SelectItem>
+                  <SelectItem value="tramigo">Tramigo</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="telematics-id">Device ID / IMEI</Label>
+              <Input
+                id="telematics-id"
+                placeholder="e.g., 350544508537246"
+                value={registrationData.telematics_id || ''}
+                onChange={(e) => handleChange('telematics_id', e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="tracker-sim">SIM Card Number</Label>
+              <Input
+                id="tracker-sim"
+                placeholder="e.g., +234 801 234 5678"
+                value={registrationData.tracker_sim_number || ''}
+                onChange={(e) => handleChange('tracker_sim_number', e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="tracker-protocol">Communication Protocol</Label>
+              <Select
+                value={registrationData.tracker_protocol || ''}
+                onValueChange={(value) => handleChange('tracker_protocol', value)}
+              >
+                <SelectTrigger id="tracker-protocol">
+                  <SelectValue placeholder="Select protocol" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="gprs">GPRS (2G)</SelectItem>
+                  <SelectItem value="3g">3G</SelectItem>
+                  <SelectItem value="4g">4G / LTE</SelectItem>
+                  <SelectItem value="satellite">Satellite</SelectItem>
+                  <SelectItem value="bluetooth">Bluetooth</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Tracker Capabilities */}
+          <div className="space-y-3">
+            <Label>Tracker Capabilities</Label>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {[
+                { id: 'gps', label: 'GPS Location' },
+                { id: 'speed', label: 'Speed Monitoring' },
+                { id: 'fuel_level', label: 'Fuel Level Sensor' },
+                { id: 'temperature', label: 'Temperature Sensor' },
+                { id: 'door_sensor', label: 'Door Open/Close' },
+                { id: 'engine_status', label: 'Engine Status (OBD)' },
+              ].map((cap) => {
+                const capabilities = registrationData.tracker_capabilities || [];
+                const isChecked = capabilities.includes(cap.id as any);
+                return (
+                  <div key={cap.id} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`cap-${cap.id}`}
+                      checked={isChecked}
+                      onCheckedChange={(checked) => {
+                        const updated = checked
+                          ? [...capabilities, cap.id]
+                          : capabilities.filter((c) => c !== cap.id);
+                        handleChange('tracker_capabilities', updated);
+                      }}
+                    />
+                    <Label htmlFor={`cap-${cap.id}`} className="text-sm font-normal cursor-pointer">
+                      {cap.label}
+                    </Label>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        <Separator />
+
         {/* Status & Notes */}
         <div className="space-y-4">
           <h3 className="font-semibold">Status & Notes</h3>
@@ -352,6 +497,119 @@ export function RegistrationForm() {
                 rows={3}
               />
             </div>
+          </div>
+        </div>
+
+        <Separator />
+
+        {/* Documents & Photos Upload */}
+        <div className="space-y-4">
+          <h3 className="font-semibold flex items-center gap-2">
+            <Upload className="h-4 w-4" />
+            Documents & Photos
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            Upload vehicle registration documents, insurance papers, and photos. Files will be uploaded when the vehicle is created.
+          </p>
+
+          {/* Documents */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label>Documents</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => docInputRef.current?.click()}
+              >
+                <FileText className="mr-2 h-4 w-4" />
+                Add Documents
+              </Button>
+              <input
+                ref={docInputRef}
+                type="file"
+                className="hidden"
+                multiple
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
+                onChange={handleDocumentSelect}
+              />
+            </div>
+
+            {stagedDocuments.length > 0 && (
+              <div className="space-y-2">
+                {stagedDocuments.map((file, index) => (
+                  <div
+                    key={`${file.name}-${index}`}
+                    className="flex items-center justify-between p-2 bg-muted rounded-md text-sm"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <span className="truncate">{file.name}</span>
+                      <Badge variant="outline" className="text-xs shrink-0">
+                        {formatFileSize(file.size)}
+                      </Badge>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 shrink-0"
+                      onClick={() => removeDocument(index)}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Photos */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label>Vehicle Photos</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => photoInputRef.current?.click()}
+              >
+                <ImageIcon className="mr-2 h-4 w-4" />
+                Add Photos
+              </Button>
+              <input
+                ref={photoInputRef}
+                type="file"
+                className="hidden"
+                multiple
+                accept="image/*"
+                onChange={handlePhotoSelect}
+              />
+            </div>
+
+            {stagedPhotos.length > 0 && (
+              <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
+                {stagedPhotos.map((file, index) => (
+                  <div key={`${file.name}-${index}`} className="relative group">
+                    <img
+                      src={URL.createObjectURL(file)}
+                      alt={file.name}
+                      className="w-full h-24 object-cover rounded-md border"
+                    />
+                    <Button
+                      variant="destructive"
+                      size="icon"
+                      className="absolute top-1 right-1 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => removePhoto(index)}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                    <span className="text-[10px] text-muted-foreground truncate block mt-1">
+                      {file.name}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </CardContent>

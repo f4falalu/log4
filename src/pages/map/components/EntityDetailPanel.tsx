@@ -17,6 +17,7 @@ import {
   Phone,
   Mail,
   CheckCircle,
+  Building2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -30,10 +31,19 @@ import type {
   DriverStatus,
 } from '@/types/live-map';
 
+interface FacilityData {
+  id: string;
+  name: string;
+  type: string | null;
+  lga: string | null;
+  lat: number;
+  lng: number;
+}
+
 interface EntityDetailPanelProps {
   entityId: string;
   entityType: EntityType;
-  entityData: LiveDriver | LiveVehicle | LiveDelivery | null | undefined;
+  entityData: LiveDriver | LiveVehicle | LiveDelivery | FacilityData | null | undefined;
   onClose: () => void;
 }
 
@@ -87,6 +97,7 @@ export function EntityDetailPanel({
           {entityType === 'driver' && <User className="h-5 w-5 text-blue-500" />}
           {entityType === 'vehicle' && <Truck className="h-5 w-5 text-purple-500" />}
           {entityType === 'delivery' && <Package className="h-5 w-5 text-green-500" />}
+          {entityType === 'facility' && <Building2 className="h-5 w-5 text-emerald-500" />}
           <h3 className="font-semibold capitalize">{entityType} Details</h3>
         </div>
         <Button variant="ghost" size="icon" onClick={onClose}>
@@ -104,6 +115,9 @@ export function EntityDetailPanel({
         )}
         {entityType === 'delivery' && (
           <DeliveryDetails delivery={entityData as LiveDelivery} />
+        )}
+        {entityType === 'facility' && (
+          <FacilityDetails facility={entityData as FacilityData} />
         )}
       </div>
     </div>
@@ -425,6 +439,50 @@ function DeliveryDetails({ delivery }: { delivery: LiveDelivery }) {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function FacilityDetails({ facility }: { facility: FacilityData }) {
+  return (
+    <div className="p-4 space-y-6">
+      {/* Identity */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-3">
+          <div className="h-12 w-12 rounded-full bg-emerald-100 flex items-center justify-center">
+            <Building2 className="h-6 w-6 text-emerald-600" />
+          </div>
+          <div>
+            <h4 className="font-semibold">{facility.name}</h4>
+            {facility.type && (
+              <Badge variant="secondary" className="capitalize">
+                {facility.type}
+              </Badge>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <Separator />
+
+      {/* Location */}
+      <div className="space-y-3">
+        <h5 className="text-sm font-medium text-muted-foreground">Location</h5>
+
+        {facility.lga && (
+          <div className="flex items-center gap-2 text-sm">
+            <MapPin className="h-4 w-4 text-muted-foreground" />
+            {facility.lga}
+          </div>
+        )}
+
+        <div className="bg-muted/50 rounded-lg p-3">
+          <div className="text-xs text-muted-foreground mb-1">Coordinates</div>
+          <div className="font-mono text-sm">
+            {facility.lat.toFixed(5)}, {facility.lng.toFixed(5)}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

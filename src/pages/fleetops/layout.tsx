@@ -3,8 +3,24 @@ import { Package, LayoutDashboard, Users, GitBranch, FileBarChart, Wrench, Radio
 import { AppLayout } from '@/components/layout/AppLayout';
 import { SecondarySidebar, NavigationGroup } from '@/components/layout/SecondarySidebar';
 import { useMemo } from 'react';
+import { useWorkspace } from '@/contexts/WorkspaceContext';
+import { useAbility } from '@/rbac';
+import type { Permission } from '@/rbac/types';
 
-const navigationGroups: NavigationGroup[] = [
+interface GatedNavItem {
+  label: string;
+  href: string;
+  icon: any;
+  end?: boolean;
+  permission?: Permission;
+}
+
+interface GatedNavGroup {
+  label: string;
+  items: GatedNavItem[];
+}
+
+const navigationGroups: GatedNavGroup[] = [
   {
     label: 'OVERVIEW',
     items: [
@@ -22,7 +38,8 @@ const navigationGroups: NavigationGroup[] = [
       {
         label: 'Batches',
         href: '/fleetops/batches',
-        icon: Package
+        icon: Package,
+        permission: 'batches.read',
       },
     ],
   },
@@ -32,7 +49,8 @@ const navigationGroups: NavigationGroup[] = [
       {
         label: 'Drivers',
         href: '/fleetops/drivers',
-        icon: Users
+        icon: Users,
+        permission: 'drivers.assign',
       },
       {
         label: 'Fleet Management',
@@ -67,7 +85,8 @@ const navigationGroups: NavigationGroup[] = [
       {
         label: 'Reports',
         href: '/fleetops/reports',
-        icon: FileBarChart
+        icon: FileBarChart,
+        permission: 'reports.read',
       },
     ],
   },
@@ -75,6 +94,20 @@ const navigationGroups: NavigationGroup[] = [
 
 export function FleetOpsLayout() {
   const location = useLocation();
+  const { workspaceId } = useWorkspace();
+  const { can } = useAbility({ workspaceId });
+
+  // Filter navigation by permission
+  const filteredGroups: NavigationGroup[] = useMemo(() => {
+    return navigationGroups
+      .map((group) => ({
+        ...group,
+        items: group.items.filter((item) =>
+          !item.permission || can(item.permission)
+        ),
+      }))
+      .filter((group) => group.items.length > 0);
+  }, [can]);
 
   // Generate breadcrumbs based on current path
   const breadcrumbs = useMemo(() => {
@@ -104,7 +137,7 @@ export function FleetOpsLayout() {
     <SecondarySidebar
       title="FleetOps"
       subtitle="Operations & Delivery"
-      groups={navigationGroups}
+      groups={filteredGroups}
       searchPlaceholder="Search FleetOps..."
     />
   );

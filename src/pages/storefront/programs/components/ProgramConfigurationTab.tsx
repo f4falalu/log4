@@ -218,9 +218,9 @@ export function ProgramConfigurationTab() {
         </>
       )}
 
-      {/* Detail view: Facilities & Items for selected program */}
+      {/* Detail view: Facilities (compact) then Items (full width) */}
       {selectedProgram && (
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="space-y-4">
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Program Facilities</CardTitle>

@@ -1,3 +1,5 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import {
   X,
@@ -7,6 +9,7 @@ import {
   User,
   Package,
   Loader2,
+  FileText,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -25,6 +28,8 @@ import type { Requisition } from '@/types/requisitions';
 import { REQUISITION_STATUS_CONFIG, REQUISITION_PURPOSES } from '@/types/requisitions';
 import { RequisitionStatusActions } from '@/components/storefront/requisitions/RequisitionStatusActions';
 import { useRequisition } from '@/hooks/useRequisitions';
+import { useInvoiceByRequisitionId } from '@/hooks/useInvoices';
+import { NewInvoiceWizard } from '@/pages/storefront/invoice/components/NewInvoiceWizard';
 
 interface RequisitionDetailPanelProps {
   requisitionId: string;
@@ -35,7 +40,10 @@ export function RequisitionDetailPanel({
   requisitionId,
   onClose,
 }: RequisitionDetailPanelProps) {
+  const navigate = useNavigate();
   const { data: requisition, isLoading } = useRequisition(requisitionId);
+  const { data: existingInvoice } = useInvoiceByRequisitionId(requisitionId);
+  const [isInvoiceWizardOpen, setIsInvoiceWizardOpen] = useState(false);
 
   if (isLoading || !requisition) {
     return (
@@ -272,12 +280,37 @@ export function RequisitionDetailPanel({
 
       {/* Footer Actions */}
       <div className="flex-shrink-0 p-4 border-t space-y-2">
+        {requisition.status === 'approved' && !existingInvoice && (
+          <Button
+            className="w-full"
+            onClick={() => setIsInvoiceWizardOpen(true)}
+          >
+            <FileText className="h-4 w-4 mr-2" />
+            Create Invoice
+          </Button>
+        )}
+        {requisition.status === 'approved' && existingInvoice && (
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => navigate('/storefront/invoice')}
+          >
+            <FileText className="h-4 w-4 mr-2" />
+            View Invoice ({existingInvoice.invoice_number})
+          </Button>
+        )}
         <RequisitionStatusActions
           requisitionId={requisition.id}
           currentStatus={requisition.status}
           requisitionNumber={requisition.sriv_number || requisition.requisition_number || 'N/A'}
         />
       </div>
+
+      <NewInvoiceWizard
+        open={isInvoiceWizardOpen}
+        onOpenChange={setIsInvoiceWizardOpen}
+        preSelectedRequisitionId={requisition.id}
+      />
     </div>
   );
 }

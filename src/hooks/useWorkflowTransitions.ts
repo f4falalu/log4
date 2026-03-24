@@ -1,47 +1,18 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+/**
+ * Workflow Status Transitions
+ *
+ * Simple status transition hooks and metadata for requisitions,
+ * invoices, batches, and scheduler batches.
+ * Extracted from the legacy RBAC workflow guards module.
+ */
+
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 // =====================================================
-// REQUISITION WORKFLOW GUARDS
+// REQUISITION WORKFLOW
 // =====================================================
-
-export function useCanTransitionRequisition(requisitionId: string | undefined, newStatus: string) {
-  return useQuery({
-    queryKey: ['can-transition-requisition', requisitionId, newStatus],
-    queryFn: async () => {
-      if (!requisitionId) return false;
-
-      const { data, error } = await supabase.rpc('can_transition_requisition_status', {
-        _requisition_id: requisitionId,
-        _new_status: newStatus,
-      });
-
-      if (error) throw error;
-      return data as boolean;
-    },
-    enabled: !!requisitionId && !!newStatus,
-    staleTime: 30000, // 30 seconds
-  });
-}
-
-export function useAvailableRequisitionStates(requisitionId: string | undefined) {
-  return useQuery({
-    queryKey: ['available-requisition-states', requisitionId],
-    queryFn: async () => {
-      if (!requisitionId) return [];
-
-      const { data, error } = await supabase.rpc('get_available_requisition_states', {
-        _requisition_id: requisitionId,
-      });
-
-      if (error) throw error;
-      return data as string[];
-    },
-    enabled: !!requisitionId,
-    staleTime: 30000,
-  });
-}
 
 export function useTransitionRequisitionStatus() {
   const queryClient = useQueryClient();
@@ -68,40 +39,25 @@ export function useTransitionRequisitionStatus() {
         .single();
 
       if (error) {
-        // Extract permission error from PostgreSQL exception
-        if (error.message.includes('Permission denied')) {
-          throw new Error(error.message);
-        }
-        if (error.message.includes('Invalid state transition')) {
-          throw new Error(error.message);
-        }
+        if (error.message.includes('Permission denied')) throw new Error(error.message);
+        if (error.message.includes('Invalid state transition')) throw new Error(error.message);
         throw error;
       }
-
       return data;
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['requisition', variables.requisitionId] });
       queryClient.invalidateQueries({ queryKey: ['requisitions'] });
-      queryClient.invalidateQueries({ queryKey: ['available-requisition-states'] });
-
-      toast({
-        title: 'Status updated',
-        description: `Requisition status changed to ${variables.newStatus}`,
-      });
+      toast({ title: 'Status updated', description: `Requisition status changed to ${variables.newStatus}` });
     },
     onError: (error: Error) => {
-      toast({
-        title: 'Status update failed',
-        description: error.message,
-        variant: 'destructive',
-      });
+      toast({ title: 'Status update failed', description: error.message, variant: 'destructive' });
     },
   });
 }
 
 // =====================================================
-// INVOICE WORKFLOW GUARDS
+// INVOICE WORKFLOW
 // =====================================================
 
 export function useTransitionInvoiceStatus() {
@@ -129,38 +85,25 @@ export function useTransitionInvoiceStatus() {
         .single();
 
       if (error) {
-        if (error.message.includes('Permission denied')) {
-          throw new Error(error.message);
-        }
-        if (error.message.includes('Invalid state transition')) {
-          throw new Error(error.message);
-        }
+        if (error.message.includes('Permission denied')) throw new Error(error.message);
+        if (error.message.includes('Invalid state transition')) throw new Error(error.message);
         throw error;
       }
-
       return data;
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['invoice', variables.invoiceId] });
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
-
-      toast({
-        title: 'Status updated',
-        description: `Invoice status changed to ${variables.newStatus}`,
-      });
+      toast({ title: 'Status updated', description: `Invoice status changed to ${variables.newStatus}` });
     },
     onError: (error: Error) => {
-      toast({
-        title: 'Status update failed',
-        description: error.message,
-        variant: 'destructive',
-      });
+      toast({ title: 'Status update failed', description: error.message, variant: 'destructive' });
     },
   });
 }
 
 // =====================================================
-// BATCH WORKFLOW GUARDS
+// BATCH WORKFLOW
 // =====================================================
 
 export function useTransitionBatchStatus() {
@@ -183,45 +126,31 @@ export function useTransitionBatchStatus() {
         .single();
 
       if (error) {
-        if (error.message.includes('Permission denied')) {
-          throw new Error(error.message);
-        }
-        if (error.message.includes('Invalid state transition')) {
-          throw new Error(error.message);
-        }
+        if (error.message.includes('Permission denied')) throw new Error(error.message);
+        if (error.message.includes('Invalid state transition')) throw new Error(error.message);
         throw error;
       }
-
       return data;
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['batch', variables.batchId] });
       queryClient.invalidateQueries({ queryKey: ['batches'] });
-
-      toast({
-        title: 'Status updated',
-        description: `Batch status changed to ${variables.newStatus}`,
-      });
+      toast({ title: 'Status updated', description: `Batch status changed to ${variables.newStatus}` });
     },
     onError: (error: Error) => {
-      toast({
-        title: 'Status update failed',
-        description: error.message,
-        variant: 'destructive',
-      });
+      toast({ title: 'Status update failed', description: error.message, variant: 'destructive' });
     },
   });
 }
 
 // =====================================================
-// SCHEDULER BATCH WORKFLOW GUARDS
+// SCHEDULER BATCH WORKFLOW
 // =====================================================
 
 export function useTransitionSchedulerBatchStatus() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  // Map scheduler UI statuses back to pre_batches statuses
   const toPreBatchStatus = (uiStatus: string): string => {
     const map: Record<string, string> = {
       draft: 'draft',
@@ -252,31 +181,18 @@ export function useTransitionSchedulerBatchStatus() {
         .single();
 
       if (error) {
-        if (error.message.includes('Permission denied')) {
-          throw new Error(error.message);
-        }
-        if (error.message.includes('Invalid state transition')) {
-          throw new Error(error.message);
-        }
+        if (error.message.includes('Permission denied')) throw new Error(error.message);
+        if (error.message.includes('Invalid state transition')) throw new Error(error.message);
         throw error;
       }
-
       return data;
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['pre-batches'] });
-
-      toast({
-        title: 'Status updated',
-        description: `Schedule status changed to ${variables.newStatus}`,
-      });
+      toast({ title: 'Status updated', description: `Schedule status changed to ${variables.newStatus}` });
     },
     onError: (error: Error) => {
-      toast({
-        title: 'Status update failed',
-        description: error.message,
-        variant: 'destructive',
-      });
+      toast({ title: 'Status update failed', description: error.message, variant: 'destructive' });
     },
   });
 }
@@ -289,23 +205,11 @@ export const REQUISITION_STATUS_META = {
   pending: { label: 'Pending', color: 'gray', description: 'Awaiting approval' },
   approved: { label: 'Approved', color: 'green', description: 'Approved by warehouse' },
   packaged: { label: 'Packaged', color: 'blue', description: 'Packaging computed' },
-  ready_for_dispatch: {
-    label: 'Ready for Dispatch',
-    color: 'cyan',
-    description: 'Ready for batch assignment',
-  },
-  assigned_to_batch: {
-    label: 'Assigned to Batch',
-    color: 'purple',
-    description: 'Assigned to delivery batch',
-  },
+  ready_for_dispatch: { label: 'Ready for Dispatch', color: 'cyan', description: 'Ready for batch assignment' },
+  assigned_to_batch: { label: 'Assigned to Batch', color: 'purple', description: 'Assigned to delivery batch' },
   in_transit: { label: 'In Transit', color: 'indigo', description: 'Delivery in progress' },
   fulfilled: { label: 'Fulfilled', color: 'green', description: 'Successfully delivered' },
-  partially_delivered: {
-    label: 'Partially Delivered',
-    color: 'yellow',
-    description: 'Partially completed',
-  },
+  partially_delivered: { label: 'Partially Delivered', color: 'yellow', description: 'Partially completed' },
   failed: { label: 'Failed', color: 'red', description: 'Delivery failed' },
   rejected: { label: 'Rejected', color: 'red', description: 'Rejected by warehouse' },
   cancelled: { label: 'Cancelled', color: 'gray', description: 'Cancelled before delivery' },

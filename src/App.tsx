@@ -29,12 +29,8 @@ import AdminWorkspacesPage from "./pages/admin/workspaces/page";
 import AdminWorkspaceDetailPage from "./pages/admin/workspaces/[id]/page";
 import AdminSessionsPage from "./pages/admin/sessions/page";
 import AdminSessionDetailPage from "./pages/admin/sessions/[id]/page";
-import AdminAuditPage from "./pages/admin/audit/page";
 import AdminLocationsPage from "./pages/admin/LocationManagement";
 import AdminIntegrationPage from "./pages/admin/integration/page";
-import AdminRolesPage from "./pages/admin/roles/page";
-import AdminPermissionSetsPage from "./pages/admin/permission-sets/page";
-import AdminGroupsPage from "./pages/admin/groups/page";
 import LiveMapPage from "./pages/map/live/page";
 import PlaybackMapPage from "./pages/map/playback/page";
 
@@ -217,7 +213,7 @@ const App = () => (
 
                   {/* Admin Workspace - System Admin Only */}
                   <Route path="/admin" element={
-                    <ProtectedRoute requiredRole="system_admin">
+                    <ProtectedRoute permission="admin.users">
                       <AdminLayout />
                     </ProtectedRoute>
                   }>
@@ -251,15 +247,8 @@ const App = () => (
                     {/* Sessions Tab */}
                     <Route path="sessions" element={<AdminSessionsPage />} />
                     <Route path="sessions/:id" element={<AdminSessionDetailPage />} />
-                    <Route path="audit" element={<AdminAuditPage />} />
-
                     {/* Analytics Tab */}
                     <Route path="analytics" element={<AdminDashboard />} />
-
-                    {/* RBAC Tab */}
-                    <Route path="roles" element={<AdminRolesPage />} />
-                    <Route path="permission-sets" element={<AdminPermissionSetsPage />} />
-                    <Route path="groups" element={<AdminGroupsPage />} />
 
                     {/* Integration Tab */}
                     <Route path="integration" element={<AdminIntegrationPage />} />

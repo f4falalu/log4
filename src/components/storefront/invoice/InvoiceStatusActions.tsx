@@ -23,7 +23,7 @@ import { Loader2, ChevronDown, CheckCircle2, XCircle, AlertCircle } from 'lucide
 import {
   useTransitionInvoiceStatus,
   INVOICE_STATUS_META,
-} from '@/hooks/rbac';
+} from '@/hooks/useWorkflowTransitions';
 
 interface InvoiceStatusActionsProps {
   invoiceId: string;

@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { Program, ProgramFormData, ProgramFilters, ProgramMetrics } from '@/types/program';
+import { useWorkspace } from '@/contexts/WorkspaceContext';
 
 const EMPTY_METRICS: ProgramMetrics = {
   facility_count: 0,
@@ -15,12 +16,16 @@ const EMPTY_METRICS: ProgramMetrics = {
 
 // Fetch programs with filters
 export function usePrograms(filters?: ProgramFilters) {
+  const { workspaceId } = useWorkspace();
+
   return useQuery({
-    queryKey: ['programs', filters],
+    queryKey: ['programs', workspaceId, filters],
+    enabled: !!workspaceId,
     queryFn: async () => {
       let query = supabase
         .from('programs')
         .select('*')
+        .eq('workspace_id', workspaceId!)
         .order('created_at', { ascending: false });
 
       if (filters?.search) {
@@ -48,13 +53,17 @@ export function usePrograms(filters?: ProgramFilters) {
       // Fetch metrics for each program from DB
       const programsWithMetrics = await Promise.all(
         (data || []).map(async (program) => {
-          const { data: metrics } = await supabase.rpc('get_program_metrics', {
+          const { data: metrics, error: metricsError } = await supabase.rpc('get_program_metrics', {
             _program_code: program.code || program.name,
           });
 
+          if (metricsError) {
+            console.warn(`Failed to fetch metrics for program ${program.code}:`, metricsError.message);
+          }
+
           return {
             ...program,
-            metrics: (metrics as ProgramMetrics) || EMPTY_METRICS,
+            metrics: (metricsError ? EMPTY_METRICS : (metrics as ProgramMetrics)) || EMPTY_METRICS,
           } as Program;
         })
       );
@@ -78,13 +87,17 @@ export function useProgram(id: string) {
       if (error) throw error;
 
       // Fetch metrics from DB
-      const { data: metrics } = await supabase.rpc('get_program_metrics', {
+      const { data: metrics, error: metricsError } = await supabase.rpc('get_program_metrics', {
         _program_code: data.code || data.name,
       });
 
+      if (metricsError) {
+        console.warn(`Failed to fetch metrics for program ${data.code}:`, metricsError.message);
+      }
+
       const programWithMetrics: Program = {
         ...data,
-        metrics: (metrics as ProgramMetrics) || EMPTY_METRICS,
+        metrics: (metricsError ? EMPTY_METRICS : (metrics as ProgramMetrics)) || EMPTY_METRICS,
       };
 
       return programWithMetrics;

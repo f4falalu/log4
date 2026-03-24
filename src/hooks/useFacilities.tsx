@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient, UseQueryResult } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useWorkspace } from '@/contexts/WorkspaceContext';
 import type {
   Facility,
   FacilityService,
@@ -99,16 +100,20 @@ function mapFacilityToDb(facility: Partial<Facility>) {
  * Fetches all facilities with optional filters and pagination
  */
 export function useFacilities(filters?: FacilityFilters, page?: number, pageSize: number = 50) {
+  const { workspaceId } = useWorkspace();
+
   return useQuery({
-    queryKey: ['facilities', filters, page],
+    queryKey: ['facilities', workspaceId, filters, page],
     staleTime: 30000, // Data is fresh for 30 seconds
     gcTime: 300000, // Cache for 5 minutes
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
+    enabled: !!workspaceId,
     queryFn: async () => {
       let query = supabase
         .from('facilities')
         .select('*', { count: 'exact' })
+        .eq('workspace_id', workspaceId!)
         .is('deleted_at', null)
         .order('name');
 

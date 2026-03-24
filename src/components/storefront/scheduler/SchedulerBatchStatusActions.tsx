@@ -32,7 +32,7 @@ import {
 import {
   useTransitionSchedulerBatchStatus,
   SCHEDULER_STATUS_META,
-} from '@/hooks/rbac';
+} from '@/hooks/useWorkflowTransitions';
 
 interface SchedulerBatchStatusActionsProps {
   batchId: string;

@@ -23,7 +23,7 @@ import { Loader2, ChevronDown, CheckCircle2, XCircle, AlertCircle } from 'lucide
 import {
   useTransitionRequisitionStatus,
   REQUISITION_STATUS_META,
-} from '@/hooks/rbac';
+} from '@/hooks/useWorkflowTransitions';
 
 // Client-side state transition map (replaces dropped get_available_requisition_states RPC)
 const ALLOWED_TRANSITIONS: Record<string, string[]> = {

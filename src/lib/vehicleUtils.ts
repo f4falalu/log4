@@ -24,8 +24,17 @@ export function getVehicleSilhouette(vehicleType?: string | null, make?: string 
 
   console.log('getVehicleSilhouette called:', { vehicleType, type, make, makeLower, model, modelLower });
 
-  // Map vehicle types to silhouette files
+  // Map vehicle types and category codes to silhouette files
   const typeMapping: Record<string, string> = {
+    // Category codes (stored from onboarding wizard)
+    'm1': '/assets/vehicles/silhouettes/M1.webp',
+    'm2': '/assets/vehicles/silhouettes/M2.webp',
+    'n1': '/assets/vehicles/silhouettes/N1.webp',
+    'n2': '/assets/vehicles/silhouettes/N2.webp',
+    'n3': '/assets/vehicles/silhouettes/N3.webp',
+    'l1': '/assets/vehicles/silhouettes/L1.webp',
+    'l2': '/assets/vehicles/silhouettes/L2.webp',
+
     // M1 - Passenger cars
     'sedan': '/assets/vehicles/silhouettes/M1.webp',
     'suv': '/assets/vehicles/silhouettes/M1.webp',

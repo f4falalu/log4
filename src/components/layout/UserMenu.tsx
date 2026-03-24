@@ -1,5 +1,5 @@
 import { useAuth } from '@/contexts/AuthContext';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useWorkspace } from '@/contexts/WorkspaceContext';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,17 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { LogOut, User, Shield } from 'lucide-react';
-import { AppRole } from '@/types';
 import { cn } from '@/lib/utils';
-
-const ROLE_LABELS: Record<AppRole, string> = {
-  system_admin: 'System Admin',
-  warehouse_officer: 'Warehouse Officer',
-  dispatcher: 'Dispatcher',
-  driver: 'Driver',
-  viewer: 'Viewer',
-  zonal_manager: 'Zonal Manager',
-};
 
 interface UserMenuProps {
   compact?: boolean;
@@ -30,7 +20,7 @@ interface UserMenuProps {
 
 export function UserMenu({ compact = false }: UserMenuProps) {
   const { user, signOut } = useAuth();
-  const { activeRole } = useUserRole();
+  const { workspaceName, role } = useWorkspace();
 
   if (!user) return null;
 
@@ -59,12 +49,16 @@ export function UserMenu({ compact = false }: UserMenuProps) {
             <p className="text-xs leading-none text-muted-foreground">
               {user.email}
             </p>
-            {activeRole && (
+            {(workspaceName || role) && (
               <div className="flex items-center gap-2 pt-1">
-                <Shield className="h-3 w-3 text-muted-foreground" />
-                <Badge variant="secondary" className="text-xs">
-                  {ROLE_LABELS[activeRole]}
-                </Badge>
+                {role && (
+                  <div className="flex items-center gap-1">
+                    <Shield className="h-3 w-3 text-muted-foreground" />
+                    <Badge variant="secondary" className="text-xs">
+                      {role.replace(/_/g, ' ')}
+                    </Badge>
+                  </div>
+                )}
               </div>
             )}
           </div>

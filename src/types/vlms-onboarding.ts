@@ -168,6 +168,13 @@ export interface VehicleRegistrationData {
   status: 'available' | 'in_use' | 'maintenance' | 'out_of_service';
   current_mileage?: number;
 
+  // Telemetry / Tracker Configuration
+  telematics_provider?: string;
+  telematics_id?: string;
+  tracker_sim_number?: string;
+  tracker_protocol?: 'gprs' | '3g' | '4g' | 'satellite' | 'bluetooth';
+  tracker_capabilities?: ('gps' | 'fuel_level' | 'speed' | 'temperature' | 'door_sensor' | 'engine_status')[];
+
   // Metadata
   notes?: string;
   tags?: string[];
@@ -251,6 +258,13 @@ export interface CreateVehiclePayload {
   engine_capacity?: number;
   color?: string;
   seating_capacity?: number;
+
+  // Telemetry
+  telematics_provider?: string;
+  telematics_id?: string;
+  tracker_sim_number?: string;
+  tracker_protocol?: string;
+  tracker_capabilities?: string[];
 
   // Status
   status: string;

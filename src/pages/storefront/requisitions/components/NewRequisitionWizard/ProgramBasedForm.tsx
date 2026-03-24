@@ -75,7 +75,13 @@ export function ProgramBasedForm({ onClose, onSuccess }: ProgramBasedFormProps) 
     return counts;
   }, [allItems]);
 
-  // Get the selected program names for filtering items
+  // Get the selected program codes for filtering items
+  const selectedProgramCodes = useMemo(
+    () => programs.filter(p => selectedProgramIds.includes(p.id)).map(p => p.code),
+    [programs, selectedProgramIds]
+  );
+
+  // Get the selected program names for display
   const selectedProgramNames = useMemo(
     () => programs.filter(p => selectedProgramIds.includes(p.id)).map(p => p.name),
     [programs, selectedProgramIds]
@@ -84,7 +90,7 @@ export function ProgramBasedForm({ onClose, onSuccess }: ProgramBasedFormProps) 
   // Filter items to those belonging to selected programs and matching search
   const availableItems = useMemo(() => {
     return allItems.filter(item => {
-      if (!item.program || !selectedProgramNames.includes(item.program)) return false;
+      if (!item.program || !selectedProgramCodes.includes(item.program)) return false;
       if (itemSearch) {
         const search = itemSearch.toLowerCase();
         return item.item_name.toLowerCase().includes(search) ||
@@ -92,7 +98,7 @@ export function ProgramBasedForm({ onClose, onSuccess }: ProgramBasedFormProps) 
       }
       return true;
     });
-  }, [allItems, selectedProgramNames, itemSearch]);
+  }, [allItems, selectedProgramCodes, itemSearch]);
 
   const toggleProgram = (programId: string) => {
     setSelectedProgramIds(prev =>
@@ -175,7 +181,7 @@ export function ProgramBasedForm({ onClose, onSuccess }: ProgramBasedFormProps) 
               ) : (
                 <div className="grid grid-cols-2 gap-3">
                   {programs.map((program) => {
-                    const itemCount = programItemCounts[program.name] || 0;
+                    const itemCount = programItemCounts[program.code] || 0;
                     return (
                       <div
                         key={program.id}

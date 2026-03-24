@@ -18,11 +18,12 @@ import { UploadFileForm } from './UploadFileForm';
 interface NewInvoiceWizardProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  preSelectedRequisitionId?: string;
 }
 
-export function NewInvoiceWizard({ open, onOpenChange }: NewInvoiceWizardProps) {
-  const [step, setStep] = useState<'mode' | 'form'>('mode');
-  const [selectedMode, setSelectedMode] = useState<InvoiceCreationMode | null>(null);
+export function NewInvoiceWizard({ open, onOpenChange, preSelectedRequisitionId }: NewInvoiceWizardProps) {
+  const [step, setStep] = useState<'mode' | 'form'>(preSelectedRequisitionId ? 'form' : 'mode');
+  const [selectedMode, setSelectedMode] = useState<InvoiceCreationMode | null>(preSelectedRequisitionId ? 'ready_request' : null);
 
   const handleModeSelect = (mode: InvoiceCreationMode) => {
     setSelectedMode(mode);
@@ -30,6 +31,10 @@ export function NewInvoiceWizard({ open, onOpenChange }: NewInvoiceWizardProps) 
   };
 
   const handleBack = () => {
+    if (preSelectedRequisitionId) {
+      handleClose();
+      return;
+    }
     setStep('mode');
     setSelectedMode(null);
   };
@@ -79,7 +84,7 @@ export function NewInvoiceWizard({ open, onOpenChange }: NewInvoiceWizardProps) 
           )}
 
           {step === 'form' && selectedMode === 'ready_request' && (
-            <ReadyRequestForm onClose={handleSuccess} />
+            <ReadyRequestForm onClose={handleSuccess} preSelectedRequisitionId={preSelectedRequisitionId} />
           )}
 
           {step === 'form' && selectedMode === 'upload_file' && (

@@ -8,9 +8,10 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, CheckCircle, AlertCircle, Loader2, Package, Weight, Ruler } from 'lucide-react';
+import { ArrowLeft, CheckCircle, AlertCircle, Loader2, Package, Weight, Ruler, Satellite, FileText, Image as ImageIcon } from 'lucide-react';
 import { useVehicleOnboardState } from '@/hooks/useVehicleOnboardState';
 import { useVehiclesStore } from '@/stores/vlms/vehiclesStore';
+import { useOnboardingFilesStore } from '@/stores/vlms/onboardingFilesStore';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { formatVolume, formatWeight, formatDimensions } from '@/lib/vlms/capacityCalculations';
@@ -30,6 +31,9 @@ export function VehicleOnboardSummary() {
   const reset = useVehicleOnboardState((state) => state.reset);
 
   const createVehicle = useVehiclesStore((state) => state.createVehicle);
+  const uploadDocument = useVehiclesStore((state) => state.uploadDocument);
+  const uploadPhoto = useVehiclesStore((state) => state.uploadPhoto);
+  const { stagedDocuments, stagedPhotos, reset: resetFiles } = useOnboardingFilesStore();
 
   const handleSubmit = async () => {
     const formData = getFormData();
@@ -45,10 +49,25 @@ export function VehicleOnboardSummary() {
       // Create the vehicle
       const newVehicle = await createVehicle(formData as any);
 
+      // Upload staged documents and photos
+      const uploadPromises: Promise<void>[] = [];
+
+      for (const doc of stagedDocuments) {
+        uploadPromises.push(uploadDocument(newVehicle.id, doc, 'registration'));
+      }
+      for (const photo of stagedPhotos) {
+        uploadPromises.push(uploadPhoto(newVehicle.id, photo));
+      }
+
+      if (uploadPromises.length > 0) {
+        await Promise.allSettled(uploadPromises);
+      }
+
       toast.success(`Vehicle ${newVehicle.license_plate} onboarded successfully!`);
 
-      // Reset wizard
+      // Reset wizard and files
       reset();
+      resetFiles();
 
       // Navigate to vehicle detail page
       navigate(`/fleetops/vlms/vehicles/${newVehicle.id}`);
@@ -296,6 +315,86 @@ export function VehicleOnboardSummary() {
             </div>
           </div>
         </div>
+
+        {/* Telemetry Configuration */}
+        {(registrationData.telematics_provider || registrationData.telematics_id) && (
+          <>
+            <Separator />
+            <div className="space-y-3">
+              <h3 className="font-semibold flex items-center gap-2">
+                <Satellite className="h-4 w-4 text-success" />
+                Telemetry Configuration
+              </h3>
+              <div className="p-4 bg-muted rounded-lg">
+                <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                  {registrationData.telematics_provider && (
+                    <>
+                      <div><span className="text-muted-foreground">Provider:</span></div>
+                      <div className="font-medium capitalize">{registrationData.telematics_provider.replace('_', ' ')}</div>
+                    </>
+                  )}
+                  {registrationData.telematics_id && (
+                    <>
+                      <div><span className="text-muted-foreground">Device ID:</span></div>
+                      <div className="font-medium font-mono text-xs">{registrationData.telematics_id}</div>
+                    </>
+                  )}
+                  {registrationData.tracker_sim_number && (
+                    <>
+                      <div><span className="text-muted-foreground">SIM Number:</span></div>
+                      <div className="font-medium">{registrationData.tracker_sim_number}</div>
+                    </>
+                  )}
+                  {registrationData.tracker_protocol && (
+                    <>
+                      <div><span className="text-muted-foreground">Protocol:</span></div>
+                      <div className="font-medium uppercase">{registrationData.tracker_protocol}</div>
+                    </>
+                  )}
+                  {registrationData.tracker_capabilities && registrationData.tracker_capabilities.length > 0 && (
+                    <>
+                      <div><span className="text-muted-foreground">Capabilities:</span></div>
+                      <div className="flex flex-wrap gap-1">
+                        {registrationData.tracker_capabilities.map((cap) => (
+                          <Badge key={cap} variant="secondary" className="text-xs">
+                            {cap.replace('_', ' ')}
+                          </Badge>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Staged Documents & Photos */}
+        {(stagedDocuments.length > 0 || stagedPhotos.length > 0) && (
+          <>
+            <Separator />
+            <div className="space-y-3">
+              <h3 className="font-semibold flex items-center gap-2">
+                <CheckCircle className="h-4 w-4 text-success" />
+                Documents & Photos
+              </h3>
+              <div className="p-4 bg-muted rounded-lg space-y-2 text-sm">
+                {stagedDocuments.length > 0 && (
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-muted-foreground" />
+                    <span>{stagedDocuments.length} document{stagedDocuments.length > 1 ? 's' : ''} to upload</span>
+                  </div>
+                )}
+                {stagedPhotos.length > 0 && (
+                  <div className="flex items-center gap-2">
+                    <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                    <span>{stagedPhotos.length} photo{stagedPhotos.length > 1 ? 's' : ''} to upload</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
+        )}
 
         {registrationData.notes && (
           <>

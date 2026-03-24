@@ -7,17 +7,16 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Plus, X } from 'lucide-react';
-import { AppRole } from '@/types';
 
-const AVAILABLE_ROLES: AppRole[] = [
+const AVAILABLE_ROLES = [
   'system_admin',
   'warehouse_officer',
   'driver',
   'zonal_manager',
   'viewer',
-];
+] as const;
 
-const ROLE_COLORS: Record<AppRole, string> = {
+const ROLE_COLORS: Record<string, string> = {
   system_admin: 'bg-red-500/10 text-red-600 dark:text-red-400',
   warehouse_officer: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
   driver: 'bg-green-500/10 text-green-600 dark:text-green-400',
@@ -25,7 +24,7 @@ const ROLE_COLORS: Record<AppRole, string> = {
   viewer: 'bg-gray-500/10 text-gray-600 dark:text-gray-400',
 };
 
-const ROLE_LABELS: Record<AppRole, string> = {
+const ROLE_LABELS: Record<string, string> = {
   system_admin: 'System Admin',
   warehouse_officer: 'Warehouse Officer',
   driver: 'Driver',
@@ -35,8 +34,8 @@ const ROLE_LABELS: Record<AppRole, string> = {
 
 interface RoleSelectorProps {
   roles: string[];
-  onAddRole: (role: AppRole) => void;
-  onRemoveRole: (role: AppRole) => void;
+  onAddRole: (role: string) => void;
+  onRemoveRole: (role: string) => void;
   disabled?: boolean;
 }
 
@@ -49,12 +48,12 @@ export function RoleSelector({ roles, onAddRole, onRemoveRole, disabled }: RoleS
         {roles.map((role) => (
           <Badge
             key={role}
-            className={`${ROLE_COLORS[role as AppRole]} flex items-center gap-1`}
+            className={`${ROLE_COLORS[role] || ''} flex items-center gap-1`}
           >
-            {ROLE_LABELS[role as AppRole]}
+            {ROLE_LABELS[role] || role}
             {!disabled && (
               <button
-                onClick={() => onRemoveRole(role as AppRole)}
+                onClick={() => onRemoveRole(role)}
                 className="ml-1 hover:bg-black/10 rounded-full p-0.5"
               >
                 <X className="h-3 w-3" />

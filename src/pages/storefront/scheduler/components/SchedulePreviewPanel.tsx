@@ -5,6 +5,7 @@
  * Right drawer showing detailed batch information
  */
 
+import { useMemo } from 'react';
 import {
   X,
   MapPin,
@@ -15,6 +16,7 @@ import {
   Package,
   Edit,
   Trash2,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -31,17 +33,81 @@ import {
   formatDuration,
   formatCapacity,
 } from '@/lib/schedulerUtils';
-import type { SchedulerBatch } from '@/types/scheduler';
+import { usePreBatch } from '@/hooks/usePreBatch';
+import type { SchedulerBatch, SchedulerBatchStatus } from '@/types/scheduler';
+import type { PreBatchWithRelations } from '@/types/unified-workflow';
+
+function mapPreBatchToSchedulerBatch(pb: PreBatchWithRelations): SchedulerBatch {
+  const statusMap: Record<string, SchedulerBatchStatus> = {
+    draft: 'draft',
+    ready: 'ready',
+    converted: 'scheduled',
+    cancelled: 'cancelled',
+  };
+
+  return {
+    id: pb.id,
+    name: pb.schedule_title,
+    batch_code: pb.id.slice(0, 8).toUpperCase(),
+    warehouse_id: pb.start_location_id,
+    facility_ids: pb.facility_order || [],
+    planned_date: pb.planned_date,
+    time_window: pb.time_window ?? null,
+    driver_id: null,
+    vehicle_id: pb.suggested_vehicle_id,
+    optimized_route: null,
+    total_distance_km: null,
+    estimated_duration_min: null,
+    total_consignments: pb.facility_order?.length || 0,
+    total_weight_kg: null,
+    total_volume_m3: null,
+    capacity_utilization_pct: null,
+    status: statusMap[pb.status] || 'draft',
+    scheduling_mode: pb.source_sub_option === 'ai_optimization' ? 'ai_optimized' : 'manual',
+    priority: 'medium',
+    created_by: pb.created_by,
+    created_at: pb.created_at,
+    updated_at: pb.updated_at,
+    scheduled_at: pb.status === 'converted' ? pb.updated_at : null,
+    published_at: null,
+    published_batch_id: pb.converted_batch_id,
+    notes: pb.notes ?? null,
+    tags: null,
+    zone: null,
+  };
+}
 
 interface SchedulePreviewPanelProps {
-  batch: SchedulerBatch;
+  batchId: string;
+  batch?: SchedulerBatch;
   onClose: () => void;
 }
 
 export function SchedulePreviewPanel({
-  batch,
+  batchId,
+  batch: batchProp,
   onClose,
 }: SchedulePreviewPanelProps) {
+  // Fetch batch data independently as fallback
+  const { data: preBatchData, isLoading } = usePreBatch(batchId, {
+    enabled: !batchProp,
+  });
+
+  const batch = useMemo(() => {
+    if (batchProp) return batchProp;
+    if (preBatchData) return mapPreBatchToSchedulerBatch(preBatchData);
+    return null;
+  }, [batchProp, preBatchData]);
+
+  if (isLoading && !batch) {
+    return (
+      <div className="flex h-full w-96 flex-col items-center justify-center border-l bg-white">
+        <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+        <p className="mt-2 text-sm text-gray-500">Loading batch...</p>
+      </div>
+    );
+  }
+
   if (!batch) {
     return (
       <div className="flex h-full w-96 flex-col items-center justify-center border-l bg-white">

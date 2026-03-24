@@ -4,7 +4,6 @@ import {
   Users,
   Building2,
   Radio,
-  FileSearch,
   MapPin,
   Shield,
   Settings,
@@ -46,7 +45,6 @@ const sidebarByTab: Record<string, NavigationGroup[]> = {
       items: [
         { label: 'All Members', href: '/admin/members', icon: Users, end: true },
         { label: 'Invitations', href: '/admin/invitations', icon: Mail },
-        { label: 'Groups', href: '/admin/groups', icon: Shield },
       ],
     },
   ],
@@ -63,7 +61,6 @@ const sidebarByTab: Record<string, NavigationGroup[]> = {
       label: 'MONITORING',
       items: [
         { label: 'Active Sessions', href: '/admin/sessions', icon: Radio, end: true },
-        { label: 'Audit Logs', href: '/admin/audit', icon: FileSearch },
       ],
     },
   ],
@@ -132,9 +129,9 @@ export function AdminLayout() {
   // Determine active tab based on path
   const activeTab = useMemo(() => {
     const path = location.pathname;
-    if (path.startsWith('/admin/members') || path.startsWith('/admin/users') || path.startsWith('/admin/groups') || path.startsWith('/admin/invitations')) return 'members';
+    if (path.startsWith('/admin/members') || path.startsWith('/admin/users') || path.startsWith('/admin/invitations')) return 'members';
     if (path.startsWith('/admin/permissions') || path.startsWith('/admin/workspaces')) return 'permissions';
-    if (path.startsWith('/admin/sessions') || path.startsWith('/admin/audit')) return 'sessions';
+    if (path.startsWith('/admin/sessions')) return 'sessions';
     if (path.startsWith('/admin/analytics')) return 'analytics';
     if (path.startsWith('/admin/integration')) return 'integration';
     if (path === '/admin' || path.startsWith('/admin/general') || path.startsWith('/admin/locations')) return 'general';

@@ -32,8 +32,6 @@ import { UserPlus, Mail, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { WorkspaceRole } from '@/types/onboarding';
 import { WORKSPACE_ROLES } from '@/types/onboarding';
-import type { AppRole } from '@/types';
-
 interface InviteUserDialogProps {
   workspaceId: string;
   workspaceName?: string;
@@ -41,7 +39,7 @@ interface InviteUserDialogProps {
   onSuccess?: () => void;
 }
 
-const APP_ROLES: { value: AppRole; label: string; description: string }[] = [
+const APP_ROLES: { value: string; label: string; description: string }[] = [
   { value: 'warehouse_officer', label: 'Warehouse Officer', description: 'Manages warehouses and batches' },
   { value: 'dispatcher', label: 'Dispatcher', description: 'Assigns drivers and manages dispatch' },
   { value: 'driver', label: 'Driver', description: 'Executes deliveries via Mod4' },
@@ -52,7 +50,7 @@ const APP_ROLES: { value: AppRole; label: string; description: string }[] = [
 export function InviteUserDialog({ workspaceId, workspaceName, trigger, onSuccess }: InviteUserDialogProps) {
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState('');
-  const [appRole, setAppRole] = useState<AppRole | ''>('');
+  const [appRole, setAppRole] = useState('');
   const [workspaceRole, setWorkspaceRole] = useState<WorkspaceRole>('member');
   const [personalMessage, setPersonalMessage] = useState('');
 
@@ -173,7 +171,7 @@ export function InviteUserDialog({ workspaceId, workspaceName, trigger, onSucces
             {/* App Role */}
             <div className="space-y-2">
               <Label htmlFor="app-role">Application Role *</Label>
-              <Select value={appRole} onValueChange={(v) => setAppRole(v as AppRole)}>
+              <Select value={appRole} onValueChange={setAppRole}>
                 <SelectTrigger id="app-role">
                   <SelectValue placeholder="Select a role" />
                 </SelectTrigger>

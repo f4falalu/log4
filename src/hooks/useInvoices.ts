@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { Invoice, InvoiceFilters, InvoiceFormData, InvoiceStatus } from '@/types/invoice';
 import { toast } from 'sonner';
+import { useWorkspace } from '@/contexts/WorkspaceContext';
 
 // ========================================
 // Helper Functions
@@ -50,14 +51,18 @@ function generateInvoiceNumber(): string {
 // ========================================
 
 export function useInvoices(filters?: InvoiceFilters, page?: number, pageSize: number = 50) {
+  const { workspaceId } = useWorkspace();
+
   return useQuery({
-    queryKey: ['invoices', filters, page, pageSize],
+    queryKey: ['invoices', workspaceId, filters, page, pageSize],
     staleTime: 30000,
     gcTime: 300000,
+    enabled: !!workspaceId,
     queryFn: async () => {
       let query = supabase
         .from('invoices')
         .select('*, warehouses(id, name), facilities(id, name, address, lga)', { count: 'exact' })
+        .eq('workspace_id', workspaceId!)
         .order('created_at', { ascending: false });
 
       // Apply filters
@@ -297,6 +302,27 @@ export function useInvoicesStats() {
         dispatched_count: statusCounts['dispatched'] || 0,
         completed_count: statusCounts['completed'] || 0,
       };
+    },
+  });
+}
+
+// ========================================
+// Ready Requisitions Hook (for Ready Request mode)
+// ========================================
+
+export function useInvoiceByRequisitionId(requisitionId: string | undefined) {
+  return useQuery({
+    queryKey: ['invoices', 'by-requisition', requisitionId],
+    enabled: !!requisitionId,
+    queryFn: async () => {
+      if (!requisitionId) return null;
+      const { data, error } = await supabase
+        .from('invoices')
+        .select('id, invoice_number, status')
+        .eq('requisition_id', requisitionId)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
     },
   });
 }

@@ -2,16 +2,21 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Driver } from '@/types';
 import { Database } from '@/types/supabase';
+import { useWorkspace } from '@/contexts/WorkspaceContext';
 
 type DriverRow = Database['public']['Tables']['drivers']['Row'];
 
 export function useDrivers() {
+  const { workspaceId } = useWorkspace();
+
   return useQuery({
-    queryKey: ['drivers'],
+    queryKey: ['drivers', workspaceId],
+    enabled: !!workspaceId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('drivers')
         .select('*')
+        .eq('workspace_id', workspaceId!)
         .order('name');
 
       if (error) throw error;

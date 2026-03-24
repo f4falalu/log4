@@ -12,12 +12,15 @@ import * as React from 'react';
 import { ThreeColumnLayout, LeftColumn, MiddleColumn, RightColumn } from '../schedule/ThreeColumnLayout';
 import { ScheduleHeader } from '../schedule/ScheduleHeader';
 import { SourceOfTruthColumn, type FacilityCandidate } from '../schedule/SourceOfTruthColumn';
+import { FileUploadColumn } from '../schedule/FileUploadColumn';
 import { WorkingSetColumn } from '../schedule/WorkingSetColumn';
 import { DecisionSupportColumn } from '../schedule/DecisionSupportColumn';
 import type {
   WorkingSetItem,
+  ParsedFacility,
   AiOptimizationOptions,
   SourceSubOption,
+  SourceMethod,
   VehicleSuggestion,
 } from '@/types/unified-workflow';
 import type { TimeWindow } from '@/types/scheduler';
@@ -33,6 +36,9 @@ interface Step2ScheduleProps {
   onPlannedDateChange: (date: string) => void;
   timeWindow: TimeWindow | null;
   onTimeWindowChange: (window: TimeWindow | null) => void;
+
+  // Source method (to switch between upload vs consignment left column)
+  sourceMethod?: SourceMethod | null;
 
   // Data
   warehouses: Array<{ id: string; name: string; lat?: number; lng?: number }>;
@@ -56,6 +62,11 @@ interface Step2ScheduleProps {
   suggestedVehicleId: string | null;
   onSuggestedVehicleChange: (vehicleId: string | null) => void;
   vehicleSuggestions?: VehicleSuggestion[];
+
+  // File upload (only used when sourceMethod === 'upload')
+  parsedFacilities?: ParsedFacility[] | null;
+  onFileParsed?: (facilities: ParsedFacility[]) => void;
+  onUpdateParsedRow?: (rowIndex: number, updates: Partial<ParsedFacility>) => void;
 }
 
 export function Step2Schedule({
@@ -68,6 +79,7 @@ export function Step2Schedule({
   onPlannedDateChange,
   timeWindow,
   onTimeWindowChange,
+  sourceMethod,
   warehouses,
   facilities = [],
   candidates,
@@ -83,12 +95,38 @@ export function Step2Schedule({
   suggestedVehicleId,
   onSuggestedVehicleChange,
   vehicleSuggestions = [],
+  parsedFacilities,
+  onFileParsed,
+  onUpdateParsedRow,
 }: Step2ScheduleProps) {
   // Get selected facility IDs for the left column
   const selectedFacilityIds = React.useMemo(
     () => workingSet.map((item) => item.facility_id),
     [workingSet]
   );
+
+  const isUploadMode = sourceMethod === 'upload';
+
+  // All facilities (for upload matching dropdown)
+  const allFacilitiesForMatch = React.useMemo(
+    () => [...facilities, ...candidates.map((c) => ({ id: c.id, name: c.name }))],
+    [facilities, candidates],
+  );
+
+  // Handler: add all valid parsed facilities to the working set
+  const handleAddParsedToWorkingSet = React.useCallback(() => {
+    if (!parsedFacilities) return;
+    parsedFacilities
+      .filter((f) => f.is_valid && f.matched_facility_id)
+      .forEach((f) => {
+        onAddToWorkingSet({
+          facility_id: f.matched_facility_id!,
+          facility_name: f.matched_facility_name!,
+          requisition_ids: [],
+          slot_demand: 1,
+        });
+      });
+  }, [parsedFacilities, onAddToWorkingSet]);
 
   // Get start location details for the right column
   const startLocation = React.useMemo(() => {
@@ -124,18 +162,33 @@ export function Step2Schedule({
       {/* 3-Column Layout */}
       <div className="flex-1 min-h-0 p-4">
         <ThreeColumnLayout className="h-full">
-          {/* Left Column: Source of Truth */}
-          <LeftColumn
-            title="Available Facility Orders"
-            subtitle="Ready consignments from finalized requisitions"
-          >
-            <SourceOfTruthColumn
-              candidates={candidates}
-              selectedIds={selectedFacilityIds}
-              onAddToWorkingSet={onAddToWorkingSet}
-              isLoading={candidatesLoading}
-            />
-          </LeftColumn>
+          {/* Left Column: Source of Truth or File Upload */}
+          {isUploadMode ? (
+            <LeftColumn
+              title="Upload Facility List"
+              subtitle="Import from PDF, CSV, XLSX, or DOCX"
+            >
+              <FileUploadColumn
+                allFacilities={allFacilitiesForMatch}
+                parsedFacilities={parsedFacilities ?? null}
+                onFileParsed={onFileParsed ?? (() => {})}
+                onUpdateRow={onUpdateParsedRow ?? (() => {})}
+                onAddValidToWorkingSet={handleAddParsedToWorkingSet}
+              />
+            </LeftColumn>
+          ) : (
+            <LeftColumn
+              title="Available Facility Orders"
+              subtitle="Ready consignments from finalized requisitions"
+            >
+              <SourceOfTruthColumn
+                candidates={candidates}
+                selectedIds={selectedFacilityIds}
+                onAddToWorkingSet={onAddToWorkingSet}
+                isLoading={candidatesLoading}
+              />
+            </LeftColumn>
+          )}
 
           {/* Middle Column: Working Set */}
           <MiddleColumn

@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useWorkspace } from '@/contexts/WorkspaceContext';
 
 export interface DeliverySchedule {
   id: string;
@@ -36,8 +37,11 @@ interface ScheduleFilters {
 }
 
 export function useDeliverySchedules(filters?: ScheduleFilters) {
+  const { workspaceId } = useWorkspace();
+
   return useQuery({
-    queryKey: ['delivery-schedules', filters],
+    queryKey: ['delivery-schedules', workspaceId, filters],
+    enabled: !!workspaceId,
     queryFn: async () => {
       let query = supabase
         .from('delivery_schedules')
@@ -46,7 +50,8 @@ export function useDeliverySchedules(filters?: ScheduleFilters) {
           warehouse:warehouses(name, address),
           vehicle:vehicles(model, plate_number, capacity),
           driver:drivers(name, phone)
-        `);
+        `)
+        .eq('workspace_id', workspaceId!);
 
       if (filters?.warehouseId) {
         query = query.eq('warehouse_id', filters.warehouseId);

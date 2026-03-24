@@ -213,15 +213,13 @@ export default function SchedulerPage() {
           facilities={facilities}
         />
       </div>
-      {selectedBatchId && (() => {
-        const selectedBatch = filteredBatches.find(b => b.id === selectedBatchId);
-        return selectedBatch ? (
-          <SchedulePreviewPanel
-            batch={selectedBatch}
-            onClose={() => setSelectedBatchId(null)}
-          />
-        ) : null;
-      })()}
+      {selectedBatchId && (
+        <SchedulePreviewPanel
+          batchId={selectedBatchId}
+          batch={filteredBatches.find(b => b.id === selectedBatchId)}
+          onClose={() => setSelectedBatchId(null)}
+        />
+      )}
     </div>
   ) : (
     <CalendarView

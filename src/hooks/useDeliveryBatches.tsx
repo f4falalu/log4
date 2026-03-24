@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { DeliveryBatch, Facility } from '@/types';
 import { toast } from 'sonner';
+import { useWorkspace } from '@/contexts/WorkspaceContext';
 
 /**
  * Check if a batch has integrity based on RFC-012 requirements.
@@ -27,8 +28,11 @@ function checkBatchHasIntegrity(
 }
 
 export function useDeliveryBatches() {
+  const { workspaceId } = useWorkspace();
+
   return useQuery({
-    queryKey: ['delivery-batches'],
+    queryKey: ['delivery-batches', workspaceId],
+    enabled: !!workspaceId,
     queryFn: async () => {
       // First, fetch all delivery batches with warehouse info
       const { data: batchesData, error: batchesError } = await supabase
@@ -37,6 +41,7 @@ export function useDeliveryBatches() {
           *,
           warehouse:warehouses(name)
         `)
+        .eq('workspace_id', workspaceId!)
         .order('scheduled_date', { ascending: false });
 
       if (batchesError) throw batchesError;

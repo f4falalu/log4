@@ -14,7 +14,6 @@ import {
 } from 'lucide-react';
 import { UserMenu } from './UserMenu';
 import { NotificationCenter } from './NotificationCenter';
-import { RoleSwitcher } from './RoleSwitcher';
 import { usePermissions, Permission } from '@/hooks/usePermissions';
 
 interface LayoutProps {
@@ -96,7 +95,6 @@ const Layout = ({ children }: LayoutProps) => {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <RoleSwitcher />
               <NotificationCenter />
               <UserMenu />
             </div>

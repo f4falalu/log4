@@ -310,8 +310,8 @@ export function useLiveTracking(options: UseLiveTrackingOptions = {}) {
       const batch = (batchesQuery.data || []).find(
         (b) => b.vehicle_id === vehicle.id
       );
-      const driver = batch?.driver;
-      const gps = driver ? gpsData.positions[driver.id] : null;
+      const driver = batch?.driver as { id: string; name: string; phone: string } | null | undefined;
+      const gps = driver?.id ? gpsData.positions[driver.id] : null;
 
       return {
         id: vehicle.id,
@@ -324,8 +324,8 @@ export function useLiveTracking(options: UseLiveTrackingOptions = {}) {
           : [0, 0],
         capacity: vehicle.capacity || 100,
         utilization: batch ? calculateBatchUtilization(batch as any) : 0,
-        driverId: driver?.[0]?.id || null,
-        driverName: driver?.[0]?.name,
+        driverId: driver?.id || null,
+        driverName: driver?.name,
         batchId: batch?.id || null,
         lastUpdate: gps?.capturedAt || new Date(vehicle.updated_at || ''),
         speed: gps?.speed || 0,
@@ -645,6 +645,15 @@ export function useLiveTracking(options: UseLiveTrackingOptions = {}) {
     [liveDeliveries]
   );
 
+  const getFacility = useCallback(
+    (id: string) => {
+      const f = (facilitiesQuery.data || []).find((f) => f.id === id);
+      if (!f) return undefined;
+      return { id: f.id, name: f.name, type: f.type, lga: f.lga, lat: f.lat, lng: f.lng };
+    },
+    [facilitiesQuery.data]
+  );
+
   // Loading state
   const isLoading =
     batchesQuery.isLoading || driversQuery.isLoading || vehiclesQuery.isLoading || activeDriverPositionsQuery.isLoading;
@@ -676,6 +685,7 @@ export function useLiveTracking(options: UseLiveTrackingOptions = {}) {
     getDriver,
     getVehicle,
     getDelivery,
+    getFacility,
 
     // Status
     isLoading,

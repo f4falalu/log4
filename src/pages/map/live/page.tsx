@@ -15,7 +15,7 @@ export default function LiveMapPage() {
   const selectedEntity = useLiveMapStore((s) => s.selectedEntity);
   const clearSelection = useLiveMapStore((s) => s.clearSelection);
 
-  const { getDriver, getVehicle, getDelivery } = useLiveTracking();
+  const { getDriver, getVehicle, getDelivery, getFacility } = useLiveTracking();
 
   // Handle entity selection from map
   const handleEntitySelect = useCallback(
@@ -37,7 +37,9 @@ export default function LiveMapPage() {
       ? getDriver(selectedEntity.id)
       : selectedEntity.type === 'vehicle'
         ? getVehicle(selectedEntity.id)
-        : getDelivery(selectedEntity.id)
+        : selectedEntity.type === 'facility'
+          ? getFacility(selectedEntity.id)
+          : getDelivery(selectedEntity.id)
     : null;
 
   return (

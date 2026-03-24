@@ -49,7 +49,7 @@ BEGIN
   SELECT COUNT(DISTINCT db.id)
   INTO _active_batches
   FROM delivery_batches db
-  WHERE db.status IN ('assigned', 'in_progress', 'loading')
+  WHERE db.status IN ('assigned', 'in-progress')
     AND EXISTS (
       SELECT 1 FROM unnest(db.facility_ids) AS fid
       JOIN requisitions r ON r.facility_id = fid
@@ -74,7 +74,7 @@ BEGIN
   )
   INTO _avg_delivery_days
   FROM delivery_batches db
-  WHERE db.status = 'delivered'
+  WHERE db.status = 'completed'
     AND db.actual_start_time IS NOT NULL
     AND db.actual_end_time IS NOT NULL
     AND EXISTS (

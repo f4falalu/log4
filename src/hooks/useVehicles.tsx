@@ -1,15 +1,20 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Vehicle } from '@/types';
+import { useWorkspace } from '@/contexts/WorkspaceContext';
 
 export function useVehicles() {
+  const { workspaceId } = useWorkspace();
+
   return useQuery<Vehicle[]>({
-    queryKey: ['vehicles'],
+    queryKey: ['vehicles', workspaceId],
+    enabled: !!workspaceId,
     queryFn: async () => {
       try {
         const { data, error } = await supabase
           .from('vehicles')
           .select('*')
+          .eq('workspace_id', workspaceId!)
           .order('model');
 
         if (error) {

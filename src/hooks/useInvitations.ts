@@ -16,7 +16,6 @@ import type {
   AcceptInvitationResult,
   WorkspaceRole,
 } from '@/types/onboarding';
-import type { AppRole } from '@/types';
 
 // =====================================================
 // Query Keys
@@ -160,7 +159,7 @@ export function useInviteUser() {
       const { data, error } = await supabase.rpc('invite_user', {
         p_email: params.email,
         p_workspace_id: params.workspace_id,
-        p_app_role: params.app_role as AppRole,
+        p_app_role: params.app_role,
         p_workspace_role: params.workspace_role ?? 'member',
         p_personal_message: params.personal_message ?? null,
       });
@@ -305,7 +304,7 @@ export function useResendInvitation() {
       const { data, error } = await supabase.rpc('invite_user', {
         p_email: email,
         p_workspace_id: workspaceId,
-        p_app_role: appRole as AppRole,
+        p_app_role: appRole,
         p_workspace_role: workspaceRole,
         p_personal_message: null,
       });

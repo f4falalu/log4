@@ -325,7 +325,6 @@ export interface CSVFacility {
 }
 
 // Auth & IAM Types
-export type AppRole = 'system_admin' | 'warehouse_officer' | 'dispatcher' | 'driver' | 'zonal_manager' | 'viewer';
 
 export interface Profile {
   id: string;
@@ -334,14 +333,6 @@ export interface Profile {
   avatar_url?: string;
   created_at: string;
   updated_at: string;
-}
-
-export interface UserRole {
-  id: string;
-  user_id: string;
-  role: AppRole;
-  assigned_by?: string;
-  assigned_at: string;
 }
 
 // Stock Analytics Types

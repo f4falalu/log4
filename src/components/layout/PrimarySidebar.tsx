@@ -1,8 +1,9 @@
-import { Warehouse, Truck, Users as UsersIcon, LayoutDashboard, Smartphone, Map } from 'lucide-react';
+import { Warehouse, Truck, Users as UsersIcon, LayoutDashboard, Smartphone, Map, Building2, ChevronDown } from 'lucide-react';
 import { useWorkspace } from '@/contexts/WorkspaceContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { UserMenu } from './UserMenu';
 import { useEffect, useCallback } from 'react';
 import { FEATURE_FLAGS } from '@/lib/featureFlags';
@@ -61,7 +62,7 @@ const workspaces: WorkspaceConfig[] = [
 ];
 
 export function PrimarySidebar() {
-  const { workspace, setWorkspace } = useWorkspace();
+  const { workspace, setWorkspace, workspaceId, workspaceName, workspaces: tenantWorkspaces, switchWorkspace } = useWorkspace();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -100,11 +101,40 @@ export function PrimarySidebar() {
     <TooltipProvider delayDuration={0}>
       <div className="fixed left-0 top-0 h-screen w-16 bg-sidebar border-r border-sidebar-border/60 flex flex-col items-center py-6 z-50">
         {/* Logo/Brand */}
-        <div className="mb-8 flex items-center justify-center">
+        <div className="mb-4 flex items-center justify-center">
           <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center shadow-sm">
             <span className="text-primary-foreground font-bold text-sm">B</span>
           </div>
         </div>
+
+        {/* Tenant Workspace Selector */}
+        {tenantWorkspaces.length > 1 && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button className="w-11 h-11 rounded-lg flex items-center justify-center mb-4 bg-sidebar-accent/50 hover:bg-sidebar-accent transition-colors text-sidebar-foreground/80">
+                    <Building2 className="w-5 h-5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right">{workspaceName || 'Switch workspace'}</TooltipContent>
+              </Tooltip>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent side="right" align="start" className="w-48">
+              {tenantWorkspaces.map((ws) => (
+                <DropdownMenuItem
+                  key={ws.workspace_id}
+                  onClick={() => switchWorkspace(ws.workspace_id)}
+                  className={cn(
+                    ws.workspace_id === workspaceId && 'bg-accent font-medium'
+                  )}
+                >
+                  {ws.name}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
 
         {/* Workspace Icons */}
         <div className="flex-1 flex flex-col gap-4">

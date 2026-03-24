@@ -2,14 +2,19 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Requisition, CreateRequisitionData, RequisitionStatus } from '@/types/requisitions';
+import { useWorkspace } from '@/contexts/WorkspaceContext';
 
 export function useRequisitions(status?: RequisitionStatus) {
+  const { workspaceId } = useWorkspace();
+
   return useQuery({
-    queryKey: ['requisitions', status],
+    queryKey: ['requisitions', workspaceId, status],
+    enabled: !!workspaceId,
     queryFn: async () => {
       let query = supabase
         .from('requisitions')
         .select('*')
+        .eq('workspace_id', workspaceId!)
         .order('created_at', { ascending: false });
 
       if (status) {
