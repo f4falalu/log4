@@ -246,6 +246,7 @@ export interface OnboardingWizardState {
   selectedCountryIds: string[];
   primaryCountryId: string | null;
   selectedStateIds: string[];
+  selectedLgaIds: string[];
   operatingModel: OperatingModel | null;
   // Team setup
   invitations: TeamInvitation[];

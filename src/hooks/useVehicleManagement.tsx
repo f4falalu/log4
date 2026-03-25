@@ -28,12 +28,15 @@ export function useVehicleManagement() {
 
   const createVehicle = useMutation({
     mutationFn: async (data: VehicleFormData) => {
+      const workspaceId = localStorage.getItem('biko_active_workspace_id');
+      if (!workspaceId) throw new Error('No active workspace selected');
+
       const { data: vehicle, error } = await supabase
         .from('vehicles')
-        .insert(data)
+        .insert({ ...data, workspace_id: workspaceId })
         .select()
         .single();
-      
+
       if (error) throw error;
       return vehicle;
     },

@@ -2,20 +2,9 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWorkspace } from '@/contexts/WorkspaceContext';
 import { useAbilityContext } from '@/rbac/AbilityProvider';
-import { useCanAccessPlanning } from '@/hooks/useWorkspaceReadiness';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { Permission } from '@/rbac/types';
-
-/**
- * Routes that require full platform readiness (warehouse + vehicle)
- * before access is allowed.
- */
-const PLANNING_ROUTES = [
-  '/storefront/schedule-planner',
-  '/storefront/scheduler',
-  '/fleetops/batches',
-];
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -23,20 +12,14 @@ interface ProtectedRouteProps {
   permission?: Permission;
   /** @deprecated Legacy role check — ignored during v2 transition */
   requiredRole?: string;
-  requiresReadiness?: boolean;
-  workspaceId?: string;
 }
 
 export function ProtectedRoute({
   children,
   permission,
-  requiredRole,
-  requiresReadiness = false,
-  workspaceId: workspaceIdProp,
 }: ProtectedRouteProps) {
   const { user, loading } = useAuth();
-  const { workspaceId: contextWorkspaceId, isLoadingWorkspaces } = useWorkspace();
-  const effectiveWorkspaceId = workspaceIdProp || contextWorkspaceId;
+  const { isLoadingWorkspaces } = useWorkspace();
   const { can, isLoading: abilityLoading } = useAbilityContext();
   const location = useLocation();
 
@@ -60,20 +43,10 @@ export function ProtectedRoute({
     staleTime: 30000,
   });
 
-  // Check if this is a planning route that requires readiness
-  const isPlanningRoute = PLANNING_ROUTES.some((route) => location.pathname.startsWith(route));
-  const shouldCheckReadiness = requiresReadiness || isPlanningRoute;
-
-  // Only check readiness if needed and we have a workspace ID
-  const { data: canAccessPlanning, isLoading: readinessLoading } = useCanAccessPlanning(
-    shouldCheckReadiness ? effectiveWorkspaceId : null
-  );
-
   // Combined loading state
   const isLoading =
     loading ||
     isLoadingWorkspaces ||
-    (shouldCheckReadiness && readinessLoading) ||
     (!isOnboardingRoute && !isProfileCompletionRoute && !isInviteRoute && onboardingLoading) ||
     (!!permission && abilityLoading);
 
@@ -109,11 +82,6 @@ export function ProtectedRoute({
   // Permission check via RBAC v2
   if (permission && !can(permission)) {
     return <Navigate to="/fleetops" replace />;
-  }
-
-  // Check readiness for planning routes
-  if (shouldCheckReadiness && effectiveWorkspaceId && canAccessPlanning === false) {
-    return <Navigate to="/onboarding/operational" state={{ from: location }} replace />;
   }
 
   return <>{children}</>;

@@ -104,11 +104,11 @@ export function useFacilities(filters?: FacilityFilters, page?: number, pageSize
 
   return useQuery({
     queryKey: ['facilities', workspaceId, filters, page],
+    enabled: !!workspaceId,
     staleTime: 30000, // Data is fresh for 30 seconds
     gcTime: 300000, // Cache for 5 minutes
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
-    enabled: !!workspaceId,
     queryFn: async () => {
       let query = supabase
         .from('facilities')

@@ -247,8 +247,13 @@ export const useVehiclesStore = create<VehiclesState>()(
             return 'diesel';
           };
 
+          // Get active workspace ID
+          const workspaceId = localStorage.getItem('biko_active_workspace_id');
+          if (!workspaceId) throw new Error('No active workspace selected');
+
           const vehicleData = {
             ...data,
+            workspace_id: workspaceId,
             capacity_m3: (data as any).capacity_m3 ?? 0,
             capacity_kg: (data as any).capacity_kg ?? 0,
             capacity: (data as any).capacity ?? 0, // Legacy field

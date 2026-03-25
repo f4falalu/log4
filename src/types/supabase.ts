@@ -2222,6 +2222,7 @@ export type Database = {
           volume_m3: number | null
           warehouse_id: string | null
           weight_kg: number | null
+          workspace_id: string
         }
         Insert: {
           batch_number?: string | null
@@ -2243,6 +2244,7 @@ export type Database = {
           volume_m3?: number | null
           warehouse_id?: string | null
           weight_kg?: number | null
+          workspace_id: string
         }
         Update: {
           batch_number?: string | null
@@ -2264,6 +2266,7 @@ export type Database = {
           volume_m3?: number | null
           warehouse_id?: string | null
           weight_kg?: number | null
+          workspace_id?: string
         }
         Relationships: [
           {
@@ -2271,6 +2274,13 @@ export type Database = {
             columns: ["warehouse_id"]
             isOneToOne: false
             referencedRelation: "warehouses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "items_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
         ]
@@ -3314,6 +3324,7 @@ export type Database = {
           sla_days: number | null
           status: string
           updated_at: string
+          workspace_id: string
         }
         Insert: {
           code: string
@@ -3328,6 +3339,7 @@ export type Database = {
           sla_days?: number | null
           status?: string
           updated_at?: string
+          workspace_id: string
         }
         Update: {
           code?: string
@@ -3342,6 +3354,7 @@ export type Database = {
           sla_days?: number | null
           status?: string
           updated_at?: string
+          workspace_id?: string
         }
         Relationships: [
           {
@@ -3349,6 +3362,51 @@ export type Database = {
             columns: ["funding_source_id"]
             isOneToOne: false
             referencedRelation: "funding_sources"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "programs_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rbac_audit_logs: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          metadata: Json
+          target_user_id: string | null
+          user_id: string
+          workspace_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          target_user_id?: string | null
+          user_id: string
+          workspace_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          target_user_id?: string | null
+          user_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rbac_audit_logs_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
         ]
@@ -7906,6 +7964,7 @@ export type Database = {
           updated_at: string | null
           used_capacity_m3: number | null
           warehouse_type: string | null
+          workspace_id: string
         }
         Insert: {
           address?: string | null
@@ -7930,6 +7989,7 @@ export type Database = {
           updated_at?: string | null
           used_capacity_m3?: number | null
           warehouse_type?: string | null
+          workspace_id: string
         }
         Update: {
           address?: string | null
@@ -7954,8 +8014,17 @@ export type Database = {
           updated_at?: string | null
           used_capacity_m3?: number | null
           warehouse_type?: string | null
+          workspace_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "warehouses_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       workspace_countries: {
         Row: {
@@ -7996,12 +8065,56 @@ export type Database = {
           },
         ]
       }
+      workspace_lgas: {
+        Row: {
+          admin_unit_id: string
+          created_at: string
+          id: string
+          workspace_id: string
+        }
+        Insert: {
+          admin_unit_id: string
+          created_at?: string
+          id?: string
+          workspace_id: string
+        }
+        Update: {
+          admin_unit_id?: string
+          created_at?: string
+          id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_lgas_admin_unit_id_fkey"
+            columns: ["admin_unit_id"]
+            isOneToOne: false
+            referencedRelation: "admin_units"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspace_lgas_admin_unit_id_fkey"
+            columns: ["admin_unit_id"]
+            isOneToOne: false
+            referencedRelation: "zone_facility_hierarchy"
+            referencedColumns: ["lga_id"]
+          },
+          {
+            foreignKeyName: "workspace_lgas_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workspace_members: {
         Row: {
           created_at: string | null
           id: string
           role: string
           role_id: string | null
+          status: string
           updated_at: string | null
           user_id: string
           workspace_id: string
@@ -8011,6 +8124,7 @@ export type Database = {
           id?: string
           role?: string
           role_id?: string | null
+          status?: string
           updated_at?: string | null
           user_id: string
           workspace_id: string
@@ -8020,6 +8134,7 @@ export type Database = {
           id?: string
           role?: string
           role_id?: string | null
+          status?: string
           updated_at?: string | null
           user_id?: string
           workspace_id?: string
@@ -9903,6 +10018,10 @@ export type Database = {
         Args: { p_workspace_id: string }
         Returns: Database["public"]["Enums"]["org_status"]
       }
+      archive_workspace: {
+        Args: { p_workspace_id: string }
+        Returns: undefined
+      }
       assign_driver_to_batch: {
         Args: { p_batch_id: string; p_driver_id: string }
         Returns: boolean
@@ -9991,6 +10110,15 @@ export type Database = {
           p_primary_contact_name?: string
           p_primary_contact_phone?: string
           p_sector?: string
+          p_slug: string
+        }
+        Returns: string
+      }
+      create_workspace: {
+        Args: {
+          p_country_id?: string
+          p_name: string
+          p_org_type?: string
           p_slug: string
         }
         Returns: string
@@ -10822,6 +10950,7 @@ export type Database = {
         }
         Returns: string
       }
+      is_admin: { Args: never; Returns: boolean }
       is_slot_available: {
         Args: { p_batch_id?: string; p_slot_key: string; p_vehicle_id: string }
         Returns: boolean
@@ -10904,6 +11033,10 @@ export type Database = {
       revoke_invitation: { Args: { p_invitation_id: string }; Returns: boolean }
       save_onboarding_step: {
         Args: { p_step: string; p_workspace_id: string }
+        Returns: undefined
+      }
+      save_workspace_lgas: {
+        Args: { p_admin_unit_ids: string[]; p_workspace_id: string }
         Returns: undefined
       }
       save_workspace_states: {
@@ -11519,6 +11652,14 @@ export type Database = {
         Args: { p_tier_config: Json; p_vehicle_id: string }
         Returns: undefined
       }
+      toggle_member_status: {
+        Args: {
+          p_member_user_id: string
+          p_status: string
+          p_workspace_id: string
+        }
+        Returns: undefined
+      }
       unaccent: { Args: { "": string }; Returns: string }
       unlockrows: { Args: { "": string }; Returns: number }
       update_session_heartbeat: {
@@ -11892,3 +12033,4 @@ export const Constants = {
     },
   },
 } as const
+

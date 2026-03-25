@@ -35,7 +35,7 @@ export function ReadinessGate({
   children,
   workspaceId,
   requiredGates,
-  fallbackPath = '/onboarding/operational',
+  fallbackPath = '/onboarding',
   showPrompt = true,
 }: ReadinessGateProps) {
   const location = useLocation();

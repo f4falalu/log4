@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Loader2, Building2, Mail, Phone, Globe, MapPin, Truck, X, Search, Check } from 'lucide-react';
 import { useCountries } from '@/hooks/onboarding/useCountries';
 import { useAdminUnitsByCountry } from '@/hooks/onboarding/useAdminUnitsByCountry';
+import { useAdminUnitsByParent } from '@/hooks/onboarding/useAdminUnitsByParent';
 import { OPERATING_MODELS, ORG_TYPES, SECTORS } from '@/types/onboarding';
 import type { OperatingModel, OrgType, Sector } from '@/types/onboarding';
 import type { useOnboardingWizard } from '@/hooks/onboarding/useOnboardingWizard';
@@ -155,7 +156,7 @@ export default function OrganizationStep({ wizard }: OrganizationStepProps) {
       if (state.primaryCountryId === countryId) {
         updateField('primaryCountryId', next[0] || null);
       }
-      // Clear states for removed country
+      // Clear states and LGAs for removed country
       if (adminUnits) {
         const removedStates = adminUnits
           .filter(u => u.country_id === countryId)
@@ -164,6 +165,16 @@ export default function OrganizationStep({ wizard }: OrganizationStepProps) {
           'selectedStateIds',
           state.selectedStateIds.filter(id => !removedStates.includes(id))
         );
+        // Clear LGAs that belonged to removed states
+        if (lgaUnits) {
+          const removedLgas = lgaUnits
+            .filter(u => removedStates.includes(u.parent_id))
+            .map(u => u.id);
+          updateField(
+            'selectedLgaIds',
+            state.selectedLgaIds.filter(id => !removedLgas.includes(id))
+          );
+        }
       }
     } else {
       const next = [...current, countryId];
@@ -178,9 +189,45 @@ export default function OrganizationStep({ wizard }: OrganizationStepProps) {
     const current = state.selectedStateIds;
     if (current.includes(stateId)) {
       updateField('selectedStateIds', current.filter(id => id !== stateId));
+      // Clear LGAs for removed state
+      if (lgaUnits) {
+        const removedLgas = lgaUnits
+          .filter(u => u.parent_id === stateId)
+          .map(u => u.id);
+        updateField(
+          'selectedLgaIds',
+          state.selectedLgaIds.filter(id => !removedLgas.includes(id))
+        );
+      }
     } else {
       updateField('selectedStateIds', [...current, stateId]);
     }
+  };
+
+  // Fetch LGAs for selected states
+  const { data: lgaUnits, isLoading: loadingLgas } = useAdminUnitsByParent(
+    state.selectedStateIds,
+    6
+  );
+
+  const toggleLga = (lgaId: string) => {
+    const current = state.selectedLgaIds;
+    if (current.includes(lgaId)) {
+      updateField('selectedLgaIds', current.filter(id => id !== lgaId));
+    } else {
+      updateField('selectedLgaIds', [...current, lgaId]);
+    }
+  };
+
+  // Group LGAs by parent state for display
+  const lgasByState = (lgaUnits || []).reduce<Record<string, typeof lgaUnits>>((acc, lga) => {
+    if (!acc[lga.parent_id]) acc[lga.parent_id] = [];
+    acc[lga.parent_id]!.push(lga);
+    return acc;
+  }, {});
+
+  const getStateName = (stateId: string) => {
+    return adminUnits?.find(u => u.id === stateId)?.name || stateId;
   };
 
   const getCountryName = (countryId: string) => {
@@ -369,6 +416,55 @@ export default function OrganizationStep({ wizard }: OrganizationStepProps) {
             ) : (
               <p className="text-xs text-zinc-500 py-2">
                 No administrative boundaries imported yet. You can import them later from Settings.
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* LGAs / Local Government Areas */}
+        {state.selectedStateIds.length > 0 && (
+          <div className="space-y-2">
+            <Label className="text-zinc-300">
+              <MapPin className="inline w-4 h-4 mr-1" />
+              Local Government Areas (LGAs) <span className="text-zinc-600">(optional)</span>
+            </Label>
+            <p className="text-xs text-zinc-500">
+              Select specific LGAs where you operate, or leave empty for state-wide.
+            </p>
+
+            {loadingLgas ? (
+              <div className="flex items-center gap-2 text-zinc-500 py-2">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span className="text-sm">Loading LGAs...</span>
+              </div>
+            ) : lgaUnits && lgaUnits.length > 0 ? (
+              <div className="space-y-4 max-h-64 overflow-y-auto p-1">
+                {Object.entries(lgasByState).map(([parentId, lgas]) => (
+                  <div key={parentId}>
+                    <p className="text-xs font-medium text-zinc-400 mb-2">
+                      {getStateName(parentId)}
+                    </p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {(lgas || []).map(lga => (
+                        <button
+                          key={lga.id}
+                          onClick={() => toggleLga(lga.id)}
+                          className={`px-3 py-2 rounded-lg text-xs text-left transition-colors ${
+                            state.selectedLgaIds.includes(lga.id)
+                              ? 'bg-emerald-500/20 border border-emerald-500/30 text-emerald-300'
+                              : 'bg-zinc-900 border border-zinc-800 text-zinc-400 hover:border-zinc-700'
+                          }`}
+                        >
+                          {lga.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-zinc-500 py-2">
+                No LGA boundaries available for the selected states.
               </p>
             )}
           </div>

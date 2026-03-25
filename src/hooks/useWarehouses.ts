@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useWorkspace } from '@/contexts/WorkspaceContext';
 import type { Warehouse, WarehouseFilters, WarehouseFormData, WarehouseStats } from '@/types/warehouse';
 import { toast } from 'sonner';
 
@@ -58,14 +59,18 @@ function mapWarehouseToDb(warehouse: WarehouseFormData) {
 // ========================================
 
 export function useWarehouses(filters?: WarehouseFilters, page?: number, pageSize: number = 50) {
+  const { workspaceId } = useWorkspace();
+
   return useQuery({
-    queryKey: ['warehouses', filters, page, pageSize],
+    queryKey: ['warehouses', workspaceId, filters, page, pageSize],
+    enabled: !!workspaceId,
     staleTime: 30000,
     gcTime: 300000,
     queryFn: async () => {
       let query = supabase
         .from('warehouses')
         .select('*', { count: 'exact' })
+        .eq('workspace_id', workspaceId!)
         .order('name');
 
       // Apply filters
@@ -122,12 +127,13 @@ export function useWarehouse(id: string | undefined) {
 
 export function useCreateWarehouse() {
   const queryClient = useQueryClient();
+  const { workspaceId } = useWorkspace();
 
   return useMutation({
     mutationFn: async (warehouse: WarehouseFormData) => {
       const { data, error } = await supabase
         .from('warehouses')
-        .insert(mapWarehouseToDb(warehouse))
+        .insert({ ...mapWarehouseToDb(warehouse), workspace_id: workspaceId })
         .select()
         .single();
 
@@ -195,12 +201,16 @@ export function useDeleteWarehouse() {
 // ========================================
 
 export function useWarehousesStats(): { data: WarehouseStats | undefined; isLoading: boolean } {
+  const { workspaceId } = useWorkspace();
+
   return useQuery({
-    queryKey: ['warehouses', 'stats'],
+    queryKey: ['warehouses', 'stats', workspaceId],
+    enabled: !!workspaceId,
     queryFn: async (): Promise<WarehouseStats> => {
       const { data, error, count } = await supabase
         .from('warehouses')
-        .select('is_active, total_capacity_m3, used_capacity_m3', { count: 'exact' });
+        .select('is_active, total_capacity_m3, used_capacity_m3', { count: 'exact' })
+        .eq('workspace_id', workspaceId!);
 
       if (error) throw error;
 

@@ -71,7 +71,8 @@ export function useCanAccessPlanning(workspaceId: string | null | undefined) {
 
       if (error) {
         console.error('Error checking planning access:', error);
-        return false;
+        // Fail open — don't block users from features due to RPC errors
+        return true;
       }
 
       return data as boolean;

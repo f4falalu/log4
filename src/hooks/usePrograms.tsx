@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import type { Program, ProgramFormData, ProgramFilters, ProgramMetrics } from '@/types/program';
 import { useWorkspace } from '@/contexts/WorkspaceContext';
+import type { Program, ProgramFormData, ProgramFilters, ProgramMetrics } from '@/types/program';
 
 const EMPTY_METRICS: ProgramMetrics = {
   facility_count: 0,
@@ -109,6 +109,7 @@ export function useProgram(id: string) {
 // Create program
 export function useCreateProgram() {
   const queryClient = useQueryClient();
+  const { workspaceId } = useWorkspace();
 
   return useMutation({
     mutationFn: async (data: ProgramFormData) => {
@@ -124,6 +125,7 @@ export function useCreateProgram() {
             requires_cold_chain: data.requires_cold_chain,
             sla_days: data.sla_days,
             status: data.status,
+            workspace_id: workspaceId,
           },
         ])
         .select()

@@ -271,11 +271,15 @@ const App = () => (
                   } />
                   <Route path="/settings/profile" element={
                     <ProtectedRoute>
+                      <SettingsLayout />
+                    </ProtectedRoute>
+                  }>
+                    <Route index element={
                       <Suspense fallback={<div className="flex items-center justify-center h-screen"><Loader2 className="h-8 w-8 animate-spin" /></div>}>
                         <SettingsProfilePage />
                       </Suspense>
-                    </ProtectedRoute>
-                  } />
+                    } />
+                  </Route>
                   {/* Settings Routes — workspace-scoped (workspace.manage required) */}
                   <Route path="/settings" element={
                     <ProtectedRoute permission="workspace.manage">

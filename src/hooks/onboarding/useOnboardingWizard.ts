@@ -30,6 +30,7 @@ function createInitialState(): OnboardingWizardState {
     selectedCountryIds: [],
     primaryCountryId: null,
     selectedStateIds: [],
+    selectedLgaIds: [],
     operatingModel: null,
     invitations: [],
     isSubmitting: false,
@@ -213,6 +214,14 @@ export function useOnboardingWizard() {
         await supabase.rpc('save_workspace_states', {
           p_workspace_id: workspaceId,
           p_admin_unit_ids: state.selectedStateIds,
+        });
+      }
+
+      // Save selected LGAs if any
+      if (state.selectedLgaIds.length > 0) {
+        await supabase.rpc('save_workspace_lgas', {
+          p_workspace_id: workspaceId,
+          p_admin_unit_ids: state.selectedLgaIds,
         });
       }
 

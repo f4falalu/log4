@@ -126,6 +126,7 @@ export default function SettingsGeneralPage() {
       const { data, error } = await supabase
         .from('warehouses')
         .select('id, name')
+        .eq('workspace_id', workspaceId!)
         .eq('is_active', true)
         .order('name');
       if (error) throw error;
@@ -141,6 +142,7 @@ export default function SettingsGeneralPage() {
       const { data, error } = await supabase
         .from('programs')
         .select('id, name')
+        .eq('workspace_id', workspaceId!)
         .eq('status', 'active')
         .order('name');
       if (error) throw error;
