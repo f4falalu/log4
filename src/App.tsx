@@ -72,17 +72,27 @@ import VehicleManagementPage from "./pages/VehicleManagementPage";
 
 // Lazy load Reports page (includes Recharts - ~300 kB uncompressed / 77 kB gzipped)
 const ReportsPageWrapper = lazy(() => import("./pages/ReportsPageWrapper"));
-import VLMSVehicles from "./pages/fleetops/vlms/vehicles/page";
-import VLMSVehicleOnboard from "./pages/fleetops/vlms/vehicles/onboard/page";
-import VLMSVehicleDetail from "./pages/fleetops/vlms/vehicles/[id]/page";
-import VLMSVehicleEdit from "./pages/fleetops/vlms/vehicles/[id]/edit/page";
-import VLMSMaintenance from "./pages/fleetops/vlms/maintenance/page";
-import VLMSFuel from "./pages/fleetops/vlms/fuel/page";
-import VLMSAssignments from "./pages/fleetops/vlms/assignments/page";
-import VLMSIncidents from "./pages/fleetops/vlms/incidents/page";
-import VLMSInspections from "./pages/fleetops/vlms/inspections/page";
+const VLMSVehicles = lazy(() => import("./pages/fleetops/vlms/vehicles/page"));
+const VLMSVehicleOnboard = lazy(() => import("./pages/fleetops/vlms/vehicles/onboard/page"));
+const VLMSVehicleDetail = lazy(() => import("./pages/fleetops/vlms/vehicles/[id]/page"));
+const VLMSVehicleEdit = lazy(() => import("./pages/fleetops/vlms/vehicles/[id]/edit/page"));
+const VLMSMaintenance = lazy(() => import("./pages/fleetops/vlms/maintenance/page"));
+const VLMSFuel = lazy(() => import("./pages/fleetops/vlms/fuel/page"));
+const VLMSAssignments = lazy(() => import("./pages/fleetops/vlms/assignments/page"));
+const VLMSIncidents = lazy(() => import("./pages/fleetops/vlms/incidents/page"));
+const VLMSInspections = lazy(() => import("./pages/fleetops/vlms/inspections/page"));
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 2 * 60 * 1000,        // 2 minutes before data is considered stale
+      gcTime: 10 * 60 * 1000,           // 10 minutes garbage collection
+      refetchOnWindowFocus: false,       // Don't refetch on tab switch
+      refetchOnReconnect: 'always',      // Do refetch when network reconnects
+      retry: 1,                          // Single retry on failure
+    },
+  },
+});
 
 function WorkspaceThemeApplier() {
   const { workspace } = useWorkspace();

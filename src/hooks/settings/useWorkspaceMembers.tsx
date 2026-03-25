@@ -57,8 +57,14 @@ export function useWorkspaceMembersV2(workspaceId: string | null) {
         .select('id, user_id, workspace_id, role_id, status, created_at')
         .eq('workspace_id', workspaceId);
 
-      if (membersError) throw membersError;
-      if (!members || members.length === 0) return [];
+      if (membersError) {
+        console.error('[useWorkspaceMembersV2] Failed to fetch members:', membersError);
+        throw membersError;
+      }
+      if (!members || members.length === 0) {
+        console.warn('[useWorkspaceMembersV2] No members found for workspace:', workspaceId);
+        return [];
+      }
 
       // Fetch roles
       const roleIds = [...new Set(members.map((m: any) => m.role_id).filter(Boolean))];

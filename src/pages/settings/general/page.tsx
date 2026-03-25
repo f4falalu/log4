@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
-import { Loader2, AlertCircle, AlertTriangle, Plus, Archive } from 'lucide-react';
+import { Loader2, AlertCircle, AlertTriangle, Plus, Archive, Globe } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -151,6 +151,39 @@ export default function SettingsGeneralPage() {
     enabled: !!workspaceId,
   });
 
+  // Fetch all available countries
+  const { data: allCountries = [] } = useQuery({
+    queryKey: ['countries'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('countries')
+        .select('id, name, iso_code, iso3_code')
+        .eq('is_active', true)
+        .order('name');
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  // Fetch workspace countries (linked via workspace_countries)
+  const { data: workspaceCountries = [], refetch: refetchWorkspaceCountries } = useQuery({
+    queryKey: ['workspace-countries', workspaceId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('workspace_countries')
+        .select('id, country_id, is_primary, countries(id, name, iso_code)')
+        .eq('workspace_id', workspaceId!);
+      if (error) throw error;
+      return (data || []) as Array<{
+        id: string;
+        country_id: string;
+        is_primary: boolean;
+        countries: { id: string; name: string; iso_code: string } | null;
+      }>;
+    },
+    enabled: !!workspaceId,
+  });
+
   // Form state
   const [name, setName] = useState('');
   const [orgType, setOrgType] = useState<string | null>(null);
@@ -219,6 +252,74 @@ export default function SettingsGeneralPage() {
     updateSettings('working_days', updated);
   };
 
+  const [addingCountryId, setAddingCountryId] = useState<string>('');
+
+  const addCountryMutation = useMutation({
+    mutationFn: async (countryId: string) => {
+      if (!workspaceId) throw new Error('No workspace');
+      const isPrimary = workspaceCountries.length === 0;
+      const { error } = await supabase
+        .from('workspace_countries')
+        .insert({ workspace_id: workspaceId, country_id: countryId, is_primary: isPrimary });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('Country added');
+      setAddingCountryId('');
+      refetchWorkspaceCountries();
+    },
+    onError: (err) => {
+      console.error('Failed to add country:', err);
+      toast.error('Failed to add country');
+    },
+  });
+
+  const removeCountryMutation = useMutation({
+    mutationFn: async (wcId: string) => {
+      const { error } = await supabase
+        .from('workspace_countries')
+        .delete()
+        .eq('id', wcId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('Country removed');
+      refetchWorkspaceCountries();
+    },
+    onError: (err) => {
+      console.error('Failed to remove country:', err);
+      toast.error('Failed to remove country');
+    },
+  });
+
+  const setPrimaryCountryMutation = useMutation({
+    mutationFn: async (wcId: string) => {
+      if (!workspaceId) throw new Error('No workspace');
+      // Unset all primary flags for this workspace
+      await supabase
+        .from('workspace_countries')
+        .update({ is_primary: false })
+        .eq('workspace_id', workspaceId);
+      // Set the selected one as primary
+      const { error } = await supabase
+        .from('workspace_countries')
+        .update({ is_primary: true })
+        .eq('id', wcId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('Primary country updated');
+      refetchWorkspaceCountries();
+    },
+    onError: (err) => {
+      console.error('Failed to set primary country:', err);
+      toast.error('Failed to update primary country');
+    },
+  });
+
+  const linkedCountryIds = workspaceCountries.map((wc) => wc.country_id);
+  const availableCountries = allCountries.filter((c) => !linkedCountryIds.includes(c.id));
+
   if (!can('workspace.manage')) return null;
 
   if (isLoading) {
@@ -269,8 +370,7 @@ export default function SettingsGeneralPage() {
           </Button>
           <Button
             onClick={() => updateMutation.mutate()}
-            disabled={!hasChanges || updateMutation.isPending || missingDefaults}
-            title={missingDefaults ? 'Set default zone and warehouse before saving' : undefined}
+            disabled={!hasChanges || updateMutation.isPending}
           >
             {updateMutation.isPending && (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -281,10 +381,10 @@ export default function SettingsGeneralPage() {
       </div>
 
       {missingDefaults && (
-        <div className="flex items-center gap-2 p-3 mb-6 rounded-lg border border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
+        <div className="flex items-center gap-2 p-3 mb-6 rounded-lg border border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-200">
           <AlertTriangle className="h-4 w-4 shrink-0" />
           <p className="text-sm">
-            Operational defaults are incomplete. Please set a default dispatch zone and default warehouse for full functionality.
+            Operational defaults (dispatch zone and warehouse) are not yet configured. You can still save other settings.
           </p>
         </div>
       )}
@@ -375,7 +475,107 @@ export default function SettingsGeneralPage() {
           </div>
         </div>
 
-        {/* Section 2: Operational Defaults */}
+        {/* Section 2: Region / Countries */}
+        <div className="border rounded-lg bg-card">
+          <div className="px-6 pt-1 pb-1">
+            <h2 className="text-base font-semibold pt-4 pb-2">Region</h2>
+          </div>
+          <div className="px-6">
+            <SettingsSection
+              title="Operating countries"
+              description="Countries where this workspace operates. The primary country determines default boundaries and map center."
+            >
+              <div className="space-y-3">
+                {workspaceCountries.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No countries configured yet.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {workspaceCountries.map((wc) => (
+                      <div
+                        key={wc.id}
+                        className="flex items-center justify-between p-2.5 rounded-lg border bg-muted/30"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Globe className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm font-medium">
+                            {wc.countries?.name || 'Unknown'}
+                          </span>
+                          <Badge variant="outline" className="text-xs">
+                            {wc.countries?.iso_code}
+                          </Badge>
+                          {wc.is_primary && (
+                            <Badge className="text-xs bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                              Primary
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          {!wc.is_primary && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 text-xs"
+                              onClick={() => setPrimaryCountryMutation.mutate(wc.id)}
+                              disabled={setPrimaryCountryMutation.isPending}
+                            >
+                              Set Primary
+                            </Button>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 text-xs text-destructive hover:text-destructive"
+                            onClick={() => removeCountryMutation.mutate(wc.id)}
+                            disabled={removeCountryMutation.isPending}
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="flex items-center gap-2">
+                  <Select
+                    value={addingCountryId}
+                    onValueChange={setAddingCountryId}
+                  >
+                    <SelectTrigger className="w-64">
+                      <SelectValue placeholder="Add a country..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableCountries.length === 0 ? (
+                        <SelectItem value="__none" disabled>
+                          No more countries available
+                        </SelectItem>
+                      ) : (
+                        availableCountries.map((c) => (
+                          <SelectItem key={c.id} value={c.id}>
+                            {c.name} ({c.iso_code})
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={!addingCountryId || addCountryMutation.isPending}
+                    onClick={() => {
+                      if (addingCountryId) addCountryMutation.mutate(addingCountryId);
+                    }}
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add
+                  </Button>
+                </div>
+              </div>
+            </SettingsSection>
+          </div>
+        </div>
+
+        {/* Section 3: Operational Defaults */}
         <div className="border rounded-lg bg-card">
           <div className="px-6 pt-1 pb-1">
             <h2 className="text-base font-semibold pt-4 pb-2">Operational Defaults</h2>

@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useMemo, ReactNode, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -52,10 +52,10 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     return 'fleetops';
   });
 
-  const setModuleWorkspace = (ws: WorkspaceType) => {
+  const setModuleWorkspace = useCallback((ws: WorkspaceType) => {
     setModuleWorkspaceState(ws);
     localStorage.setItem(STORAGE_KEY_MODULE, ws);
-  };
+  }, []);
 
   // Tenant workspace state (new)
   const [activeWorkspaceId, setActiveWorkspaceId] = useState<string | null>(() => {
@@ -153,24 +153,21 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   // Derive active workspace info
   const activeWorkspace = workspaces.find((w) => w.workspace_id === activeWorkspaceId) || null;
 
-  return (
-    <WorkspaceContext.Provider
-      value={{
-        // Module workspace (backward compatible)
-        workspace: moduleWorkspace,
-        setWorkspace: setModuleWorkspace,
+  const contextValue = useMemo<WorkspaceContextType>(() => ({
+    workspace: moduleWorkspace,
+    setWorkspace: setModuleWorkspace,
+    workspaceId: activeWorkspace?.workspace_id ?? null,
+    workspaceName: activeWorkspace?.name ?? null,
+    workspaceSlug: activeWorkspace?.slug ?? null,
+    role: activeWorkspace?.role_code ?? null,
+    workspaces,
+    switchWorkspace,
+    archiveWorkspace,
+    isLoadingWorkspaces,
+  }), [moduleWorkspace, setModuleWorkspace, activeWorkspace, workspaces, switchWorkspace, archiveWorkspace, isLoadingWorkspaces]);
 
-        // Multi-tenant workspace
-        workspaceId: activeWorkspace?.workspace_id ?? null,
-        workspaceName: activeWorkspace?.name ?? null,
-        workspaceSlug: activeWorkspace?.slug ?? null,
-        role: activeWorkspace?.role_code ?? null,
-        workspaces,
-        switchWorkspace,
-        archiveWorkspace,
-        isLoadingWorkspaces,
-      }}
-    >
+  return (
+    <WorkspaceContext.Provider value={contextValue}>
       {children}
     </WorkspaceContext.Provider>
   );

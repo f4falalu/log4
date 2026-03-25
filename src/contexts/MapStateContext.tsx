@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode, useCallback } from 'react';
+import { createContext, useContext, useState, useMemo, ReactNode, useCallback } from 'react';
 
 interface MapState {
   selectedFacilityId: string | null;
@@ -94,20 +94,20 @@ export function MapStateProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
+  const contextValue = useMemo<MapStateContextType>(() => ({
+    state,
+    selectFacility,
+    selectWarehouse,
+    selectZone,
+    selectDriver,
+    selectBatch,
+    setMapView,
+    toggleLayer,
+    clearSelection,
+  }), [state, selectFacility, selectWarehouse, selectZone, selectDriver, selectBatch, setMapView, toggleLayer, clearSelection]);
+
   return (
-    <MapStateContext.Provider
-      value={{
-        state,
-        selectFacility,
-        selectWarehouse,
-        selectZone,
-        selectDriver,
-        selectBatch,
-        setMapView,
-        toggleLayer,
-        clearSelection,
-      }}
-    >
+    <MapStateContext.Provider value={contextValue}>
       {children}
     </MapStateContext.Provider>
   );

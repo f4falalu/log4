@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,10 +11,12 @@ export default function VLMSPage() {
   const navigate = useNavigate();
   const { data: vehicles = [] } = useVehicles();
 
-  const totalVehicles = vehicles.length;
-  const availableCount = vehicles.filter(v => v.status === 'available').length;
-  const maintenanceCount = vehicles.filter(v => v.status === 'maintenance').length;
-  const assignedCount = vehicles.filter(v => v.status === 'in-use').length;
+  const { totalVehicles, availableCount, maintenanceCount, assignedCount } = useMemo(() => ({
+    totalVehicles: vehicles.length,
+    availableCount: vehicles.filter(v => v.status === 'available').length,
+    maintenanceCount: vehicles.filter(v => v.status === 'maintenance').length,
+    assignedCount: vehicles.filter(v => v.status === 'in-use').length,
+  }), [vehicles]);
 
   const modules = [
     {

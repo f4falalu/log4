@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useMemo, useCallback, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
@@ -43,15 +43,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = useCallback(async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
     return { error };
-  };
+  }, []);
 
-  const signInWithGoogle = async () => {
+  const signInWithGoogle = useCallback(async () => {
     const redirectUrl = `${window.location.origin}/auth/callback`;
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -60,9 +60,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
     });
     return { error };
-  };
+  }, []);
 
-  const signUp = async (email: string, password: string, fullName: string, phone?: string) => {
+  const signUp = useCallback(async (email: string, password: string, fullName: string, phone?: string) => {
     const redirectUrl = `${window.location.origin}/auth/callback`;
 
     const { error } = await supabase.auth.signUp({
@@ -77,22 +77,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
     });
     return { error };
-  };
+  }, []);
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     await supabase.auth.signOut();
     navigate('/auth');
-  };
+  }, [navigate]);
 
-  const sendDriverOtp = async (email: string, workspaceId: string) => {
+  const sendDriverOtp = useCallback(async (email: string, workspaceId: string) => {
     const { data, error } = await supabase.rpc('generate_mod4_otp', {
       p_email: email,
       p_workspace_id: workspaceId,
     });
     return { data, error };
-  };
+  }, []);
 
-  const verifyDriverOtp = async (identifier: string, otp: string) => {
+  const verifyDriverOtp = useCallback(async (identifier: string, otp: string) => {
     const isPhone = /^\+?\d[\d\s-]{6,}$/.test(identifier.trim());
     const cleanIdentifier = isPhone
       ? identifier.replace(/[^\d+]/g, '')
@@ -128,10 +128,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     return { success: false, error: new Error('Failed to create session') };
-  };
+  }, []);
+
+  const contextValue = useMemo(() => ({
+    user, session, loading, signIn, signInWithGoogle, signUp, signOut, sendDriverOtp, verifyDriverOtp,
+  }), [user, session, loading, signIn, signInWithGoogle, signUp, signOut, sendDriverOtp, verifyDriverOtp]);
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signIn, signInWithGoogle, signUp, signOut, sendDriverOtp, verifyDriverOtp }}>
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );
