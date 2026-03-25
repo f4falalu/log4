@@ -251,8 +251,17 @@ export const useVehiclesStore = create<VehiclesState>()(
           const workspaceId = localStorage.getItem('biko_active_workspace_id');
           if (!workspaceId) throw new Error('No active workspace selected');
 
+          // Convert empty strings to null for date fields (PostgreSQL rejects "" for date type)
+          const dateFields = ['acquisition_date', 'warranty_expiry', 'insurance_expiry', 'registration_expiry'] as const;
+          const sanitizedCreateData = { ...data } as any;
+          for (const field of dateFields) {
+            if (sanitizedCreateData[field] === '') {
+              sanitizedCreateData[field] = null;
+            }
+          }
+
           // Destructure vehicle_type to remap it to the DB column 'type'
-          const { vehicle_type: vType, ...createRest } = data as any;
+          const { vehicle_type: vType, ...createRest } = sanitizedCreateData;
           const vehicleData = {
             ...createRest,
             ...(vType !== undefined ? { type: vType } : {}),
@@ -308,9 +317,18 @@ export const useVehiclesStore = create<VehiclesState>()(
             return 'diesel';
           };
 
+          // Convert empty strings to null for date fields (PostgreSQL rejects "" for date type)
+          const dateFields = ['acquisition_date', 'warranty_expiry', 'insurance_expiry', 'registration_expiry'] as const;
+          const sanitizedData = { ...data } as any;
+          for (const field of dateFields) {
+            if (sanitizedData[field] === '') {
+              sanitizedData[field] = null;
+            }
+          }
+
           // Create update payload with proper type mapping
           // Destructure vehicle_type to remap it to the DB column 'type'
-          const { vehicle_type, ...rest } = data as any;
+          const { vehicle_type, ...rest } = sanitizedData;
           const updateData: Partial<Vehicle> = {
             ...rest,
             ...(vehicle_type !== undefined ? { type: vehicle_type } : {}),
