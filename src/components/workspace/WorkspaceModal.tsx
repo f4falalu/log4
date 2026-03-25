@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Search, Users, Plus, Check, Archive, Crown } from 'lucide-react';
+import { useAbility } from '@/rbac/useAbility';
 import {
   Dialog,
   DialogContent,
@@ -43,6 +44,8 @@ export function WorkspaceModal({
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [archiveTarget, setArchiveTarget] = useState<TenantWorkspace | null>(null);
   const [isArchiving, setIsArchiving] = useState(false);
+  const ability = useAbility({ workspaceId: currentWorkspaceId });
+  const canCreateWorkspace = ability.can('workspace.manage') || ability.role === 'owner' || ability.role === 'admin';
 
   const filteredWorkspaces = workspaces.filter((workspace) =>
     workspace.name.toLowerCase().includes(search.toLowerCase())
@@ -170,15 +173,17 @@ export function WorkspaceModal({
             <div className="text-sm text-muted-foreground">
               {workspaces.length} workspace{workspaces.length !== 1 ? 's' : ''} available
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-2"
-              onClick={() => setShowCreateDialog(true)}
-            >
-              <Plus className="h-4 w-4" />
-              Create Workspace
-            </Button>
+            {canCreateWorkspace && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={() => setShowCreateDialog(true)}
+              >
+                <Plus className="h-4 w-4" />
+                Create Workspace
+              </Button>
+            )}
           </div>
         </div>
       </DialogContent>

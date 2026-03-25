@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useWorkspace } from '@/contexts/WorkspaceContext';
@@ -46,8 +46,9 @@ export function CreateWorkspaceDialog({ open, onOpenChange }: CreateWorkspaceDia
   const [touched, setTouched] = useState<{ name?: boolean; slug?: boolean; orgType?: boolean }>({});
   const queryClient = useQueryClient();
   const { switchWorkspace } = useWorkspace();
+  const nameInputRef = useRef<HTMLInputElement>(null);
 
-  // Reset form when dialog closes
+  // Reset form when dialog closes, auto-focus when opens
   useEffect(() => {
     if (!open) {
       setName('');
@@ -57,6 +58,9 @@ export function CreateWorkspaceDialog({ open, onOpenChange }: CreateWorkspaceDia
       setSlugManuallyEdited(false);
       setErrors({});
       setTouched({});
+    } else {
+      // Auto-focus name input after dialog animation
+      setTimeout(() => nameInputRef.current?.focus(), 100);
     }
   }, [open]);
 
@@ -140,27 +144,42 @@ export function CreateWorkspaceDialog({ open, onOpenChange }: CreateWorkspaceDia
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleCreate = async () => {
-    if (!validateAll()) return;
+  const generateUniqueSlug = async (baseSlug: string): Promise<string> => {
+    let candidate = baseSlug;
+    let i = 1;
+    const MAX_ATTEMPTS = 5;
 
-    setIsCreating(true);
-    try {
+    while (i <= MAX_ATTEMPTS) {
       const { data, error } = await supabase.rpc('create_workspace', {
         p_name: name.trim(),
-        p_slug: slug.trim(),
+        p_slug: candidate,
         p_org_type: orgType,
       });
 
-      if (error) {
-        // Handle slug uniqueness error from DB
-        if (error.message?.includes('slug already exists')) {
-          setErrors((prev) => ({ ...prev, slug: 'This slug is already taken. Try a different one.' }));
-          return;
-        }
-        throw error;
+      if (!error) {
+        return data as string; // Returns workspace ID on success
       }
 
-      const newWorkspaceId = data as string;
+      // Check if it's a slug collision error
+      if (error.message?.includes('slug already exists') || error.message?.includes('duplicate key') || error.message?.includes('unique constraint')) {
+        candidate = `${baseSlug}-${i}`;
+        i++;
+        continue;
+      }
+
+      // Not a slug error — rethrow
+      throw error;
+    }
+
+    throw new Error('Could not generate a unique slug after multiple attempts. Please choose a different name.');
+  };
+
+  const handleCreate = async () => {
+    if (!validateAll() || isCreating) return;
+
+    setIsCreating(true);
+    try {
+      const newWorkspaceId = await generateUniqueSlug(slug.trim());
 
       // Refresh workspace list and switch to new workspace
       await queryClient.invalidateQueries({ queryKey: ['my-workspaces'] });
@@ -170,7 +189,11 @@ export function CreateWorkspaceDialog({ open, onOpenChange }: CreateWorkspaceDia
       onOpenChange(false);
     } catch (err: any) {
       console.error('Failed to create workspace:', err);
-      toast.error(err.message || 'Failed to create workspace');
+      if (err.message?.includes('unique slug')) {
+        setErrors((prev) => ({ ...prev, slug: err.message }));
+      } else {
+        toast.error(err.message || 'Failed to create workspace');
+      }
     } finally {
       setIsCreating(false);
     }
@@ -192,6 +215,7 @@ export function CreateWorkspaceDialog({ open, onOpenChange }: CreateWorkspaceDia
           <div className="space-y-2">
             <Label htmlFor="ws-name">Workspace Name</Label>
             <Input
+              ref={nameInputRef}
               id="ws-name"
               placeholder="e.g. Kano State Program"
               value={name}
