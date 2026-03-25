@@ -320,6 +320,200 @@ export function IntegrationConfigDialog({
           </div>
         );
 
+      case 'whatsapp':
+        return (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="apiUrl">WhatsApp Business API URL</Label>
+              <Input
+                id="apiUrl"
+                placeholder="https://graph.facebook.com/v18.0"
+                value={config.apiUrl || ''}
+                onChange={(e) => setConfig({ ...config, apiUrl: e.target.value })}
+              />
+              <p className="text-sm text-muted-foreground">
+                Meta Graph API endpoint for WhatsApp Business
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="apiKey">Access Token</Label>
+              <Input
+                id="apiKey"
+                type="password"
+                placeholder="EAALZC..."
+                value={config.apiKey || ''}
+                onChange={(e) => setConfig({ ...config, apiKey: e.target.value })}
+              />
+              <p className="text-sm text-muted-foreground">
+                Permanent access token from Meta Developers
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="phoneNumber">Phone Number ID</Label>
+              <Input
+                id="phoneNumber"
+                placeholder="123456789012345"
+                value={config.username || ''}
+                onChange={(e) => setConfig({ ...config, username: e.target.value })}
+              />
+              <p className="text-sm text-muted-foreground">
+                Your WhatsApp Business phone number ID
+              </p>
+            </div>
+          </div>
+        );
+
+      case 'telegram':
+        return (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="apiKey">Bot Token</Label>
+              <Input
+                id="apiKey"
+                type="password"
+                placeholder="1234567890:ABCdefGHIjklMNOpqrsTUVwxyz"
+                value={config.apiKey || ''}
+                onChange={(e) => setConfig({ ...config, apiKey: e.target.value })}
+              />
+              <p className="text-sm text-muted-foreground">
+                Get this from @BotFather on Telegram
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="username">Bot Username</Label>
+              <Input
+                id="username"
+                placeholder="your_bot"
+                value={config.username || ''}
+                onChange={(e) => setConfig({ ...config, username: e.target.value })}
+              />
+              <p className="text-sm text-muted-foreground">
+                Your Telegram bot username (without @)
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="webhookUrl">Webhook URL (Optional)</Label>
+              <Input
+                id="webhookUrl"
+                placeholder="https://your-app.com/webhooks/telegram"
+                value={config.webhookUrl || ''}
+                onChange={(e) => setConfig({ ...config, webhookUrl: e.target.value })}
+              />
+              <p className="text-sm text-muted-foreground">
+                URL to receive Telegram updates
+              </p>
+            </div>
+          </div>
+        );
+
+      case 'trello':
+        return (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="apiKey">API Key</Label>
+              <Input
+                id="apiKey"
+                type="password"
+                placeholder="trello-api-key-123..."
+                value={config.apiKey || ''}
+                onChange={(e) => setConfig({ ...config, apiKey: e.target.value })}
+              />
+              <p className="text-sm text-muted-foreground">
+                Get your API key from trello.com/app-key
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="username">API Token</Label>
+              <Input
+                id="username"
+                type="password"
+                placeholder="trello-token-abc..."
+                value={config.username || ''}
+                onChange={(e) => setConfig({ ...config, username: e.target.value })}
+              />
+              <p className="text-sm text-muted-foreground">
+                Generate token from trello.com/1/authorize
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="boardId">Board ID (Optional)</Label>
+              <Input
+                id="boardId"
+                placeholder="1234567890abcdef"
+                value={config.storeId || ''}
+                onChange={(e) => setConfig({ ...config, storeId: e.target.value })}
+              />
+              <p className="text-sm text-muted-foreground">
+                Default board for delivery tracking
+              </p>
+            </div>
+          </div>
+        );
+
+      case 'google_suite':
+        return (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="apiUrl">Google Workspace Domain</Label>
+              <Input
+                id="apiUrl"
+                placeholder="your-company.com"
+                value={config.apiUrl || ''}
+                onChange={(e) => setConfig({ ...config, apiUrl: e.target.value })}
+              />
+              <p className="text-sm text-muted-foreground">
+                Your Google Workspace domain
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="apiKey">Service Account Key</Label>
+              <Input
+                id="apiKey"
+                type="password"
+                placeholder="-----BEGIN PRIVATE KEY-----"
+                value={config.apiKey || ''}
+                onChange={(e) => setConfig({ ...config, apiKey: e.target.value })}
+              />
+              <p className="text-sm text-muted-foreground">
+                JSON key file content for service account
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="username">Service Account Email</Label>
+              <Input
+                id="username"
+                placeholder="service-account@your-project.iam.gserviceaccount.com"
+                value={config.username || ''}
+                onChange={(e) => setConfig({ ...config, username: e.target.value })}
+              />
+              <p className="text-sm text-muted-foreground">
+                Email of the service account
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="facilityId">Default Calendar ID</Label>
+              <Input
+                id="facilityId"
+                placeholder="calendar@group.calendar.google.com"
+                value={config.facilityId || ''}
+                onChange={(e) => setConfig({ ...config, facilityId: e.target.value })}
+              />
+              <p className="text-sm text-muted-foreground">
+                Default calendar for delivery scheduling
+              </p>
+            </div>
+          </div>
+        );
+
       default:
         return (
           <div className="text-center py-8 text-muted-foreground">
@@ -331,14 +525,13 @@ export function IntegrationConfigDialog({
 
   const canSave = () => {
     // Basic validation
-    if (!config.apiUrl && integrationType !== 'gt02_tracker' && integrationType !== 'fuel_monitoring') {
+    const noUrlRequired = ['gt02_tracker', 'fuel_monitoring', 'telegram'];
+    const noApiKeyRequired = ['gt02_tracker', 'fuel_monitoring'];
+    
+    if (!config.apiUrl && !noUrlRequired.includes(integrationType || '')) {
       return false;
     }
-    if (
-      !config.apiKey &&
-      integrationType !== 'gt02_tracker' &&
-      integrationType !== 'fuel_monitoring'
-    ) {
+    if (!config.apiKey && !noApiKeyRequired.includes(integrationType || '')) {
       return false;
     }
     return true;

@@ -39,48 +39,22 @@ export function useUsers(params: UseUsersParams = {}) {
     queryKey: ['admin-users', search, roleFilter, limit, offset],
     queryFn: async () => {
       try {
-        // The admin_users_view already filters by workspace using auth.uid()
-        let query = supabase
-          .from('admin_users_view')
-          .select(`
-            id,
-            email,
-            created_at,
-            last_sign_in_at,
-            user_metadata,
-            app_metadata,
-            phone,
-            full_name,
-            avatar_url,
-            organization,
-            roles,
-            role_count,
-            workspace_count
-          `, { count: 'exact' })
-          .order('created_at', { ascending: false });
-
-        // Apply search filter
-        if (search) {
-          query = query.or(`email.ilike.%${search}%,full_name.ilike.%${search}%`);
-        }
-
-        // Apply role filter
-        if (roleFilter && roleFilter.length > 0) {
-          // Filter users who have any of the specified roles
-          query = query.overlaps('roles', roleFilter);
-        }
-
-        // Apply pagination
-        query = query.range(offset, offset + limit - 1);
-
-        const { data, error, count } = await query;
+        // Call RPC instead of querying admin_users_view (dropped for security)
+        const { data, error } = await supabase.rpc('get_admin_users', {
+          p_search: search || null,
+          p_role_filter: roleFilter && roleFilter.length > 0 ? roleFilter : null,
+          p_limit: limit,
+          p_offset: offset,
+        });
 
         if (error) {
           throw error;
         }
 
+        const result = data as { users: any[]; total: number };
+
         // Transform data to match User interface
-        const users: User[] = (data || []).map((user: any) => ({
+        const users: User[] = (result.users || []).map((user: any) => ({
           id: user.id,
           email: user.email,
           full_name: user.full_name || user.email?.split('@')[0] || '',
@@ -105,7 +79,7 @@ export function useUsers(params: UseUsersParams = {}) {
 
         return {
           users,
-          total: count || 0,
+          total: result.total || 0,
         };
       } catch (error) {
         console.error('Error in useUsers query:', error);

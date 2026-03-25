@@ -17,7 +17,7 @@ interface UseAbilityOptions {
 export function useAbility({ workspaceId }: UseAbilityOptions): AbilityState {
   const { user } = useAuth();
 
-  const { data: role, isLoading: roleLoading } = useQuery({
+  const { data: role, isLoading: roleLoading, isError: roleError } = useQuery({
     queryKey: ['workspace-role', workspaceId],
     queryFn: async () => {
       if (!workspaceId) return null;
@@ -29,9 +29,10 @@ export function useAbility({ workspaceId }: UseAbilityOptions): AbilityState {
     },
     enabled: !!user && !!workspaceId,
     staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: 2,
   });
 
-  const { data: permissions = [], isLoading: permissionsLoading } = useQuery({
+  const { data: permissions = [], isLoading: permissionsLoading, isError: permissionsError } = useQuery({
     queryKey: ['workspace-permissions', workspaceId],
     queryFn: async () => {
       if (!workspaceId) return [];
@@ -45,29 +46,41 @@ export function useAbility({ workspaceId }: UseAbilityOptions): AbilityState {
     },
     enabled: !!user && !!workspaceId,
     staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: 2,
   });
 
   const permissionSet = new Set(permissions);
 
+  // Treat 'admin' and 'owner' as full-access roles
+  // (handles both old text-column RPCs returning 'owner' and new role_id-based RPCs returning 'admin')
+  const isAdmin = role === 'admin' || role === 'owner';
+
+  // If permission fetch failed, treat as "still loading" — never deny on error
+  const hasError = roleError || permissionsError;
+  const isLoading = roleLoading || permissionsLoading || hasError;
+
   const can = (permission: Permission): boolean => {
-    if (role === 'admin') return true;
+    if (isLoading) return false; // callers should check isLoading first
+    if (isAdmin) return true;
     return permissionSet.has(permission);
   };
 
   const canAny = (...perms: Permission[]): boolean => {
-    if (role === 'admin') return true;
+    if (isLoading) return false;
+    if (isAdmin) return true;
     return perms.some((p) => permissionSet.has(p));
   };
 
   const canAll = (...perms: Permission[]): boolean => {
-    if (role === 'admin') return true;
+    if (isLoading) return false;
+    if (isAdmin) return true;
     return perms.every((p) => permissionSet.has(p));
   };
 
   return {
     role: role ?? null,
     permissions,
-    isLoading: roleLoading || permissionsLoading,
+    isLoading,
     can,
     canAny,
     canAll,

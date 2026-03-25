@@ -1,4 +1,4 @@
-import { Warehouse, Truck, Users as UsersIcon, LayoutDashboard, Smartphone, Map, Building2, ChevronDown } from 'lucide-react';
+import { Warehouse, Truck, Users as UsersIcon, LayoutDashboard, Smartphone, Map, Building2, ChevronDown, Settings } from 'lucide-react';
 import { useWorkspace } from '@/contexts/WorkspaceContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -68,7 +68,7 @@ export function PrimarySidebar() {
 
   const handleWorkspaceClick = useCallback((ws: WorkspaceConfig) => {
     if (!ws.available) return;
-    if (ws.id === 'fleetops' || ws.id === 'storefront' || ws.id === 'mod4' || ws.id === 'map') {
+    if (ws.id === 'fleetops' || ws.id === 'storefront' || ws.id === 'admin' || ws.id === 'mod4' || ws.id === 'map') {
       setWorkspace(ws.id);
     }
     navigate(ws.path);
@@ -175,8 +175,31 @@ export function PrimarySidebar() {
           })}
         </div>
 
-        {/* Divider before user menu */}
+        {/* Divider before settings + user */}
         <div className="w-8 h-px bg-sidebar-border/40 mb-4" />
+
+        {/* Settings */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              onClick={() => navigate('/settings')}
+              className={cn(
+                'relative w-11 h-11 rounded-lg flex items-center justify-center transition-all duration-200',
+                'hover:bg-sidebar-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring',
+                location.pathname.startsWith('/settings')
+                  ? 'bg-sidebar-accent text-sidebar-accent-foreground shadow-sm'
+                  : 'text-sidebar-foreground/70 hover:text-sidebar-foreground'
+              )}
+              aria-label="Settings"
+            >
+              {location.pathname.startsWith('/settings') && (
+                <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-1 h-7 bg-primary rounded-r-full" />
+              )}
+              <Settings className="w-5 h-5" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="right">Workspace Settings</TooltipContent>
+        </Tooltip>
 
         {/* User Avatar at Bottom */}
         <div className="mt-auto">

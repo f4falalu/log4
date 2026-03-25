@@ -1,4 +1,4 @@
-import React, { useEffect, lazy, Suspense } from "react";
+import React, { useEffect, lazy, Suspense, ReactNode } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { Toaster as RadixToaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -8,6 +8,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { MapStateProvider } from "./contexts/MapStateContext";
 import { WorkspaceProvider, useWorkspace } from "./contexts/WorkspaceContext";
+import { AbilityProvider } from "./rbac/AbilityProvider";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { FleetOpsLayout } from "./pages/fleetops/layout";
 import { StorefrontLayout } from "./pages/storefront/layout";
@@ -20,19 +21,20 @@ import Mod4ActiveDeliveryPage from "./pages/mod4/driver/delivery/page";
 import Mod4DispatcherPage from "./pages/mod4/dispatcher/page";
 import Mod4SessionsPage from "./pages/mod4/sessions/page";
 import AdminDashboard from "./pages/admin/page";
-import AdminGeneralSettings from "./pages/admin/general/page";
-import AdminUsersPage from "./pages/admin/users/page";
-import AdminUserDetailPage from "./pages/admin/users/[id]/page";
-import AdminUserEditPage from "./pages/admin/users/[id]/edit/page";
-import AdminInvitationsPage from "./pages/admin/invitations/page";
-import AdminWorkspacesPage from "./pages/admin/workspaces/page";
-import AdminWorkspaceDetailPage from "./pages/admin/workspaces/[id]/page";
 import AdminSessionsPage from "./pages/admin/sessions/page";
 import AdminSessionDetailPage from "./pages/admin/sessions/[id]/page";
-import AdminLocationsPage from "./pages/admin/LocationManagement";
-import AdminIntegrationPage from "./pages/admin/integration/page";
 import LiveMapPage from "./pages/map/live/page";
 import PlaybackMapPage from "./pages/map/playback/page";
+
+// Settings Pages
+import PermissionsPage from "./pages/settings/permissions/page";
+const SettingsLayout = lazy(() => import("./pages/settings/layout"));
+const SettingsGeneralPage = lazy(() => import("./pages/settings/general/page"));
+const SettingsMembersPage = lazy(() => import("./pages/settings/members/page"));
+const SettingsAccessControlPage = lazy(() => import("./pages/settings/access-control/page"));
+const SettingsLocationsPage = lazy(() => import("./pages/admin/LocationManagement"));
+const SettingsIntegrationPage = lazy(() => import("./pages/admin/integration/page"));
+const SettingsProfilePage = lazy(() => import("./pages/settings/profile/page"));
 
 // Onboarding Pages
 import OnboardingWizardV2 from "./components/onboarding/OnboardingWizardV2";
@@ -84,18 +86,23 @@ const queryClient = new QueryClient();
 
 function WorkspaceThemeApplier() {
   const { workspace } = useWorkspace();
-  
+
   useEffect(() => {
     document.body.className = `workspace-${workspace}`;
   }, [workspace]);
-  
+
   return null;
+}
+
+function AbilityWrapper({ children }: { children: ReactNode }) {
+  const { workspaceId } = useWorkspace();
+  return <AbilityProvider workspaceId={workspaceId}>{children}</AbilityProvider>;
 }
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ErrorBoundary>
-      <BrowserRouter 
+      <BrowserRouter
         future={{
           v7_startTransition: true,
           v7_relativeSplatPath: true,
@@ -103,6 +110,7 @@ const App = () => (
       >
         <AuthProvider>
           <WorkspaceProvider>
+            <AbilityWrapper>
             <TooltipProvider>
               <WorkspaceThemeApplier />
               <Toaster />
@@ -211,47 +219,26 @@ const App = () => (
                     <Route path="sessions" element={<Mod4SessionsPage />} />
                   </Route>
 
-                  {/* Admin Workspace - System Admin Only */}
+                  {/* Admin — System Operations (system_admin only) */}
                   <Route path="/admin" element={
                     <ProtectedRoute permission="admin.users">
                       <AdminLayout />
                     </ProtectedRoute>
                   }>
-                    {/* Redirect index to general settings */}
-                    <Route index element={<Navigate to="/admin/general" replace />} />
-
-                    {/* General Tab */}
-                    <Route path="general" element={<AdminGeneralSettings />} />
-                    <Route path="locations" element={<AdminLocationsPage />} />
-
-                    {/* Members Tab */}
-                    <Route path="members" element={<AdminUsersPage />} />
-                    <Route path="invitations" element={<AdminInvitationsPage />} />
-                    <Route path="members/:id" element={<AdminUserDetailPage />} />
-                    <Route path="members/:id/edit" element={<AdminUserEditPage />} />
-
-                    {/* Legacy user routes - redirect to members */}
-                    <Route path="users" element={<Navigate to="/admin/members" replace />} />
-                    <Route path="users/create" element={<Navigate to="/admin/invitations" replace />} />
-                    <Route path="users/:id" element={<AdminUserDetailPage />} />
-                    <Route path="users/:id/edit" element={<AdminUserEditPage />} />
-
-                    {/* Permissions Tab */}
-                    <Route path="permissions" element={<AdminWorkspacesPage />} />
-                    <Route path="permissions/:id" element={<AdminWorkspaceDetailPage />} />
-
-                    {/* Legacy workspace routes - redirect to permissions */}
-                    <Route path="workspaces" element={<Navigate to="/admin/permissions" replace />} />
-                    <Route path="workspaces/:id" element={<AdminWorkspaceDetailPage />} />
-
-                    {/* Sessions Tab */}
+                    <Route index element={<Navigate to="/admin/analytics" replace />} />
+                    <Route path="analytics" element={<AdminDashboard />} />
                     <Route path="sessions" element={<AdminSessionsPage />} />
                     <Route path="sessions/:id" element={<AdminSessionDetailPage />} />
-                    {/* Analytics Tab */}
-                    <Route path="analytics" element={<AdminDashboard />} />
-
-                    {/* Integration Tab */}
-                    <Route path="integration" element={<AdminIntegrationPage />} />
+                    {/* Legacy redirects → /settings */}
+                    <Route path="integration" element={<Navigate to="/settings/integration" replace />} />
+                    <Route path="general" element={<Navigate to="/settings/general" replace />} />
+                    <Route path="locations" element={<Navigate to="/settings/locations" replace />} />
+                    <Route path="members" element={<Navigate to="/settings/members" replace />} />
+                    <Route path="members/:id" element={<Navigate to="/settings/members" replace />} />
+                    <Route path="invitations" element={<Navigate to="/settings/members" replace />} />
+                    <Route path="permissions" element={<Navigate to="/settings/access-control" replace />} />
+                    <Route path="workspaces" element={<Navigate to="/settings/access-control" replace />} />
+                    <Route path="users" element={<Navigate to="/settings/members" replace />} />
                   </Route>
 
                   {/* Map Workspace - Live Tracking & Playback */}
@@ -276,12 +263,40 @@ const App = () => (
                   <Route path="/vehicles" element={<Navigate to="/fleetops/vehicles" replace />} />
                   <Route path="/reports" element={<Navigate to="/fleetops/reports" replace />} />
                   
+                  {/* Settings Routes — user-scoped (no workspace.manage required) */}
+                  <Route path="/settings/permissions" element={
+                    <ProtectedRoute>
+                      <PermissionsPage />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/settings/profile" element={
+                    <ProtectedRoute>
+                      <Suspense fallback={<div className="flex items-center justify-center h-screen"><Loader2 className="h-8 w-8 animate-spin" /></div>}>
+                        <SettingsProfilePage />
+                      </Suspense>
+                    </ProtectedRoute>
+                  } />
+                  {/* Settings Routes — workspace-scoped (workspace.manage required) */}
+                  <Route path="/settings" element={
+                    <ProtectedRoute permission="workspace.manage">
+                      <SettingsLayout />
+                    </ProtectedRoute>
+                  }>
+                    <Route index element={<Navigate to="/settings/general" replace />} />
+                    <Route path="general" element={<SettingsGeneralPage />} />
+                    <Route path="members" element={<SettingsMembersPage />} />
+                    <Route path="access-control" element={<SettingsAccessControlPage />} />
+                    <Route path="locations" element={<SettingsLocationsPage />} />
+                    <Route path="integration" element={<SettingsIntegrationPage />} />
+                  </Route>
+                  
                   {/* Catch-all */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
                 </Suspense>
               </MapStateProvider>
             </TooltipProvider>
+            </AbilityWrapper>
           </WorkspaceProvider>
         </AuthProvider>
       </BrowserRouter>

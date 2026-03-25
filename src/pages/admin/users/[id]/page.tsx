@@ -18,12 +18,9 @@ export default function UserDetailPageEnhanced() {
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ['user-profile', id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('admin_users_view')
-        .select('*')
-        .eq('id', id!)
-        .limit(1)
-        .single();
+      const { data, error } = await supabase.rpc('get_admin_user_by_id', {
+        p_user_id: id!,
+      });
 
       if (error) throw error;
       return data;

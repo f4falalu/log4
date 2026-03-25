@@ -448,13 +448,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "delivery_schedules_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "admin_users_view"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "delivery_schedules_driver_id_fkey"
             columns: ["driver_id"]
             isOneToOne: false
@@ -600,22 +593,7 @@ export type Database = {
           user_agent?: string | null
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "driver_devices_revoked_by_fkey"
-            columns: ["revoked_by"]
-            isOneToOne: false
-            referencedRelation: "admin_users_view"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "driver_devices_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "admin_users_view"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       driver_events: {
         Row: {
@@ -675,20 +653,6 @@ export type Database = {
             columns: ["batch_id"]
             isOneToOne: false
             referencedRelation: "delivery_batches"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "driver_events_driver_id_fkey"
-            columns: ["driver_id"]
-            isOneToOne: false
-            referencedRelation: "admin_users_view"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "driver_events_reviewed_by_fkey"
-            columns: ["reviewed_by"]
-            isOneToOne: false
-            referencedRelation: "admin_users_view"
             referencedColumns: ["id"]
           },
           {
@@ -889,13 +853,6 @@ export type Database = {
           vehicle_id?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "driver_sessions_driver_id_fkey"
-            columns: ["driver_id"]
-            isOneToOne: false
-            referencedRelation: "admin_users_view"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "driver_sessions_driver_id_profiles_fkey"
             columns: ["driver_id"]
@@ -1363,20 +1320,6 @@ export type Database = {
             referencedColumns: ["lga_id"]
           },
           {
-            foreignKeyName: "facilities_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "admin_users_view"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "facilities_deleted_by_fkey"
-            columns: ["deleted_by"]
-            isOneToOne: false
-            referencedRelation: "admin_users_view"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "facilities_funding_source_id_fkey"
             columns: ["funding_source_id"]
             isOneToOne: false
@@ -1395,13 +1338,6 @@ export type Database = {
             columns: ["programme_category_id"]
             isOneToOne: false
             referencedRelation: "programme_categories"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "facilities_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "admin_users_view"
             referencedColumns: ["id"]
           },
           {
@@ -1482,20 +1418,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "facility_assignments_activated_by_fkey"
-            columns: ["activated_by"]
-            isOneToOne: false
-            referencedRelation: "admin_users_view"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "facility_assignments_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "admin_users_view"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "facility_assignments_facility_id_fkey"
             columns: ["facility_id"]
             isOneToOne: false
@@ -1564,13 +1486,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "zone_facility_hierarchy"
             referencedColumns: ["facility_id"]
-          },
-          {
-            foreignKeyName: "facility_audit_log_performed_by_fkey"
-            columns: ["performed_by"]
-            isOneToOne: false
-            referencedRelation: "admin_users_view"
-            referencedColumns: ["id"]
           },
         ]
       }
@@ -1863,13 +1778,6 @@ export type Database = {
           workspace_id?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "forensics_query_log_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "admin_users_view"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "forensics_query_log_workspace_id_fkey"
             columns: ["workspace_id"]
@@ -2257,13 +2165,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "invoices_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "admin_users_view"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "invoices_facility_id_fkey"
             columns: ["facility_id"]
             isOneToOne: false
@@ -2366,13 +2267,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "items_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "admin_users_view"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "items_warehouse_id_fkey"
             columns: ["warehouse_id"]
             isOneToOne: false
@@ -2465,13 +2359,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "map_action_audit_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "admin_users_view"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "map_action_audit_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
@@ -2559,20 +2446,6 @@ export type Database = {
             columns: ["driver_id"]
             isOneToOne: false
             referencedRelation: "drivers"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "mod4_driver_links_linked_by_fkey"
-            columns: ["linked_by"]
-            isOneToOne: false
-            referencedRelation: "admin_users_view"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "mod4_driver_links_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: true
-            referencedRelation: "admin_users_view"
             referencedColumns: ["id"]
           },
         ]
@@ -2806,20 +2679,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "mod4_otp_codes_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "admin_users_view"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "mod4_otp_codes_used_by_fkey"
-            columns: ["used_by"]
-            isOneToOne: false
-            referencedRelation: "admin_users_view"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "mod4_otp_codes_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
@@ -2862,15 +2721,7 @@ export type Database = {
           type?: string
           user_id?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "notifications_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "admin_users_view"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       onboarding_requests: {
         Row: {
@@ -2915,15 +2766,7 @@ export type Database = {
           status?: string
           updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "onboarding_requests_reviewed_by_fkey"
-            columns: ["reviewed_by"]
-            isOneToOne: false
-            referencedRelation: "admin_users_view"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       optimization_cache: {
         Row: {
@@ -3033,13 +2876,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "optimization_runs_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "admin_users_view"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "optimization_runs_warehouse_id_fkey"
             columns: ["warehouse_id"]
             isOneToOne: false
@@ -3080,13 +2916,6 @@ export type Database = {
           workspace_id?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "org_status_history_changed_by_fkey"
-            columns: ["changed_by"]
-            isOneToOne: false
-            referencedRelation: "admin_users_view"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "org_status_history_workspace_id_fkey"
             columns: ["workspace_id"]
@@ -3295,13 +3124,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "payloads_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "admin_users_view"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "payloads_vehicle_id_fkey"
             columns: ["vehicle_id"]
             isOneToOne: false
@@ -3397,11 +3219,13 @@ export type Database = {
           id: string
           invited_at: string | null
           invited_by: string | null
+          language: string | null
           onboarding_completed: boolean | null
           organization: string | null
           phone: string | null
           registered_at: string | null
           role_assigned_at: string | null
+          timezone: string | null
           updated_at: string | null
           user_status: Database["public"]["Enums"]["user_status"]
         }
@@ -3413,11 +3237,13 @@ export type Database = {
           id: string
           invited_at?: string | null
           invited_by?: string | null
+          language?: string | null
           onboarding_completed?: boolean | null
           organization?: string | null
           phone?: string | null
           registered_at?: string | null
           role_assigned_at?: string | null
+          timezone?: string | null
           updated_at?: string | null
           user_status?: Database["public"]["Enums"]["user_status"]
         }
@@ -3429,30 +3255,17 @@ export type Database = {
           id?: string
           invited_at?: string | null
           invited_by?: string | null
+          language?: string | null
           onboarding_completed?: boolean | null
           organization?: string | null
           phone?: string | null
           registered_at?: string | null
           role_assigned_at?: string | null
+          timezone?: string | null
           updated_at?: string | null
           user_status?: Database["public"]["Enums"]["user_status"]
         }
-        Relationships: [
-          {
-            foreignKeyName: "profiles_id_fkey"
-            columns: ["id"]
-            isOneToOne: true
-            referencedRelation: "admin_users_view"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "profiles_invited_by_fkey"
-            columns: ["invited_by"]
-            isOneToOne: false
-            referencedRelation: "admin_users_view"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       programme_categories: {
         Row: {
@@ -4188,13 +4001,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "route_sketches_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "admin_users_view"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "route_sketches_end_facility_id_fkey"
             columns: ["end_facility_id"]
             isOneToOne: false
@@ -4207,13 +4013,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "zone_facility_hierarchy"
             referencedColumns: ["facility_id"]
-          },
-          {
-            foreignKeyName: "route_sketches_reviewed_by_fkey"
-            columns: ["reviewed_by"]
-            isOneToOne: false
-            referencedRelation: "admin_users_view"
-            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "route_sketches_start_facility_id_fkey"
@@ -4302,29 +4101,7 @@ export type Database = {
           warehouse_id?: string
           zone_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "routes_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "admin_users_view"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "routes_locked_by_fkey"
-            columns: ["locked_by"]
-            isOneToOne: false
-            referencedRelation: "admin_users_view"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "routes_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "admin_users_view"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       schedule_templates: {
         Row: {
@@ -4388,13 +4165,6 @@ export type Database = {
           warehouse_id?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "schedule_templates_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "admin_users_view"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "schedule_templates_default_driver_id_fkey"
             columns: ["default_driver_id"]
@@ -4557,13 +4327,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "scheduler_batches_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "admin_users_view"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "scheduler_batches_driver_id_fkey"
             columns: ["driver_id"]
             isOneToOne: false
@@ -4708,13 +4471,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "scheduler_pre_batches_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "admin_users_view"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "scheduler_pre_batches_suggested_vehicle_id_fkey"
             columns: ["suggested_vehicle_id"]
             isOneToOne: false
@@ -4823,13 +4579,6 @@ export type Database = {
             referencedRelation: "warehouses"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "scheduler_settings_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: true
-            referencedRelation: "admin_users_view"
-            referencedColumns: ["id"]
-          },
         ]
       }
       service_area_facilities: {
@@ -4855,13 +4604,6 @@ export type Database = {
           service_area_id?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "service_area_facilities_assigned_by_fkey"
-            columns: ["assigned_by"]
-            isOneToOne: false
-            referencedRelation: "admin_users_view"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "service_area_facilities_facility_id_fkey"
             columns: ["facility_id"]
@@ -4942,20 +4684,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "service_areas_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "admin_users_view"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "service_areas_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "admin_users_view"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "service_areas_warehouse_id_fkey"
             columns: ["warehouse_id"]
             isOneToOne: false
@@ -5022,15 +4750,7 @@ export type Database = {
           name?: string
           updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "service_zones_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "admin_users_view"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       slot_assignments: {
         Row: {
@@ -5085,13 +4805,6 @@ export type Database = {
           vehicle_id?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "slot_assignments_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "admin_users_view"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "slot_assignments_facility_id_fkey"
             columns: ["facility_id"]
@@ -5212,15 +4925,7 @@ export type Database = {
           value_text?: string | null
           workspace_id?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "system_settings_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "admin_users_view"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       trade_off_confirmations: {
         Row: {
@@ -5410,13 +5115,6 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "trade_offs_initiated_by_fkey"
-            columns: ["initiated_by"]
-            isOneToOne: false
-            referencedRelation: "admin_users_view"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "trade_offs_source_driver_id_fkey"
             columns: ["source_driver_id"]
@@ -5971,27 +5669,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "tradeoffs_confirmed_by_fkey"
-            columns: ["confirmed_by"]
-            isOneToOne: false
-            referencedRelation: "admin_users_view"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "tradeoffs_initiated_by_fkey"
-            columns: ["initiated_by"]
-            isOneToOne: false
-            referencedRelation: "admin_users_view"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "tradeoffs_rejected_by_fkey"
-            columns: ["rejected_by"]
-            isOneToOne: false
-            referencedRelation: "admin_users_view"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "tradeoffs_source_driver_id_fkey"
             columns: ["source_driver_id"]
             isOneToOne: false
@@ -6116,31 +5793,42 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "user_invitations_accepted_by_fkey"
-            columns: ["accepted_by"]
-            isOneToOne: false
-            referencedRelation: "admin_users_view"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "user_invitations_invited_by_fkey"
-            columns: ["invited_by"]
-            isOneToOne: false
-            referencedRelation: "admin_users_view"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "user_invitations_revoked_by_fkey"
-            columns: ["revoked_by"]
-            isOneToOne: false
-            referencedRelation: "admin_users_view"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "user_invitations_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_preferences: {
+        Row: {
+          created_at: string
+          email_notifications: boolean
+          in_app_notifications: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email_notifications?: boolean
+          in_app_notifications?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email_notifications?: boolean
+          in_app_notifications?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -6169,24 +5857,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "user_roles_assigned_by_fkey"
-            columns: ["assigned_by"]
-            isOneToOne: false
-            referencedRelation: "admin_users_view"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "user_roles_role_id_fkey"
             columns: ["role_id"]
             isOneToOne: false
             referencedRelation: "roles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "user_roles_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "admin_users_view"
             referencedColumns: ["id"]
           },
         ]
@@ -6222,22 +5896,7 @@ export type Database = {
           reason?: string | null
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "user_status_history_changed_by_fkey"
-            columns: ["changed_by"]
-            isOneToOne: false
-            referencedRelation: "admin_users_view"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "user_status_history_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "admin_users_view"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       vehicle_categories: {
         Row: {
@@ -6641,13 +6300,6 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "vehicle_categories"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "vehicle_types_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "admin_users_view"
             referencedColumns: ["id"]
           },
         ]
@@ -8303,15 +7955,7 @@ export type Database = {
           used_capacity_m3?: number | null
           warehouse_type?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "warehouses_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "admin_users_view"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       workspace_countries: {
         Row: {
@@ -8655,13 +8299,6 @@ export type Database = {
             referencedRelation: "countries"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "workspaces_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "admin_users_view"
-            referencedColumns: ["id"]
-          },
         ]
       }
       zone_alerts: {
@@ -8808,38 +8445,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "zone_configurations_activated_by_fkey"
-            columns: ["activated_by"]
-            isOneToOne: false
-            referencedRelation: "admin_users_view"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "zone_configurations_deactivated_by_fkey"
-            columns: ["deactivated_by"]
-            isOneToOne: false
-            referencedRelation: "admin_users_view"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "zone_configurations_draft_created_by_fkey"
-            columns: ["draft_created_by"]
-            isOneToOne: false
-            referencedRelation: "admin_users_view"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "zone_configurations_parent_version_id_fkey"
             columns: ["parent_version_id"]
             isOneToOne: false
             referencedRelation: "zone_configurations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "zone_configurations_reviewed_by_fkey"
-            columns: ["reviewed_by"]
-            isOneToOne: false
-            referencedRelation: "admin_users_view"
             referencedColumns: ["id"]
           },
           {
@@ -8902,58 +8511,16 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "zones_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "admin_users_view"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "zones_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "admin_users_view"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "zones_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "zones_zone_manager_id_fkey"
-            columns: ["zone_manager_id"]
-            isOneToOne: false
-            referencedRelation: "admin_users_view"
-            referencedColumns: ["id"]
-          },
         ]
       }
     }
     Views: {
-      admin_users_view: {
-        Row: {
-          app_metadata: Json | null
-          avatar_url: string | null
-          confirmed_at: string | null
-          created_at: string | null
-          email: string | null
-          email_confirmed_at: string | null
-          full_name: string | null
-          id: string | null
-          last_sign_in_at: string | null
-          organization: string | null
-          phone: string | null
-          profile_updated_at: string | null
-          role_count: number | null
-          roles: string[] | null
-          user_metadata: Json | null
-          workspace_count: number | null
-        }
-        Relationships: []
-      }
       batch_slot_utilization: {
         Row: {
           batch_id: string | null
@@ -10642,6 +10209,16 @@ export type Database = {
           name: string
         }[]
       }
+      get_admin_user_by_id: { Args: { p_user_id: string }; Returns: Json }
+      get_admin_users: {
+        Args: {
+          p_limit?: number
+          p_offset?: number
+          p_role_filter?: string[]
+          p_search?: string
+        }
+        Returns: Json
+      }
       get_batch_slot_assignments: {
         Args: { p_batch_id: string }
         Returns: {
@@ -10813,6 +10390,16 @@ export type Database = {
           total_trips: number
           type: string
           vehicle_id: string
+        }[]
+      }
+      get_effective_permissions: {
+        Args: { p_user_id: string; p_workspace_id: string }
+        Returns: {
+          description: string
+          granted: boolean
+          module: string
+          permission_code: string
+          source: string
         }[]
       }
       get_event_distribution: {
@@ -11062,6 +10649,7 @@ export type Database = {
         Args: { p_user_id?: string }
         Returns: string[]
       }
+      get_user_emails: { Args: { p_user_ids: string[] }; Returns: Json }
       get_user_growth: {
         Args: { p_days?: number }
         Returns: {
@@ -11946,6 +11534,15 @@ export type Database = {
           p_workspace_id: string
         }
         Returns: Json
+      }
+      update_workspace_general_settings: {
+        Args: {
+          p_name: string
+          p_org_type?: string
+          p_settings?: Json
+          p_workspace_id: string
+        }
+        Returns: undefined
       }
       updategeometrysrid: {
         Args: {

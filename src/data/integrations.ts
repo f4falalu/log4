@@ -107,6 +107,70 @@ export const AVAILABLE_INTEGRATIONS: AvailableIntegration[] = [
     ],
     icon: 'Truck',
   },
+
+  // Communication Integrations
+  {
+    type: 'whatsapp',
+    name: 'WhatsApp Business',
+    description:
+      'Send notifications, updates, and alerts to customers and drivers via WhatsApp Business API.',
+    category: 'communication',
+    capabilities: [
+      'Delivery notifications',
+      'Customer support',
+      'Driver alerts',
+      'Status updates',
+    ],
+    icon: 'MessageCircle',
+    isNew: true,
+  },
+  {
+    type: 'telegram',
+    name: 'Telegram Bot',
+    description:
+      'Automated notifications and updates through Telegram bots for team coordination and alerts.',
+    category: 'communication',
+    capabilities: [
+      'Team notifications',
+      'System alerts',
+      'Report generation',
+      'Command interface',
+    ],
+    icon: 'Send',
+    isNew: true,
+  },
+
+  // Productivity Integrations
+  {
+    type: 'trello',
+    name: 'Trello',
+    description:
+      'Project management and task tracking. Sync delivery batches, vehicle maintenance, and team workflows.',
+    category: 'productivity',
+    capabilities: [
+      'Task management',
+      'Delivery tracking',
+      'Team collaboration',
+      'Workflow automation',
+    ],
+    icon: 'Layout',
+    isNew: true,
+  },
+  {
+    type: 'google_suite',
+    name: 'Google Workspace',
+    description:
+      'Google Apps integration for documents, sheets, and calendar. Sync reports and schedule deliveries.',
+    category: 'productivity',
+    capabilities: [
+      'Document management',
+      'Spreadsheet sync',
+      'Calendar integration',
+      'Email notifications',
+    ],
+    icon: 'Calendar',
+    isNew: true,
+  },
 ];
 
 export const INTEGRATION_CATEGORIES = [
@@ -116,4 +180,6 @@ export const INTEGRATION_CATEGORIES = [
   { value: 'telemetry', label: 'Telemetry' },
   { value: 'government', label: 'Government' },
   { value: 'execution', label: 'Execution' },
+  { value: 'communication', label: 'Communication' },
+  { value: 'productivity', label: 'Productivity' },
 ] as const;

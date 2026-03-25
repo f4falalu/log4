@@ -3,7 +3,9 @@ export type IntegrationCategory =
   | 'fleet_management'
   | 'telemetry'
   | 'government'
-  | 'execution';
+  | 'execution'
+  | 'communication'
+  | 'productivity';
 
 export type IntegrationStatus = 'active' | 'inactive' | 'configured' | 'error';
 
@@ -14,7 +16,11 @@ export type IntegrationType =
   | 'gt02_tracker'
   | 'fuel_monitoring'
   | 'traccar'
-  | 'mod4';
+  | 'mod4'
+  | 'whatsapp'
+  | 'telegram'
+  | 'trello'
+  | 'google_suite';
 
 export interface Integration {
   id: string;

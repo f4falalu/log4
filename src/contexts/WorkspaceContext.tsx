@@ -3,12 +3,14 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import type { RbacRole } from '@/rbac/types';
+import { getUserPermissions } from '@/services/authorization';
+import { toast } from 'sonner';
 
 // Module-level workspace type (which section of the app)
 type WorkspaceType = 'fleetops' | 'storefront' | 'admin' | 'dashboard' | 'mod4' | 'map';
 
 // Multi-tenant workspace info from get_my_workspaces() RPC
-interface TenantWorkspace {
+export interface TenantWorkspace {
   workspace_id: string;
   name: string;
   slug: string;
@@ -28,6 +30,7 @@ interface WorkspaceContextType {
   role: RbacRole | null;
   workspaces: TenantWorkspace[];
   switchWorkspace: (workspaceId: string) => void;
+  archiveWorkspace: (workspaceId: string) => Promise<void>;
   isLoadingWorkspaces: boolean;
 }
 
@@ -85,12 +88,67 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     }
   }, [workspaces, activeWorkspaceId]);
 
-  const switchWorkspace = useCallback((wsId: string) => {
-    setActiveWorkspaceId(wsId);
-    localStorage.setItem(STORAGE_KEY_TENANT, wsId);
-    // Invalidate all workspace-scoped queries
-    queryClient.invalidateQueries();
-  }, [queryClient]);
+  const switchWorkspace = useCallback(async (wsId: string) => {
+    const previousWorkspaceId = activeWorkspaceId;
+
+    try {
+      // Optimistic update
+      setActiveWorkspaceId(wsId);
+      localStorage.setItem(STORAGE_KEY_TENANT, wsId);
+
+      // Invalidate permission queries first so they refetch for the new workspace
+      await queryClient.invalidateQueries({ queryKey: ['workspace-role'] });
+      await queryClient.invalidateQueries({ queryKey: ['workspace-permissions'] });
+
+      // Invalidate all other data queries to prevent cross-workspace leakage
+      queryClient.invalidateQueries();
+
+    } catch (error) {
+      // Rollback on error
+      setActiveWorkspaceId(previousWorkspaceId);
+      if (previousWorkspaceId) {
+        localStorage.setItem(STORAGE_KEY_TENANT, previousWorkspaceId);
+      } else {
+        localStorage.removeItem(STORAGE_KEY_TENANT);
+      }
+
+      console.error('Failed to switch workspace:', error);
+      toast.error('Failed to switch workspace. Reverted to previous workspace.');
+
+      throw error;
+    }
+  }, [activeWorkspaceId, queryClient]);
+
+  const archiveWorkspace = useCallback(async (wsId: string) => {
+    try {
+      const { error } = await supabase.rpc('archive_workspace', {
+        p_workspace_id: wsId,
+      });
+      if (error) throw error;
+
+      // Refresh workspace list (archived workspace will be filtered out by RPC)
+      await queryClient.invalidateQueries({ queryKey: ['my-workspaces'] });
+
+      // If we just archived the active workspace, the auto-select effect
+      // will pick the next available workspace
+      if (wsId === activeWorkspaceId) {
+        // Clear the active workspace so auto-select kicks in
+        setActiveWorkspaceId(null);
+        localStorage.removeItem(STORAGE_KEY_TENANT);
+
+        // Invalidate all queries for clean state
+        await queryClient.invalidateQueries({ queryKey: ['workspace-role'] });
+        await queryClient.invalidateQueries({ queryKey: ['workspace-permissions'] });
+        queryClient.invalidateQueries();
+      }
+
+      toast.success('Workspace archived successfully');
+    } catch (err: any) {
+      console.error('Failed to archive workspace:', err);
+      toast.error(err.message || 'Failed to archive workspace');
+      throw err;
+    }
+  }, [activeWorkspaceId, queryClient]);
 
   // Derive active workspace info
   const activeWorkspace = workspaces.find((w) => w.workspace_id === activeWorkspaceId) || null;
@@ -109,6 +167,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         role: activeWorkspace?.role_code ?? null,
         workspaces,
         switchWorkspace,
+        archiveWorkspace,
         isLoadingWorkspaces,
       }}
     >

@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/select';
 import { Loader2, Search } from 'lucide-react';
 import { useUsers, User } from '@/hooks/admin/useUsers';
-import { useAddWorkspaceMember } from '@/hooks/admin/useWorkspaces';
+import { useAddWorkspaceMemberV2, RBAC_ROLES, ROLE_LABELS } from '@/hooks/settings/useWorkspaceMembers';
 
 interface AddMemberDialogProps {
   workspaceId: string;
@@ -36,10 +36,10 @@ export function AddMemberDialog({
 }: AddMemberDialogProps) {
   const [search, setSearch] = useState('');
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-  const [selectedRole, setSelectedRole] = useState<'owner' | 'admin' | 'member' | 'viewer'>('member');
+  const [selectedRole, setSelectedRole] = useState('viewer');
   const { data: usersData, isLoading } = useUsers({ search });
   const users = usersData?.users || [];
-  const addMember = useAddWorkspaceMember();
+  const addMember = useAddWorkspaceMemberV2();
 
   const availableUsers = users.filter((u: User) => !existingMemberIds.includes(u.id));
   const selectedUser = users.find((u: User) => u.id === selectedUserId);
@@ -50,7 +50,7 @@ export function AddMemberDialog({
     await addMember.mutateAsync({
       workspaceId,
       userId: selectedUserId,
-      role: selectedRole,
+      roleCode: selectedRole,
     });
 
     setSelectedUserId(null);
@@ -110,15 +110,16 @@ export function AddMemberDialog({
           {selectedUser && (
             <div className="space-y-2">
               <Label>Role</Label>
-              <Select value={selectedRole} onValueChange={(v: any) => setSelectedRole(v)}>
+              <Select value={selectedRole} onValueChange={setSelectedRole}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="owner">Owner</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="member">Member</SelectItem>
-                  <SelectItem value="viewer">Viewer</SelectItem>
+                  {RBAC_ROLES.map((role) => (
+                    <SelectItem key={role} value={role}>
+                      {ROLE_LABELS[role]}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

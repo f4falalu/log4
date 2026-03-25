@@ -14,6 +14,10 @@ import {
   Settings,
   CheckCircle2,
   AlertCircle,
+  MessageCircle,
+  Send,
+  Layout,
+  Calendar,
 } from 'lucide-react';
 import { AvailableIntegration, Integration } from '@/types/integration';
 import { cn } from '@/lib/utils';
@@ -26,6 +30,10 @@ const ICON_MAP = {
   MapPin,
   Gauge,
   Truck,
+  MessageCircle,
+  Send,
+  Layout,
+  Calendar,
 };
 
 interface IntegrationCardProps {

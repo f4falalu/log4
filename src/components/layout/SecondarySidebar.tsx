@@ -121,6 +121,7 @@ export function SecondarySidebar({
 
   // Filter items based on search
   const filteredGroups = React.useMemo(() => {
+    if (!groups || !Array.isArray(groups)) return [];
     if (!searchValue.trim()) return groups;
 
     return groups

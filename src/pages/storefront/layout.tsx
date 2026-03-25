@@ -14,8 +14,7 @@ import {
 import { AppLayout } from '@/components/layout/AppLayout';
 import { SecondarySidebar, NavigationGroup } from '@/components/layout/SecondarySidebar';
 import { useMemo } from 'react';
-import { useWorkspace } from '@/contexts/WorkspaceContext';
-import { useAbility } from '@/rbac';
+import { useAbilityContext } from '@/rbac';
 import type { Permission } from '@/rbac/types';
 
 interface GatedNavItem {
@@ -121,8 +120,7 @@ const navigationGroups: GatedNavGroup[] = [
 
 export function StorefrontLayout() {
   const location = useLocation();
-  const { workspaceId } = useWorkspace();
-  const { can } = useAbility({ workspaceId });
+  const { can } = useAbilityContext();
 
   // Filter navigation by permission
   const filteredGroups: NavigationGroup[] = useMemo(() => {

@@ -1,7 +1,7 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWorkspace } from '@/contexts/WorkspaceContext';
-import { useAbility } from '@/rbac';
+import { useAbilityContext } from '@/rbac/AbilityProvider';
 import { useCanAccessPlanning } from '@/hooks/useWorkspaceReadiness';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -35,9 +35,9 @@ export function ProtectedRoute({
   workspaceId: workspaceIdProp,
 }: ProtectedRouteProps) {
   const { user, loading } = useAuth();
-  const { workspaceId: contextWorkspaceId } = useWorkspace();
+  const { workspaceId: contextWorkspaceId, isLoadingWorkspaces } = useWorkspace();
   const effectiveWorkspaceId = workspaceIdProp || contextWorkspaceId;
-  const { can, isLoading: abilityLoading } = useAbility({ workspaceId: effectiveWorkspaceId });
+  const { can, isLoading: abilityLoading } = useAbilityContext();
   const location = useLocation();
 
   // Check if user has a workspace (for onboarding redirect)
@@ -72,6 +72,7 @@ export function ProtectedRoute({
   // Combined loading state
   const isLoading =
     loading ||
+    isLoadingWorkspaces ||
     (shouldCheckReadiness && readinessLoading) ||
     (!isOnboardingRoute && !isProfileCompletionRoute && !isInviteRoute && onboardingLoading) ||
     (!!permission && abilityLoading);

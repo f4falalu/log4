@@ -1,0 +1,47 @@
+-- RPC to update workspace general settings (name, org_type, JSONB settings)
+-- Needed because the workspaces RLS UPDATE policy uses the legacy
+-- raw_user_meta_data->>'role' check, which silently blocks updates
+-- for users authenticated via the RBAC user_roles system.
+
+CREATE OR REPLACE FUNCTION public.update_workspace_general_settings(
+  p_workspace_id UUID,
+  p_name TEXT,
+  p_org_type TEXT DEFAULT NULL,
+  p_settings JSONB DEFAULT '{}'::jsonb
+)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  -- Verify caller is a member with admin role in this workspace
+  IF NOT EXISTS (
+    SELECT 1 FROM public.workspace_members wm
+    JOIN public.roles r ON r.id = wm.role_id
+    WHERE wm.workspace_id = p_workspace_id
+      AND wm.user_id = auth.uid()
+      AND r.code IN ('admin')
+  ) THEN
+    RAISE EXCEPTION 'Permission denied: only workspace admins can update settings';
+  END IF;
+
+  UPDATE public.workspaces
+  SET
+    name = COALESCE(p_name, name),
+    org_type = p_org_type,
+    settings = p_settings,
+    updated_at = NOW()
+  WHERE id = p_workspace_id;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Workspace not found: %', p_workspace_id;
+  END IF;
+END;
+$$;
+
+-- Grant execute to authenticated users (RPC does its own auth check)
+GRANT EXECUTE ON FUNCTION public.update_workspace_general_settings(UUID, TEXT, TEXT, JSONB) TO authenticated;
+
+COMMENT ON FUNCTION public.update_workspace_general_settings IS
+  'Updates workspace name, org_type, and JSONB settings column. Requires admin/owner role in the workspace.';

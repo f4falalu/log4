@@ -26,8 +26,8 @@ export function getBasemapStyle(): StyleSpecification {
         maxzoom: 19,
       },
     },
-    sprite: 'https://demotiles.maplibre.org/styles/osm-bright-gl-style/sprite',
-    glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
+    sprite: 'https://api.maptiler.com/maps/streets-v2/sprite',
+    glyphs: 'https://api.maptiler.com/fonts/{fontstack}/{range}.pbf',
     layers: [
       {
         id: 'osm-tiles-layer',

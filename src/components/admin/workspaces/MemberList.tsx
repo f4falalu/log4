@@ -28,23 +28,14 @@ import {
 import { MoreHorizontal, ChevronDown, Trash2 } from 'lucide-react';
 import {
   WorkspaceMember,
-  useUpdateWorkspaceMember,
   useRemoveWorkspaceMember,
 } from '@/hooks/admin/useWorkspaces';
-
-const ROLE_COLORS: Record<string, string> = {
-  owner: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
-  admin: 'bg-red-500/10 text-red-600 dark:text-red-400',
-  member: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
-  viewer: 'bg-gray-500/10 text-gray-600 dark:text-gray-400',
-};
-
-const ROLE_OPTIONS: Array<'owner' | 'admin' | 'member' | 'viewer'> = [
-  'owner',
-  'admin',
-  'member',
-  'viewer',
-];
+import {
+  RBAC_ROLES,
+  ROLE_LABELS,
+  ROLE_COLORS,
+  useUpdateMemberRoleV2,
+} from '@/hooks/settings/useWorkspaceMembers';
 
 interface MemberListProps {
   workspaceId: string;
@@ -52,12 +43,12 @@ interface MemberListProps {
 }
 
 export function MemberList({ workspaceId, members }: MemberListProps) {
-  const updateMember = useUpdateWorkspaceMember();
+  const updateRole = useUpdateMemberRoleV2();
   const removeMember = useRemoveWorkspaceMember();
   const [memberToRemove, setMemberToRemove] = useState<WorkspaceMember | null>(null);
 
-  const handleRoleChange = (userId: string, newRole: 'owner' | 'admin' | 'member' | 'viewer') => {
-    updateMember.mutate({ workspaceId, userId, role: newRole });
+  const handleRoleChange = (userId: string, newRole: string) => {
+    updateRole.mutate({ workspaceId, userId, roleCode: newRole });
   };
 
   const handleRemove = () => {
@@ -97,21 +88,21 @@ export function MemberList({ workspaceId, members }: MemberListProps) {
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="sm" className="h-7 gap-1">
-                        <Badge className={ROLE_COLORS[member.role]} variant="secondary">
-                          {member.role}
+                        <Badge className={ROLE_COLORS[member.role] || ROLE_COLORS.viewer} variant="secondary">
+                          {ROLE_LABELS[member.role] || member.role}
                         </Badge>
                         <ChevronDown className="h-3 w-3" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent>
-                      {ROLE_OPTIONS.map((role) => (
+                      {RBAC_ROLES.map((role) => (
                         <DropdownMenuItem
                           key={role}
                           onClick={() => handleRoleChange(member.user_id, role)}
                           disabled={role === member.role}
                         >
                           <Badge className={ROLE_COLORS[role]} variant="secondary">
-                            {role}
+                            {ROLE_LABELS[role]}
                           </Badge>
                         </DropdownMenuItem>
                       ))}

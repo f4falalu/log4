@@ -80,7 +80,7 @@ BEGIN
     COALESCE(d.name, p.full_name, 'Unknown') AS driver_name,
     ds.id AS session_id,
     ds.vehicle_id,
-    v.license_plate AS vehicle_plate,
+    v.license_plate::TEXT AS vehicle_plate,
     gps.lat AS current_lat,
     gps.lng AS current_lng,
     gps.heading,

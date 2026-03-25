@@ -2,7 +2,7 @@
  * RBAC v2 Type Definitions
  */
 
-export type RbacRole = 'admin' | 'ops_manager' | 'fleet_manager' | 'driver' | 'viewer';
+export type RbacRole = 'owner' | 'admin' | 'ops_manager' | 'fleet_manager' | 'driver' | 'viewer';
 
 export type Permission =
   // Requisitions
