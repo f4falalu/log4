@@ -238,8 +238,8 @@ export const vehicleFormSchema = z.object({
 
   // Current Status
   status: vehicleStatusSchema.default('available'),
-  current_location_id: z.string().uuid().optional(),
-  current_driver_id: z.string().uuid().optional(),
+  current_location_id: z.string().uuid().optional().or(z.literal('')).transform(v => v || undefined),
+  current_driver_id: z.string().uuid().optional().or(z.literal('')).transform(v => v || undefined),
 
   // Operational Metrics
   current_mileage: z

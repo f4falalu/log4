@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useWorkspace } from '@/contexts/WorkspaceContext';
 import type { Item, ItemFilters, ItemFormData, ItemAnalytics, ItemShipmentHistory } from '@/types/items';
 import { ITEM_CATEGORIES } from '@/types/items';
 import { toast } from 'sonner';
@@ -67,14 +68,18 @@ function mapItemToDb(item: ItemFormData) {
 // ========================================
 
 export function useItems(filters?: ItemFilters, page?: number, pageSize: number = 50) {
+  const { workspaceId } = useWorkspace();
+
   return useQuery({
-    queryKey: ['items', filters, page, pageSize],
+    queryKey: ['items', workspaceId, filters, page, pageSize],
+    enabled: !!workspaceId,
     staleTime: 30000,
     gcTime: 300000,
     queryFn: async () => {
       let query = supabase
         .from('items')
         .select('*, warehouses(id, name, code)', { count: 'exact' })
+        .eq('workspace_id', workspaceId!)
         .order('description');
 
       // Apply filters
@@ -173,12 +178,15 @@ export function useItem(id: string | undefined) {
 
 export function useCreateItem() {
   const queryClient = useQueryClient();
+  const { workspaceId } = useWorkspace();
 
   return useMutation({
     mutationFn: async (item: ItemFormData) => {
+      if (!workspaceId) throw new Error('No active workspace selected');
+
       const { data, error } = await supabase
         .from('items')
-        .insert(mapItemToDb(item))
+        .insert({ ...mapItemToDb(item), workspace_id: workspaceId })
         .select()
         .single();
 
@@ -240,10 +248,13 @@ export function useDeleteItem() {
 
 export function useBulkCreateItems() {
   const queryClient = useQueryClient();
+  const { workspaceId } = useWorkspace();
 
   return useMutation({
     mutationFn: async (items: ItemFormData[]) => {
-      const dbItems = items.map(mapItemToDb);
+      if (!workspaceId) throw new Error('No active workspace selected');
+
+      const dbItems = items.map(item => ({ ...mapItemToDb(item), workspace_id: workspaceId }));
 
       const { data, error } = await supabase
         .from('items')
@@ -319,13 +330,17 @@ export function useItemShipmentHistory(itemId: string | undefined) {
 // ========================================
 
 export function useItemCategories() {
+  const { workspaceId } = useWorkspace();
+
   return useQuery({
-    queryKey: ['items', 'categories'],
+    queryKey: ['items', 'categories', workspaceId],
+    enabled: !!workspaceId,
     staleTime: Infinity,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('items')
         .select('category')
+        .eq('workspace_id', workspaceId!)
         .order('category');
 
       if (error) throw error;
@@ -347,12 +362,16 @@ export function useItemCategories() {
 }
 
 export function useItemsStats() {
+  const { workspaceId } = useWorkspace();
+
   return useQuery({
-    queryKey: ['items', 'stats'],
+    queryKey: ['items', 'stats', workspaceId],
+    enabled: !!workspaceId,
     queryFn: async () => {
       const { data, error, count } = await supabase
         .from('items')
-        .select('*', { count: 'exact', head: false });
+        .select('*', { count: 'exact', head: false })
+        .eq('workspace_id', workspaceId!);
 
       if (error) throw error;
 

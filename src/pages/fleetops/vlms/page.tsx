@@ -4,9 +4,16 @@ import { Button } from '@/components/ui/button';
 import { Car, Wrench, Fuel, Users, AlertTriangle, ClipboardCheck, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getStatusColors } from '@/lib/designTokens';
+import { useVehicles } from '@/hooks/useVehicles';
 
 export default function VLMSPage() {
   const navigate = useNavigate();
+  const { data: vehicles = [] } = useVehicles();
+
+  const totalVehicles = vehicles.length;
+  const availableCount = vehicles.filter(v => v.status === 'available').length;
+  const maintenanceCount = vehicles.filter(v => v.status === 'maintenance').length;
+  const assignedCount = vehicles.filter(v => v.status === 'in-use').length;
 
   const modules = [
     {
@@ -72,8 +79,10 @@ export default function VLMSPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
-            <p className="text-sm text-muted-foreground">Ready to add vehicles</p>
+            <div className="text-2xl font-bold">{totalVehicles}</div>
+            <p className="text-sm text-muted-foreground">
+              {totalVehicles === 0 ? 'Ready to add vehicles' : 'In your fleet'}
+            </p>
           </CardContent>
         </Card>
 
@@ -84,7 +93,7 @@ export default function VLMSPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
+            <div className="text-2xl font-bold">{availableCount}</div>
             <p className="text-sm text-muted-foreground">Ready for assignment</p>
           </CardContent>
         </Card>
@@ -96,7 +105,7 @@ export default function VLMSPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
+            <div className="text-2xl font-bold">{maintenanceCount}</div>
             <p className="text-sm text-muted-foreground">Under service</p>
           </CardContent>
         </Card>
@@ -108,7 +117,7 @@ export default function VLMSPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
+            <div className="text-2xl font-bold">{assignedCount}</div>
             <p className="text-sm text-muted-foreground">Currently assigned</p>
           </CardContent>
         </Card>

@@ -251,8 +251,11 @@ export const useVehiclesStore = create<VehiclesState>()(
           const workspaceId = localStorage.getItem('biko_active_workspace_id');
           if (!workspaceId) throw new Error('No active workspace selected');
 
+          // Destructure vehicle_type to remap it to the DB column 'type'
+          const { vehicle_type: vType, ...createRest } = data as any;
           const vehicleData = {
-            ...data,
+            ...createRest,
+            ...(vType !== undefined ? { type: vType } : {}),
             workspace_id: workspaceId,
             capacity_m3: (data as any).capacity_m3 ?? 0,
             capacity_kg: (data as any).capacity_kg ?? 0,
@@ -306,8 +309,11 @@ export const useVehiclesStore = create<VehiclesState>()(
           };
 
           // Create update payload with proper type mapping
+          // Destructure vehicle_type to remap it to the DB column 'type'
+          const { vehicle_type, ...rest } = data as any;
           const updateData: Partial<Vehicle> = {
-            ...data,
+            ...rest,
+            ...(vehicle_type !== undefined ? { type: vehicle_type } : {}),
             fuel_type: normalizeFuelType(data.fuel_type) as any,
             status: data.status ? (normalizeStatus(data.status) as 'available' | 'in-use' | 'maintenance') : undefined,
             updated_by: userId,
