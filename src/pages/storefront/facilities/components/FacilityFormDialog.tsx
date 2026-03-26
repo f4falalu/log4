@@ -233,7 +233,7 @@ export function FacilityFormDialog({
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              {facilityTypes.map((type) => (
+                              {facilityTypes.filter((type) => type.name).map((type) => (
                                 <SelectItem key={type.id} value={type.name}>
                                   {type.name}
                                 </SelectItem>
@@ -258,7 +258,7 @@ export function FacilityFormDialog({
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              {levelsOfCare.map((level) => (
+                              {levelsOfCare.filter((level) => level.name).map((level) => (
                                 <SelectItem key={level.id} value={level.name}>
                                   {level.name}
                                   {level.description && (
@@ -316,7 +316,7 @@ export function FacilityFormDialog({
                           <SelectValue placeholder={loadingStates ? "Loading..." : "Select State"} />
                         </SelectTrigger>
                         <SelectContent>
-                          {states.map((state) => (
+                          {states.filter((state) => state.id).map((state) => (
                             <SelectItem key={state.id} value={state.id}>
                               {state.name}
                             </SelectItem>
@@ -352,7 +352,7 @@ export function FacilityFormDialog({
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              {lgasByState.map((lga) => (
+                              {lgasByState.filter((lga) => lga.name).map((lga) => (
                                 <SelectItem key={lga.id} value={lga.name}>
                                   {lga.name}
                                 </SelectItem>
@@ -396,7 +396,7 @@ export function FacilityFormDialog({
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              {zones.map((zone) => (
+                              {zones.filter((zone) => zone.name).map((zone) => (
                                 <SelectItem key={zone.id} value={zone.name}>
                                   {zone.name}
                                   {zone.code && (
@@ -476,7 +476,7 @@ export function FacilityFormDialog({
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              {implementingPartners.map((ip) => (
+                              {implementingPartners.filter((ip) => ip.code).map((ip) => (
                                 <SelectItem key={ip.id} value={ip.code}>{ip.name}</SelectItem>
                               ))}
                             </SelectContent>
@@ -499,7 +499,7 @@ export function FacilityFormDialog({
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              {fundingSources.map((fs) => (
+                              {fundingSources.filter((fs) => fs.code).map((fs) => (
                                 <SelectItem key={fs.id} value={fs.code}>{fs.name}</SelectItem>
                               ))}
                             </SelectContent>
@@ -522,7 +522,7 @@ export function FacilityFormDialog({
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              {programmeCategories.map((pc) => (
+                              {programmeCategories.filter((pc) => pc.name).map((pc) => (
                                 <SelectItem key={pc.id} value={pc.name}>{pc.name}</SelectItem>
                               ))}
                             </SelectContent>

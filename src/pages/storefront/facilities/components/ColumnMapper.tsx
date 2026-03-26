@@ -231,7 +231,7 @@ export function ColumnMapper({
             <SelectItem value="__NONE__">
               <span className="text-muted-foreground">Not in file</span>
             </SelectItem>
-            {csvHeaders.map((header) => (
+            {csvHeaders.filter((header) => header).map((header) => (
               <SelectItem key={header} value={header}>
                 {header}
               </SelectItem>
