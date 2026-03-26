@@ -105,6 +105,15 @@ export function FacilityFormDialog({
     }
   }, [adminUnitByPoint, isEdit, form]);
 
+  // Reset form when dialog closes
+  useEffect(() => {
+    if (!open) {
+      form.reset();
+      setSelectedStateId(null);
+    }
+  }, [open, form]);
+
+  // Populate form when editing a facility
   useEffect(() => {
     if (facility && open) {
       form.reset({
@@ -135,20 +144,20 @@ export function FacilityFormDialog({
         email: facility.email,
         storage_capacity: facility.storage_capacity,
       });
-      // Pre-select state for cascading LGA dropdown when editing
-      if (facility.state && states.length > 0) {
-        const matchingState = states.find(
-          (s) => s.name.toLowerCase() === facility.state?.toLowerCase()
-        );
-        if (matchingState) {
-          setSelectedStateId(matchingState.id);
-        }
-      }
-    } else if (!open) {
-      form.reset();
-      setSelectedStateId(null);
     }
-  }, [facility, open, form, states]);
+  }, [facility, open, form]);
+
+  // Pre-select state for cascading LGA dropdown when editing
+  useEffect(() => {
+    if (facility && open && facility.state && states.length > 0) {
+      const matchingState = states.find(
+        (s) => s.name.toLowerCase() === facility.state?.toLowerCase()
+      );
+      if (matchingState) {
+        setSelectedStateId(matchingState.id);
+      }
+    }
+  }, [facility, open, states]);
 
   const onSubmit = async (data: FacilityFormData) => {
     try {

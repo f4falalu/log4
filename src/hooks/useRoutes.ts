@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useWorkspace } from '@/contexts/WorkspaceContext';
 import {
   Route,
   RouteFacility,
@@ -20,12 +21,16 @@ export interface RouteFilters {
  * to avoid PostgREST schema cache issues with embedded selects.
  */
 export function useRoutes(filters?: RouteFilters) {
+  const { workspaceId } = useWorkspace();
+
   return useQuery({
-    queryKey: ['routes', filters],
+    queryKey: ['routes', workspaceId, filters],
+    enabled: !!workspaceId,
     queryFn: async () => {
       let query = supabase
         .from('routes')
         .select('*')
+        .eq('workspace_id', workspaceId!)
         .order('created_at', { ascending: false });
 
       if (filters?.zone_id) {
@@ -181,15 +186,19 @@ export function useRouteFacilities(routeId: string | null | undefined) {
  */
 export function useCreateRoute() {
   const queryClient = useQueryClient();
+  const { workspaceId } = useWorkspace();
 
   return useMutation({
     mutationFn: async (input: CreateRouteInput) => {
+      if (!workspaceId) throw new Error('No workspace selected');
+
       const { facility_ids, total_distance_km, estimated_duration_min, optimized_geometry, ...routeData } = input;
       const routePayload = {
         ...routeData,
         ...(total_distance_km != null && { total_distance_km }),
         ...(estimated_duration_min != null && { estimated_duration_min }),
         ...(optimized_geometry != null && { optimized_geometry }),
+        workspace_id: workspaceId,
       };
 
       // Insert route
@@ -322,12 +331,16 @@ export function useDeleteRoute() {
  * Aggregate metrics across all routes
  */
 export function useRouteMetrics() {
+  const { workspaceId } = useWorkspace();
+
   return useQuery({
-    queryKey: ['route-metrics'],
+    queryKey: ['route-metrics', workspaceId],
+    enabled: !!workspaceId,
     queryFn: async () => {
       const { data: routes, error } = await supabase
         .from('routes')
-        .select('id, status, total_distance_km, is_sandbox');
+        .select('id, status, total_distance_km, is_sandbox')
+        .eq('workspace_id', workspaceId!);
 
       if (error) throw error;
 

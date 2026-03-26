@@ -52,10 +52,8 @@ export function VehicleConfiguratorDialog({
         gross_weight_kg: formData.gross_weight_kg,
         capacity_kg: formData.capacity_kg,
 
-        // Legacy required fields (for old vehicles table schema)
-        capacity: formData.capacity_m3 || 0, // Legacy capacity field (cubic meters)
-        max_weight: formData.gross_weight_kg || formData.capacity_kg || 0, // Legacy max weight
-        fuel_efficiency: 0, // Default value for required legacy field
+        // Legacy capacity field
+        capacity: formData.capacity_m3 || 0,
 
         // Tier configuration - ensure proper format or set to null
         tiered_config: (formData.tiered_config && formData.tiered_config.tiers && formData.tiered_config.tiers.length > 0)

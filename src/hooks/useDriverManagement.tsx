@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useWorkspace } from '@/contexts/WorkspaceContext';
 import { toast } from 'sonner';
 
 export interface DriverFormData {
@@ -46,9 +47,12 @@ export interface DriverFormData {
 
 export function useDriverManagement() {
   const queryClient = useQueryClient();
+  const { workspaceId } = useWorkspace();
 
   const createDriver = useMutation({
     mutationFn: async (data: DriverFormData) => {
+      if (!workspaceId) throw new Error('No workspace selected');
+
       // Build insert payload — only include defined values to avoid sending undefined
       const dbData: Record<string, unknown> = {
         name: data.name,
@@ -57,6 +61,7 @@ export function useDriverManagement() {
         shift_start: data.shift_start,
         shift_end: data.shift_end,
         max_hours: data.max_hours,
+        workspace_id: workspaceId,
       };
 
       // Optional fields — only add if provided

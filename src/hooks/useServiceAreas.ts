@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useWorkspace } from '@/contexts/WorkspaceContext';
 import {
   ServiceArea,
   ServiceAreaFacility,
@@ -21,12 +22,16 @@ export interface ServiceAreaFilters {
  * to avoid PostgREST schema cache issues with embedded selects.
  */
 export function useServiceAreas(filters?: ServiceAreaFilters) {
+  const { workspaceId } = useWorkspace();
+
   return useQuery({
-    queryKey: ['service-areas', filters],
+    queryKey: ['service-areas', workspaceId, filters],
+    enabled: !!workspaceId,
     queryFn: async () => {
       let query = supabase
         .from('service_areas')
         .select('*')
+        .eq('workspace_id', workspaceId!)
         .order('name', { ascending: true });
 
       if (filters?.zone_id) {
@@ -167,15 +172,18 @@ export function useServiceAreaFacilities(serviceAreaId: string | null | undefine
  */
 export function useCreateServiceArea() {
   const queryClient = useQueryClient();
+  const { workspaceId } = useWorkspace();
 
   return useMutation({
     mutationFn: async (input: CreateServiceAreaInput) => {
+      if (!workspaceId) throw new Error('No workspace selected');
+
       const { facility_ids, ...serviceAreaData } = input;
 
       // Insert service area
       const { data: sa, error: saError } = await supabase
         .from('service_areas')
-        .insert([serviceAreaData])
+        .insert([{ ...serviceAreaData, workspace_id: workspaceId }])
         .select()
         .single();
 
@@ -311,13 +319,16 @@ export function useAssignFacilitiesToServiceArea() {
  * Aggregate metrics across all service areas
  */
 export function useServiceAreaMetrics() {
+  const { workspaceId } = useWorkspace();
+
   return useQuery({
-    queryKey: ['service-area-metrics'],
+    queryKey: ['service-area-metrics', workspaceId],
+    enabled: !!workspaceId,
     queryFn: async () => {
       const [areasResult, facilityCountResult, routesResult] = await Promise.all([
-        supabase.from('service_areas').select('id, priority, max_distance_km, is_active'),
+        supabase.from('service_areas').select('id, priority, max_distance_km, is_active').eq('workspace_id', workspaceId!),
         supabase.from('service_area_facilities').select('*', { count: 'exact', head: true }),
-        supabase.from('routes').select('total_distance_km, is_sandbox').eq('is_sandbox', false),
+        supabase.from('routes').select('total_distance_km, is_sandbox').eq('workspace_id', workspaceId!).eq('is_sandbox', false),
       ]);
 
       if (areasResult.error) throw areasResult.error;

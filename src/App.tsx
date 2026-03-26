@@ -10,68 +10,28 @@ import { MapStateProvider } from "./contexts/MapStateContext";
 import { WorkspaceProvider, useWorkspace } from "./contexts/WorkspaceContext";
 import { AbilityProvider } from "./rbac/AbilityProvider";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
-import { FleetOpsLayout } from "./pages/fleetops/layout";
-import { StorefrontLayout } from "./pages/storefront/layout";
-import { Mod4Layout } from "./pages/mod4/layout";
-import { AdminLayout } from "./pages/admin/layout";
-import { MapLayout } from "./pages/map/layout";
-import Mod4Dashboard from "./pages/mod4/page";
-import Mod4DriverPage from "./pages/mod4/driver/page";
-import Mod4ActiveDeliveryPage from "./pages/mod4/driver/delivery/page";
-import Mod4DispatcherPage from "./pages/mod4/dispatcher/page";
-import Mod4SessionsPage from "./pages/mod4/sessions/page";
-import AdminDashboard from "./pages/admin/page";
-import AdminSessionsPage from "./pages/admin/sessions/page";
-import AdminSessionDetailPage from "./pages/admin/sessions/[id]/page";
-import LiveMapPage from "./pages/map/live/page";
-import PlaybackMapPage from "./pages/map/playback/page";
-
-// Settings Pages
-import PermissionsPage from "./pages/settings/permissions/page";
-const SettingsLayout = lazy(() => import("./pages/settings/layout"));
-const SettingsGeneralPage = lazy(() => import("./pages/settings/general/page"));
-const SettingsMembersPage = lazy(() => import("./pages/settings/members/page"));
-const SettingsAccessControlPage = lazy(() => import("./pages/settings/access-control/page"));
-const SettingsLocationsPage = lazy(() => import("./pages/admin/LocationManagement"));
-const SettingsIntegrationPage = lazy(() => import("./pages/admin/integration/page"));
-const SettingsProfilePage = lazy(() => import("./pages/settings/profile/page"));
-
-// Onboarding Pages
-import OnboardingWizardV2 from "./components/onboarding/OnboardingWizardV2";
-import AcceptInvitationPage from "./pages/invite/AcceptInvitationPage";
-import ProfileCompletionPage from "./pages/onboarding/ProfileCompletionPage";
-import FleetOpsHome from "./pages/fleetops/page";
-import StorefrontHome from "./pages/storefront/page";
-import StorefrontFacilities from "./pages/storefront/facilities/page";
-import StorefrontRequisitions from "./pages/storefront/requisitions/page";
-import StorefrontZones from "./pages/storefront/zones/page";
-import StorefrontScheduler from "./pages/storefront/scheduler/page";
-import StorefrontStockReports from "./pages/storefront/stock-reports/page";
-import StorefrontPrograms from "./pages/storefront/programs/page";
-
-// Lazy load new storefront pages
-const StorefrontItems = lazy(() => import("./pages/storefront/items/page"));
-const StorefrontInvoice = lazy(() => import("./pages/storefront/invoice/page"));
-const StorefrontWarehouse = lazy(() => import("./pages/storefront/warehouse/page"));
-import FleetManagement from "./pages/fleetops/fleet-management/page";
-import VehicleRegistry from "./pages/fleetops/vehicles/registry/page";
-import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import AuthCallback from "./pages/AuthCallback";
-import NotFound from "./pages/NotFound";
 import ErrorBoundary from "./components/ErrorBoundary";
-// Lazy load pages that are also dynamically imported by SecondarySidebar
+
+// Lazy-load all layouts (named exports → wrapped with .then())
+const FleetOpsLayout = lazy(() => import("./pages/fleetops/layout").then(m => ({ default: m.FleetOpsLayout })));
+const StorefrontLayout = lazy(() => import("./pages/storefront/layout").then(m => ({ default: m.StorefrontLayout })));
+const Mod4Layout = lazy(() => import("./pages/mod4/layout").then(m => ({ default: m.Mod4Layout })));
+const AdminLayout = lazy(() => import("./pages/admin/layout").then(m => ({ default: m.AdminLayout })));
+const MapLayout = lazy(() => import("./pages/map/layout").then(m => ({ default: m.MapLayout })));
+
+// Lazy-load all pages
+const FleetOpsHome = lazy(() => import("./pages/fleetops/page"));
+const FleetManagement = lazy(() => import("./pages/fleetops/fleet-management/page"));
+const VehicleRegistry = lazy(() => import("./pages/fleetops/vehicles/registry/page"));
+const VehicleDetailPage = lazy(() => import("./pages/fleetops/vehicles/[id]/page"));
 const DriverManagement = lazy(() => import("./pages/DriverManagement"));
-
 const BatchManagement = lazy(() => import("./pages/BatchManagement"));
-const VLMSDashboard = lazy(() => import("./pages/fleetops/vlms/page"));
-
-import CommandCenterPage from "./pages/CommandCenterPage";
-import FacilityManagerPage from "./pages/FacilityManagerPage";
-import VehicleManagementPage from "./pages/VehicleManagementPage";
-
-// Lazy load Reports page (includes Recharts - ~300 kB uncompressed / 77 kB gzipped)
 const ReportsPageWrapper = lazy(() => import("./pages/ReportsPageWrapper"));
+
+// VLMS
+const VLMSDashboard = lazy(() => import("./pages/fleetops/vlms/page"));
 const VLMSVehicles = lazy(() => import("./pages/fleetops/vlms/vehicles/page"));
 const VLMSVehicleOnboard = lazy(() => import("./pages/fleetops/vlms/vehicles/onboard/page"));
 const VLMSVehicleDetail = lazy(() => import("./pages/fleetops/vlms/vehicles/[id]/page"));
@@ -81,6 +41,53 @@ const VLMSFuel = lazy(() => import("./pages/fleetops/vlms/fuel/page"));
 const VLMSAssignments = lazy(() => import("./pages/fleetops/vlms/assignments/page"));
 const VLMSIncidents = lazy(() => import("./pages/fleetops/vlms/incidents/page"));
 const VLMSInspections = lazy(() => import("./pages/fleetops/vlms/inspections/page"));
+
+// Storefront
+const StorefrontHome = lazy(() => import("./pages/storefront/page"));
+const StorefrontFacilities = lazy(() => import("./pages/storefront/facilities/page"));
+const StorefrontRequisitions = lazy(() => import("./pages/storefront/requisitions/page"));
+const StorefrontZones = lazy(() => import("./pages/storefront/zones/page"));
+const StorefrontScheduler = lazy(() => import("./pages/storefront/scheduler/page"));
+const StorefrontStockReports = lazy(() => import("./pages/storefront/stock-reports/page"));
+const StorefrontPrograms = lazy(() => import("./pages/storefront/programs/page"));
+const StorefrontItems = lazy(() => import("./pages/storefront/items/page"));
+const StorefrontInvoice = lazy(() => import("./pages/storefront/invoice/page"));
+const StorefrontWarehouse = lazy(() => import("./pages/storefront/warehouse/page"));
+
+// Mod4
+const Mod4Dashboard = lazy(() => import("./pages/mod4/page"));
+const Mod4DriverPage = lazy(() => import("./pages/mod4/driver/page"));
+const Mod4ActiveDeliveryPage = lazy(() => import("./pages/mod4/driver/delivery/page"));
+const Mod4DeliveryDetailPage = lazy(() => import("./pages/mod4/driver/delivery/[id]/page"));
+const Mod4DispatcherPage = lazy(() => import("./pages/mod4/dispatcher/page"));
+const Mod4SessionsPage = lazy(() => import("./pages/mod4/sessions/page"));
+
+// Admin
+const AdminDashboard = lazy(() => import("./pages/admin/page"));
+const AdminSessionsPage = lazy(() => import("./pages/admin/sessions/page"));
+const AdminSessionDetailPage = lazy(() => import("./pages/admin/sessions/[id]/page"));
+
+// Map
+const LiveMapPage = lazy(() => import("./pages/map/live/page"));
+const PlaybackMapPage = lazy(() => import("./pages/map/playback/page"));
+
+// Settings
+const PermissionsPage = lazy(() => import("./pages/settings/permissions/page"));
+const SettingsLayout = lazy(() => import("./pages/settings/layout"));
+const SettingsGeneralPage = lazy(() => import("./pages/settings/general/page"));
+const SettingsMembersPage = lazy(() => import("./pages/settings/members/page"));
+const SettingsAccessControlPage = lazy(() => import("./pages/settings/access-control/page"));
+const SettingsLocationsPage = lazy(() => import("./pages/admin/LocationManagement"));
+const SettingsIntegrationPage = lazy(() => import("./pages/admin/integration/page"));
+const SettingsProfilePage = lazy(() => import("./pages/settings/profile/page"));
+
+// Onboarding
+const OnboardingWizardV2 = lazy(() => import("./components/onboarding/OnboardingWizardV2"));
+const AcceptInvitationPage = lazy(() => import("./pages/invite/AcceptInvitationPage"));
+const ProfileCompletionPage = lazy(() => import("./pages/onboarding/ProfileCompletionPage"));
+
+// Other
+const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -149,17 +156,9 @@ const App = () => (
                     <Route path="batches" element={<BatchManagement />} />
                     <Route path="tactical" element={<Navigate to="/map/live" replace />} />
                     <Route path="vehicles" element={<VehicleRegistry />} />
-                    <Route path="vehicles/:id" element={
-                      React.createElement(
-                        React.lazy(() => import('./pages/fleetops/vehicles/[id]/page'))
-                      )
-                    } />
+                    <Route path="vehicles/:id" element={<VehicleDetailPage />} />
                     <Route path="fleet-management" element={<FleetManagement />} />
-                    <Route path="reports" element={
-                      <Suspense fallback={<div className="flex items-center justify-center h-screen"><Loader2 className="h-8 w-8 animate-spin" /></div>}>
-                        <ReportsPageWrapper />
-                      </Suspense>
-                    } />
+                    <Route path="reports" element={<ReportsPageWrapper />} />
                     <Route path="vlms">
                       <Route index element={<VLMSDashboard />} />
                       <Route path="vehicles" element={<VLMSVehicles />} />
@@ -182,27 +181,15 @@ const App = () => (
                   }>
                     <Route index element={<StorefrontHome />} />
                     {/* Order Management */}
-                    <Route path="items" element={
-                      <Suspense fallback={<div className="flex items-center justify-center h-screen"><Loader2 className="h-8 w-8 animate-spin" /></div>}>
-                        <StorefrontItems />
-                      </Suspense>
-                    } />
+                    <Route path="items" element={<StorefrontItems />} />
                     <Route path="requisitions" element={<StorefrontRequisitions />} />
-                    <Route path="invoice" element={
-                      <Suspense fallback={<div className="flex items-center justify-center h-screen"><Loader2 className="h-8 w-8 animate-spin" /></div>}>
-                        <StorefrontInvoice />
-                      </Suspense>
-                    } />
+                    <Route path="invoice" element={<StorefrontInvoice />} />
                     {/* Planning */}
                     <Route path="scheduler" element={<StorefrontScheduler />} />
                     {/* Resources */}
                     <Route path="zones" element={<StorefrontZones />} />
                     <Route path="facilities" element={<StorefrontFacilities />} />
-                    <Route path="warehouse" element={
-                      <Suspense fallback={<div className="flex items-center justify-center h-screen"><Loader2 className="h-8 w-8 animate-spin" /></div>}>
-                        <StorefrontWarehouse />
-                      </Suspense>
-                    } />
+                    <Route path="warehouse" element={<StorefrontWarehouse />} />
                     <Route path="programs" element={<StorefrontPrograms />} />
                     {/* Analytics */}
                     <Route path="stock-reports" element={<StorefrontStockReports />} />
@@ -220,11 +207,7 @@ const App = () => (
                     <Route index element={<Mod4Dashboard />} />
                     <Route path="driver" element={<Mod4DriverPage />} />
                     <Route path="driver/delivery" element={<Mod4ActiveDeliveryPage />} />
-                    <Route path="driver/delivery/:batchId" element={
-                      React.createElement(
-                        React.lazy(() => import('./pages/mod4/driver/delivery/[id]/page'))
-                      )
-                    } />
+                    <Route path="driver/delivery/:batchId" element={<Mod4DeliveryDetailPage />} />
                     <Route path="dispatcher" element={<Mod4DispatcherPage />} />
                     <Route path="sessions" element={<Mod4SessionsPage />} />
                   </Route>
@@ -284,11 +267,7 @@ const App = () => (
                       <SettingsLayout />
                     </ProtectedRoute>
                   }>
-                    <Route index element={
-                      <Suspense fallback={<div className="flex items-center justify-center h-screen"><Loader2 className="h-8 w-8 animate-spin" /></div>}>
-                        <SettingsProfilePage />
-                      </Suspense>
-                    } />
+                    <Route index element={<SettingsProfilePage />} />
                   </Route>
                   {/* Settings Routes — workspace-scoped (workspace.manage required) */}
                   <Route path="/settings" element={

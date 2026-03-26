@@ -218,6 +218,9 @@ export default function SchedulerPage() {
           batchId={selectedBatchId}
           batch={filteredBatches.find(b => b.id === selectedBatchId)}
           onClose={() => setSelectedBatchId(null)}
+          facilities={facilities}
+          warehouses={warehouses}
+          vehicles={vehicles}
         />
       )}
     </div>

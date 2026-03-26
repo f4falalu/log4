@@ -119,9 +119,8 @@ function parseGeoCoordinates(value: string, columnName?: string): { latitude?: n
     .filter(n => !isNaN(n));
 
   if (numbers.length < 2) {
-    if (process.env.NODE_ENV === 'development') {
-      console.warn('[CSV Import] parseGeoCoordinates: Not enough numbers found in value:', value);
-    }
+    // Single number means this is likely a separate lat or lng column value,
+    // not a combined coordinate string — silently return empty.
     return {};
   }
 

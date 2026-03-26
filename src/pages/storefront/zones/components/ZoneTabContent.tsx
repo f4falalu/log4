@@ -1,17 +1,22 @@
 import { useState } from 'react';
-import { Plus, Layers, Building2, MapPin } from 'lucide-react';
+import { Plus, Layers, Building2, MapPin, LayoutGrid, Map } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useOperationalZones, useZoneMetrics } from '@/hooks/useOperationalZones';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CreateZoneDialog } from './CreateZoneDialog';
 import { ZoneDetailDialog } from './ZoneDetailDialog';
+import { ZoneMapView } from './ZoneMapView';
 import { OperationalZone } from '@/types/zones';
+
+type ViewMode = 'grid' | 'map';
 
 export function ZoneTabContent() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedZone, setSelectedZone] = useState<OperationalZone | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const { zones, loading: zonesLoading } = useOperationalZones();
   const { data: metrics, isLoading: metricsLoading } = useZoneMetrics();
 
@@ -27,10 +32,20 @@ export function ZoneTabContent() {
             Administrative boundaries and governance units
           </p>
         </div>
-        <Button onClick={() => setIsCreateDialogOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Create Zone
-        </Button>
+        <div className="flex items-center gap-3">
+          <ToggleGroup type="single" value={viewMode} onValueChange={(v) => v && setViewMode(v as ViewMode)}>
+            <ToggleGroupItem value="grid" aria-label="Grid view">
+              <LayoutGrid className="h-4 w-4" />
+            </ToggleGroupItem>
+            <ToggleGroupItem value="map" aria-label="Map view">
+              <Map className="h-4 w-4" />
+            </ToggleGroupItem>
+          </ToggleGroup>
+          <Button onClick={() => setIsCreateDialogOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Create Zone
+          </Button>
+        </div>
       </div>
 
       {/* Overview Stats */}
@@ -75,8 +90,16 @@ export function ZoneTabContent() {
         </div>
       )}
 
+      {/* Map View */}
+      {viewMode === 'map' && (
+        <ZoneMapView
+          zones={zones || []}
+          onZoneSelect={setSelectedZone}
+        />
+      )}
+
       {/* Zones Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      {viewMode === 'grid' && <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {isLoading ? (
           <>
             {[1, 2, 3].map((i) => (
@@ -146,7 +169,7 @@ export function ZoneTabContent() {
             </CardContent>
           </Card>
         )}
-      </div>
+      </div>}
 
       {/* Dialogs */}
       <CreateZoneDialog

@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useWorkspace } from '@/contexts/WorkspaceContext';
 import {
   OperationalZone,
   CreateZoneInput,
@@ -9,19 +10,22 @@ import {
 import { toast } from 'sonner';
 
 export function useOperationalZones(options?: { enabled?: boolean }) {
+  const { workspaceId } = useWorkspace();
+
   const query = useQuery({
-    queryKey: ['operational-zones'],
+    queryKey: ['operational-zones', workspaceId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('zones' as any)
         .select('*')
+        .eq('workspace_id', workspaceId!)
         .eq('is_active', true)
         .order('name', { ascending: true });
 
       if (error) throw error;
       return data as unknown as OperationalZone[];
     },
-    enabled: options?.enabled ?? true,
+    enabled: (options?.enabled ?? true) && !!workspaceId,
   });
 
   // Expose `zones` and `loading` aliases for backward-compatible destructuring
@@ -51,26 +55,30 @@ export function useOperationalZone(zoneId: string | null) {
 }
 
 export function useZoneMetrics() {
+  const { workspaceId } = useWorkspace();
+
   return useQuery({
-    queryKey: ['zone-metrics'],
+    queryKey: ['zone-metrics', workspaceId],
     queryFn: async () => {
       const { data: zones, error: zonesError } = await supabase
         .from('zones' as any)
-        .select('*');
+        .select('*')
+        .eq('workspace_id', workspaceId!);
 
       if (zonesError) throw zonesError;
 
       const { count: totalFacilities } = await supabase
         .from('facilities')
         .select('*', { count: 'exact', head: true })
+        .eq('workspace_id', workspaceId!)
         .is('deleted_at', null);
 
       let totalLGAs = 0;
       try {
-        // Count distinct LGA values from facilities (lgas table may be empty)
         const { data: lgaData } = await supabase
           .from('facilities')
           .select('lga')
+          .eq('workspace_id', workspaceId!)
           .is('deleted_at', null)
           .not('lga', 'is', null);
 
@@ -89,6 +97,7 @@ export function useZoneMetrics() {
         totalLGAs,
       };
     },
+    enabled: !!workspaceId,
   });
 }
 
@@ -143,9 +152,12 @@ export function useZoneSummary(zoneId: string | null) {
 
 export function useCreateZone() {
   const queryClient = useQueryClient();
+  const { workspaceId } = useWorkspace();
 
   return useMutation({
     mutationFn: async (input: CreateZoneInput) => {
+      if (!workspaceId) throw new Error('No workspace selected');
+
       const { data, error } = await supabase
         .from('zones' as any)
         .insert([{
@@ -156,6 +168,7 @@ export function useCreateZone() {
           zone_manager_id: input.zone_manager_id,
           is_active: input.is_active ?? true,
           metadata: input.metadata ?? {},
+          workspace_id: workspaceId,
         }])
         .select()
         .single();

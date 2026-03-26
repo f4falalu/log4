@@ -16,6 +16,7 @@ import { useOperationalZones } from '@/hooks/useOperationalZones';
 import { useServiceAreas } from '@/hooks/useServiceAreas';
 import { useCreateRoute } from '@/hooks/useRoutes';
 import { useFacilities } from '@/hooks/useFacilities';
+import { useServiceAreaFacilities } from '@/hooks/useServiceAreas';
 import { computeDistanceMatrix, type GeoPoint } from '@/lib/algorithms/distanceMatrix';
 import { solveTSP } from '@/lib/algorithms/tsp';
 import { getRoadRoute, getAlternativeRoadRoutes, type RoadRouteResult, type AlternativeRoadRoute } from '@/lib/geoapify';
@@ -73,12 +74,22 @@ export function FacilityListRouteForm({ onSuccess, isSandbox = false }: Facility
   const zonesQuery = useOperationalZones();
   const zones = zonesQuery.zones;
   const { data: serviceAreas } = useServiceAreas(zoneId ? { zone_id: zoneId } : undefined);
-  const facilitiesQuery = useFacilities(serviceAreaId ? {} : undefined, undefined, 1000);
+  // When a service area is selected, load only its assigned facilities instead of all 1000+
+  const saFacilitiesQuery = useServiceAreaFacilities(serviceAreaId || null);
+  const allFacilitiesQuery = useFacilities(serviceAreaId ? undefined : {}, undefined, 50);
   const createMutation = useCreateRoute();
 
   const selectedZone = zones?.find(z => z.id === zoneId);
   const selectedSA = serviceAreas?.find(sa => sa.id === serviceAreaId);
-  const facilities = facilitiesQuery.data?.facilities ?? [];
+  // Use service-area-assigned facilities when available, otherwise fall back to workspace facilities
+  const facilities = useMemo(() => {
+    if (serviceAreaId && saFacilitiesQuery.data) {
+      return saFacilitiesQuery.data
+        .filter((saf: any) => saf.facilities)
+        .map((saf: any) => saf.facilities);
+    }
+    return allFacilitiesQuery.data?.facilities ?? [];
+  }, [serviceAreaId, saFacilitiesQuery.data, allFacilitiesQuery.data]);
 
   const filteredFacilities = useMemo(() => {
     const q = facilitySearch.trim().toLowerCase();

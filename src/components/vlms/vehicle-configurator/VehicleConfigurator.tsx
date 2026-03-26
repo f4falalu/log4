@@ -196,6 +196,8 @@ export function VehicleConfigurator({ onSave, onCancel }: VehicleConfiguratorPro
       }
     } catch (error) {
       console.error('Save error:', error);
+      // Re-throw so the parent dialog can handle it
+      throw error;
     } finally {
       setIsSaving(false);
     }

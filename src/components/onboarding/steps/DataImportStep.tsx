@@ -58,7 +58,10 @@ export default function DataImportStep({ wizard }: DataImportStepProps) {
     try {
       const { error } = await supabase.from('facilities').insert({
         name: facilityName.trim(),
-        facility_type: facilityType.trim() || null,
+        type: (facilityType.trim() || 'clinic') as any,
+        address: 'TBD',
+        lat: 0,
+        lng: 0,
         workspace_id: state.workspaceId,
       });
       if (error) throw error;

@@ -1,9 +1,15 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import L from 'leaflet';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Layers, Map as MapIcon } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import {
+  Layers, Map as MapIcon, Maximize2, Minimize2,
+  Warehouse, Building2, Crosshair, ZoomIn, ZoomOut,
+  LocateFixed,
+} from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { RoutePolylinesLayer } from '@/components/map/layers/RoutePolylinesLayer';
 import { ServiceAreasLayer } from '@/components/map/layers/ServiceAreasLayer';
 import { ZoneBoundariesLayer, type ZoneBoundaryData } from '@/components/map/layers/ZoneBoundariesLayer';
@@ -11,10 +17,12 @@ import { MapInsightsOverlay, type RouteInsightsData } from '@/components/map/ove
 import { useRoutes } from '@/hooks/useRoutes';
 import { useServiceAreas } from '@/hooks/useServiceAreas';
 import { useOperationalZones } from '@/hooks/useOperationalZones';
+import { useFacilities } from '@/hooks/useFacilities';
 import { supabase } from '@/integrations/supabase/client';
 import { computeConvexHull } from '@/lib/algorithms/convexHull';
 import { calculateDistance } from '@/lib/routeOptimization';
 import { getRoadRoute } from '@/lib/geoapify';
+import { cn } from '@/lib/utils';
 import type { Route } from '@/types/routes';
 import type { FacilityClickPayload } from '@/components/map/layers/RoutePolylinesLayer';
 import type { ServiceAreaPolygon } from '@/components/map/layers/ServiceAreasLayer';
@@ -23,6 +31,37 @@ import type { ServiceAreaPolygon } from '@/components/map/layers/ServiceAreasLay
 const DEFAULT_CENTER: [number, number] = [12.0, 8.52];
 const DEFAULT_ZOOM = 10;
 
+// Facility icon factory
+function createFacilityIcon(type?: string, isSelected = false): L.DivIcon {
+  const colorMap: Record<string, string> = {
+    hospital: '#ef4444',
+    clinic: '#3b82f6',
+    pharmacy: '#22c55e',
+    health_center: '#a855f7',
+    warehouse: '#0078A0',
+  };
+  const color = colorMap[type || ''] || '#6b7280';
+  const size = isSelected ? 16 : 12;
+  return L.divIcon({
+    className: '',
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+    html: `<div style="width:${size}px;height:${size}px;border-radius:50%;background:${color};border:2px solid white;box-shadow:0 1px 3px rgba(0,0,0,0.4);cursor:pointer;${isSelected ? 'outline:2px solid ' + color + ';outline-offset:2px;' : ''}"></div>`,
+  });
+}
+
+// Warehouse icon
+function createWarehouseIcon(): L.DivIcon {
+  return L.divIcon({
+    className: '',
+    iconSize: [28, 28],
+    iconAnchor: [14, 14],
+    html: `<div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#0078A0,#006080);border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;cursor:pointer;">
+      <div style="width:8px;height:8px;border-radius:50%;background:white;"></div>
+    </div>`,
+  });
+}
+
 interface RouteMapViewProps {
   onRouteClick?: (route: Route) => void;
 }
@@ -30,15 +69,44 @@ interface RouteMapViewProps {
 export function RouteMapView({ onRouteClick }: RouteMapViewProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
+  const facilityMarkersRef = useRef<L.Marker[]>([]);
+  const warehouseMarkersRef = useRef<L.Marker[]>([]);
   const [mapReady, setMapReady] = useState(false);
   const [showServiceAreas, setShowServiceAreas] = useState(true);
   const [showZones, setShowZones] = useState(true);
+  const [showFacilities, setShowFacilities] = useState(true);
+  const [showWarehouses, setShowWarehouses] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [selectedFacility, setSelectedFacility] = useState<FacilityClickPayload | null>(null);
   const [selectedRouteInsights, setSelectedRouteInsights] = useState<RouteInsightsData | null>(null);
+  const [coordinates, setCoordinates] = useState<{ lat: number; lng: number; zoom: number } | null>(null);
 
   const { data: routes } = useRoutes();
   const { data: serviceAreas } = useServiceAreas();
   const { data: operationalZones } = useOperationalZones();
+  const { data: facilitiesData } = useFacilities();
+  const facilities = facilitiesData?.facilities ?? [];
+
+  // Fetch warehouses for map display
+  const { data: warehousesList } = useQuery({
+    queryKey: ['warehouses-map'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('warehouses')
+        .select('id, name, lat, lng, type')
+        .not('lat', 'is', null)
+        .not('lng', 'is', null);
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const toggleFullscreen = useCallback(() => {
+    setIsFullscreen(prev => !prev);
+    // Invalidate map size after transition
+    setTimeout(() => mapRef.current?.invalidateSize(), 100);
+  }, []);
 
   // ── Route facilities batch query ──
   const routeIds = useMemo(() => (routes || []).map(r => r.id), [routes]);
@@ -100,7 +168,7 @@ export function RouteMapView({ onRouteClick }: RouteMapViewProps) {
     const map = L.map(mapContainerRef.current, {
       center: DEFAULT_CENTER,
       zoom: DEFAULT_ZOOM,
-      zoomControl: true,
+      zoomControl: false,
     });
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -110,6 +178,15 @@ export function RouteMapView({ onRouteClick }: RouteMapViewProps) {
 
     mapRef.current = map;
     setMapReady(true);
+
+    // Track coordinates and zoom
+    const updateCoords = () => {
+      const center = map.getCenter();
+      setCoordinates({ lat: center.lat, lng: center.lng, zoom: map.getZoom() });
+    };
+    map.on('moveend', updateCoords);
+    map.on('zoomend', updateCoords);
+    updateCoords();
 
     return () => {
       map.remove();
@@ -288,6 +365,75 @@ export function RouteMapView({ onRouteClick }: RouteMapViewProps) {
       }));
   }, [operationalZones]);
 
+  // ── Facility markers on map ──
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady) return;
+
+    // Clear previous facility markers
+    facilityMarkersRef.current.forEach(m => m.remove());
+    facilityMarkersRef.current = [];
+
+    if (!showFacilities) return;
+
+    facilities.forEach((f: any) => {
+      if (typeof f.lat !== 'number' || typeof f.lng !== 'number') return;
+      if (f.lat === 0 && f.lng === 0) return;
+
+      const marker = L.marker([f.lat, f.lng], { icon: createFacilityIcon(f.type) })
+        .bindPopup(`
+          <div style="min-width:180px">
+            <strong>${f.name}</strong><br/>
+            <span style="color:#666;font-size:12px">${f.type || 'Facility'} ${f.level_of_care ? '&middot; ' + f.level_of_care : ''}</span><br/>
+            <span style="font-size:11px;color:#888">${f.lga || ''} ${f.ward ? '&middot; ' + f.ward : ''}</span><br/>
+            <span style="font-size:11px;color:#999">${f.lat.toFixed(6)}, ${f.lng.toFixed(6)}</span>
+          </div>
+        `)
+        .addTo(map);
+
+      marker.on('click', () => {
+        setSelectedFacility({
+          facilityId: f.id,
+          facilityName: f.name,
+          lat: f.lat,
+          lng: f.lng,
+          type: f.type,
+          lga: f.lga,
+        } as FacilityClickPayload);
+        setSelectedRouteInsights(null);
+      });
+
+      facilityMarkersRef.current.push(marker);
+    });
+  }, [mapReady, facilities, showFacilities]);
+
+  // ── Warehouse markers on map ──
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady) return;
+
+    warehouseMarkersRef.current.forEach(m => m.remove());
+    warehouseMarkersRef.current = [];
+
+    if (!showWarehouses || !warehousesList) return;
+
+    warehousesList.forEach((wh: any) => {
+      if (typeof wh.lat !== 'number' || typeof wh.lng !== 'number') return;
+
+      const marker = L.marker([wh.lat, wh.lng], { icon: createWarehouseIcon(), zIndexOffset: 1000 })
+        .bindPopup(`
+          <div style="min-width:150px">
+            <strong>${wh.name}</strong><br/>
+            <span style="color:#0078A0;font-size:12px">${wh.type || 'Warehouse'}</span><br/>
+            <span style="font-size:11px;color:#999">${wh.lat.toFixed(6)}, ${wh.lng.toFixed(6)}</span>
+          </div>
+        `)
+        .addTo(map);
+
+      warehouseMarkersRef.current.push(marker);
+    });
+  }, [mapReady, warehousesList, showWarehouses]);
+
   // ── Handlers ──
   const handleFacilityClick = (payload: FacilityClickPayload) => {
     setSelectedFacility(payload);
@@ -298,13 +444,12 @@ export function RouteMapView({ onRouteClick }: RouteMapViewProps) {
     const route = routes?.find(r => r.id === routeId);
     if (!route) return;
 
-    const facilities = facilitiesByRoute.get(route.id) || [];
+    const routeFacilities = facilitiesByRoute.get(route.id) || [];
     const wh = route.warehouses;
 
-    // Compute total distance along route path
     let totalDist: number | null = route.total_distance_km;
-    if (totalDist == null && facilities.length > 0 && wh?.lat != null && wh?.lng != null) {
-      const sorted = [...facilities].sort((a, b) => a.sequence_order - b.sequence_order);
+    if (totalDist == null && routeFacilities.length > 0 && wh?.lat != null && wh?.lng != null) {
+      const sorted = [...routeFacilities].sort((a, b) => a.sequence_order - b.sequence_order);
       let dist = calculateDistance(wh.lat, wh.lng, sorted[0].lat, sorted[0].lng);
       for (let i = 1; i < sorted.length; i++) {
         dist += calculateDistance(sorted[i - 1].lat, sorted[i - 1].lng, sorted[i].lat, sorted[i].lng);
@@ -317,13 +462,13 @@ export function RouteMapView({ onRouteClick }: RouteMapViewProps) {
       routeName: route.name,
       status: route.status,
       isSandbox: route.is_sandbox,
-      facilityCount: facilities.length,
+      facilityCount: routeFacilities.length,
       totalDistanceKm: totalDist,
       estimatedDurationMin: route.estimated_duration_min,
       warehouseName: wh?.name || 'Unknown',
       warehouseLat: wh?.lat ?? 0,
       warehouseLng: wh?.lng ?? 0,
-      facilities: facilities.map(f => ({ lat: f.lat, lng: f.lng, name: f.name })),
+      facilities: routeFacilities.map(f => ({ lat: f.lat, lng: f.lng, name: f.name })),
     });
     setSelectedFacility(null);
 
@@ -335,21 +480,36 @@ export function RouteMapView({ onRouteClick }: RouteMapViewProps) {
     setSelectedRouteInsights(null);
   };
 
+  const handleLocate = () => {
+    const map = mapRef.current;
+    if (!map) return;
+    // Fit to all facility and warehouse markers
+    const bounds = L.latLngBounds([]);
+    facilityMarkersRef.current.forEach(m => bounds.extend(m.getLatLng()));
+    warehouseMarkersRef.current.forEach(m => bounds.extend(m.getLatLng()));
+    if (bounds.isValid()) map.fitBounds(bounds, { padding: [40, 40] });
+  };
+
   return (
-    <Card>
-      <CardContent className="p-0">
-        <div className="relative">
+    <Card className={cn(
+      isFullscreen && 'fixed inset-0 z-50 rounded-none border-none m-0'
+    )}>
+      <CardContent className="p-0 h-full">
+        <div className={cn('relative', isFullscreen ? 'h-full' : '')}>
           <div
             ref={mapContainerRef}
-            className="w-full h-[600px] rounded-lg overflow-hidden"
+            className={cn(
+              'w-full rounded-lg overflow-hidden',
+              isFullscreen ? 'h-full rounded-none' : 'h-[600px]'
+            )}
           />
 
-          {/* Layer toggles */}
-          <div className="absolute top-3 left-12 z-[1000] flex gap-1.5">
+          {/* ── Layer toggles (top-left) ── */}
+          <div className="absolute top-3 left-12 z-[1000] flex flex-wrap gap-1.5">
             <Button
               variant={showZones ? 'default' : 'outline'}
               size="sm"
-              className="h-8 gap-1.5 shadow-md"
+              className="h-8 gap-1.5 shadow-md bg-background/95 backdrop-blur-sm"
               onClick={() => setShowZones(prev => !prev)}
             >
               <MapIcon className="h-3.5 w-3.5" />
@@ -358,17 +518,149 @@ export function RouteMapView({ onRouteClick }: RouteMapViewProps) {
             <Button
               variant={showServiceAreas ? 'default' : 'outline'}
               size="sm"
-              className="h-8 gap-1.5 shadow-md"
+              className="h-8 gap-1.5 shadow-md bg-background/95 backdrop-blur-sm"
               onClick={() => setShowServiceAreas(prev => !prev)}
             >
               <Layers className="h-3.5 w-3.5" />
               Areas
             </Button>
+            <Button
+              variant={showFacilities ? 'default' : 'outline'}
+              size="sm"
+              className="h-8 gap-1.5 shadow-md bg-background/95 backdrop-blur-sm"
+              onClick={() => setShowFacilities(prev => !prev)}
+            >
+              <Building2 className="h-3.5 w-3.5" />
+              Facilities
+            </Button>
+            <Button
+              variant={showWarehouses ? 'default' : 'outline'}
+              size="sm"
+              className="h-8 gap-1.5 shadow-md bg-background/95 backdrop-blur-sm"
+              onClick={() => setShowWarehouses(prev => !prev)}
+            >
+              <Warehouse className="h-3.5 w-3.5" />
+              Warehouses
+            </Button>
           </div>
 
-          {/* Insights overlay */}
+          {/* ── Map controls (top-right) ── */}
+          <div className="absolute top-3 right-3 z-[1000] flex flex-col gap-1.5">
+            {/* Fullscreen toggle */}
+            <div
+              style={{
+                background: '#fff',
+                borderRadius: 4,
+                boxShadow: '0 0 0 2px rgba(0,0,0,0.1)',
+                overflow: 'hidden',
+              }}
+            >
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={toggleFullscreen}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: 29,
+                      height: 29,
+                      padding: 0,
+                      border: 'none',
+                      background: 'transparent',
+                      cursor: 'pointer',
+                    }}
+                    aria-label={isFullscreen ? 'Exit fullscreen' : 'Expand map'}
+                  >
+                    {isFullscreen ? (
+                      <Minimize2 style={{ width: 15, height: 15, color: '#333' }} />
+                    ) : (
+                      <Maximize2 style={{ width: 15, height: 15, color: '#333' }} />
+                    )}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="left">
+                  {isFullscreen ? 'Exit fullscreen' : 'Expand map'}
+                </TooltipContent>
+              </Tooltip>
+            </div>
+
+            {/* Zoom controls */}
+            <div
+              style={{
+                background: '#fff',
+                borderRadius: 4,
+                boxShadow: '0 0 0 2px rgba(0,0,0,0.1)',
+                overflow: 'hidden',
+              }}
+            >
+              <button
+                onClick={() => mapRef.current?.zoomIn()}
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  width: 29, height: 29, border: 'none', background: 'transparent', cursor: 'pointer',
+                }}
+                aria-label="Zoom in"
+              >
+                <ZoomIn style={{ width: 15, height: 15, color: '#333' }} />
+              </button>
+              <div style={{ borderTop: '1px solid #ddd' }} />
+              <button
+                onClick={() => mapRef.current?.zoomOut()}
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  width: 29, height: 29, border: 'none', background: 'transparent', cursor: 'pointer',
+                }}
+                aria-label="Zoom out"
+              >
+                <ZoomOut style={{ width: 15, height: 15, color: '#333' }} />
+              </button>
+            </div>
+
+            {/* Locate / fit bounds */}
+            <div
+              style={{
+                background: '#fff',
+                borderRadius: 4,
+                boxShadow: '0 0 0 2px rgba(0,0,0,0.1)',
+                overflow: 'hidden',
+              }}
+            >
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={handleLocate}
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      width: 29, height: 29, border: 'none', background: 'transparent', cursor: 'pointer',
+                    }}
+                    aria-label="Fit to data"
+                  >
+                    <LocateFixed style={{ width: 15, height: 15, color: '#333' }} />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="left">Fit to data</TooltipContent>
+              </Tooltip>
+            </div>
+          </div>
+
+          {/* ── Coordinate HUD (bottom-left) ── */}
+          {coordinates && (
+            <div className="absolute bottom-3 left-3 z-[1000] flex items-center gap-2 px-2.5 py-1.5 rounded-md bg-background/90 backdrop-blur-sm shadow text-xs font-mono text-muted-foreground">
+              <Crosshair className="h-3 w-3" />
+              <span>{coordinates.lat.toFixed(6)}, {coordinates.lng.toFixed(6)}</span>
+              <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">
+                z{coordinates.zoom.toFixed(0)}
+              </Badge>
+            </div>
+          )}
+
+          {/* ── Insights overlay ── */}
           {(selectedFacility || selectedRouteInsights) && (
-            <div className="absolute top-3 right-3 z-[1000] w-72">
+            <div className={cn(
+              'absolute z-[1000] w-72',
+              isFullscreen ? 'top-14 right-3' : 'top-14 right-3'
+            )}>
               <MapInsightsOverlay
                 selectedFacility={selectedFacility}
                 selectedRoute={selectedRouteInsights}

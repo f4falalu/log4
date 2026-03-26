@@ -248,6 +248,124 @@ export function isPast(dateString: string): boolean {
 }
 
 // =====================================================
+// GEO HELPERS
+// =====================================================
+
+/**
+ * Calculate distance between two lat/lng points using Haversine formula.
+ * Returns distance in kilometers.
+ */
+export function haversineDistance(
+  lat1: number,
+  lng1: number,
+  lat2: number,
+  lng2: number
+): number {
+  const R = 6371; // Earth's radius in km
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLng / 2) *
+      Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+/** Average driving speed assumption in km/h for duration estimates */
+const AVG_SPEED_KMH = 40;
+/** Average service time per stop in minutes */
+const SERVICE_TIME_MIN = 15;
+
+export interface RouteStopInfo {
+  facility_id: string;
+  facility_name: string;
+  lga?: string;
+  lat: number;
+  lng: number;
+  sequence: number;
+  distance_from_prev_km: number;
+  cumulative_distance_km: number;
+  eta_minutes: number; // minutes from departure
+}
+
+/**
+ * Compute route metrics from an ordered list of facility IDs.
+ * Returns per-stop info plus totals.
+ */
+export function computeRouteMetrics(
+  facilityIds: string[],
+  facilityMap: Record<string, { name: string; lat: number; lng: number; lga?: string }>,
+  startLocation?: { lat: number; lng: number } | null
+): {
+  stops: RouteStopInfo[];
+  totalDistanceKm: number;
+  estimatedDurationMin: number;
+} {
+  const stops: RouteStopInfo[] = [];
+  let cumulativeDist = 0;
+  let cumulativeTime = 0;
+
+  for (let i = 0; i < facilityIds.length; i++) {
+    const fid = facilityIds[i];
+    const facility = facilityMap[fid];
+    if (!facility || !facility.lat || !facility.lng) {
+      stops.push({
+        facility_id: fid,
+        facility_name: facility?.name || 'Unknown',
+        lga: facility?.lga,
+        lat: facility?.lat || 0,
+        lng: facility?.lng || 0,
+        sequence: i + 1,
+        distance_from_prev_km: 0,
+        cumulative_distance_km: cumulativeDist,
+        eta_minutes: cumulativeTime,
+      });
+      cumulativeTime += SERVICE_TIME_MIN;
+      continue;
+    }
+
+    let segmentDist = 0;
+    if (i === 0 && startLocation?.lat && startLocation?.lng) {
+      segmentDist = haversineDistance(startLocation.lat, startLocation.lng, facility.lat, facility.lng);
+    } else if (i > 0) {
+      const prev = facilityMap[facilityIds[i - 1]];
+      if (prev?.lat && prev?.lng) {
+        segmentDist = haversineDistance(prev.lat, prev.lng, facility.lat, facility.lng);
+      }
+    }
+
+    // Road distance is typically ~1.3x straight-line distance
+    segmentDist *= 1.3;
+    cumulativeDist += segmentDist;
+    const driveTime = (segmentDist / AVG_SPEED_KMH) * 60;
+    cumulativeTime += driveTime;
+
+    stops.push({
+      facility_id: fid,
+      facility_name: facility.name,
+      lga: facility.lga,
+      lat: facility.lat,
+      lng: facility.lng,
+      sequence: i + 1,
+      distance_from_prev_km: segmentDist,
+      cumulative_distance_km: cumulativeDist,
+      eta_minutes: cumulativeTime,
+    });
+
+    cumulativeTime += SERVICE_TIME_MIN;
+  }
+
+  return {
+    stops,
+    totalDistanceKm: cumulativeDist,
+    estimatedDurationMin: Math.round(cumulativeTime),
+  };
+}
+
+// =====================================================
 // BATCH HELPERS
 // =====================================================
 

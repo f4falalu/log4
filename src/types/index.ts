@@ -43,6 +43,7 @@ export interface Facility {
   // lat/lng are (19)
   storage_capacity?: number; // Additional field
   zone_id?: string; // Operational zone assignment
+  workspace_id?: string; // Workspace isolation
 
   // Metadata
   created_at?: string;

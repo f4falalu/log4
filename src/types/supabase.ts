@@ -4115,6 +4115,7 @@ export type Database = {
           updated_at: string
           updated_by: string | null
           warehouse_id: string
+          workspace_id: string
           zone_id: string
         }
         Insert: {
@@ -4136,6 +4137,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           warehouse_id: string
+          workspace_id: string
           zone_id: string
         }
         Update: {
@@ -4157,9 +4159,18 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           warehouse_id?: string
+          workspace_id?: string
           zone_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "routes_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       schedule_templates: {
         Row: {
@@ -4702,6 +4713,7 @@ export type Database = {
           updated_at: string
           updated_by: string | null
           warehouse_id: string
+          workspace_id: string
           zone_id: string
         }
         Insert: {
@@ -4720,6 +4732,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           warehouse_id: string
+          workspace_id: string
           zone_id: string
         }
         Update: {
@@ -4738,6 +4751,7 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           warehouse_id?: string
+          workspace_id?: string
           zone_id?: string
         }
         Relationships: [
@@ -4746,6 +4760,13 @@ export type Database = {
             columns: ["warehouse_id"]
             isOneToOne: false
             referencedRelation: "warehouses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_areas_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
           {
@@ -10523,10 +10544,11 @@ export type Database = {
       get_effective_permissions: {
         Args: { p_user_id: string; p_workspace_id: string }
         Returns: {
+          category: string
           description: string
           granted: boolean
-          module: string
           permission_code: string
+          permission_id: string
           source: string
         }[]
       }
@@ -11030,7 +11052,19 @@ export type Database = {
         Args: { p_role: string; p_user_id: string }
         Returns: boolean
       }
+      reset_member_overrides: {
+        Args: { p_member_user_id: string; p_workspace_id: string }
+        Returns: undefined
+      }
       revoke_invitation: { Args: { p_invitation_id: string }; Returns: boolean }
+      save_member_overrides: {
+        Args: {
+          p_grant_ids: string[]
+          p_member_user_id: string
+          p_workspace_id: string
+        }
+        Returns: undefined
+      }
       save_onboarding_step: {
         Args: { p_step: string; p_workspace_id: string }
         Returns: undefined
@@ -11662,6 +11696,14 @@ export type Database = {
       }
       unaccent: { Args: { "": string }; Returns: string }
       unlockrows: { Args: { "": string }; Returns: number }
+      update_member_role_v2: {
+        Args: {
+          p_member_user_id: string
+          p_role_code: string
+          p_workspace_id: string
+        }
+        Returns: undefined
+      }
       update_session_heartbeat: {
         Args: { p_session_id: string }
         Returns: boolean
@@ -12033,4 +12075,3 @@ export const Constants = {
     },
   },
 } as const
-

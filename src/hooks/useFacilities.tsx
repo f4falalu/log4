@@ -49,6 +49,7 @@ function mapDbToFacility(dbFacility: any): Facility {
     email: dbFacility.email || undefined,
     storage_capacity: dbFacility.storage_capacity || undefined,
     zone_id: dbFacility.zone_id || undefined,
+    workspace_id: dbFacility.workspace_id || undefined,
     created_at: dbFacility.created_at,
     updated_at: dbFacility.updated_at,
     created_by: dbFacility.created_by,
@@ -61,8 +62,8 @@ function mapDbToFacility(dbFacility: any): Facility {
 /**
  * Maps TypeScript Facility to database insert format
  */
-function mapFacilityToDb(facility: Partial<Facility>) {
-  return {
+function mapFacilityToDb(facility: Partial<Facility>, workspaceId?: string) {
+  const dbObj: Record<string, unknown> = {
     name: facility.name,
     address: facility.address,
     lat: facility.lat,
@@ -89,7 +90,16 @@ function mapFacilityToDb(facility: Partial<Facility>) {
     phone_pharmacy: facility.phone_pharmacy || null,
     email: facility.email || null,
     storage_capacity: facility.storage_capacity || null,
+    zone_id: facility.zone_id || null,
   };
+
+  // Include workspace_id: prefer explicit param, then facility field
+  const wsId = workspaceId || facility.workspace_id;
+  if (wsId) {
+    dbObj.workspace_id = wsId;
+  }
+
+  return dbObj;
 }
 
 // ========================================
@@ -221,15 +231,18 @@ export function useFacility(id: string | undefined): UseQueryResult<Facility, Er
  */
 export function useCreateFacility() {
   const queryClient = useQueryClient();
+  const { workspaceId } = useWorkspace();
 
   return useMutation({
     mutationFn: async (facility: Partial<Facility>) => {
+      if (!workspaceId) throw new Error('No workspace selected');
+
       // Generate warehouse code if not provided
       if (!facility.warehouse_code) {
         facility.warehouse_code = await generateWarehouseCode(facility.service_zone);
       }
 
-      const dbFacility = mapFacilityToDb(facility);
+      const dbFacility = mapFacilityToDb(facility, workspaceId);
 
       const { data, error } = await supabase
         .from('facilities')

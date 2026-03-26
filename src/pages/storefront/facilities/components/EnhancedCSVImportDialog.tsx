@@ -53,6 +53,7 @@ import { useOperationalZones } from '@/hooks/useOperationalZones';
 import { useAllLGAsWithZones } from '@/hooks/useAdminUnits';
 import { batchGenerateWarehouseCodes } from '@/lib/warehouse-code-generator';
 import { chunk } from '@/lib/utils';
+import { useWorkspace } from '@/contexts/WorkspaceContext';
 
 interface EnhancedCSVImportDialogProps {
   open: boolean;
@@ -85,6 +86,7 @@ export function EnhancedCSVImportDialog({ open, onOpenChange }: EnhancedCSVImpor
   const [mergeResult, setMergeResult] = useState<MergeResult | null>(null);
 
   const queryClient = useQueryClient();
+  const { workspaceId } = useWorkspace();
 
   // Fetch DB reference data for normalization and validation
   const { data: facilityTypes = [] } = useFacilityTypes();
@@ -350,6 +352,7 @@ export function EnhancedCSVImportDialog({ open, onOpenChange }: EnhancedCSVImpor
       storage_capacity: parseCsvNumber(String(row.storage_capacity ?? '')) || null,
       // DB-linked foreign keys from normalization
       zone_id: normalizedRow?.dbMatches?.zone?.id || null,
+      workspace_id: workspaceId,
     };
   };
 
