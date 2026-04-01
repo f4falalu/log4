@@ -1,11 +1,12 @@
 /**
- * AI Dimension Assistant Button
- * Allows users to upload a vehicle photo for AI-powered dimension estimation
+ * AI Dimension Assistant - Multi-View Upload
+ * Upload Front, Side, Rear, and Interior photos for AI-powered dimension estimation.
+ * Any combination of views can be uploaded; more views = higher confidence.
  */
 
 import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Upload, Sparkles, Loader2 } from 'lucide-react';
+import { Camera, Sparkles, Loader2, X, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -15,19 +16,52 @@ interface AiDimensionButtonProps {
   onProcessingChange: (processing: boolean) => void;
 }
 
+type ViewAngle = 'front' | 'side' | 'rear' | 'interior';
+
+interface ViewConfig {
+  key: ViewAngle;
+  label: string;
+  description: string;
+}
+
+const VIEW_CONFIGS: ViewConfig[] = [
+  { key: 'front', label: 'Front', description: 'Front view of vehicle' },
+  { key: 'side', label: 'Side', description: 'Side profile view' },
+  { key: 'rear', label: 'Rear', description: 'Rear / cargo door view' },
+  { key: 'interior', label: 'Interior', description: 'Cargo area interior' },
+];
+
 export function AiDimensionButton({
   onAnalysisComplete,
   isProcessing,
   onProcessingChange,
 }: AiDimensionButtonProps) {
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedFiles, setSelectedFiles] = useState<Record<ViewAngle, File | null>>({
+    front: null,
+    side: null,
+    rear: null,
+    interior: null,
+  });
+  const [previews, setPreviews] = useState<Record<ViewAngle, string | null>>({
+    front: null,
+    side: null,
+    rear: null,
+    interior: null,
+  });
+  const fileInputRefs = useRef<Record<ViewAngle, HTMLInputElement | null>>({
+    front: null,
+    side: null,
+    rear: null,
+    interior: null,
+  });
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const uploadedCount = Object.values(selectedFiles).filter(Boolean).length;
+  const hasAnyFile = uploadedCount > 0;
+
+  const handleFileSelect = (view: ViewAngle, event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
     if (!file.type.startsWith('image/')) {
       toast.error('Invalid file type', {
         description: 'Please upload an image file (JPG, PNG, etc.)',
@@ -35,7 +69,6 @@ export function AiDimensionButton({
       return;
     }
 
-    // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       toast.error('File too large', {
         description: 'Please upload an image smaller than 5MB',
@@ -43,29 +76,49 @@ export function AiDimensionButton({
       return;
     }
 
-    setSelectedFile(file);
-    processImage(file);
+    setSelectedFiles((prev) => ({ ...prev, [view]: file }));
+
+    // Generate preview
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setPreviews((prev) => ({ ...prev, [view]: e.target?.result as string }));
+    };
+    reader.readAsDataURL(file);
   };
 
-  const processImage = async (file: File) => {
+  const removeFile = (view: ViewAngle) => {
+    setSelectedFiles((prev) => ({ ...prev, [view]: null }));
+    setPreviews((prev) => ({ ...prev, [view]: null }));
+    const input = fileInputRefs.current[view];
+    if (input) input.value = '';
+  };
+
+  const processAllImages = async () => {
+    if (!hasAnyFile) return;
+
     onProcessingChange(true);
 
     try {
-      // Convert file to base64
-      const base64 = await fileToBase64(file);
+      // Convert all selected files to base64
+      const imagePayload: Record<string, string> = {};
+      for (const [view, file] of Object.entries(selectedFiles)) {
+        if (file) {
+          imagePayload[view] = await fileToBase64(file);
+        }
+      }
 
-      // Call AI capacity estimation edge function
+      // Call AI capacity estimation edge function with multiple views
       const { data, error } = await supabase.functions.invoke('ai-capacity-estimation', {
         body: {
-          image: base64,
-          method: 'vision', // Use AI vision analysis
+          images: imagePayload,
+          views: Object.keys(imagePayload),
+          method: 'vision-multi',
         },
       });
 
       if (error) throw error;
 
       if (data && data.success) {
-        // Simulate dimension breakdown (enhance this when AI function returns dimensions)
         const analysis = {
           dimensions_cm: data.dimensions || estimateDimensions(data.capacity_volume_m3),
           volume_m3: data.capacity_volume_m3 || 10,
@@ -77,66 +130,121 @@ export function AiDimensionButton({
             lower: 3,
           },
           confidence: data.confidence || 0.75,
+          views_analyzed: Object.keys(imagePayload).length,
         };
 
         onAnalysisComplete(analysis);
 
         toast.success('AI Analysis Complete', {
-          description: `Volume: ${analysis.volume_m3.toFixed(2)} m³, Payload: ${analysis.max_payload_kg} kg (Confidence: ${Math.round(analysis.confidence * 100)}%)`,
+          description: `Analyzed ${analysis.views_analyzed} view${analysis.views_analyzed > 1 ? 's' : ''} — Volume: ${analysis.volume_m3.toFixed(2)} m³, Payload: ${analysis.max_payload_kg} kg (${Math.round(analysis.confidence * 100)}% confidence)`,
         });
+
+        // Clear files after successful analysis
+        setSelectedFiles({ front: null, side: null, rear: null, interior: null });
+        setPreviews({ front: null, side: null, rear: null, interior: null });
       } else {
         throw new Error('No analysis data returned');
       }
     } catch (error) {
       console.error('AI analysis error:', error);
       toast.error('AI Analysis Failed', {
-        description: error instanceof Error ? error.message : 'Unable to analyze vehicle image. Please enter dimensions manually.',
+        description:
+          error instanceof Error
+            ? error.message
+            : 'Unable to analyze vehicle images. Please enter dimensions manually.',
       });
     } finally {
       onProcessingChange(false);
-      setSelectedFile(null);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
     }
-  };
-
-  const handleButtonClick = () => {
-    fileInputRef.current?.click();
   };
 
   return (
     <div className="space-y-3">
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={handleFileSelect}
-      />
+      {/* 2x2 Grid of Upload Zones */}
+      <div className="grid grid-cols-2 gap-2">
+        {VIEW_CONFIGS.map((view) => {
+          const file = selectedFiles[view.key];
+          const preview = previews[view.key];
 
-      <Button
-        type="button"
-        variant="outline"
-        className="w-full"
-        onClick={handleButtonClick}
-        disabled={isProcessing}
-      >
-        {isProcessing ? (
-          <>
-            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            Analyzing image...
-          </>
-        ) : (
-          <>
-            <Sparkles className="w-4 h-4 mr-2" />
-            Auto-fill using vehicle photo
-          </>
-        )}
-      </Button>
+          return (
+            <div key={view.key} className="relative">
+              <input
+                ref={(el) => { fileInputRefs.current[view.key] = el; }}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => handleFileSelect(view.key, e)}
+              />
 
-      <p className="text-xs text-muted-foreground text-center">
-        Upload a side-profile photo for AI-powered dimension estimation
+              {preview ? (
+                /* Uploaded preview */
+                <div className="relative group rounded-lg overflow-hidden border border-primary/30 bg-muted/20">
+                  <img
+                    src={preview}
+                    alt={`${view.label} view`}
+                    className="w-full h-20 object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <button
+                      type="button"
+                      onClick={() => removeFile(view.key)}
+                      className="p-1 rounded-full bg-white/90 text-destructive hover:bg-white"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  <div className="absolute bottom-0 left-0 right-0 px-1.5 py-0.5 bg-black/50 flex items-center gap-1">
+                    <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                    <span className="text-[10px] font-medium text-white">{view.label}</span>
+                  </div>
+                </div>
+              ) : (
+                /* Empty upload placeholder */
+                <button
+                  type="button"
+                  onClick={() => fileInputRefs.current[view.key]?.click()}
+                  disabled={isProcessing}
+                  className="w-full h-20 rounded-lg border-2 border-dashed border-muted-foreground/25 hover:border-primary/40 hover:bg-primary/5 transition-colors flex flex-col items-center justify-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <Camera className="w-4 h-4 text-muted-foreground/60" />
+                  <span className="text-[10px] font-medium text-muted-foreground/70">
+                    {view.label}
+                  </span>
+                </button>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Upload count & process button */}
+      <div className="flex items-center gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          className="flex-1"
+          onClick={processAllImages}
+          disabled={isProcessing || !hasAnyFile}
+        >
+          {isProcessing ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Analyzing {uploadedCount} view{uploadedCount !== 1 ? 's' : ''}...
+            </>
+          ) : (
+            <>
+              <Sparkles className="w-4 h-4 mr-2" />
+              {hasAnyFile
+                ? `Analyze ${uploadedCount} view${uploadedCount !== 1 ? 's' : ''}`
+                : 'Upload photos to analyze'}
+            </>
+          )}
+        </Button>
+      </div>
+
+      <p className="text-[10px] text-muted-foreground text-center leading-tight">
+        Upload Front, Side, Rear &amp; Interior photos for AI-powered auto-configuration.
+        More views = higher accuracy.
       </p>
     </div>
   );
@@ -151,7 +259,6 @@ function fileToBase64(file: File): Promise<string> {
     reader.readAsDataURL(file);
     reader.onload = () => {
       const result = reader.result as string;
-      // Remove data URL prefix
       const base64 = result.split(',')[1];
       resolve(base64);
     };
@@ -160,16 +267,13 @@ function fileToBase64(file: File): Promise<string> {
 }
 
 /**
- * Estimate dimensions from volume (simple cubic root approach)
- * This is a fallback when AI doesn't return dimensions
+ * Estimate dimensions from volume (fallback when AI doesn't return dimensions)
  */
 function estimateDimensions(volumeM3: number): { length: number; width: number; height: number } {
-  // Assume typical truck/van proportions (2:1:1.2 ratio)
   const cubeRoot = Math.cbrt(volumeM3);
-
   return {
-    length: Math.round(cubeRoot * 200 * 100), // Convert to cm, adjust for length
-    width: Math.round(cubeRoot * 100 * 100), // Convert to cm
-    height: Math.round(cubeRoot * 120 * 100), // Convert to cm, adjust for height
+    length: Math.round(cubeRoot * 200 * 100),
+    width: Math.round(cubeRoot * 100 * 100),
+    height: Math.round(cubeRoot * 120 * 100),
   };
 }

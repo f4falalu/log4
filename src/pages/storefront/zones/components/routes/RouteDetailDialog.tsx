@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { Lock, Trash2, Archive, Clock, MapPin, Activity } from 'lucide-react';
 import {
   Dialog,
@@ -20,7 +21,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useRouteFacilities, useDeleteRoute, useLockRoute, useUpdateRoute } from '@/hooks/useRoutes';
-import type { Route } from '@/types/routes';
+import type { Route, RouteFacility } from '@/types/routes';
+import { calculateDistance } from '@/lib/routeOptimization';
 
 const statusColors: Record<string, string> = {
   draft: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
@@ -43,6 +45,41 @@ export function RouteDetailDialog({ route, open, onOpenChange }: RouteDetailDial
 
   const isLocked = route.status === 'locked';
   const isSandbox = route.is_sandbox;
+
+  // Compute distances from warehouse → first facility, then between consecutive facilities
+  const facilityDistances = useMemo(() => {
+    if (!facilities || facilities.length === 0) return new Map<string, number>();
+    const distances = new Map<string, number>();
+    const warehouseLat = route.warehouses?.lat;
+    const warehouseLng = route.warehouses?.lng;
+
+    facilities.forEach((rf: RouteFacility, idx: number) => {
+      // Use stored distance if available
+      if (rf.distance_from_previous_km != null) {
+        distances.set(rf.id, rf.distance_from_previous_km);
+        return;
+      }
+      const fLat = rf.facilities?.lat;
+      const fLng = rf.facilities?.lng;
+      if (fLat == null || fLng == null) return;
+
+      if (idx === 0) {
+        // Distance from warehouse to first facility
+        if (warehouseLat != null && warehouseLng != null) {
+          distances.set(rf.id, Math.round(calculateDistance(warehouseLat, warehouseLng, fLat, fLng) * 10) / 10);
+        }
+      } else {
+        // Distance from previous facility
+        const prev = facilities[idx - 1];
+        const pLat = prev.facilities?.lat;
+        const pLng = prev.facilities?.lng;
+        if (pLat != null && pLng != null) {
+          distances.set(rf.id, Math.round(calculateDistance(pLat, pLng, fLat, fLng) * 10) / 10);
+        }
+      }
+    });
+    return distances;
+  }, [facilities, route.warehouses]);
 
   const handleDelete = () => {
     if (confirm('Are you sure you want to delete this route?')) {
@@ -206,9 +243,11 @@ export function RouteDetailDialog({ route, open, onOpenChange }: RouteDetailDial
                         <TableCell>{rf.facilities?.level_of_care || '—'}</TableCell>
                         <TableCell>{rf.facilities?.lga || '—'}</TableCell>
                         <TableCell>
-                          {rf.distance_from_previous_km
-                            ? `${rf.distance_from_previous_km} km`
-                            : '—'}
+                          {(() => {
+                            const dist = facilityDistances.get(rf.id);
+                            if (dist == null) return '—';
+                            return `${dist} km`;
+                          })()}
                         </TableCell>
                       </TableRow>
                     ))}

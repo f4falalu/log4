@@ -183,9 +183,10 @@ export const useVehiclesStore = create<VehiclesState>()(
             .from(table)
             .select('*')
             .eq('id', id)
-            .single();
+            .maybeSingle();
 
           if (vehicleError) throw vehicleError;
+          if (!vehicle) throw new Error('Vehicle not found or not accessible in this workspace');
 
           // If using the base table (not view), fetch relationships separately
           const vehicleWithRelations = vehicle as unknown as VehicleWithRelations;
@@ -269,6 +270,7 @@ export const useVehiclesStore = create<VehiclesState>()(
             capacity_m3: (data as any).capacity_m3 ?? 0,
             capacity_kg: (data as any).capacity_kg ?? 0,
             capacity: (data as any).capacity ?? 0, // Legacy field
+            max_weight: (data as any).max_weight ?? (data as any).capacity_kg ?? (data as any).gross_weight_kg ?? 0,
             fuel_type: normalizeFuelType(data.fuel_type),
             status: normalizeStatus(data.status) as 'available' | 'in-use' | 'maintenance',
             created_by: userId,

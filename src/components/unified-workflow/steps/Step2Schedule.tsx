@@ -178,8 +178,8 @@ export function Step2Schedule({
             </LeftColumn>
           ) : (
             <LeftColumn
-              title="Available Facility Orders"
-              subtitle="Ready consignments from finalized requisitions"
+              title={sourceMethod === 'manual' ? 'All Facilities' : 'Available Facility Orders'}
+              subtitle={sourceMethod === 'manual' ? 'Select facilities to add to schedule' : 'Ready consignments from finalized requisitions'}
             >
               <SourceOfTruthColumn
                 candidates={candidates}

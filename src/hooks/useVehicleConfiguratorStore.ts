@@ -14,7 +14,9 @@ import type {
 import {
   calculateVolumeFromDimensions,
   createDefaultTierConfig,
+  calculateAutoTiersFromDimensions,
 } from '@/lib/vlms/capacityCalculations';
+import { getVehicleClassConstraints } from '@/lib/vlms/vehicleClassConstraints';
 
 export interface AiAnalysisResult {
   dimensions_cm: {
@@ -120,6 +122,7 @@ export interface VehicleConfiguratorState {
 
   updateTierSlots: (tierIndex: number, newSlotCount: number) => void;
   setTiers: (tiers: TierConfig[]) => void;
+  autoCalculateTiers: () => void;
 
   applyAiSuggestions: (analysis: AiAnalysisResult) => void;
   setAiProcessing: (processing: boolean) => void;
@@ -218,6 +221,12 @@ export const useVehicleConfiguratorStore = create<VehicleConfiguratorState>()(
         }
 
         set({ dimensions: updated, isDirty: true });
+
+        // Auto-recalculate tiers when all 3 dimensions are available
+        if (updated.length_cm && updated.width_cm && updated.height_cm) {
+          // Use setTimeout to let the state settle before recalculating
+          setTimeout(() => get().autoCalculateTiers(), 0);
+        }
       },
 
       updatePayload: (newPayload) => {
@@ -226,6 +235,12 @@ export const useVehicleConfiguratorStore = create<VehicleConfiguratorState>()(
           payload: { ...state.payload, ...newPayload },
           isDirty: true,
         });
+
+        // Auto-recalculate tiers when payload changes and dimensions exist
+        const dims = state.dimensions;
+        if (dims.length_cm && dims.width_cm && dims.height_cm) {
+          setTimeout(() => get().autoCalculateTiers(), 0);
+        }
       },
 
       setFuelType: (fuelType) => set({ fuelType, isDirty: true }),
@@ -267,8 +282,34 @@ export const useVehicleConfiguratorStore = create<VehicleConfiguratorState>()(
 
       setTiers: (tiers) => set({ tiers, isDirty: true }),
 
+      autoCalculateTiers: () => {
+        const state = get();
+        const { dimensions, payload, selectedCategory } = state;
+
+        if (!dimensions.length_cm || !dimensions.width_cm || !dimensions.height_cm) return;
+
+        // Get vehicle class constraints if category selected
+        const constraints = selectedCategory
+          ? getVehicleClassConstraints(selectedCategory.code)
+          : undefined;
+
+        const { tiers, interiorDimensions } = calculateAutoTiersFromDimensions(
+          dimensions.length_cm,
+          dimensions.width_cm,
+          dimensions.height_cm,
+          payload.max_payload_kg || 0,
+          constraints
+        );
+
+        set({
+          tiers,
+          interiorDimensions,
+          isDirty: true,
+        });
+      },
+
       applyAiSuggestions: (analysis) => {
-        const { dimensions_cm, volume_m3, max_payload_kg, recommended_tiers, recommended_slots } = analysis;
+        const { dimensions_cm, volume_m3, max_payload_kg } = analysis;
 
         // Apply dimensions
         set({
@@ -285,25 +326,21 @@ export const useVehicleConfiguratorStore = create<VehicleConfiguratorState>()(
           isDirty: true,
         });
 
-        // Apply tier recommendations
-        const tierNames = ['Upper', 'Middle', 'Lower'];
-        const newTiers: TierConfig[] = [];
+        // Auto-calculate tiers & interior from the new dimensions
+        const state = get();
+        const constraints = state.selectedCategory
+          ? getVehicleClassConstraints(state.selectedCategory.code)
+          : undefined;
 
-        for (let i = 0; i < recommended_tiers; i++) {
-          const tierName = tierNames[i] || `Tier ${i + 1}`;
-          const slotKey = tierName.toLowerCase() as keyof typeof recommended_slots;
-          const slotCount = recommended_slots[slotKey] || 3;
+        const { tiers, interiorDimensions } = calculateAutoTiersFromDimensions(
+          dimensions_cm.length,
+          dimensions_cm.width,
+          dimensions_cm.height,
+          max_payload_kg,
+          constraints
+        );
 
-          newTiers.push({
-            tier_name: tierName,
-            tier_order: i + 1,
-            max_weight_kg: Math.round(max_payload_kg / recommended_tiers),
-            max_volume_m3: Number((volume_m3 / recommended_tiers).toFixed(2)),
-            slot_count: slotCount,
-          });
-        }
-
-        set({ tiers: newTiers });
+        set({ tiers, interiorDimensions });
       },
 
       setAiProcessing: (processing) => set({ isAiProcessing: processing }),

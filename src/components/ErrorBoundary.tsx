@@ -32,9 +32,25 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    // Auto-reload on stale chunk errors (happens after deploys)
+    if (
+      error.message.includes('Failed to fetch dynamically imported module') ||
+      error.message.includes('Loading chunk') ||
+      error.name === 'ChunkLoadError'
+    ) {
+      const reloadKey = 'chunk_error_reload';
+      const lastReload = sessionStorage.getItem(reloadKey);
+      // Only auto-reload once per session to avoid infinite loops
+      if (!lastReload) {
+        sessionStorage.setItem(reloadKey, Date.now().toString());
+        window.location.reload();
+        return;
+      }
+    }
+
     // Log error to error reporting service
     this.logErrorToService(error, errorInfo);
-    
+
     // Update state with error details
     this.setState({
       error,

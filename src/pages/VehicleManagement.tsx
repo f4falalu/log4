@@ -21,7 +21,7 @@ import { VehicleTypeManager } from '@/components/vehicle/VehicleTypeManager';
 const VehicleManagement = () => {
   const { data: vehicles = [], isLoading } = useVehicles();
   const { createVehicle, updateVehicle, deleteVehicle, isCreating, isUpdating } = useVehicleManagement();
-  const { vehicleTypes } = useVehicleTypes();
+  const { data: vehicleTypes } = useVehicleTypes();
   const { hasPermission } = usePermissions();
   const { data: fleets = [] } = useFleets();
   const [isDialogOpen, setIsDialogOpen] = useState(false);

@@ -22,8 +22,9 @@ import { getDefaultConfig } from '@/lib/vlms/defaultVehicleConfigs';
 import { getVehicleClassConstraints } from '@/lib/vlms/vehicleClassConstraints';
 import { validateTierConfig, computeTotalSlots } from '@/lib/vlms/tierValidation';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle, CheckCircle2, ChevronLeft, ChevronRight, ArrowLeft, Sparkles, Eye } from 'lucide-react';
+import { AlertCircle, CheckCircle2, ChevronLeft, ChevronRight, ArrowLeft, Sparkles, Eye, Zap } from 'lucide-react';
 import { formatVolume, formatWeight } from '@/lib/vlms/capacityCalculations';
+import { toast } from 'sonner';
 import type { TierConfig } from '@/types/vlms-onboarding';
 
 interface VehicleConfiguratorProps {
@@ -162,6 +163,21 @@ export function VehicleConfigurator({ onSave, onCancel }: VehicleConfiguratorPro
     }
   }, [selectedCategory?.code]); // Only depend on category code change
 
+  const getMissingFields = (): string[] => {
+    const missing: string[] = [];
+    if (!selectedCategory) missing.push('Vehicle Category');
+    const hasDimensions = dimensions.length_cm && dimensions.width_cm && dimensions.height_cm;
+    const hasManualCapacity = dimensions.volume_m3 && payload.max_payload_kg;
+    if (!hasDimensions && !hasManualCapacity) missing.push('Dimensions or Capacity');
+    if (!modelName || modelName.trim() === '') missing.push('Model Name');
+    if (!licensePlate || licensePlate.trim() === '') missing.push('License Plate');
+    if (!year) missing.push('Year');
+    if (!fuelType || fuelType.trim() === '') missing.push('Fuel Type');
+    if (!dateAcquired || dateAcquired.trim() === '') missing.push('Date Acquired');
+    if (!acquisitionMode || acquisitionMode.trim() === '') missing.push('Acquisition Mode');
+    return missing;
+  };
+
   const handleSave = async () => {
     clearAllErrors();
     setTierValidationError(null);
@@ -177,11 +193,20 @@ export function VehicleConfigurator({ onSave, onCancel }: VehicleConfiguratorPro
 
       if (!tierValidation.is_valid) {
         setTierValidationError(tierValidation.validation_message);
+        toast.error('Tier configuration invalid', {
+          description: tierValidation.validation_message,
+        });
         return;
       }
     }
 
     if (!isValid()) {
+      const missing = getMissingFields();
+      toast.error('Required fields missing', {
+        description: missing.length > 0
+          ? `Please fill in: ${missing.join(', ')}`
+          : 'Please complete all required fields',
+      });
       return;
     }
 
@@ -203,17 +228,17 @@ export function VehicleConfigurator({ onSave, onCancel }: VehicleConfiguratorPro
     }
   };
 
-  const canSave = isValid() && isDirty && !isSaving && !isAiProcessing;
+  const canSave = !isSaving && !isAiProcessing;
 
   // Calculate cargo volume from dimensions
   const calculatedVolume = dimensions.volume_m3;
 
   return (
-    <div className="h-[calc(90vh-140px)] flex flex-col bg-background">
+    <div className="h-[calc(90vh-140px)] flex flex-col bg-background overflow-hidden">
       {/* Main Content Grid - INVERTED: Visual Left, Form Right */}
-      <div className="h-full grid lg:grid-cols-[1fr_400px] gap-6">
+      <div className="h-full grid lg:grid-cols-[1fr_420px] gap-0 min-h-0">
         {/* LEFT PANEL - Vehicle Visualizer */}
-        <div className="flex flex-col p-8 space-y-6 border-r overflow-hidden">
+        <div className="flex flex-col p-6 space-y-4 border-r overflow-y-auto min-h-0">
           {/* Category Header - Tesla/Arrival Style */}
           {selectedCategory && (
             <div className="mb-2">
@@ -232,7 +257,7 @@ export function VehicleConfigurator({ onSave, onCancel }: VehicleConfiguratorPro
           )}
 
           {/* Vehicle Visualizer with Embedded Carousel Navigation */}
-          <div className="relative h-[400px] flex items-center justify-center mb-6">
+          <div className="relative h-[320px] shrink-0 flex items-center justify-center">
             <VehicleVisualizer
               categoryCode={selectedCategory?.code || null}
               dimensions={dimensions}
@@ -270,8 +295,17 @@ export function VehicleConfigurator({ onSave, onCancel }: VehicleConfiguratorPro
             )}
           </div>
 
+          {/* Vehicle Category Carousel */}
+          {categories && categories.length > 0 && (
+            <VehicleCarousel
+              categories={categories}
+              selectedCategory={selectedCategory}
+              onSelect={setCategory}
+            />
+          )}
+
           {/* Tabs at Bottom - CONFIGURATOR | SPECS | INTERIOR */}
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full shrink-0">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="configurator">CONFIGURATOR</TabsTrigger>
               <TabsTrigger value="specs">SPECS</TabsTrigger>
@@ -316,8 +350,8 @@ export function VehicleConfigurator({ onSave, onCancel }: VehicleConfiguratorPro
         </div>
 
         {/* RIGHT PANEL - Configuration Sidebar */}
-        <div className="flex flex-col bg-muted/10 overflow-y-auto">
-          <div className="p-6 space-y-6">
+        <div className="flex flex-col bg-muted/10 overflow-hidden min-h-0">
+          <div className="flex-1 overflow-y-auto p-6 space-y-6">
             {/* Preview Button */}
             {selectedCategory && activeTab !== 'preview' && (
               <div className="flex justify-end">
@@ -446,9 +480,17 @@ export function VehicleConfigurator({ onSave, onCancel }: VehicleConfiguratorPro
                 {/* Tier Builder - Always Visible */}
                 {calculatedVolume && vehicleConstraints && (
                   <div>
-                    <h3 className="text-xs font-semibold text-muted-foreground mb-3 tracking-wider">
-                      VEHICLE CAPACITY PAYLOAD
-                    </h3>
+                    <div className="flex items-center gap-2 mb-3">
+                      <h3 className="text-xs font-semibold text-muted-foreground tracking-wider">
+                        VEHICLE CAPACITY PAYLOAD
+                      </h3>
+                      {tiers.length > 0 && dimensions.length_cm && dimensions.width_cm && dimensions.height_cm && (
+                        <Badge variant="secondary" className="text-[10px] gap-1 px-1.5 py-0">
+                          <Zap className="w-3 h-3" />
+                          Auto
+                        </Badge>
+                      )}
+                    </div>
 
                     {/* Tier Validation Error Alert */}
                     {tierValidationError && (
@@ -458,7 +500,7 @@ export function VehicleConfigurator({ onSave, onCancel }: VehicleConfiguratorPro
                       </Alert>
                     )}
 
-                    <div className="w-[360px] min-h-[420px] max-h-[540px] p-4 rounded-xl border bg-card overflow-y-auto">
+                    <div className="w-full min-h-[420px] max-h-[540px] p-4 rounded-xl border bg-card overflow-y-auto">
                       {/* Tier Count Selector */}
                       <TierCountSelector
                         currentCount={tiers.length}
@@ -716,9 +758,22 @@ export function VehicleConfigurator({ onSave, onCancel }: VehicleConfiguratorPro
             {selectedCategory && activeTab === 'interior' && (
               <div className="space-y-6">
                 <div>
-                  <h3 className="text-xs font-semibold text-muted-foreground mb-3 tracking-wider">
-                    INTERIOR DIMENSIONS
-                  </h3>
+                  <div className="flex items-center gap-2 mb-3">
+                    <h3 className="text-xs font-semibold text-muted-foreground tracking-wider">
+                      INTERIOR DIMENSIONS
+                    </h3>
+                    {interiorDimensions.length_cm && interiorDimensions.width_cm && interiorDimensions.height_cm && (
+                      <Badge variant="secondary" className="text-[10px] gap-1 px-1.5 py-0">
+                        <Zap className="w-3 h-3" />
+                        Auto-populated
+                      </Badge>
+                    )}
+                  </div>
+                  {interiorDimensions.length_cm && interiorDimensions.width_cm && interiorDimensions.height_cm && (
+                    <p className="text-xs text-muted-foreground mb-3">
+                      Derived from cargo dimensions. Edit as needed.
+                    </p>
+                  )}
                   <div className="space-y-3">
                     <div className="space-y-1">
                       <Label className="text-xs text-muted-foreground">Length (cm)</Label>
@@ -1040,7 +1095,7 @@ export function VehicleConfigurator({ onSave, onCancel }: VehicleConfiguratorPro
           </div>
 
           {/* Save & Continue Button - Bottom of Sidebar */}
-          <div className="mt-auto p-6 border-t bg-background">
+          <div className="shrink-0 p-6 border-t bg-background">
             <div className="space-y-4">
               {/* Validation Status */}
               {!selectedCategory ? (

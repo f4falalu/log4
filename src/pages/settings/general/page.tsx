@@ -209,12 +209,26 @@ export default function SettingsGeneralPage() {
 
       const { error } = await supabase.rpc('update_workspace_general_settings', {
         p_workspace_id: workspace.id,
-        p_name: name,
-        p_org_type: orgType,
+        p_name: name.trim(),
+        p_org_type: orgType || null,
         p_settings: settingsToSave as Record<string, unknown>,
       });
 
-      if (error) throw error;
+      if (error) {
+        // Fallback to direct update if RPC not found or permission issue
+        console.warn('RPC failed, attempting direct update:', error.message);
+        const { error: directError } = await supabase
+          .from('workspaces')
+          .update({
+            name: name.trim(),
+            org_type: orgType || null,
+            settings: settingsToSave as Record<string, unknown>,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', workspace.id);
+
+        if (directError) throw directError;
+      }
     },
     onSuccess: () => {
       toast.success('Settings saved successfully');
@@ -222,9 +236,11 @@ export default function SettingsGeneralPage() {
       queryClient.invalidateQueries({ queryKey: ['workspace-settings', workspaceId] });
       queryClient.invalidateQueries({ queryKey: ['my-workspaces'] });
     },
-    onError: (err) => {
+    onError: (err: any) => {
       console.error('Failed to save settings:', err);
-      toast.error('Failed to save settings');
+      toast.error('Failed to save settings', {
+        description: err?.message || err?.details || String(err),
+      });
     },
   });
 

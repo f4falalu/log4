@@ -34,10 +34,8 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import type { WorkingSetItem, AiOptimizationOptions, VehicleSuggestion } from '@/types/unified-workflow';
-import maplibregl from 'maplibre-gl';
-import 'maplibre-gl/dist/maplibre-gl.css';
-import { useTheme } from 'next-themes';
-import { getMapLibreStyle } from '@/lib/mapConfig';
+import { BatchRouteMap } from '@/components/batches/BatchRouteMap';
+import type { Facility } from '@/types';
 
 export interface FacilityWithCoords {
   id: string;
@@ -71,10 +69,7 @@ export function DecisionSupportColumn({
   sourceSubOption,
   className,
 }: DecisionSupportColumnProps) {
-  const { theme } = useTheme();
-  const mapContainerRef = React.useRef<HTMLDivElement>(null);
-  const mapRef = React.useRef<maplibregl.Map | null>(null);
-  const markersRef = React.useRef<Map<string, maplibregl.Marker>>(new Map());
+  const [isMapFullscreen, setIsMapFullscreen] = React.useState(false);
 
   // Create a lookup map for facility coordinates
   const facilityMap = React.useMemo(() => {
@@ -82,6 +77,31 @@ export function DecisionSupportColumn({
     facilities.forEach(f => map.set(f.id, f));
     return map;
   }, [facilities]);
+
+  // Convert working set items to Facility[] for BatchRouteMap
+  const mapFacilities = React.useMemo<Facility[]>(() => {
+    return workingSet
+      .map(item => {
+        const coords = facilityMap.get(item.facility_id);
+        if (!coords?.lat || !coords?.lng) return null;
+        return {
+          id: item.facility_id,
+          name: item.facility_name,
+          address: '',
+          lat: coords.lat,
+          lng: coords.lng,
+          warehouse_code: '',
+          state: '',
+        } as Facility;
+      })
+      .filter(Boolean) as Facility[];
+  }, [workingSet, facilityMap]);
+
+  // Convert startLocation to depot format for BatchRouteMap
+  const depot = React.useMemo(() => {
+    if (!startLocation?.lat || !startLocation?.lng) return null;
+    return { lat: startLocation.lat, lng: startLocation.lng, name: startLocation.name };
+  }, [startLocation]);
 
   // Calculate insights from working set
   const insights = React.useMemo(() => {
@@ -105,241 +125,6 @@ export function DecisionSupportColumn({
 
   const isAiMode = sourceSubOption === 'ai_optimization';
 
-  // Calculate map bounds based on locations
-  const bounds = React.useMemo(() => {
-    const points: [number, number][] = [];
-
-    // Add start location if available
-    if (startLocation?.lat && startLocation?.lng) {
-      points.push([startLocation.lng, startLocation.lat]);
-    }
-
-    // Add working set facilities that have coordinates (look up from facilityMap)
-    workingSet.forEach(item => {
-      const facility = facilityMap.get(item.facility_id);
-      if (facility?.lat && facility?.lng) {
-        points.push([facility.lng, facility.lat]);
-      }
-    });
-
-    if (points.length === 0) {
-      // Default to Kano, Nigeria
-      return {
-        center: [8.52, 12.00] as [number, number],
-        zoom: 10,
-      };
-    }
-
-    if (points.length === 1) {
-      // Single point - center on it
-      return {
-        center: points[0],
-        zoom: 12,
-      };
-    }
-
-    // Multiple points - calculate bounds
-    const lngs = points.map(p => p[0]);
-    const lats = points.map(p => p[1]);
-
-    return {
-      sw: [Math.min(...lngs) - 0.02, Math.min(...lats) - 0.02] as [number, number],
-      ne: [Math.max(...lngs) + 0.02, Math.max(...lats) + 0.02] as [number, number],
-    };
-  }, [startLocation, workingSet, facilityMap]);
-
-  // Initialize map
-  React.useEffect(() => {
-    if (!mapContainerRef.current || workingSet.length === 0) return;
-
-    const map = new maplibregl.Map({
-      container: mapContainerRef.current,
-      style: getMapLibreStyle(theme as 'light' | 'dark' | 'system' | undefined),
-      center: 'center' in bounds ? bounds.center : [(bounds.sw[0] + bounds.ne[0]) / 2, (bounds.sw[1] + bounds.ne[1]) / 2],
-      zoom: 'zoom' in bounds ? bounds.zoom : 10,
-      attributionControl: false,
-    });
-
-    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
-
-    mapRef.current = map;
-
-    // Fit bounds after map loads if we have multiple points
-    map.on('load', () => {
-      if ('sw' in bounds && 'ne' in bounds) {
-        map.fitBounds([bounds.sw, bounds.ne], {
-          padding: 20,
-          maxZoom: 14,
-        });
-      }
-    });
-
-    return () => {
-      markersRef.current.forEach(m => m.remove());
-      markersRef.current.clear();
-      map.remove();
-      mapRef.current = null;
-    };
-  }, [theme, workingSet.length]);
-
-  // Update markers and route lines when locations change
-  React.useEffect(() => {
-    if (!mapRef.current || workingSet.length === 0) return;
-
-    const map = mapRef.current;
-
-    const updateMarkersAndRoute = () => {
-      // Clear existing markers
-      markersRef.current.forEach(m => m.remove());
-      markersRef.current.clear();
-
-      // Build route line coordinates
-      const routeCoordinates: [number, number][] = [];
-
-      // Start from warehouse
-      if (startLocation?.lat && startLocation?.lng) {
-        routeCoordinates.push([startLocation.lng, startLocation.lat]);
-      }
-
-      // Add each facility in sequence
-      workingSet.forEach(item => {
-        const facility = facilityMap.get(item.facility_id);
-        if (facility?.lat && facility?.lng) {
-          routeCoordinates.push([facility.lng, facility.lat]);
-        }
-      });
-
-      // Add route line to map (only if style is loaded)
-      if (routeCoordinates.length >= 2 && map.isStyleLoaded()) {
-        // Remove existing route layer and source if they exist
-        if (map.getLayer('route-line')) {
-          map.removeLayer('route-line');
-        }
-        if (map.getSource('route')) {
-          map.removeSource('route');
-        }
-
-        // Add route source and layer
-        map.addSource('route', {
-          type: 'geojson',
-          data: {
-            type: 'Feature',
-            properties: {},
-            geometry: {
-              type: 'LineString',
-              coordinates: routeCoordinates,
-            },
-          },
-        });
-
-        map.addLayer({
-          id: 'route-line',
-          type: 'line',
-          source: 'route',
-          layout: {
-            'line-join': 'round',
-            'line-cap': 'round',
-          },
-          paint: {
-            'line-color': '#10b981',
-            'line-width': 3,
-            'line-opacity': 0.8,
-          },
-        });
-      }
-
-      // Add start location marker
-      if (startLocation?.lat && startLocation?.lng) {
-        const el = document.createElement('div');
-        el.innerHTML = `
-          <div style="
-            width: 32px;
-            height: 32px;
-            background: #3b82f6;
-            border: 3px solid white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-            font-size: 14px;
-          ">🏭</div>
-        `;
-
-        const popup = new maplibregl.Popup({ offset: 20, closeButton: false }).setHTML(`
-          <div style="padding: 4px;">
-            <strong>${startLocation.name}</strong>
-            <div style="font-size: 11px; color: #666;">Start Location</div>
-          </div>
-        `);
-
-        const marker = new maplibregl.Marker({ element: el })
-          .setLngLat([startLocation.lng, startLocation.lat])
-          .setPopup(popup)
-          .addTo(map);
-
-        markersRef.current.set('start', marker);
-      }
-
-      // Add facility markers with sequence numbers
-      workingSet.forEach((item, index) => {
-        const facility = facilityMap.get(item.facility_id);
-        if (!facility?.lat || !facility?.lng) return;
-
-        const el = document.createElement('div');
-        el.innerHTML = `
-          <div style="
-            width: 28px;
-            height: 28px;
-            background: #10b981;
-            border: 2px solid white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.25);
-            color: white;
-            font-size: 11px;
-            font-weight: 600;
-          ">${index + 1}</div>
-        `;
-
-        const popup = new maplibregl.Popup({ offset: 18, closeButton: false }).setHTML(`
-          <div style="padding: 4px; min-width: 120px;">
-            <div style="font-size: 11px; color: #10b981; font-weight: 600;">Stop ${index + 1}</div>
-            <strong style="font-size: 12px;">${item.facility_name}</strong>
-            <div style="font-size: 10px; color: #666; margin-top: 2px;">
-              ${item.slot_demand || 0} slots
-            </div>
-          </div>
-        `);
-
-        const marker = new maplibregl.Marker({ element: el })
-          .setLngLat([facility.lng, facility.lat])
-          .setPopup(popup)
-          .addTo(map);
-
-        markersRef.current.set(item.facility_id, marker);
-      });
-
-      // Fit bounds when markers change
-      if ('sw' in bounds && 'ne' in bounds) {
-        map.fitBounds([bounds.sw, bounds.ne], {
-          padding: 20,
-          maxZoom: 14,
-          duration: 500,
-        });
-      }
-    };
-
-    // Wait for style to load before adding layers
-    if (map.isStyleLoaded()) {
-      updateMarkersAndRoute();
-    } else {
-      map.once('styledata', updateMarkersAndRoute);
-    }
-  }, [startLocation, workingSet, bounds, facilityMap]);
-
   return (
     <ScrollArea className={cn('h-full', className)}>
       <div className="space-y-4 p-4">
@@ -360,12 +145,22 @@ export function DecisionSupportColumn({
                 </div>
               </div>
             ) : (
-              <div
-                ref={mapContainerRef}
-                className="w-full aspect-[4/3] rounded-lg overflow-hidden border"
-              />
+              <div className={cn(
+                'rounded-lg overflow-hidden border',
+                isMapFullscreen
+                  ? 'fixed inset-0 z-50 rounded-none border-none'
+                  : 'w-full aspect-[4/3]'
+              )}>
+                <BatchRouteMap
+                  facilities={mapFacilities}
+                  warehouse={depot}
+                  enableControls
+                  isFullscreen={isMapFullscreen}
+                  onToggleFullscreen={() => setIsMapFullscreen(prev => !prev)}
+                />
+              </div>
             )}
-            {startLocation && (
+            {startLocation && !isMapFullscreen && (
               <p className="text-xs text-muted-foreground mt-2">
                 Starting from: {startLocation.name}
               </p>

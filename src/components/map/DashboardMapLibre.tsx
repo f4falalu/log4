@@ -230,6 +230,7 @@ export function DashboardMapLibre({
 
     // Warehouse markers (larger, distinct)
     warehouses.forEach((wh) => {
+      if (!Number.isFinite(wh.lng) || !Number.isFinite(wh.lat)) return;
       const el = document.createElement('div');
       el.style.cssText = `
         width: 28px; height: 28px;
@@ -251,6 +252,7 @@ export function DashboardMapLibre({
 
     // Facility markers (small dots)
     facilities.forEach((f) => {
+      if (!Number.isFinite(f.lng) || !Number.isFinite(f.lat)) return;
       const el = document.createElement('div');
       el.style.cssText = `
         width: 10px; height: 10px;

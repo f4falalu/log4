@@ -18,6 +18,7 @@ import { useCreateRoute } from '@/hooks/useRoutes';
 import { useFacilities } from '@/hooks/useFacilities';
 import { useServiceAreaFacilities } from '@/hooks/useServiceAreas';
 import { computeDistanceMatrix, type GeoPoint } from '@/lib/algorithms/distanceMatrix';
+import { calculateDistance } from '@/lib/routeOptimization';
 import { solveTSP } from '@/lib/algorithms/tsp';
 import { getRoadRoute, getAlternativeRoadRoutes, type RoadRouteResult, type AlternativeRoadRoute } from '@/lib/geoapify';
 import { LeftColumn, MiddleColumn, RightColumn, ThreeColumnLayout } from '@/components/unified-workflow/schedule/ThreeColumnLayout';
@@ -73,23 +74,34 @@ export function FacilityListRouteForm({ onSuccess, isSandbox = false }: Facility
 
   const zonesQuery = useOperationalZones();
   const zones = zonesQuery.zones;
-  const { data: serviceAreas } = useServiceAreas(zoneId ? { zone_id: zoneId } : undefined);
+  const serviceAreasQuery = useServiceAreas(zoneId ? { zone_id: zoneId } : undefined);
+  const serviceAreas = serviceAreasQuery.data;
   // When a service area is selected, load only its assigned facilities instead of all 1000+
   const saFacilitiesQuery = useServiceAreaFacilities(serviceAreaId || null);
-  const allFacilitiesQuery = useFacilities(serviceAreaId ? undefined : {}, undefined, 50);
+  // Always fetch all workspace facilities as fallback (facilities may not have zone_id set)
+  const allFacilitiesQuery = useFacilities({}, undefined, 500);
   const createMutation = useCreateRoute();
 
   const selectedZone = zones?.find(z => z.id === zoneId);
   const selectedSA = serviceAreas?.find(sa => sa.id === serviceAreaId);
   // Use service-area-assigned facilities when available, otherwise fall back to workspace facilities
-  const facilities = useMemo(() => {
-    if (serviceAreaId && saFacilitiesQuery.data) {
+  const saFacilities = useMemo(() => {
+    if (serviceAreaId && saFacilitiesQuery.data && saFacilitiesQuery.data.length > 0) {
       return saFacilitiesQuery.data
         .filter((saf: any) => saf.facilities)
         .map((saf: any) => saf.facilities);
     }
+    return [];
+  }, [serviceAreaId, saFacilitiesQuery.data]);
+
+  const facilities = useMemo(() => {
+    // Prefer SA-assigned facilities; fall back to all workspace/zone facilities
+    if (saFacilities.length > 0) return saFacilities;
     return allFacilitiesQuery.data?.facilities ?? [];
-  }, [serviceAreaId, saFacilitiesQuery.data, allFacilitiesQuery.data]);
+  }, [saFacilities, allFacilitiesQuery.data]);
+
+  // Derive a unified query status for loading/error UI
+  const facilitiesQuery = serviceAreaId && saFacilities.length > 0 ? saFacilitiesQuery : allFacilitiesQuery;
 
   const filteredFacilities = useMemo(() => {
     const q = facilitySearch.trim().toLowerCase();
@@ -471,7 +483,10 @@ export function FacilityListRouteForm({ onSuccess, isSandbox = false }: Facility
   const canProceed = (): boolean => {
     switch (step) {
       case 'zone-service-area':
-        return !!zoneId && !!serviceAreaId;
+        // Allow proceeding with just a zone if there are no service areas
+        if (!zoneId) return false;
+        if (serviceAreas && serviceAreas.length > 0) return !!serviceAreaId;
+        return true;
       case 'facilities':
         return facilityIds.length > 0;
       case 'name-review':
@@ -504,13 +519,33 @@ export function FacilityListRouteForm({ onSuccess, isSandbox = false }: Facility
   };
 
   const handleSubmit = async () => {
+    const orderedIds = optimizedOrder || facilityIds;
+
+    // Compute per-facility distances (warehouse → first, then consecutive)
+    const warehouseLat = selectedSA?.warehouses?.lat;
+    const warehouseLng = selectedSA?.warehouses?.lng;
+    const distances: (number | null)[] = orderedIds.map((id, idx) => {
+      const f = facilityMap.get(id);
+      if (!f || f.lat == null || f.lng == null) return null;
+      if (idx === 0) {
+        if (warehouseLat != null && warehouseLng != null) {
+          return Math.round(calculateDistance(warehouseLat, warehouseLng, f.lat, f.lng) * 10) / 10;
+        }
+        return null;
+      }
+      const prev = facilityMap.get(orderedIds[idx - 1]);
+      if (!prev || prev.lat == null || prev.lng == null) return null;
+      return Math.round(calculateDistance(prev.lat, prev.lng, f.lat, f.lng) * 10) / 10;
+    });
+
     await createMutation.mutateAsync({
       name: routeName,
       zone_id: zoneId,
       service_area_id: serviceAreaId,
       warehouse_id: selectedSA?.warehouse_id || '',
       creation_mode: isSandbox ? 'sandbox' : 'facility_list',
-      facility_ids: optimizedOrder || facilityIds,
+      facility_ids: orderedIds,
+      facility_distances: distances,
       is_sandbox: isSandbox,
       algorithm_used: optimizedOrder ? 'nearest_neighbor_2opt' : undefined,
       total_distance_km: optimizedDistance ?? undefined,
@@ -581,7 +616,11 @@ export function FacilityListRouteForm({ onSuccess, isSandbox = false }: Facility
             Choose the service area within {zones.find(z => z.id === zoneId)?.name}
           </p>
           <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-            {serviceAreas && serviceAreas.length > 0 ? (
+            {serviceAreasQuery.isLoading ? (
+              <div className="col-span-full text-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
+              </div>
+            ) : serviceAreas && serviceAreas.length > 0 ? (
               serviceAreas.map((sa) => (
                 <Card
                   key={sa.id}
@@ -597,7 +636,7 @@ export function FacilityListRouteForm({ onSuccess, isSandbox = false }: Facility
                   <CardContent className="p-4">
                     <h4 className="font-medium">{sa.name}</h4>
                     <div className="flex gap-2 mt-2">
-                      <Badge variant="outline">{sa.service_type.toUpperCase()}</Badge>
+                      <Badge variant="outline">{sa.service_type?.toUpperCase() || 'N/A'}</Badge>
                       <Badge variant="secondary">{sa.facility_count || 0} facilities</Badge>
                     </div>
                   </CardContent>

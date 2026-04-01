@@ -240,6 +240,137 @@ export function createDefaultTierConfig(
 }
 
 // =====================================================
+// AUTO-CALCULATION: TIERS & SLOTS FROM DIMENSIONS
+// =====================================================
+
+/**
+ * Standard slot footprint in m² (~40cm × 40cm package)
+ * Used to calculate how many slots fit per tier
+ */
+const SLOT_FOOTPRINT_M2 = 0.16;
+
+/**
+ * Automatically calculate optimal tier configuration and interior dimensions
+ * from cargo dimensions (L×W×H) and payload.
+ *
+ * Logic:
+ *  - Tier count derived from cargo height (constrained by vehicle class)
+ *  - Slots per tier derived from floor area ÷ slot footprint
+ *  - Weight & volume distributed across tiers
+ *  - Interior dimensions derived from cargo dimensions (cargo ≈ usable interior)
+ */
+export function calculateAutoTiersFromDimensions(
+  lengthCm: number,
+  widthCm: number,
+  heightCm: number,
+  maxPayloadKg: number,
+  constraints?: { minTiers: number; maxTiers: number; totalMaxSlots?: number; maxSlotsPerTier?: number }
+): {
+  tiers: TierConfig[];
+  interiorDimensions: { length_cm: number; width_cm: number; height_cm: number };
+} {
+  if (lengthCm <= 0 || widthCm <= 0 || heightCm <= 0) {
+    return { tiers: [], interiorDimensions: { length_cm: 0, width_cm: 0, height_cm: 0 } };
+  }
+
+  const minTiers = constraints?.minTiers ?? 1;
+  const maxTiers = constraints?.maxTiers ?? 4;
+  const totalMaxSlots = constraints?.totalMaxSlots ?? 20;
+  const maxSlotsPerTier = constraints?.maxSlotsPerTier ?? 12;
+
+  // --- Determine tier count from height ---
+  let tierCount: number;
+  if (heightCm < 120) {
+    tierCount = 1;
+  } else if (heightCm < 180) {
+    tierCount = 2;
+  } else if (heightCm < 260) {
+    tierCount = 3;
+  } else {
+    tierCount = 4;
+  }
+  // Clamp to vehicle class constraints
+  tierCount = Math.max(minTiers, Math.min(maxTiers, tierCount));
+
+  // --- Calculate slots per tier from floor area ---
+  const floorAreaM2 = (lengthCm / 100) * (widthCm / 100);
+  let rawSlotsPerTier = Math.max(1, Math.floor(floorAreaM2 / SLOT_FOOTPRINT_M2));
+  rawSlotsPerTier = Math.min(rawSlotsPerTier, maxSlotsPerTier, 12);
+
+  // Ensure total doesn't exceed max
+  const maxPerTierFromTotal = Math.floor(totalMaxSlots / tierCount);
+  const slotsPerTier = Math.max(1, Math.min(rawSlotsPerTier, maxPerTierFromTotal));
+
+  // --- Build tier configs ---
+  const volumeM3 = calculateVolumeFromDimensions(lengthCm, widthCm, heightCm);
+  const tierNames = getTierNames(tierCount);
+
+  // Weight distribution: bottom-heavy for stability (heavier at bottom)
+  const weightDistributions: Record<number, number[]> = {
+    1: [1.0],
+    2: [0.6, 0.4],
+    3: [0.4, 0.35, 0.25],
+    4: [0.35, 0.3, 0.2, 0.15],
+  };
+  const weightPcts = weightDistributions[tierCount] || Array(tierCount).fill(1 / tierCount);
+
+  const tiers: TierConfig[] = tierNames.map((name, i) => {
+    // Slightly reduce slots for upper tiers (accessibility / lighter items)
+    const slotReduction = i >= 2 ? 1 : 0;
+    const tierSlots = Math.max(1, slotsPerTier - slotReduction);
+
+    return {
+      tier_name: name,
+      tier_order: i + 1,
+      max_weight_kg: maxPayloadKg > 0 ? Math.round(maxPayloadKg * weightPcts[i]) : undefined,
+      max_volume_m3: Math.round((volumeM3 / tierCount) * 100) / 100,
+      weight_pct: Math.round(weightPcts[i] * 100),
+      volume_pct: Math.round(100 / tierCount),
+      slot_count: tierSlots,
+    };
+  });
+
+  // Final total-slot clamp
+  let totalSlots = tiers.reduce((s, t) => s + (t.slot_count || 0), 0);
+  if (totalSlots > totalMaxSlots) {
+    // Remove from top tiers first
+    for (let i = tiers.length - 1; i >= 0 && totalSlots > totalMaxSlots; i--) {
+      const excess = totalSlots - totalMaxSlots;
+      const canRemove = Math.min(excess, (tiers[i].slot_count || 1) - 1);
+      tiers[i].slot_count = (tiers[i].slot_count || 1) - canRemove;
+      totalSlots -= canRemove;
+    }
+  }
+
+  // --- Interior dimensions (cargo area ≈ interior usable space) ---
+  const interiorDimensions = {
+    length_cm: lengthCm,
+    width_cm: widthCm,
+    height_cm: heightCm,
+  };
+
+  return { tiers, interiorDimensions };
+}
+
+/**
+ * Get tier names based on count
+ */
+function getTierNames(count: number): string[] {
+  switch (count) {
+    case 1:
+      return ['Cargo'];
+    case 2:
+      return ['Lower', 'Upper'];
+    case 3:
+      return ['Lower', 'Middle', 'Upper'];
+    case 4:
+      return ['Lower', 'Middle', 'Upper', 'Top'];
+    default:
+      return Array.from({ length: count }, (_, i) => `Tier ${i + 1}`);
+  }
+}
+
+// =====================================================
 // CAPACITY CONFIG HELPERS
 // =====================================================
 

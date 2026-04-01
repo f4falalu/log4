@@ -112,6 +112,26 @@ export function UnifiedWorkflowDialog({
   // Fetch ready consignments (facilities with requisitions ready for dispatch)
   const { data: facilityCandidates = [], isLoading: facilitiesLoading } = useReadyConsignments();
 
+  // For manual mode: convert all facilities into FacilityCandidate format
+  const allFacilityCandidates = React.useMemo(() => {
+    if (!facilitiesData?.facilities) return [];
+    return facilitiesData.facilities.map((f) => ({
+      id: f.id,
+      name: f.name,
+      code: f.warehouse_code,
+      lga: f.lga,
+      zone: f.service_zone,
+      lat: f.lat,
+      lng: f.lng,
+      requisition_ids: [] as string[],
+      slot_demand: 1,
+    }));
+  }, [facilitiesData]);
+
+  // Use all facilities for manual mode, ready consignments for ready mode
+  const effectiveCandidates = sourceMethod === 'manual' ? allFacilityCandidates : facilityCandidates;
+  const effectiveCandidatesLoading = sourceMethod === 'manual' ? !facilitiesData : facilitiesLoading;
+
   // Mutations
   const createPreBatch = useCreatePreBatch();
   const convertToBatch = useConvertPreBatchToBatch();
@@ -367,8 +387,9 @@ export function UnifiedWorkflowDialog({
             onTimeWindowChange={actions.setTimeWindow}
             sourceMethod={sourceMethod}
             warehouses={warehouses}
-            candidates={facilityCandidates}
-            candidatesLoading={facilitiesLoading}
+            facilities={facilitiesData?.facilities?.map((f) => ({ id: f.id, name: f.name })) ?? []}
+            candidates={effectiveCandidates}
+            candidatesLoading={effectiveCandidatesLoading}
             workingSet={workingSet}
             onAddToWorkingSet={actions.addToWorkingSet}
             onRemoveFromWorkingSet={actions.removeFromWorkingSet}

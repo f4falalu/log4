@@ -192,7 +192,7 @@ export function useCreateRoute() {
     mutationFn: async (input: CreateRouteInput) => {
       if (!workspaceId) throw new Error('No workspace selected');
 
-      const { facility_ids, total_distance_km, estimated_duration_min, optimized_geometry, ...routeData } = input;
+      const { facility_ids, facility_distances, total_distance_km, estimated_duration_min, optimized_geometry, ...routeData } = input;
       const routePayload = {
         ...routeData,
         ...(total_distance_km != null && { total_distance_km }),
@@ -216,6 +216,7 @@ export function useCreateRoute() {
           route_id: route.id,
           facility_id: fid,
           sequence_order: idx + 1,
+          ...(facility_distances?.[idx] != null && { distance_from_previous_km: facility_distances[idx] }),
         }));
 
         const { error: facError } = await supabase

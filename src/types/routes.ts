@@ -70,6 +70,7 @@ export interface CreateRouteInput {
   warehouse_id: string;
   creation_mode: RouteCreationMode;
   facility_ids: string[];
+  facility_distances?: (number | null)[];
   is_sandbox?: boolean;
   algorithm_used?: string;
   total_distance_km?: number;
